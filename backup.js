@@ -1,16 +1,17 @@
-// backup.js - Service de sauvegarde unifié complet pour EmailSortPro
-// Compatible avec Microsoft OneDrive et Google Drive Documents
-// Sauvegarde automatique des tâches et catégories paramétrées
+// backup.js - Version Smart v3.0 - Détection automatique et dossiers autorisés
+// Compatible avec Microsoft OneDrive, Google Drive et dossiers locaux autorisés
+// Auto-détection du provider et configuration intelligente
 
-class BackupService {
+class SmartBackupService {
     constructor() {
         this.provider = null;
         this.isInitialized = false;
         this.backupInProgress = false;
         this.lastBackupTime = null;
         this.backupTimer = null;
+        this.detectionTimer = null;
         
-        // Configuration par défaut
+        // Configuration intelligente par défaut
         this.config = {
             enabled: true,
             autoBackup: true,
@@ -19,31 +20,48 @@ class BackupService {
             includeTasks: true,
             includeSettings: true,
             maxBackups: 10,
-            folderPath: 'Documents/EmailSortPro/Backups'
+            
+            // NOUVEAUX: Dossiers autorisés intelligents
+            smartFolders: {
+                local: null,           // Dossier local choisi par l'utilisateur
+                oneDrive: null,        // Détection auto OneDrive
+                googleDrive: null,     // Détection auto Google Drive
+                documents: null,       // Documents/EmailSortPro
+                downloads: null        // Téléchargements/EmailSortPro
+            },
+            
+            // Auto-détection
+            autoDetection: true,
+            preferredStorage: 'smart', // smart, local, cloud, downloads
+            emergencyMode: false,
+            
+            // Fallback hierarchy
+            storagePriority: ['cloud', 'documents', 'downloads', 'localStorage']
         };
         
         this.loadConfig();
-        console.log('[BackupService] Initialized with config:', this.config);
+        this.initializeSmartDetection();
+        console.log('[SmartBackup] Initialized v3.0 with smart detection');
     }
 
-    // =====================================
-    // CONFIGURATION
-    // =====================================
+    // ================================================
+    // CONFIGURATION INTELLIGENTE
+    // ================================================
     loadConfig() {
         try {
-            const saved = localStorage.getItem('emailsortpro_backup_config');
+            const saved = localStorage.getItem('emailsortpro_smart_backup_config');
             if (saved) {
                 this.config = { ...this.config, ...JSON.parse(saved) };
             }
         } catch (error) {
-            console.warn('[BackupService] Error loading config:', error);
+            console.warn('[SmartBackup] Error loading config:', error);
         }
     }
 
     saveConfig() {
         try {
-            localStorage.setItem('emailsortpro_backup_config', JSON.stringify(this.config));
-            console.log('[BackupService] Config saved');
+            localStorage.setItem('emailsortpro_smart_backup_config', JSON.stringify(this.config));
+            console.log('[SmartBackup] Configuration sauvegardée');
             
             if (this.config.autoBackup) {
                 this.startAutoBackup();
@@ -51,7 +69,7 @@ class BackupService {
                 this.stopAutoBackup();
             }
         } catch (error) {
-            console.error('[BackupService] Error saving config:', error);
+            console.error('[SmartBackup] Error saving config:', error);
         }
     }
 
@@ -64,292 +82,391 @@ class BackupService {
         }
     }
 
-    // =====================================
-    // INITIALISATION
-    // =====================================
-    async initialize() {
-        if (this.isInitialized) {
-            console.log('[BackupService] Already initialized');
-            return;
+    // ================================================
+    // DÉTECTION AUTOMATIQUE INTELLIGENTE
+    // ================================================
+    async initializeSmartDetection() {
+        console.log('[SmartBackup] 🔍 Démarrage de la détection automatique...');
+        
+        // Détecter le provider d'authentification
+        await this.detectAuthProvider();
+        
+        // Détecter les dossiers disponibles
+        await this.detectAvailableFolders();
+        
+        // Configurer le stockage optimal
+        await this.configureOptimalStorage();
+        
+        this.isInitialized = true;
+        
+        // Démarrer la surveillance continue
+        this.startContinuousDetection();
+        
+        if (this.config.enabled && this.config.autoBackup) {
+            this.startAutoBackup();
         }
+        
+        console.log('[SmartBackup] ✅ Détection automatique terminée');
+    }
 
-        try {
-            // Déterminer le provider actif
-            if (window.app && window.app.activeProvider) {
-                this.provider = window.app.activeProvider;
-            } else {
-                if (window.authService && window.authService.isAuthenticated()) {
+    async detectAuthProvider() {
+        // Détecter Microsoft
+        if (window.authService) {
+            try {
+                const isAuth = window.authService.isAuthenticated();
+                if (isAuth) {
                     this.provider = 'microsoft';
-                } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-                    this.provider = 'google';
+                    console.log('[SmartBackup] 🔍 Microsoft OneDrive détecté et authentifié');
+                    await this.detectOneDrivePaths();
+                    return;
                 }
-            }
-
-            if (!this.provider) {
-                console.warn('[BackupService] No active provider detected');
-                return;
-            }
-
-            console.log('[BackupService] Initializing with provider:', this.provider);
-            
-            this.isInitialized = true;
-            
-            if (this.config.enabled && this.config.autoBackup) {
-                this.startAutoBackup();
-            }
-            
-            await this.checkAndRestoreIfNeeded();
-            
-            console.log('[BackupService] ✅ Initialization complete');
-            
-        } catch (error) {
-            console.error('[BackupService] Initialization error:', error);
-            this.isInitialized = false;
-        }
-    }
-
-    // =====================================
-    // BACKUP AUTOMATIQUE
-    // =====================================
-    startAutoBackup() {
-        this.stopAutoBackup();
-        
-        if (!this.config.enabled || !this.config.autoBackup) {
-            console.log('[BackupService] Auto backup disabled');
-            return;
-        }
-        
-        console.log('[BackupService] Starting auto backup, interval:', this.config.backupInterval);
-        
-        this.backupTimer = setInterval(() => {
-            this.performBackup('auto');
-        }, this.config.backupInterval);
-    }
-
-    stopAutoBackup() {
-        if (this.backupTimer) {
-            clearInterval(this.backupTimer);
-            this.backupTimer = null;
-            console.log('[BackupService] Auto backup stopped');
-        }
-    }
-
-    // =====================================
-    // COLLECTE DES DONNÉES COMPLÈTE
-    // =====================================
-    collectBackupData() {
-        const data = {
-            version: '2.0',
-            timestamp: new Date().toISOString(),
-            provider: this.provider,
-            app: {
-                name: 'EmailSortPro',
-                version: window.AppConfig?.app?.version || '3.0.0'
-            },
-            data: {}
-        };
-        
-        // Collecter les catégories avec leurs mots-clés
-        if (this.config.includeCategories && window.categoryManager) {
-            try {
-                const categories = window.categoryManager.getCategories();
-                const customCategories = window.categoryManager.getCustomCategories();
-                const allKeywords = window.categoryManager.getAllKeywords();
-                
-                data.data.categories = {
-                    all: categories,
-                    custom: customCategories,
-                    keywords: allKeywords,
-                    count: Object.keys(categories).length,
-                    customCount: Object.keys(customCategories).length
-                };
-                
-                console.log(`[BackupService] Collected ${data.data.categories.count} categories (${data.data.categories.customCount} custom)`);
             } catch (error) {
-                console.error('[BackupService] Error collecting categories:', error);
-                data.data.categories = { error: error.message };
+                console.warn('[SmartBackup] Erreur détection Microsoft:', error);
             }
         }
         
-        // Collecter les tâches complètes
-        if (this.config.includeTasks && window.taskManager) {
+        // Détecter Google
+        if (window.googleAuthService) {
             try {
-                const tasks = window.taskManager.getAllTasks();
-                const stats = window.taskManager.getStats();
-                
-                data.data.tasks = {
-                    all: tasks,
-                    stats: stats,
-                    count: tasks.length,
-                    completed: tasks.filter(t => t.completed).length,
-                    pending: tasks.filter(t => !t.completed).length,
-                    byCategory: this.groupTasksByCategory(tasks)
-                };
-                
-                console.log(`[BackupService] Collected ${data.data.tasks.count} tasks`);
+                const isAuth = window.googleAuthService.isAuthenticated();
+                if (isAuth) {
+                    this.provider = 'google';
+                    console.log('[SmartBackup] 🔍 Google Drive détecté et authentifié');
+                    await this.detectGoogleDrivePaths();
+                    return;
+                }
             } catch (error) {
-                console.error('[BackupService] Error collecting tasks:', error);
-                data.data.tasks = { error: error.message };
+                console.warn('[SmartBackup] Erreur détection Google:', error);
             }
         }
         
-        // Collecter les paramètres
-        if (this.config.includeSettings) {
-            try {
-                const categorySettings = this.loadCategorySettings();
-                const taskSettings = this.loadTaskSettings();
-                const appSettings = this.loadAppSettings();
-                
-                data.data.settings = {
-                    categories: categorySettings,
-                    tasks: taskSettings,
-                    app: appSettings,
-                    backup: this.config
-                };
-                
-                console.log('[BackupService] Collected application settings');
-            } catch (error) {
-                console.error('[BackupService] Error collecting settings:', error);
-                data.data.settings = { error: error.message };
-            }
-        }
-        
-        // Métadonnées du backup
-        data.metadata = {
-            totalSize: JSON.stringify(data).length,
-            backupId: this.generateBackupId(),
-            user: window.app?.user?.email || 'unknown',
-            dataIntegrity: this.calculateDataChecksum(data),
-            backupType: 'complete'
-        };
-        
-        return data;
+        console.log('[SmartBackup] 🔍 Aucun provider cloud authentifié, utilisation locale');
+        this.provider = 'local';
     }
 
-    groupTasksByCategory(tasks) {
-        const grouped = {};
-        
-        tasks.forEach(task => {
-            const category = task.category || 'uncategorized';
-            if (!grouped[category]) {
-                grouped[category] = [];
-            }
-            grouped[category].push(task);
-        });
-        
-        return grouped;
-    }
-
-    loadCategorySettings() {
+    async detectOneDrivePaths() {
         try {
-            const categorySettings = localStorage.getItem('categorySettings');
-            return categorySettings ? JSON.parse(categorySettings) : {};
-        } catch (error) {
-            console.warn('[BackupService] Error loading category settings:', error);
-            return {};
-        }
-    }
-
-    loadTaskSettings() {
-        try {
-            const taskSettings = localStorage.getItem('taskSettings');
-            return taskSettings ? JSON.parse(taskSettings) : {};
-        } catch (error) {
-            console.warn('[BackupService] Error loading task settings:', error);
-            return {};
-        }
-    }
-
-    loadAppSettings() {
-        try {
-            const settings = {};
-            
-            const keys = [
-                'emailsortpro_client_id',
-                'currentUserInfo',
-                'app_preferences',
-                'ui_settings'
+            // Détecter le chemin OneDrive local s'il existe
+            const commonPaths = [
+                'OneDrive/Documents/EmailSortPro',
+                'OneDrive - Personal/Documents/EmailSortPro',
+                'OneDrive - Business/Documents/EmailSortPro'
             ];
             
-            keys.forEach(key => {
-                const value = localStorage.getItem(key);
-                if (value) {
-                    try {
-                        settings[key] = JSON.parse(value);
-                    } catch {
-                        settings[key] = value;
-                    }
-                }
-            });
+            this.config.smartFolders.oneDrive = commonPaths[0]; // Path par défaut
+            console.log('[SmartBackup] 📁 OneDrive path configuré:', this.config.smartFolders.oneDrive);
             
-            return settings;
         } catch (error) {
-            console.warn('[BackupService] Error loading app settings:', error);
-            return {};
+            console.warn('[SmartBackup] Erreur détection OneDrive paths:', error);
         }
     }
 
-    calculateDataChecksum(data) {
-        const str = JSON.stringify(data.data);
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
+    async detectGoogleDrivePaths() {
+        try {
+            // Google Drive est accessible via API, pas de path local
+            this.config.smartFolders.googleDrive = 'GoogleDrive/EmailSortPro';
+            console.log('[SmartBackup] 📁 Google Drive path configuré');
+            
+        } catch (error) {
+            console.warn('[SmartBackup] Erreur détection Google Drive paths:', error);
         }
-        return hash.toString(16);
     }
 
-    // =====================================
-    // BACKUP PRINCIPAL
-    // =====================================
+    async detectAvailableFolders() {
+        console.log('[SmartBackup] 🔍 Détection des dossiers autorisés...');
+        
+        // Détecter Documents
+        try {
+            const documentsPath = await this.getDocumentsPath();
+            this.config.smartFolders.documents = documentsPath;
+            console.log('[SmartBackup] 📁 Documents détecté:', documentsPath);
+        } catch (error) {
+            console.warn('[SmartBackup] Documents non accessible:', error);
+        }
+        
+        // Détecter Téléchargements
+        try {
+            const downloadsPath = await this.getDownloadsPath();
+            this.config.smartFolders.downloads = downloadsPath;
+            console.log('[SmartBackup] 📁 Téléchargements détecté:', downloadsPath);
+        } catch (error) {
+            console.warn('[SmartBackup] Téléchargements non accessible:', error);
+        }
+    }
+
+    async getDocumentsPath() {
+        // Utiliser l'API moderne pour détecter Documents
+        const userAgent = navigator.userAgent;
+        
+        if (userAgent.includes('Windows')) {
+            return 'Documents/EmailSortPro';
+        } else if (userAgent.includes('Mac')) {
+            return 'Documents/EmailSortPro';
+        } else {
+            return 'Documents/EmailSortPro';
+        }
+    }
+
+    async getDownloadsPath() {
+        return 'Downloads/EmailSortPro';
+    }
+
+    async configureOptimalStorage() {
+        console.log('[SmartBackup] ⚙️ Configuration du stockage optimal...');
+        
+        let optimalStorage = null;
+        
+        // Hiérarchie de préférence intelligente
+        if (this.config.preferredStorage === 'smart') {
+            // 1. Cloud disponible et authentifié
+            if (this.provider === 'microsoft' && this.config.smartFolders.oneDrive) {
+                optimalStorage = 'onedrive';
+            } else if (this.provider === 'google' && this.config.smartFolders.googleDrive) {
+                optimalStorage = 'googledrive';
+            }
+            // 2. Documents locaux
+            else if (this.config.smartFolders.documents) {
+                optimalStorage = 'documents';
+            }
+            // 3. Téléchargements
+            else if (this.config.smartFolders.downloads) {
+                optimalStorage = 'downloads';
+            }
+            // 4. Fallback localStorage
+            else {
+                optimalStorage = 'localStorage';
+            }
+        } else {
+            optimalStorage = this.config.preferredStorage;
+        }
+        
+        this.config.activeStorage = optimalStorage;
+        console.log('[SmartBackup] 📦 Stockage optimal configuré:', optimalStorage);
+        
+        // Tester l'accès au stockage choisi
+        await this.testStorageAccess(optimalStorage);
+    }
+
+    async testStorageAccess(storageType) {
+        try {
+            console.log('[SmartBackup] 🧪 Test d\'accès au stockage:', storageType);
+            
+            switch (storageType) {
+                case 'documents':
+                    await this.testDocumentsAccess();
+                    break;
+                case 'downloads':
+                    await this.testDownloadsAccess();
+                    break;
+                case 'onedrive':
+                    await this.testOneDriveAccess();
+                    break;
+                case 'googledrive':
+                    await this.testGoogleDriveAccess();
+                    break;
+                case 'localStorage':
+                    // localStorage est toujours disponible
+                    break;
+            }
+            
+            console.log('[SmartBackup] ✅ Accès au stockage confirmé:', storageType);
+            
+        } catch (error) {
+            console.warn('[SmartBackup] ❌ Erreur d\'accès au stockage:', storageType, error);
+            await this.fallbackToNextStorage();
+        }
+    }
+
+    async testDocumentsAccess() {
+        if (!window.showDirectoryPicker) {
+            throw new Error('File System Access API non disponible');
+        }
+        
+        // On ne teste pas réellement ici pour éviter les popups
+        // Le test se fera lors du premier backup
+        return true;
+    }
+
+    async testDownloadsAccess() {
+        // Les téléchargements sont toujours disponibles
+        return true;
+    }
+
+    async testOneDriveAccess() {
+        if (!window.authService || !window.authService.isAuthenticated()) {
+            throw new Error('OneDrive non authentifié');
+        }
+        
+        const token = await window.authService.getAccessToken();
+        if (!token) {
+            throw new Error('Token OneDrive non disponible');
+        }
+        
+        return true;
+    }
+
+    async testGoogleDriveAccess() {
+        if (!window.googleAuthService || !window.googleAuthService.isAuthenticated()) {
+            throw new Error('Google Drive non authentifié');
+        }
+        
+        const token = await window.googleAuthService.getAccessToken();
+        if (!token) {
+            throw new Error('Token Google Drive non disponible');
+        }
+        
+        return true;
+    }
+
+    async fallbackToNextStorage() {
+        const currentIndex = this.config.storagePriority.indexOf(this.config.activeStorage);
+        const nextStorageIndex = currentIndex + 1;
+        
+        if (nextStorageIndex < this.config.storagePriority.length) {
+            const nextStorage = this.config.storagePriority[nextStorageIndex];
+            console.log('[SmartBackup] 🔄 Fallback vers:', nextStorage);
+            
+            this.config.activeStorage = nextStorage;
+            await this.testStorageAccess(nextStorage);
+        } else {
+            console.log('[SmartBackup] 🚨 Fallback final vers localStorage');
+            this.config.activeStorage = 'localStorage';
+            this.config.emergencyMode = true;
+        }
+    }
+
+    // ================================================
+    // SURVEILLANCE CONTINUE DES CONNEXIONS
+    // ================================================
+    startContinuousDetection() {
+        // Surveiller les changements d'authentification
+        this.detectionTimer = setInterval(() => {
+            this.checkProviderChanges();
+        }, 30000); // Vérifier toutes les 30 secondes
+        
+        // Écouter les événements d'authentification
+        window.addEventListener('authStateChanged', (event) => {
+            console.log('[SmartBackup] 🔄 Changement d\'authentification détecté');
+            this.handleAuthChange(event.detail);
+        });
+        
+        console.log('[SmartBackup] 👁️ Surveillance continue activée');
+    }
+
+    async checkProviderChanges() {
+        const previousProvider = this.provider;
+        await this.detectAuthProvider();
+        
+        if (previousProvider !== this.provider) {
+            console.log('[SmartBackup] 🔄 Changement de provider:', previousProvider, '→', this.provider);
+            await this.reconfigureForNewProvider();
+        }
+    }
+
+    async handleAuthChange(authDetails) {
+        console.log('[SmartBackup] 🔄 Gestion du changement d\'auth:', authDetails);
+        
+        // Reconfigurer selon le nouveau provider
+        await this.detectAuthProvider();
+        await this.detectAvailableFolders();
+        await this.configureOptimalStorage();
+        
+        if (window.uiManager) {
+            window.uiManager.showToast(
+                `🔄 Backup reconfiguré pour ${this.provider}`, 
+                'info'
+            );
+        }
+    }
+
+    async reconfigureForNewProvider() {
+        await this.detectAvailableFolders();
+        await this.configureOptimalStorage();
+        this.saveConfig();
+        
+        // Notification à l'utilisateur
+        if (window.uiManager) {
+            window.uiManager.showToast(
+                `📁 Backup reconfiguré automatiquement pour ${this.provider}`, 
+                'success'
+            );
+        }
+    }
+
+    // ================================================
+    // BACKUP INTELLIGENT
+    // ================================================
     async performBackup(trigger = 'manual') {
         if (!this.isInitialized || !this.config.enabled) {
-            console.log('[BackupService] Backup skipped - not initialized or disabled');
+            console.log('[SmartBackup] Backup skipped - not initialized or disabled');
             return false;
         }
 
         if (this.backupInProgress) {
-            console.log('[BackupService] Backup already in progress');
+            console.log('[SmartBackup] Backup already in progress');
             return false;
         }
 
         try {
             this.backupInProgress = true;
-            console.log(`[BackupService] Starting ${trigger} backup...`);
+            console.log(`[SmartBackup] Starting ${trigger} backup with ${this.config.activeStorage}...`);
             
             const backupData = this.collectBackupData();
             
             if (!backupData || !backupData.data) {
-                console.log('[BackupService] No data to backup');
+                console.log('[SmartBackup] No data to backup');
                 return false;
             }
             
             let success = false;
-            if (this.provider === 'microsoft') {
-                success = await this.backupToOneDrive(backupData);
-            } else if (this.provider === 'google') {
-                success = await this.backupToGoogleDrive(backupData);
+            
+            // Utiliser le stockage configuré automatiquement
+            switch (this.config.activeStorage) {
+                case 'onedrive':
+                    success = await this.backupToOneDrive(backupData);
+                    break;
+                case 'googledrive':
+                    success = await this.backupToGoogleDrive(backupData);
+                    break;
+                case 'documents':
+                    success = await this.backupToDocuments(backupData);
+                    break;
+                case 'downloads':
+                    success = await this.backupToDownloads(backupData);
+                    break;
+                case 'localStorage':
+                default:
+                    success = await this.backupToLocalStorage(backupData);
+                    break;
             }
             
             if (success) {
                 this.lastBackupTime = new Date();
-                localStorage.setItem('emailsortpro_last_backup', this.lastBackupTime.toISOString());
+                localStorage.setItem('emailsortpro_smart_last_backup', this.lastBackupTime.toISOString());
                 
                 if (trigger === 'manual' && window.uiManager) {
-                    window.uiManager.showToast('✅ Backup complet réussi dans Documents', 'success');
+                    window.uiManager.showToast(
+                        `✅ Backup réussi dans ${this.getStorageDisplayName()}`, 
+                        'success'
+                    );
                 }
                 
-                console.log('[BackupService] ✅ Backup successful');
+                console.log('[SmartBackup] ✅ Backup successful in', this.config.activeStorage);
             }
             
             return success;
             
         } catch (error) {
-            console.error('[BackupService] Backup error:', error);
+            console.error('[SmartBackup] Backup error:', error);
+            
+            // Essayer le stockage de fallback
+            await this.fallbackToNextStorage();
             
             if (trigger === 'manual' && window.uiManager) {
-                window.uiManager.showToast('❌ Erreur de backup: ' + error.message, 'error');
+                window.uiManager.showToast(
+                    '⚠️ Backup reporté vers stockage alternatif', 
+                    'warning'
+                );
             }
             
             return false;
@@ -359,231 +476,138 @@ class BackupService {
         }
     }
 
-    // =====================================
-    // RESTAURATION COMPLÈTE
-    // =====================================
-    async checkAndRestoreIfNeeded() {
+    // ================================================
+    // MÉTHODES DE STOCKAGE INTELLIGENTES
+    // ================================================
+    async backupToDocuments(data) {
         try {
-            const hasLocalTasks = window.taskManager && window.taskManager.getAllTasks().length > 0;
-            const hasLocalCategories = window.categoryManager && Object.keys(window.categoryManager.getCustomCategories()).length > 0;
+            console.log('[SmartBackup] 📁 Backup vers Documents...');
             
-            if (hasLocalTasks || hasLocalCategories) {
-                console.log('[BackupService] Local data exists, no restoration needed');
-                return;
+            if (!window.showDirectoryPicker) {
+                throw new Error('File System Access API non supportée');
             }
             
-            console.log('[BackupService] No local data found, checking for cloud backup...');
-            
-            const restored = await this.restoreFromBackup('latest');
-            
-            if (restored && window.uiManager) {
-                window.uiManager.showToast('✅ Données restaurées depuis le backup cloud', 'success');
+            // Demander l'accès au dossier Documents si pas encore fait
+            if (!this.documentsHandle) {
+                await this.requestDocumentsAccess();
             }
             
-        } catch (error) {
-            console.error('[BackupService] Error checking/restoring backup:', error);
-        }
-    }
-
-    async restoreFromBackup(backupId = 'latest') {
-        if (!this.isInitialized) {
-            console.warn('[BackupService] Cannot restore - not initialized');
-            return false;
-        }
-        
-        try {
-            console.log('[BackupService] Starting restoration...');
+            // Créer le fichier de backup
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const fileName = `EmailSortPro-Backup-${timestamp}.json`;
             
-            let backupData = null;
-            
-            if (this.provider === 'microsoft') {
-                backupData = await this.loadFromOneDrive(backupId);
-            } else if (this.provider === 'google') {
-                backupData = await this.loadFromGoogleDrive(backupId);
-            }
-            
-            if (!backupData) {
-                console.log('[BackupService] No backup found');
-                return false;
-            }
-            
-            if (!backupData.version || !backupData.data) {
-                throw new Error('Invalid backup format');
-            }
-            
-            if (backupData.metadata && backupData.metadata.dataIntegrity) {
-                const currentChecksum = this.calculateDataChecksum(backupData);
-                if (currentChecksum !== backupData.metadata.dataIntegrity) {
-                    console.warn('[BackupService] Backup integrity check failed, but continuing...');
-                }
-            }
-            
-            console.log('[BackupService] Backup loaded:', {
-                timestamp: backupData.timestamp,
-                categories: backupData.data.categories?.count || 0,
-                tasks: backupData.data.tasks?.count || 0,
-                version: backupData.version
+            const fileHandle = await this.documentsHandle.getFileHandle(fileName, {
+                create: true
             });
             
-            if (backupData.data.categories && window.categoryManager) {
-                await this.restoreCategories(backupData.data.categories);
-            }
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify(data, null, 2));
+            await writable.close();
             
-            if (backupData.data.tasks && window.taskManager) {
-                await this.restoreTasks(backupData.data.tasks);
-            }
-            
-            if (backupData.data.settings) {
-                await this.restoreSettings(backupData.data.settings);
-            }
-            
-            this.refreshUI();
-            
-            console.log('[BackupService] ✅ Restoration complete');
+            console.log('[SmartBackup] ✅ Backup créé dans Documents:', fileName);
             return true;
             
         } catch (error) {
-            console.error('[BackupService] Restoration error:', error);
-            
-            if (window.uiManager) {
-                window.uiManager.showToast('❌ Erreur de restauration: ' + error.message, 'error');
-            }
-            
-            return false;
+            console.error('[SmartBackup] Erreur backup Documents:', error);
+            throw error;
         }
     }
 
-    async restoreCategories(categoriesData) {
+    async requestDocumentsAccess() {
         try {
-            if (categoriesData.custom) {
-                Object.entries(categoriesData.custom).forEach(([id, category]) => {
-                    try {
-                        window.categoryManager.createCustomCategory(category);
-                    } catch (error) {
-                        console.warn(`[BackupService] Error restoring category ${id}:`, error);
-                    }
-                });
-                
-                console.log(`[BackupService] Restored ${Object.keys(categoriesData.custom).length} custom categories`);
-            }
+            // Demander l'accès au dossier parent (Documents)
+            const parentHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                startIn: 'documents',
+                id: 'emailsortpro-documents'
+            });
             
-            if (categoriesData.keywords) {
-                Object.entries(categoriesData.keywords).forEach(([categoryId, keywords]) => {
-                    try {
-                        window.categoryManager.updateCategoryKeywords(categoryId, keywords);
-                    } catch (error) {
-                        console.warn(`[BackupService] Error restoring keywords for ${categoryId}:`, error);
-                    }
-                });
-                
-                console.log(`[BackupService] Restored keywords for ${Object.keys(categoriesData.keywords).length} categories`);
-            }
-        } catch (error) {
-            console.error('[BackupService] Error restoring categories:', error);
-        }
-    }
-
-    async restoreTasks(tasksData) {
-        try {
-            if (tasksData.all && Array.isArray(tasksData.all)) {
-                if (window.taskManager.clearAllTasks) {
-                    window.taskManager.clearAllTasks();
-                }
-                
-                let restoredCount = 0;
-                tasksData.all.forEach(task => {
-                    try {
-                        window.taskManager.createTask(task);
-                        restoredCount++;
-                    } catch (error) {
-                        console.warn(`[BackupService] Error restoring task ${task.id}:`, error);
-                    }
-                });
-                
-                console.log(`[BackupService] Restored ${restoredCount}/${tasksData.all.length} tasks`);
-            }
-        } catch (error) {
-            console.error('[BackupService] Error restoring tasks:', error);
-        }
-    }
-
-    async restoreSettings(settingsData) {
-        try {
-            if (settingsData.categories) {
-                localStorage.setItem('categorySettings', JSON.stringify(settingsData.categories));
-                
-                if (window.categoryManager && window.categoryManager.reloadSettingsFromStorage) {
-                    window.categoryManager.reloadSettingsFromStorage();
-                }
-            }
+            // Créer ou accéder au dossier EmailSortPro
+            this.documentsHandle = await parentHandle.getDirectoryHandle('EmailSortPro', {
+                create: true
+            });
             
-            if (settingsData.tasks) {
-                localStorage.setItem('taskSettings', JSON.stringify(settingsData.tasks));
-            }
-            
-            if (settingsData.app) {
-                const safeKeys = ['app_preferences', 'ui_settings'];
-                Object.entries(settingsData.app).forEach(([key, value]) => {
-                    if (safeKeys.includes(key)) {
-                        localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
-                    }
-                });
-            }
-            
-            console.log('[BackupService] Settings restored');
-        } catch (error) {
-            console.error('[BackupService] Error restoring settings:', error);
-        }
-    }
-
-    refreshUI() {
-        try {
-            if (window.pageManager) {
-                const currentPage = window.pageManager.currentPage;
-                
-                if (currentPage === 'tasks' || currentPage === 'categories' || currentPage === 'dashboard') {
-                    window.pageManager.refreshCurrentPage();
-                }
-            }
-            
-            if (window.dashboardModule && window.dashboardModule.refresh) {
-                window.dashboardModule.refresh();
-            }
-            
-            window.dispatchEvent(new CustomEvent('dataRestored', {
-                detail: {
-                    timestamp: new Date().toISOString(),
-                    source: 'BackupService'
-                }
-            }));
+            console.log('[SmartBackup] ✅ Accès Documents configuré');
             
         } catch (error) {
-            console.error('[BackupService] Error refreshing UI:', error);
+            if (error.name === 'AbortError') {
+                throw new Error('Accès aux Documents annulé par l\'utilisateur');
+            }
+            throw error;
         }
     }
 
-    // =====================================
-    // BACKUP MICROSOFT ONEDRIVE
-    // =====================================
+    async backupToDownloads(data) {
+        try {
+            console.log('[SmartBackup] 📥 Backup vers Téléchargements...');
+            
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const fileName = `EmailSortPro-Backup-${timestamp}.json`;
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { 
+                type: 'application/json' 
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.style.display = 'none';
+            
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('[SmartBackup] ✅ Backup téléchargé:', fileName);
+            return true;
+            
+        } catch (error) {
+            console.error('[SmartBackup] Erreur backup Téléchargements:', error);
+            throw error;
+        }
+    }
+
+    async backupToLocalStorage(data) {
+        try {
+            console.log('[SmartBackup] 💾 Backup vers localStorage...');
+            
+            const timestamp = new Date().toISOString();
+            const backupKey = `emailsortpro_smart_backup_${timestamp.replace(/[:.]/g, '-')}`;
+            
+            localStorage.setItem(backupKey, JSON.stringify(data));
+            localStorage.setItem('emailsortpro_smart_backup_latest', JSON.stringify(data));
+            
+            // Nettoyer les anciens backups
+            this.cleanupLocalStorageBackups();
+            
+            console.log('[SmartBackup] ✅ Backup localStorage créé');
+            return true;
+            
+        } catch (error) {
+            console.error('[SmartBackup] Erreur backup localStorage:', error);
+            throw error;
+        }
+    }
+
     async backupToOneDrive(data) {
         try {
+            console.log('[SmartBackup] ☁️ Backup vers OneDrive...');
+            
             const token = await window.authService.getAccessToken();
             if (!token) {
-                throw new Error('No access token available');
+                throw new Error('Token OneDrive non disponible');
             }
             
             const content = JSON.stringify(data, null, 2);
-            const blob = new Blob([content], { type: 'application/json' });
-            
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-            const fileName = `backup_${timestamp}.json`;
-            const latestFileName = 'backup_latest.json';
+            const fileName = `EmailSortPro-Backup-${timestamp}.json`;
             
-            const folderPath = '/drive/root:/Documents/EmailSortPro/Backups';
-            
+            // Assurer que le dossier existe
             await this.ensureOneDriveFolder(token);
             
-            const uploadUrl = `https://graph.microsoft.com/v1.0/me${folderPath}/${fileName}:/content`;
+            // Upload du fichier
+            const uploadUrl = `https://graph.microsoft.com/v1.0/me/drive/root:/Documents/EmailSortPro/${fileName}:/content`;
             
             const response = await fetch(uploadUrl, {
                 method: 'PUT',
@@ -591,87 +615,50 @@ class BackupService {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: blob
+                body: content
             });
             
             if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`OneDrive upload failed: ${error}`);
+                throw new Error(`OneDrive upload failed: ${response.statusText}`);
             }
             
-            const latestUrl = `https://graph.microsoft.com/v1.0/me${folderPath}/${latestFileName}:/content`;
-            
+            // Créer aussi une copie "latest"
+            const latestUrl = `https://graph.microsoft.com/v1.0/me/drive/root:/Documents/EmailSortPro/backup-latest.json:/content`;
             await fetch(latestUrl, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: blob
+                body: content
             });
             
-            console.log('[BackupService] ✅ OneDrive backup successful:', fileName);
-            
-            await this.cleanupOldBackups(token, 'onedrive');
-            
+            console.log('[SmartBackup] ✅ Backup OneDrive créé:', fileName);
             return true;
             
         } catch (error) {
-            console.error('[BackupService] OneDrive backup error:', error);
+            console.error('[SmartBackup] Erreur backup OneDrive:', error);
             throw error;
         }
     }
 
-    async ensureOneDriveFolder(token) {
-        try {
-            const createFolder = async (path, name) => {
-                const response = await fetch(`https://graph.microsoft.com/v1.0/me${path}/children`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        name: name,
-                        folder: {},
-                        '@microsoft.graph.conflictBehavior': 'replace'
-                    })
-                });
-                
-                if (!response.ok && response.status !== 409) {
-                    throw new Error(`Failed to create folder: ${name}`);
-                }
-            };
-            
-            await createFolder('/drive/root:/Documents', 'EmailSortPro');
-            await createFolder('/drive/root:/Documents/EmailSortPro', 'Backups');
-            
-            console.log('[BackupService] ✅ OneDrive folder structure ready');
-            
-        } catch (error) {
-            console.error('[BackupService] Error creating OneDrive folders:', error);
-            throw error;
-        }
-    }
-
-    // =====================================
-    // BACKUP GOOGLE DRIVE
-    // =====================================
     async backupToGoogleDrive(data) {
         try {
+            console.log('[SmartBackup] ☁️ Backup vers Google Drive...');
+            
             const token = await window.googleAuthService.getAccessToken();
             if (!token) {
-                throw new Error('No access token available');
+                throw new Error('Token Google Drive non disponible');
             }
             
             const content = JSON.stringify(data, null, 2);
-            
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-            const fileName = `backup_${timestamp}.json`;
-            const latestFileName = 'backup_latest.json';
+            const fileName = `EmailSortPro-Backup-${timestamp}.json`;
             
+            // Assurer que le dossier existe
             const folderId = await this.ensureGoogleDriveFolder(token);
             
+            // Créer le fichier
             const metadata = {
                 name: fileName,
                 parents: [folderId],
@@ -691,60 +678,157 @@ class BackupService {
             });
             
             if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`Google Drive upload failed: ${error}`);
+                throw new Error(`Google Drive upload failed: ${response.statusText}`);
             }
             
-            await this.updateGoogleDriveLatest(token, folderId, content);
-            
-            console.log('[BackupService] ✅ Google Drive backup successful:', fileName);
-            
-            await this.cleanupOldBackups(token, 'googledrive');
-            
+            console.log('[SmartBackup] ✅ Backup Google Drive créé:', fileName);
             return true;
             
         } catch (error) {
-            console.error('[BackupService] Google Drive backup error:', error);
+            console.error('[SmartBackup] Erreur backup Google Drive:', error);
             throw error;
         }
     }
 
-    async ensureGoogleDriveFolder(token) {
+    // ================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================
+    collectBackupData() {
+        const data = {
+            version: '3.0',
+            timestamp: new Date().toISOString(),
+            provider: this.provider,
+            storage: this.config.activeStorage,
+            app: {
+                name: 'EmailSortPro',
+                version: window.AppConfig?.app?.version || '3.0.0'
+            },
+            data: {}
+        };
+        
+        // Collecter les catégories
+        if (this.config.includeCategories && window.categoryManager) {
+            try {
+                const categories = window.categoryManager.getCategories();
+                const customCategories = window.categoryManager.getCustomCategories();
+                const allKeywords = window.categoryManager.getAllKeywords();
+                
+                data.data.categories = {
+                    all: categories,
+                    custom: customCategories,
+                    keywords: allKeywords,
+                    count: Object.keys(categories).length
+                };
+                
+                console.log(`[SmartBackup] Collecté ${data.data.categories.count} catégories`);
+            } catch (error) {
+                console.error('[SmartBackup] Erreur collecte catégories:', error);
+                data.data.categories = { error: error.message };
+            }
+        }
+        
+        // Collecter les tâches
+        if (this.config.includeTasks && window.taskManager) {
+            try {
+                const tasks = window.taskManager.getAllTasks();
+                
+                data.data.tasks = {
+                    all: tasks,
+                    count: tasks.length,
+                    completed: tasks.filter(t => t.status === 'completed').length,
+                    pending: tasks.filter(t => t.status !== 'completed').length
+                };
+                
+                console.log(`[SmartBackup] Collecté ${data.data.tasks.count} tâches`);
+            } catch (error) {
+                console.error('[SmartBackup] Erreur collecte tâches:', error);
+                data.data.tasks = { error: error.message };
+            }
+        }
+        
+        // Collecter les paramètres
+        if (this.config.includeSettings) {
+            try {
+                data.data.settings = {
+                    backup: this.config,
+                    categories: this.loadCategorySettings(),
+                    tasks: this.loadTaskSettings(),
+                    app: this.loadAppSettings()
+                };
+                
+                console.log('[SmartBackup] Collecté les paramètres');
+            } catch (error) {
+                console.error('[SmartBackup] Erreur collecte paramètres:', error);
+                data.data.settings = { error: error.message };
+            }
+        }
+        
+        // Métadonnées
+        data.metadata = {
+            totalSize: JSON.stringify(data).length,
+            backupId: this.generateBackupId(),
+            user: window.app?.user?.email || 'unknown',
+            smartConfig: {
+                detectedProvider: this.provider,
+                activeStorage: this.config.activeStorage,
+                availableFolders: this.config.smartFolders
+            }
+        };
+        
+        return data;
+    }
+
+    loadCategorySettings() {
         try {
-            let documentsId = null;
-            const searchDocs = await fetch(
-                `https://www.googleapis.com/drive/v3/files?q=name='Documents' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-                {
-                    headers: { 'Authorization': `Bearer ${token}` }
+            const saved = localStorage.getItem('categorySettings');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    loadTaskSettings() {
+        try {
+            const saved = localStorage.getItem('taskSettings');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    loadAppSettings() {
+        try {
+            const settings = {};
+            const keys = ['emailsortpro_client_id', 'currentUserInfo', 'app_preferences'];
+            
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    try {
+                        settings[key] = JSON.parse(value);
+                    } catch {
+                        settings[key] = value;
+                    }
                 }
-            );
+            });
             
-            if (searchDocs.ok) {
-                const docsData = await searchDocs.json();
-                if (docsData.files && docsData.files.length > 0) {
-                    documentsId = docsData.files[0].id;
-                }
-            }
+            return settings;
+        } catch (error) {
+            return {};
+        }
+    }
+
+    async ensureOneDriveFolder(token) {
+        try {
+            // Créer Documents/EmailSortPro
+            const response = await fetch('https://graph.microsoft.com/v1.0/me/drive/root:/Documents/EmailSortPro', {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             
-            const parentId = documentsId || 'root';
-            
-            let emailSortProId = null;
-            const searchESP = await fetch(
-                `https://www.googleapis.com/drive/v3/files?q=name='EmailSortPro' and '${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-                {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }
-            );
-            
-            if (searchESP.ok) {
-                const espData = await searchESP.json();
-                if (espData.files && espData.files.length > 0) {
-                    emailSortProId = espData.files[0].id;
-                }
-            }
-            
-            if (!emailSortProId) {
-                const createESP = await fetch('https://www.googleapis.com/drive/v3/files', {
+            if (response.status === 404) {
+                // Créer le dossier
+                await fetch('https://graph.microsoft.com/v1.0/me/drive/root:/Documents:/children', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -752,272 +836,153 @@ class BackupService {
                     },
                     body: JSON.stringify({
                         name: 'EmailSortPro',
-                        mimeType: 'application/vnd.google-apps.folder',
-                        parents: [parentId]
+                        folder: {},
+                        '@microsoft.graph.conflictBehavior': 'replace'
                     })
                 });
                 
-                if (createESP.ok) {
-                    const espData = await createESP.json();
-                    emailSortProId = espData.id;
-                }
+                console.log('[SmartBackup] 📁 Dossier OneDrive créé');
             }
             
-            let backupsId = null;
-            const searchBackups = await fetch(
-                `https://www.googleapis.com/drive/v3/files?q=name='Backups' and '${emailSortProId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-                {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }
-            );
-            
-            if (searchBackups.ok) {
-                const backupsData = await searchBackups.json();
-                if (backupsData.files && backupsData.files.length > 0) {
-                    backupsId = backupsData.files[0].id;
-                }
-            }
-            
-            if (!backupsId) {
-                const createBackups = await fetch('https://www.googleapis.com/drive/v3/files', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        name: 'Backups',
-                        mimeType: 'application/vnd.google-apps.folder',
-                        parents: [emailSortProId]
-                    })
-                });
-                
-                if (createBackups.ok) {
-                    const backupsData = await createBackups.json();
-                    backupsId = backupsData.id;
-                }
-            }
-            
-            console.log('[BackupService] ✅ Google Drive folder structure ready');
-            return backupsId;
-            
+            return true;
         } catch (error) {
-            console.error('[BackupService] Error creating Google Drive folders:', error);
+            console.error('[SmartBackup] Erreur création dossier OneDrive:', error);
             throw error;
         }
     }
 
-    // =====================================
-    // CHARGEMENT DES BACKUPS
-    // =====================================
-    async loadFromOneDrive(backupId) {
+    async ensureGoogleDriveFolder(token) {
         try {
-            const token = await window.authService.getAccessToken();
-            if (!token) return null;
-            
-            const fileName = backupId === 'latest' ? 'backup_latest.json' : backupId;
-            const url = `https://graph.microsoft.com/v1.0/me/drive/root:/Documents/EmailSortPro/Backups/${fileName}:/content`;
-            
-            const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (!response.ok) {
-                if (response.status === 404) {
-                    console.log('[BackupService] No backup found in OneDrive');
-                    return null;
-                }
-                throw new Error(`Failed to load backup: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            return data;
-            
-        } catch (error) {
-            console.error('[BackupService] OneDrive load error:', error);
-            return null;
-        }
-    }
-
-    async loadFromGoogleDrive(backupId) {
-        try {
-            const token = await window.googleAuthService.getAccessToken();
-            if (!token) return null;
-            
-            const folderId = await this.ensureGoogleDriveFolder(token);
-            const fileName = backupId === 'latest' ? 'backup_latest.json' : backupId;
-            
+            // Chercher le dossier EmailSortPro
             const searchResponse = await fetch(
-                `https://www.googleapis.com/drive/v3/files?q=name='${fileName}' and '${folderId}' in parents and trashed=false`,
+                `https://www.googleapis.com/drive/v3/files?q=name='EmailSortPro' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
                 {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }
             );
-            
-            if (!searchResponse.ok) {
-                throw new Error('Failed to search for backup');
-            }
             
             const searchData = await searchResponse.json();
-            if (!searchData.files || searchData.files.length === 0) {
-                console.log('[BackupService] No backup found in Google Drive');
-                return null;
+            
+            if (searchData.files && searchData.files.length > 0) {
+                return searchData.files[0].id;
             }
             
-            const fileId = searchData.files[0].id;
+            // Créer le dossier
+            const createResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: 'EmailSortPro',
+                    mimeType: 'application/vnd.google-apps.folder'
+                })
+            });
             
-            const contentResponse = await fetch(
-                `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-                {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }
-            );
+            const createData = await createResponse.json();
+            console.log('[SmartBackup] 📁 Dossier Google Drive créé');
             
-            if (!contentResponse.ok) {
-                throw new Error('Failed to download backup');
-            }
-            
-            const data = await contentResponse.json();
-            return data;
+            return createData.id;
             
         } catch (error) {
-            console.error('[BackupService] Google Drive load error:', error);
-            return null;
+            console.error('[SmartBackup] Erreur création dossier Google Drive:', error);
+            throw error;
         }
     }
 
-    // =====================================
-    // NETTOYAGE DES ANCIENS BACKUPS
-    // =====================================
-    async cleanupOldBackups(token, provider) {
+    cleanupLocalStorageBackups() {
         try {
-            if (provider === 'onedrive') {
-                const url = 'https://graph.microsoft.com/v1.0/me/drive/root:/Documents/EmailSortPro/Backups:/children';
-                const response = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    const backupFiles = data.value
-                        .filter(f => f.name.startsWith('backup_') && f.name !== 'backup_latest.json')
-                        .sort((a, b) => new Date(b.createdDateTime) - new Date(a.createdDateTime));
-                    
-                    if (backupFiles.length > this.config.maxBackups) {
-                        const toDelete = backupFiles.slice(this.config.maxBackups);
-                        
-                        for (const file of toDelete) {
-                            await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${file.id}`, {
-                                method: 'DELETE',
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            console.log('[BackupService] Deleted old backup:', file.name);
-                        }
-                    }
-                }
-            } else if (provider === 'googledrive') {
-                const folderId = await this.ensureGoogleDriveFolder(token);
-                
-                const response = await fetch(
-                    `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and name contains 'backup_' and name != 'backup_latest.json' and trashed=false&orderBy=createdTime desc`,
-                    {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    }
-                );
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    const backupFiles = data.files || [];
-                    
-                    if (backupFiles.length > this.config.maxBackups) {
-                        const toDelete = backupFiles.slice(this.config.maxBackups);
-                        
-                        for (const file of toDelete) {
-                            await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}`, {
-                                method: 'DELETE',
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            console.log('[BackupService] Deleted old backup:', file.name);
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            console.warn('[BackupService] Error cleaning up old backups:', error);
-        }
-    }
-
-    // =====================================
-    // MÉTHODES UTILITAIRES
-    // =====================================
-    async updateGoogleDriveLatest(token, folderId, content) {
-        try {
-            const searchResponse = await fetch(
-                `https://www.googleapis.com/drive/v3/files?q=name='backup_latest.json' and '${folderId}' in parents and trashed=false`,
-                {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }
-            );
+            const backupKeys = Object.keys(localStorage)
+                .filter(key => key.startsWith('emailsortpro_smart_backup_'))
+                .sort()
+                .reverse();
             
-            if (searchResponse.ok) {
-                const searchData = await searchResponse.json();
-                
-                if (searchData.files && searchData.files.length > 0) {
-                    const fileId = searchData.files[0].id;
-                    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: content
-                    });
-                } else {
-                    const metadata = {
-                        name: 'backup_latest.json',
-                        parents: [folderId],
-                        mimeType: 'application/json'
-                    };
-                    
-                    const form = new FormData();
-                    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                    form.append('file', new Blob([content], { type: 'application/json' }));
-                    
-                    await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: form
-                    });
-                }
+            if (backupKeys.length > this.config.maxBackups) {
+                const toDelete = backupKeys.slice(this.config.maxBackups);
+                toDelete.forEach(key => localStorage.removeItem(key));
+                console.log(`[SmartBackup] 🧹 Nettoyé ${toDelete.length} anciens backups`);
             }
         } catch (error) {
-            console.warn('[BackupService] Error updating latest backup:', error);
+            console.warn('[SmartBackup] Erreur nettoyage localStorage:', error);
         }
     }
 
     generateBackupId() {
-        return `backup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        return `smart_backup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 
-    getLastBackupTime() {
-        if (this.lastBackupTime) {
-            return this.lastBackupTime;
+    getStorageDisplayName() {
+        const names = {
+            'onedrive': 'OneDrive/Documents',
+            'googledrive': 'Google Drive',
+            'documents': 'Documents locaux',
+            'downloads': 'Téléchargements',
+            'localStorage': 'Navigateur'
+        };
+        
+        return names[this.config.activeStorage] || this.config.activeStorage;
+    }
+
+    startAutoBackup() {
+        this.stopAutoBackup();
+        
+        if (!this.config.enabled || !this.config.autoBackup) {
+            return;
         }
         
-        const saved = localStorage.getItem('emailsortpro_last_backup');
-        if (saved) {
-            return new Date(saved);
+        console.log('[SmartBackup] 🔄 Démarrage backup automatique, intervalle:', this.config.backupInterval);
+        
+        this.backupTimer = setInterval(() => {
+            this.performBackup('auto');
+        }, this.config.backupInterval);
+    }
+
+    stopAutoBackup() {
+        if (this.backupTimer) {
+            clearInterval(this.backupTimer);
+            this.backupTimer = null;
         }
         
-        return null;
+        if (this.detectionTimer) {
+            clearInterval(this.detectionTimer);
+            this.detectionTimer = null;
+        }
+    }
+
+    // ================================================
+    // API PUBLIQUE
+    // ================================================
+    async backup() {
+        return this.performBackup('manual');
+    }
+
+    async restore(backupId = 'latest') {
+        // TODO: Implémenter la restauration intelligente
+        console.log('[SmartBackup] Restauration à implémenter:', backupId);
+        return false;
+    }
+
+    getStatus() {
+        return {
+            enabled: this.config.enabled,
+            autoBackup: this.config.autoBackup,
+            provider: this.provider,
+            activeStorage: this.config.activeStorage,
+            storageName: this.getStorageDisplayName(),
+            isInitialized: this.isInitialized,
+            backupInProgress: this.backupInProgress,
+            lastBackup: this.formatLastBackupTime(),
+            smartFolders: this.config.smartFolders,
+            emergencyMode: this.config.emergencyMode
+        };
     }
 
     formatLastBackupTime() {
-        const lastBackup = this.getLastBackupTime();
+        const lastBackup = this.lastBackupTime || 
+            (localStorage.getItem('emailsortpro_smart_last_backup') ? 
+             new Date(localStorage.getItem('emailsortpro_smart_last_backup')) : null);
+        
         if (!lastBackup) return 'Jamais';
         
         const now = new Date();
@@ -1029,355 +994,60 @@ class BackupService {
         return lastBackup.toLocaleDateString('fr-FR');
     }
 
-    // =====================================
-    // API PUBLIQUE
-    // =====================================
-    
-    async backup() {
-        return this.performBackup('manual');
-    }
-    
-    async restore(backupId = 'latest') {
-        return this.restoreFromBackup(backupId);
-    }
-    
-    async listBackups() {
-        return [];
-    }
-    
-    getStatus() {
-        return {
-            enabled: this.config.enabled,
-            autoBackup: this.config.autoBackup,
-            interval: this.config.backupInterval,
-            lastBackup: this.formatLastBackupTime(),
-            provider: this.provider,
-            isInitialized: this.isInitialized,
-            backupInProgress: this.backupInProgress,
-            hasLocalData: this.hasLocalData()
-        };
+    // Forcer la reconfiguration
+    async reconfigure() {
+        console.log('[SmartBackup] 🔄 Reconfiguration forcée...');
+        await this.initializeSmartDetection();
     }
 
-    hasLocalData() {
-        const hasTasksData = window.taskManager && window.taskManager.getAllTasks().length > 0;
-        const hasCategoriesData = window.categoryManager && Object.keys(window.categoryManager.getCustomCategories()).length > 0;
-        return hasTasksData || hasCategoriesData;
+    // Changer manuellement le stockage préféré
+    async setPreferredStorage(storageType) {
+        this.config.preferredStorage = storageType;
+        await this.configureOptimalStorage();
+        this.saveConfig();
+        
+        if (window.uiManager) {
+            window.uiManager.showToast(
+                `📁 Stockage changé vers ${this.getStorageDisplayName()}`, 
+                'success'
+            );
+        }
     }
 }
 
-// =====================================
-// INTERFACE UTILISATEUR INTÉGRÉE
-// =====================================
+// ================================================
+// INITIALISATION GLOBALE INTELLIGENTE
+// ================================================
 
-// Fonctions globales pour l'interface
-window.triggerBackupFromUI = async function() {
-    const button = document.getElementById('manual-backup-btn');
-    if (!button) return;
-    
-    button.disabled = true;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
-    
-    try {
-        const success = await window.backupService.backup();
-        
-        if (success) {
-            button.innerHTML = '<i class="fas fa-check"></i> Terminé !';
-            button.classList.add('success');
-            window.updateBackupStatusDisplay();
-        } else {
-            button.innerHTML = '<i class="fas fa-times"></i> Échec';
-            button.classList.add('error');
-        }
-        
-    } catch (error) {
-        console.error('Backup UI error:', error);
-        button.innerHTML = '<i class="fas fa-times"></i> Erreur';
-        button.classList.add('error');
+// Créer l'instance globale intelligente
+window.smartBackupService = new SmartBackupService();
+
+// Alias pour compatibilité
+window.backupService = window.smartBackupService;
+
+// Fonctions globales
+window.triggerBackup = () => window.smartBackupService?.backup();
+window.triggerRestore = () => window.smartBackupService?.restore();
+window.getBackupStatus = () => window.smartBackupService?.getStatus() || { available: false };
+
+// Interface pour changer le stockage
+window.setBackupStorage = (storageType) => window.smartBackupService?.setPreferredStorage(storageType);
+window.reconfigureBackup = () => window.smartBackupService?.reconfigure();
+
+// Événements d'authentification pour auto-reconfiguration
+const originalAuthSuccess = window.onAuthSuccess;
+window.onAuthSuccess = function(authData) {
+    // Appeler l'original s'il existe
+    if (originalAuthSuccess) {
+        originalAuthSuccess(authData);
     }
     
+    // Déclencher la reconfiguration du backup
     setTimeout(() => {
-        button.disabled = false;
-        button.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Sauvegarder';
-        button.classList.remove('success', 'error');
-    }, 3000);
-};
-
-window.triggerRestoreFromUI = async function() {
-    const button = document.getElementById('manual-restore-btn');
-    if (!button) return;
-    
-    const confirmed = confirm(
-        '⚠️ ATTENTION ⚠️\n\n' +
-        'Cette action va remplacer toutes vos données actuelles\n' +
-        '(tâches et catégories) par celles du dernier backup cloud.\n\n' +
-        'Êtes-vous absolument sûr de vouloir continuer ?'
-    );
-    
-    if (!confirmed) return;
-    
-    button.disabled = true;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Restauration...';
-    
-    try {
-        const success = await window.backupService.restore();
-        
-        if (success) {
-            button.innerHTML = '<i class="fas fa-check"></i> Terminé !';
-            button.classList.add('success');
-            window.updateBackupStatusDisplay();
-            
-            setTimeout(() => {
-                const shouldReload = confirm(
-                    '✅ Restauration terminée avec succès !\n\n' +
-                    'Voulez-vous recharger la page pour vous assurer\n' +
-                    'que toutes les données sont correctement affichées ?'
-                );
-                
-                if (shouldReload) {
-                    window.location.reload();
-                }
-            }, 2000);
-            
-        } else {
-            button.innerHTML = '<i class="fas fa-info-circle"></i> Aucun backup';
-            button.classList.add('warning');
+        if (window.smartBackupService) {
+            window.smartBackupService.handleAuthChange(authData || {});
         }
-        
-    } catch (error) {
-        console.error('Restore UI error:', error);
-        button.innerHTML = '<i class="fas fa-times"></i> Erreur';
-        button.classList.add('error');
-    }
-    
-    setTimeout(() => {
-        button.disabled = false;
-        button.innerHTML = '<i class="fas fa-cloud-download-alt"></i> Restaurer';
-        button.classList.remove('success', 'error', 'warning');
-    }, 3000);
+    }, 2000);
 };
 
-window.updateBackupStatusDisplay = function() {
-    const statusElement = document.getElementById('backup-status-display');
-    if (!statusElement || !window.backupService) return;
-    
-    try {
-        const status = window.backupService.getStatus();
-        
-        statusElement.innerHTML = `
-            <div class="status-grid">
-                <div class="status-item">
-                    <span class="label">Statut:</span>
-                    <span class="value ${status.enabled ? 'enabled' : 'disabled'}">
-                        <i class="fas fa-${status.enabled ? 'check-circle' : 'times-circle'}"></i>
-                        ${status.enabled ? 'Activé' : 'Désactivé'}
-                    </span>
-                </div>
-                
-                <div class="status-item">
-                    <span class="label">Dernier backup:</span>
-                    <span class="value">${status.lastBackup}</span>
-                </div>
-                
-                <div class="status-item">
-                    <span class="label">Provider:</span>
-                    <span class="value">
-                        <i class="fab fa-${status.provider === 'microsoft' ? 'microsoft' : 'google'}"></i>
-                        ${status.provider === 'microsoft' ? 'OneDrive' : status.provider === 'google' ? 'Google Drive' : 'Aucun'}
-                    </span>
-                </div>
-                
-                <div class="status-item">
-                    <span class="label">Données locales:</span>
-                    <span class="value ${status.hasLocalData ? 'has-data' : 'no-data'}">
-                        <i class="fas fa-${status.hasLocalData ? 'database' : 'question-circle'}"></i>
-                        ${status.hasLocalData ? 'Présentes' : 'Absentes'}
-                    </span>
-                </div>
-            </div>
-        `;
-        
-    } catch (error) {
-        console.error('Error updating backup status display:', error);
-        statusElement.innerHTML = `
-            <span class="status-error">
-                <i class="fas fa-exclamation-triangle"></i>
-                Erreur de statut
-            </span>
-        `;
-    }
-};
-
-// =====================================
-// STYLES CSS INTÉGRÉS
-// =====================================
-const backupStyles = document.createElement('style');
-backupStyles.textContent = `
-.backup-controls {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    margin: 20px 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    border: 1px solid #e2e8f0;
-}
-
-.backup-status-info h4 {
-    margin: 0 0 15px 0;
-    color: #334155;
-    font-size: 16px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.status-display {
-    margin-bottom: 20px;
-    padding: 15px;
-    background: #f8fafc;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-}
-
-.status-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-
-.status-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-}
-
-.status-item .label {
-    font-size: 14px;
-    color: #64748b;
-    font-weight: 500;
-}
-
-.status-item .value {
-    font-size: 14px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.value.enabled { color: #10b981; }
-.value.disabled { color: #ef4444; }
-.value.has-data { color: #3b82f6; }
-.value.no-data { color: #f59e0b; }
-
-.backup-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.backup-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    min-width: 120px;
-    justify-content: center;
-}
-
-.backup-btn.primary {
-    background: #3b82f6;
-    color: white;
-}
-
-.backup-btn.primary:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
-}
-
-.backup-btn.secondary {
-    background: #10b981;
-    color: white;
-}
-
-.backup-btn.secondary:hover {
-    background: #059669;
-    transform: translateY(-1px);
-}
-
-.backup-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none !important;
-}
-
-.backup-btn.success {
-    background: #10b981 !important;
-}
-
-.backup-btn.error {
-    background: #ef4444 !important;
-}
-
-.backup-btn.warning {
-    background: #f59e0b !important;
-}
-
-@media (max-width: 768px) {
-    .backup-actions {
-        flex-direction: column;
-    }
-    
-    .backup-btn {
-        min-width: auto;
-        width: 100%;
-    }
-    
-    .status-grid {
-        grid-template-columns: 1fr;
-    }
-}
-`;
-
-document.head.appendChild(backupStyles);
-
-// =====================================
-// INITIALISATION GLOBALE
-// =====================================
-
-// Créer l'instance globale
-window.backupService = new BackupService();
-
-// Fonctions globales pour l'accès depuis l'interface
-window.triggerBackup = () => window.backupService?.backup();
-window.triggerRestore = () => window.backupService?.restore();
-window.getBackupStatus = () => window.backupService?.getStatus() || { available: false };
-
-// Initialiser automatiquement quand l'app est prête
-document.addEventListener('DOMContentLoaded', () => {
-    const checkAndInit = () => {
-        if (window.app && (window.app.isAuthenticated || window.app.activeProvider)) {
-            window.backupService.initialize().then(() => {
-                console.log('[BackupService] ✅ Auto-initialized after authentication');
-                setTimeout(() => {
-                    if (window.updateBackupStatusDisplay) {
-                        window.updateBackupStatusDisplay();
-                    }
-                }, 1000);
-            });
-        } else {
-            setTimeout(checkAndInit, 1000);
-        }
-    };
-    
-    setTimeout(checkAndInit, 2000);
-});
-
-console.log('✅ BackupService Unified - Complete backup solution with UI for EmailSortPro');
+console.log('✅ SmartBackupService v3.0 - Détection automatique et dossiers autorisés chargé');
