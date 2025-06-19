@@ -95,70 +95,93 @@ class CategoriesPageV23 {
     }
 
     async setupDefaultPath() {
-        console.log('[CategoriesPage] 🎯 Configuration du chemin par défaut...');
+        console.log('[CategoriesPage] 🎯 Configuration automatique du chemin par défaut...');
         
         try {
-            // Essayer de créer/accéder au répertoire par défaut
-            // Commencer par demander accès au répertoire Documents puis créer la structure
+            // CONFIGURATION PAR DÉFAUT SANS DEMANDER À L'UTILISATEUR
+            // Utiliser OPFS comme stockage par défaut (invisible mais persistant)
             
-            const documentsHandle = await window.showDirectoryPicker({
-                mode: 'readwrite',
-                startIn: 'documents',
-                id: 'emailsortpro-default-setup'
-            });
-            
-            // Créer la structure EmailSortPro/Backups/Categories/
-            let emailSortProHandle;
-            try {
-                emailSortProHandle = await documentsHandle.getDirectoryHandle('EmailSortPro', { create: true });
-            } catch (error) {
-                emailSortProHandle = await documentsHandle.getDirectoryHandle('EmailSortPro', { create: true });
+            if ('navigator' in window && 'storage' in navigator && 'getDirectory' in navigator.storage) {
+                // Utiliser OPFS pour créer un stockage par défaut
+                const opfsRoot = await navigator.storage.getDirectory();
+                const backupDir = await opfsRoot.getDirectoryHandle('emailsortpro-categories-backup', { create: true });
+                
+                // Tester l'accès en écriture
+                await this.testDirectoryAccess(backupDir);
+                
+                // Configurer le filesystem avec OPFS
+                this.filesystemConfig.directoryHandle = backupDir;
+                this.filesystemConfig.enabled = true;
+                this.filesystemConfig.permissions = 'granted';
+                this.filesystemConfig.currentPath = 'Stockage Application\\EmailSortPro\\Categories\\';
+                
+                await this.saveFilesystemConfig();
+                
+                // Créer un fichier d'information
+                await this.createDefaultInfo(backupDir);
+                
+                // Créer un backup initial pour tester
+                await this.createFilesystemBackup('setup-default');
+                
+                console.log('[CategoriesPage] ✅ Chemin par défaut OPFS configuré automatiquement');
+                
+                return true;
+            } else {
+                // Fallback : configurer un chemin théorique
+                this.filesystemConfig.currentPath = this.filesystemConfig.defaultPath;
+                this.filesystemConfig.enabled = false;
+                this.filesystemConfig.permissions = 'not-supported';
+                
+                console.log('[CategoriesPage] ⚠️ OPFS non disponible - Chemin théorique configuré');
+                return false;
             }
-            
-            let backupsHandle;
-            try {
-                backupsHandle = await emailSortProHandle.getDirectoryHandle('Backups', { create: true });
-            } catch (error) {
-                backupsHandle = await emailSortProHandle.getDirectoryHandle('Backups', { create: true });
-            }
-            
-            let categoriesHandle;
-            try {
-                categoriesHandle = await backupsHandle.getDirectoryHandle('Categories', { create: true });
-            } catch (error) {
-                categoriesHandle = await backupsHandle.getDirectoryHandle('Categories', { create: true });
-            }
-            
-            // Tester l'accès en écriture
-            await this.testDirectoryAccess(categoriesHandle);
-            
-            // Configurer le filesystem
-            this.filesystemConfig.directoryHandle = categoriesHandle;
-            this.filesystemConfig.enabled = true;
-            this.filesystemConfig.permissions = 'granted';
-            this.filesystemConfig.currentPath = await this.getDirectoryPath(categoriesHandle) || 'Documents\\EmailSortPro\\Backups\\Categories\\';
-            
-            await this.saveFilesystemConfig();
-            
-            // Créer un README dans le dossier
-            await this.createBackupReadme(categoriesHandle);
-            
-            // Créer un backup initial pour tester
-            await this.createFilesystemBackup('setup-default');
-            
-            console.log('[CategoriesPage] ✅ Chemin par défaut configuré:', this.filesystemConfig.currentPath);
-            
-            return true;
             
         } catch (error) {
-            console.log('[CategoriesPage] ⚠️ Impossible de configurer automatiquement - Mode manuel disponible');
+            console.log('[CategoriesPage] ⚠️ Configuration par défaut impossible - Mode backup invisible uniquement');
             
             // Configurer au moins le chemin théorique par défaut
             this.filesystemConfig.currentPath = this.filesystemConfig.defaultPath;
             this.filesystemConfig.enabled = false;
-            this.filesystemConfig.permissions = 'prompt';
+            this.filesystemConfig.permissions = 'error';
             
             return false;
+        }
+    }
+
+    async createDefaultInfo(directoryHandle) {
+        try {
+            const infoContent = `# EmailSortPro - Stockage Automatique des Catégories
+
+Ce dossier est créé automatiquement par EmailSortPro pour sauvegarder vos catégories.
+
+## 🎯 Stockage Par Défaut
+- Stockage invisible dans l'application
+- Sauvegarde automatique toutes les 30 secondes
+- Pas d'intervention utilisateur requise
+
+## 📁 Contenu
+- Sauvegardes automatiques des catégories
+- Configuration des mots-clés et filtres
+- Paramètres de pré-sélection des tâches
+
+## 🔧 Pour Changer l'Emplacement
+Si vous voulez sauvegarder dans un dossier visible sur votre C://:
+1. Allez dans l'onglet "Sauvegarde C://"
+2. Cliquez sur "Changer Répertoire"
+3. Choisissez votre dossier préféré
+
+---
+Configuré automatiquement le ${new Date().toLocaleString('fr-FR')}
+Mode : Stockage application invisible
+`;
+
+            const infoHandle = await directoryHandle.getFileHandle('INFO-Stockage-Automatique.txt', { create: true });
+            const writable = await infoHandle.createWritable();
+            await writable.write(infoContent);
+            await writable.close();
+
+        } catch (error) {
+            console.warn('[CategoriesPage] Impossible de créer le fichier d\'info:', error);
         }
     }
 
@@ -934,53 +957,68 @@ Chemin: ${this.filesystemConfig.currentPath}
                 <div class="filesystem-status-card">
                     <div class="status-header">
                         <div class="status-icon ${isConfigured ? 'active' : 'inactive'}">
-                            <i class="fas fa-${isConfigured ? 'check-circle' : 'exclamation-triangle'}"></i>
+                            <i class="fas fa-${isConfigured ? 'check-circle' : 'cog'}"></i>
                         </div>
                         <div class="status-info">
-                            <h3>Sauvegarde Système de Fichiers ${isConfigured ? 'Configurée' : 'Non Configurée'}</h3>
+                            <h3>Sauvegarde ${isConfigured ? 'Active' : 'Par Défaut'}</h3>
                             <p class="filesystem-path">
                                 <i class="fas fa-folder"></i>
                                 ${currentPath}
                             </p>
                             <p class="filesystem-details">
-                                Dernière sauvegarde : ${lastBackup}
+                                ${isConfigured ? 
+                                  `Dernière sauvegarde : ${lastBackup}` : 
+                                  'Stockage automatique dans l\'application'
+                                }
                                 ${this.filesystemConfig.lastBackupFile ? ` | Fichier : ${this.filesystemConfig.lastBackupFile}` : ''}
                             </p>
                         </div>
                     </div>
                     
                     <div class="status-actions">
-                        ${!isConfigured ? `
-                            <button class="btn-action primary large" onclick="window.categoriesPageV23.configureFilesystem()">
-                                <i class="fas fa-folder-plus"></i>
-                                Configurer Répertoire C://
-                            </button>
-                        ` : `
-                            <button class="btn-action primary" onclick="window.categoriesPageV23.createFullBackup('manual')">
-                                <i class="fas fa-save"></i>
-                                Backup Maintenant
-                            </button>
+                        <button class="btn-action primary" onclick="window.categoriesPageV23.createFullBackup('manual')">
+                            <i class="fas fa-save"></i>
+                            Backup Maintenant
+                        </button>
+                        
+                        ${this.fileSystemSupported ? `
                             <button class="btn-action secondary" onclick="window.categoriesPageV23.changeBackupDirectory()">
                                 <i class="fas fa-folder-open"></i>
-                                Changer Répertoire
+                                ${isConfigured ? 'Changer Répertoire' : 'Configurer Répertoire C://'}
                             </button>
+                        ` : ''}
+                        
+                        ${isConfigured ? `
                             <button class="btn-action secondary" onclick="window.categoriesPageV23.openBackupDirectory()">
                                 <i class="fas fa-external-link-alt"></i>
-                                Ouvrir Dossier
+                                Voir Fichiers
                             </button>
-                        `}
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <!-- Notification de fonctionnement par défaut -->
+                <div class="default-info-card">
+                    <div class="info-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="info-content">
+                        <h4>✅ Backup Automatique Activé</h4>
+                        <p>Vos catégories sont sauvegardées automatiquement ${isConfigured ? 'dans le répertoire configuré' : 'dans le stockage de l\'application'}.
+                           ${!isConfigured && this.fileSystemSupported ? ' Vous pouvez configurer un répertoire C:// personnalisé ci-dessous.' : ''}</p>
                     </div>
                 </div>
                 
                 ${!this.fileSystemSupported ? `
                     <div class="warning-card">
                         <div class="warning-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
+                            <i class="fas fa-info-circle"></i>
                         </div>
                         <div class="warning-content">
-                            <h4>API File System non supportée</h4>
-                            <p>Votre navigateur ne supporte pas l'accès direct au système de fichiers. 
-                               Utilisez un navigateur compatible (Chrome, Edge) pour accéder au C://</p>
+                            <h4>Stockage Application Actif</h4>
+                            <p>Votre navigateur utilise le stockage sécurisé de l'application. 
+                               Vos backups sont automatiquement sauvegardés et protégés.
+                               Pour utiliser un répertoire C:// personnalisé, utilisez Chrome ou Edge.</p>
                         </div>
                     </div>
                 ` : ''}
@@ -1138,48 +1176,49 @@ Chemin: ${this.filesystemConfig.currentPath}
                 </div>
                 
                 <!-- Guide d'utilisation -->
-                ${!isConfigured ? `
+                ${!isConfigured && this.fileSystemSupported ? `
                     <div class="guide-card">
-                        <h4><i class="fas fa-question-circle"></i> Comment configurer l'accès au C:// ?</h4>
+                        <h4><i class="fas fa-lightbulb"></i> Configurer un Répertoire C:// Personnalisé</h4>
                         
                         <div class="guide-steps">
                             <div class="guide-step">
                                 <div class="step-number">1</div>
                                 <div class="step-content">
-                                    <h5>Navigateur Compatible</h5>
-                                    <p>Utilisez Chrome, Edge ou un navigateur basé sur Chromium</p>
+                                    <h5>Cliquer "Configurer Répertoire"</h5>
+                                    <p>Cliquez sur le bouton "Configurer Répertoire C://" ci-dessus</p>
                                 </div>
                             </div>
                             
                             <div class="guide-step">
                                 <div class="step-number">2</div>
                                 <div class="step-content">
-                                    <h5>Cliquer "Configurer"</h5>
-                                    <p>Cliquez sur "Configurer Répertoire C://" ci-dessus</p>
+                                    <h5>Choisir Votre Dossier</h5>
+                                    <p>Sélectionnez ou créez un dossier sur votre disque C:// (ex: C:\\MesBackups\\EmailSortPro)</p>
                                 </div>
                             </div>
                             
                             <div class="guide-step">
                                 <div class="step-number">3</div>
                                 <div class="step-content">
-                                    <h5>Sélectionner Dossier</h5>
-                                    <p>Choisissez ou créez un dossier sur votre C:// (ex: C:\\EmailSortPro\\Backups)</p>
+                                    <h5>Permissions</h5>
+                                    <p>Accordez les permissions de lecture/écriture dans la popup du navigateur</p>
                                 </div>
                             </div>
                             
                             <div class="guide-step">
                                 <div class="step-number">4</div>
                                 <div class="step-content">
-                                    <h5>Permissions</h5>
-                                    <p>Accordez les permissions de lecture/écriture</p>
+                                    <h5>Terminé !</h5>
+                                    <p>Vos backups seront automatiquement sauvegardés dans le dossier choisi</p>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="guide-note">
-                            <i class="fas fa-lightbulb"></i>
-                            <strong>Astuce :</strong> Une fois configuré, tous les backups seront automatiquement 
-                            sauvegardés dans le dossier que vous avez choisi, sans aucune intervention !
+                            <i class="fas fa-shield-alt"></i>
+                            <strong>Note :</strong> Le stockage par défaut fonctionne déjà parfaitement. 
+                            Cette option est uniquement pour ceux qui veulent accéder aux fichiers directement 
+                            depuis l'explorateur Windows.
                         </div>
                     </div>
                 ` : ''}
@@ -2301,8 +2340,37 @@ Chemin: ${this.filesystemConfig.currentPath}
                 background: #fef2f2;
             }
 
-            /* Warning Card */
-            .warning-card {
+            /* Carte d'information par défaut */
+            .default-info-card {
+                background: #f0f9ff;
+                border: 1px solid #bae6fd;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .info-icon {
+                color: #0ea5e9;
+                font-size: 20px;
+                margin-top: 2px;
+            }
+
+            .info-content h4 {
+                font-size: 14px;
+                font-weight: 600;
+                color: #0369a1;
+                margin: 0 0 4px 0;
+            }
+
+            .info-content p {
+                font-size: 13px;
+                color: #0c4a6e;
+                margin: 0;
+                line-height: 1.4;
+            }
                 background: #fffbeb;
                 border: 1px solid #fed7aa;
                 border-radius: 8px;
