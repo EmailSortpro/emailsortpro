@@ -1,4 +1,13 @@
-// CategoriesPage.js - Version 22.1 - DOSSIER PERSONNALISÉ CORRIGÉ
+// ================================================
+    // MÉTHODE AMÉLIORÉE: Stocker dans un dossier personnalisé avec auto-récupération
+    // ================================================
+    async storeInCustomFolder(data, timestamp) {
+        try {
+            if (!this.backupConfig.customFolderHandle) {
+                throw new Error('Aucun dossier sélectionné');
+            }
+            
+            // V// CategoriesPage.js - Version 22.1 - DOSSIER PERSONNALISÉ CORRIGÉ
 console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v22.1 - DOSSIER PERSONNALISÉ FIXÉ...');
 
 // Nettoyer toute instance précédente
@@ -156,24 +165,42 @@ class CategoriesPageV22 {
                         <p>Protégez vos données avec des sauvegardes automatiques</p>
                     </div>
                     
-                    <!-- Status du backup -->
+                    <!-- Status du backup avec alerte mode urgence -->
                     <div class="backup-status">
-                        <div class="status-card ${config.enabled ? 'enabled' : 'disabled'}">
-                            <div class="status-indicator">
-                                <i class="fas fa-${config.enabled ? 'shield-check' : 'shield-times'}"></i>
+                        ${config.emergencyMode ? `
+                            <div class="status-card emergency">
+                                <div class="status-indicator">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="status-info">
+                                    <h3>Mode Sauvegarde d'Urgence</h3>
+                                    <p>Le dossier principal n'est plus accessible. Sauvegardes temporaires activées.</p>
+                                </div>
+                                <div class="status-toggle">
+                                    <button class="btn-fix-emergency" onclick="window.categoriesPageV22.fixEmergencyMode()">
+                                        <i class="fas fa-tools"></i>
+                                        Réparer
+                                    </button>
+                                </div>
                             </div>
-                            <div class="status-info">
-                                <h3>Sauvegarde ${config.enabled ? 'Activée' : 'Désactivée'}</h3>
-                                <p>${config.enabled ? 'Dernière sauvegarde: ' + (backupStats.lastBackup || 'Jamais') : 'Activez pour protéger vos données'}</p>
+                        ` : `
+                            <div class="status-card ${config.enabled ? 'enabled' : 'disabled'}">
+                                <div class="status-indicator">
+                                    <i class="fas fa-${config.enabled ? 'shield-check' : 'shield-times'}"></i>
+                                </div>
+                                <div class="status-info">
+                                    <h3>Sauvegarde ${config.enabled ? 'Activée' : 'Désactivée'}</h3>
+                                    <p>${config.enabled ? 'Dernière sauvegarde: ' + (backupStats.lastBackup || 'Jamais') : 'Activez pour protéger vos données'}</p>
+                                </div>
+                                <div class="status-toggle">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" ${config.enabled ? 'checked' : ''} 
+                                               onchange="window.categoriesPageV22.toggleBackup(this.checked)">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="status-toggle">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" ${config.enabled ? 'checked' : ''} 
-                                           onchange="window.categoriesPageV22.toggleBackup(this.checked)">
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                        </div>
+                        `}
                     </div>
                     
                     <!-- Configuration du backup -->
@@ -203,7 +230,7 @@ class CategoriesPageV22 {
                                     <option value="localStorage" ${config.storage === 'localStorage' ? 'selected' : ''}>Navigateur (localStorage)</option>
                                     <option value="indexedDB" ${config.storage === 'indexedDB' ? 'selected' : ''}>Base de données locale</option>
                                     <option value="download" ${config.storage === 'download' ? 'selected' : ''}>Téléchargement automatique</option>
-                                    <option value="custom-folder" ${config.storage === 'custom-folder' ? 'selected' : ''}>Dossier personnalisé</option>
+                                    <option value="custom-folder" ${config.storage === 'custom-folder' ? 'selected' : ''}>Dossier personnalisé ${config.emergencyMode ? '(⚠️ Mode urgence)' : ''}</option>
                                 </select>
                                 
                                 <!-- Zone d'aide dynamique -->
@@ -333,6 +360,42 @@ class CategoriesPageV22 {
                 </div>
             </div>
         `;
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Réparer le mode urgence
+    // ================================================
+    fixEmergencyMode() {
+        if (confirm(
+            '🔧 RÉPARATION DU SYSTÈME DE SAUVEGARDE\n\n' +
+            'Cette action va :\n' +
+            '• Désactiver le mode urgence\n' +
+            '• Vous permettre de reconfigurer un nouveau dossier\n' +
+            '• Conserver vos sauvegardes d\'urgence existantes\n\n' +
+            'Continuer ?'
+        )) {
+            // Désactiver le mode urgence
+            this.backupConfig.emergencyMode = false;
+            this.backupConfig.emergencyBackupKey = null;
+            this.backupConfig.customFolderHandle = null;
+            this.backupConfig.customFolderPath = null;
+            this.backupConfig.needsFolderCreation = true;
+            
+            // Reconfigurer le dossier par défaut
+            this.setupDefaultProgramFilesFolder(this.backupConfig);
+            
+            this.saveBackupConfig();
+            this.refreshSettingsTab();
+            
+            this.showToast('🔧 Mode urgence désactivé. Reconfiguration disponible.', 'success');
+            
+            // Proposer immédiatement la reconfiguration
+            setTimeout(() => {
+                if (confirm('Voulez-vous configurer un nouveau dossier de sauvegarde maintenant ?')) {
+                    this.selectCustomFolder();
+                }
+            }, 1500);
+        }
     }
 
     // ================================================
@@ -1099,7 +1162,7 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // MÉTHODE AMÉLIORÉE: Stocker dans un dossier personnalisé
+    // MÉTHODE AMÉLIORÉE: Stocker dans un dossier personnalisé avec auto-récupération
     // ================================================
     async storeInCustomFolder(data, timestamp) {
         try {
@@ -1107,11 +1170,48 @@ class CategoriesPageV22 {
                 throw new Error('Aucun dossier sélectionné');
             }
             
+            // Vérifier si le dossier existe encore
+            let folderHandle = this.backupConfig.customFolderHandle;
+            let needsRecreation = false;
+            
+            try {
+                // Test simple d'accès au dossier
+                await folderHandle.queryPermission({ mode: 'readwrite' });
+                
+                // Test plus approfondi : essayer de lire le contenu
+                const entries = folderHandle.entries();
+                await entries.next(); // Juste pour vérifier l'accès
+                
+            } catch (folderError) {
+                console.warn('[Backup] Dossier inaccessible, tentative de récupération:', folderError);
+                needsRecreation = true;
+            }
+            
+            // Si le dossier a été supprimé, essayer de le recréer automatiquement
+            if (needsRecreation) {
+                console.log('[Backup] 🔧 Tentative de récupération automatique du dossier...');
+                
+                try {
+                    folderHandle = await this.autoRecoverFolder();
+                    if (folderHandle) {
+                        this.backupConfig.customFolderHandle = folderHandle;
+                        this.saveBackupConfig();
+                        this.showToast('🔧 Dossier récupéré automatiquement!', 'success');
+                    }
+                } catch (recoveryError) {
+                    console.error('[Backup] Échec de la récupération automatique:', recoveryError);
+                    
+                    // Basculer vers le backup d'urgence
+                    await this.createEmergencyBackup(data, timestamp);
+                    return;
+                }
+            }
+            
             // Vérifier et demander les permissions si nécessaire
-            let permission = await this.backupConfig.customFolderHandle.queryPermission({ mode: 'readwrite' });
+            let permission = await folderHandle.queryPermission({ mode: 'readwrite' });
             
             if (permission !== 'granted') {
-                permission = await this.backupConfig.customFolderHandle.requestPermission({ mode: 'readwrite' });
+                permission = await folderHandle.requestPermission({ mode: 'readwrite' });
                 
                 if (permission !== 'granted') {
                     throw new Error('Permission refusée pour accéder au dossier');
@@ -1132,7 +1232,7 @@ class CategoriesPageV22 {
             }
             
             // Créer le fichier dans le dossier sélectionné
-            const fileHandle = await this.backupConfig.customFolderHandle.getFileHandle(fileName, {
+            const fileHandle = await folderHandle.getFileHandle(fileName, {
                 create: true
             });
             
@@ -1160,40 +1260,195 @@ class CategoriesPageV22 {
         } catch (error) {
             console.error('[Backup] Erreur stockage dossier personnalisé:', error);
             
-            if (error.name === 'NotAllowedError' || error.message.includes('Permission refusée')) {
-                this.showToast('❌ Permission refusée. Le dossier est protégé.', 'error');
-                
-                // Proposer de choisir un nouveau dossier
-                if (confirm('Voulez-vous sélectionner un nouveau dossier ?')) {
-                    // Réinitialiser et relancer la sélection
-                    this.backupConfig.customFolderHandle = null;
-                    this.backupConfig.customFolderPath = null;
-                    this.saveBackupConfig();
-                    
-                    setTimeout(() => this.selectCustomFolder(), 500);
-                }
-                
-            } else if (error.name === 'SecurityError') {
-                this.showToast('❌ Dossier système ou protégé. Choisissez un dossier personnel.', 'error');
-                
-            } else if (error.name === 'QuotaExceededError') {
-                this.showToast('❌ Espace disque insuffisant pour la sauvegarde.', 'error');
-                
-            } else if (error.name === 'InvalidStateError') {
-                this.showToast('❌ Le dossier n\'est plus accessible. Sélectionnez-en un nouveau.', 'error');
-                
-                // Réinitialiser le dossier
-                this.backupConfig.customFolderHandle = null;
-                this.backupConfig.customFolderPath = null;
-                this.saveBackupConfig();
-                
-                const pathInput = document.getElementById('custom-folder-path');
-                if (pathInput) {
-                    pathInput.value = '';
-                }
-                
+            // En cas d'erreur, basculer automatiquement vers le backup d'urgence
+            console.log('[Backup] 🚨 Basculement vers sauvegarde d\'urgence...');
+            await this.createEmergencyBackup(data, timestamp);
+        }
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Récupération automatique du dossier
+    // ================================================
+    async autoRecoverFolder() {
+        try {
+            const originalPath = this.backupConfig.customFolderPath;
+            
+            if (!originalPath) {
+                throw new Error('Aucun chemin d\'origine trouvé');
+            }
+            
+            console.log('[Backup] Tentative de récupération pour:', originalPath);
+            
+            // Essayer de recréer automatiquement selon le type de configuration
+            if (originalPath.includes('Program Files')) {
+                return await this.recreateProgramFilesFolder();
             } else {
-                this.showToast('❌ Erreur lors de la sauvegarde. Vérifiez les permissions du dossier.', 'error');
+                // Pour les autres dossiers, demander à l'utilisateur de re-sélectionner
+                throw new Error('Nécessite re-sélection manuelle');
+            }
+            
+        } catch (error) {
+            console.error('[Backup] Erreur récupération automatique:', error);
+            
+            // Informer l'utilisateur
+            this.showToast('⚠️ Dossier supprimé détecté. Basculement vers sauvegarde d\'urgence.', 'warning');
+            
+            // Proposer la re-configuration
+            setTimeout(() => {
+                if (confirm(
+                    '📁 Le dossier de sauvegarde a été supprimé ou déplacé.\n\n' +
+                    'Voulez-vous reconfigurer un nouveau dossier maintenant ?\n\n' +
+                    '(En attendant, les sauvegardes se font automatiquement dans le navigateur)'
+                )) {
+                    this.selectCustomFolder();
+                }
+            }, 3000);
+            
+            return null;
+        }
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Recréer le dossier Program Files
+    // ================================================
+    async recreateProgramFilesFolder() {
+        try {
+            // Déterminer le bon chemin Program Files
+            const isWindows = navigator.platform.toLowerCase().includes('win');
+            
+            if (!isWindows) {
+                throw new Error('Récupération Program Files uniquement sur Windows');
+            }
+            
+            // Essayer de recréer via l'API File System Access
+            const pickerOptions = {
+                mode: 'readwrite',
+                startIn: 'desktop',
+                id: 'emailsortpro-recovery'
+            };
+            
+            // Dans un contexte de récupération, on peut essayer une approche différente
+            // Mais c'est complexe avec l'API actuelle, donc on va plutôt faire basculer vers l'urgence
+            throw new Error('Récupération automatique Program Files non supportée par le navigateur');
+            
+        } catch (error) {
+            console.error('[Backup] Impossible de recréer Program Files:', error);
+            throw error;
+        }
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Sauvegarde d'urgence
+    // ================================================
+    async createEmergencyBackup(data, timestamp) {
+        try {
+            console.log('[Backup] 🚨 Création d\'une sauvegarde d\'urgence...');
+            
+            // Basculer temporairement vers localStorage
+            const emergencyKey = `emailsortpro_emergency_backup_${timestamp.replace(/[:.]/g, '-')}`;
+            
+            // Stocker en localStorage avec un marquage spécial
+            localStorage.setItem(emergencyKey, data);
+            
+            // Marquer qu'on est en mode urgence
+            this.backupConfig.emergencyMode = true;
+            this.backupConfig.emergencyBackupKey = emergencyKey;
+            this.saveBackupConfig();
+            
+            // Également télécharger automatiquement la sauvegarde
+            this.downloadBackup(data, timestamp);
+            
+            this.showToast('🚨 Sauvegarde d\'urgence créée! Fichier téléchargé automatiquement.', 'warning');
+            
+            // Proposer de reconfigurer le dossier
+            setTimeout(() => {
+                if (confirm(
+                    '🚨 SAUVEGARDE D\'URGENCE ACTIVÉE\n\n' +
+                    'Le dossier de sauvegarde n\'est plus accessible.\n' +
+                    'Vos données sont sécurisées temporairement.\n\n' +
+                    '• Sauvegarde téléchargée automatiquement\n' +
+                    '• Backup temporaire dans le navigateur\n\n' +
+                    'Voulez-vous reconfigurer un nouveau dossier maintenant ?'
+                )) {
+                    this.selectCustomFolder();
+                }
+            }, 2000);
+            
+        } catch (emergencyError) {
+            console.error('[Backup] Erreur sauvegarde d\'urgence:', emergencyError);
+            this.showToast('❌ Erreur critique: Impossible de créer la sauvegarde d\'urgence!', 'error');
+        }
+    }
+
+    // ================================================
+    // MÉTHODE AMÉLIORÉE: Création de backup avec vérification
+    // ================================================
+    async createBackup() {
+        try {
+            this.showToast('Création de la sauvegarde en cours...', 'info');
+            
+            // Vérifier l'état du système de sauvegarde
+            if (this.backupConfig.emergencyMode) {
+                this.showToast('⚠️ Mode urgence actif. Reconfiguration du dossier recommandée.', 'warning');
+            }
+            
+            // Collecter toutes les données
+            const backupData = {
+                timestamp: new Date().toISOString(),
+                version: '22.1',
+                emergencyBackup: this.backupConfig.emergencyMode || false,
+                data: {
+                    categories: this.getCategoriesToBackup(),
+                    tasks: this.getTasksToBackup(),
+                    settings: this.getSettingsToBackup()
+                },
+                metadata: {
+                    totalCategories: Object.keys(window.categoryManager?.getCategories() || {}).length,
+                    totalTasks: this.getTasksCount(),
+                    userAgent: navigator.userAgent,
+                    hostname: window.location.hostname
+                }
+            };
+            
+            // Compresser si activé
+            let dataToStore = JSON.stringify(backupData, null, 2);
+            if (this.backupConfig.compression) {
+                dataToStore = this.compressData(dataToStore);
+            }
+            
+            // Stocker selon la configuration
+            await this.storeBackup(dataToStore, backupData.timestamp);
+            
+            // Mettre à jour la configuration
+            this.backupConfig.lastBackup = backupData.timestamp;
+            this.calculateNextBackup();
+            this.saveBackupConfig();
+            
+            // Nettoyer les anciennes sauvegardes
+            this.cleanupOldBackups();
+            
+            this.showToast('✅ Sauvegarde créée avec succès!', 'success');
+            this.refreshSettingsTab();
+            
+        } catch (error) {
+            console.error('[Backup] Erreur création:', error);
+            this.showToast('❌ Erreur lors de la création de la sauvegarde', 'error');
+            
+            // En dernier recours, créer une sauvegarde d'urgence
+            try {
+                const backupData = {
+                    timestamp: new Date().toISOString(),
+                    version: '22.1-emergency',
+                    data: {
+                        categories: this.getCategoriesToBackup(),
+                        tasks: this.getTasksToBackup(),
+                        settings: this.getSettingsToBackup()
+                    }
+                };
+                
+                await this.createEmergencyBackup(JSON.stringify(backupData, null, 2), backupData.timestamp);
+            } catch (emergencyError) {
+                console.error('[Backup] Échec sauvegarde d\'urgence:', emergencyError);
             }
         }
     }
@@ -2714,6 +2969,50 @@ class CategoriesPageV22 {
             
             .status-card.disabled .status-indicator {
                 background: #EF4444;
+            }
+            
+            /* Status card mode urgence */
+            .status-card.emergency {
+                background: #FEF3C7;
+                border-color: #F59E0B;
+                animation: pulse-warning 2s infinite;
+            }
+            
+            @keyframes pulse-warning {
+                0%, 100% { border-color: #F59E0B; }
+                50% { border-color: #EF4444; }
+            }
+            
+            .status-card.emergency .status-indicator {
+                background: #F59E0B;
+                animation: pulse 1.5s infinite;
+            }
+            
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+            }
+            
+            /* Bouton réparer mode urgence */
+            .btn-fix-emergency {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 12px 20px;
+                background: #EF4444;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            
+            .btn-fix-emergency:hover {
+                background: #DC2626;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
             }
             
             .status-info {
