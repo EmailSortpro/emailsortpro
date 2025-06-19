@@ -12,6 +12,12 @@
             this.lastBackupTime = null;
             this.documentsHandle = null;
             this.documentsAccessGranted = false;
+            this.timers = {
+                auto: null,
+                daily: null,
+                cloud: null,
+                queue: null
+            };
             
             // Configuration CACHE FIRST
             this.config = {
@@ -1011,6 +1017,16 @@
         startAutoTimers() {
             console.log('[Backup] ⏰ Timers automatiques...');
             
+            // S'assurer que timers existe
+            if (!this.timers) {
+                this.timers = {
+                    auto: null,
+                    daily: null,
+                    cloud: null,
+                    queue: null
+                };
+            }
+            
             this.timers.auto = setInterval(() => {
                 this.queueBackup('auto', 40);
             }, this.config.intervals.auto);
@@ -1122,9 +1138,11 @@
         }
 
         stopTimers() {
-            Object.values(this.timers).forEach(timer => {
-                if (timer) clearInterval(timer);
-            });
+            if (this.timers) {
+                Object.values(this.timers).forEach(timer => {
+                    if (timer) clearInterval(timer);
+                });
+            }
             
             if (this.changeTimeout) {
                 clearTimeout(this.changeTimeout);
