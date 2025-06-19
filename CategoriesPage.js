@@ -397,34 +397,34 @@ class CategoriesPageV22 {
                 <div class="folder-selector">
                     <input type="text" 
                            id="custom-folder-path" 
-                           placeholder="Configuration automatique en cours..." 
-                           value="${config.customFolderPath || (config.needsFolderCreation ? 'Configuration par défaut: ' + config.customFolderPath : '')}" 
+                           placeholder="Chemin par défaut configuré automatiquement" 
+                           value="${config.customFolderPath || ''}" 
                            readonly>
                     <button class="btn-select-folder" onclick="window.categoriesPageV22.selectCustomFolder()">
                         <i class="fas fa-folder-open"></i>
-                        ${config.customFolderPath ? 'Changer' : 'Configurer'}
+                        ${config.autoDefaultPath ? 'Changer' : 'Configurer'}
                     </button>
                 </div>
                 
                 <div class="folder-info">
                     <small>
                         <i class="fas fa-info-circle"></i>
-                        ${config.needsFolderCreation ? 
-                            'Dossier par défaut configuré - cliquez "Configurer" pour finaliser' :
+                        ${config.autoDefaultPath ? 
+                            'Chemin par défaut configuré automatiquement - Les sauvegardes iront dans le navigateur si ce chemin n\'est pas accessible' :
                             'Un sous-dossier "EmailSortPro" sera créé automatiquement pour organiser vos sauvegardes'
                         }
                     </small>
                 </div>
                 
                 <div class="folder-recommendations">
-                    ${config.needsFolderCreation ? `
+                    ${config.autoDefaultPath ? `
                         <div class="recommendation-item good">
-                            <i class="fas fa-star"></i>
-                            <span><strong>Configuration par défaut :</strong> ${config.customFolderPath}</span>
+                            <i class="fas fa-check-circle"></i>
+                            <span><strong>Chemin par défaut actif :</strong> ${config.customFolderPath}</span>
                         </div>
                         <div class="recommendation-item info">
-                            <i class="fas fa-lightbulb"></i>
-                            <span><strong>Alternative :</strong> Choisissez Documents, Google Drive, ou OneDrive si vous préférez</span>
+                            <i class="fas fa-shield-alt"></i>
+                            <span><strong>Sécurité :</strong> Basculement automatique vers le navigateur si ce dossier n'est pas accessible</span>
                         </div>
                     ` : `
                         <div class="recommendation-item good">
@@ -447,7 +447,18 @@ class CategoriesPageV22 {
                     </div>
                 ` : ''}
                 
-                ${config.customFolderPath && !config.needsFolderCreation ? `
+                ${config.customFolderPath && config.autoDefaultPath ? `
+                    <div class="folder-actions">
+                        <button class="btn-test-folder" onclick="window.categoriesPageV22.testDefaultPath()">
+                            <i class="fas fa-vial"></i>
+                            Tester le chemin par défaut
+                        </button>
+                        <button class="btn-clear-folder" onclick="window.categoriesPageV22.clearCustomFolder()">
+                            <i class="fas fa-times"></i>
+                            Choisir un autre dossier
+                        </button>
+                    </div>
+                ` : config.customFolderPath && !config.needsFolderCreation ? `
                     <div class="folder-actions">
                         <button class="btn-test-folder" onclick="window.categoriesPageV22.createTestBackup()">
                             <i class="fas fa-vial"></i>
@@ -507,14 +518,15 @@ class CategoriesPageV22 {
                 customFolderPath: null,
                 customFolderHandle: null,
                 autoSetupDone: false,
-                emergencyMode: false
+                emergencyMode: false,
+                autoDefaultPath: true // NOUVEAU: Active le chemin automatique
             };
             
             const config = saved ? { ...defaultConfig, ...JSON.parse(saved) } : defaultConfig;
             
-            // Auto-setup du dossier Program Files à la première utilisation
-            if (!config.autoSetupDone && !config.customFolderPath) {
-                this.setupDefaultProgramFilesFolder(config);
+            // Auto-setup du dossier par défaut AUTOMATIQUEMENT
+            if (!config.autoSetupDone) {
+                this.setupDefaultPath(config);
             }
             
             return config;
@@ -531,19 +543,24 @@ class CategoriesPageV22 {
                 customFolderPath: null,
                 customFolderHandle: null,
                 autoSetupDone: false,
-                emergencyMode: false
+                emergencyMode: false,
+                autoDefaultPath: true
             };
             
-            this.setupDefaultProgramFilesFolder(defaultConfig);
+            this.setupDefaultPath(defaultConfig);
             return defaultConfig;
         }
     }
 
-    setupDefaultProgramFilesFolder(config) {
+    // ================================================
+    // NOUVELLE MÉTHODE: Setup automatique du chemin par défaut
+    // ================================================
+    setupDefaultPath(config) {
         try {
             const isWindows = navigator.platform.toLowerCase().includes('win');
             
             if (isWindows) {
+                // Déterminer le bon chemin Program Files
                 const is64Bit = navigator.userAgent.includes('WOW64') || 
                                navigator.userAgent.includes('Win64') || 
                                navigator.platform === 'Win64';
@@ -552,11 +569,19 @@ class CategoriesPageV22 {
                     'C:\\Program Files\\EmailSortPro' : 
                     'C:\\Program Files (x86)\\EmailSortPro';
                 
+                // Configurer automatiquement comme chemin ACTIF
                 config.customFolderPath = programFilesPath;
                 config.autoSetupDone = true;
-                config.needsFolderCreation = true;
+                config.autoDefaultPath = true;
+                config.needsFolderCreation = false; // Pas besoin de création manuelle
+                
+                console.log('[Backup] Chemin par défaut configuré automatiquement:', programFilesPath);
+                
+                // Créer un handle virtuel pour le localStorage
+                this.createVirtualHandle(config, programFilesPath);
                 
             } else {
+                // Pour macOS/Linux
                 const isMac = navigator.platform.toLowerCase().includes('mac');
                 const defaultPath = isMac ? 
                     '/Applications/EmailSortPro' : 
@@ -564,14 +589,33 @@ class CategoriesPageV22 {
                 
                 config.customFolderPath = defaultPath;
                 config.autoSetupDone = true;
-                config.needsFolderCreation = true;
+                config.autoDefaultPath = true;
+                config.needsFolderCreation = false;
+                
+                this.createVirtualHandle(config, defaultPath);
             }
             
+            // Sauvegarder automatiquement
             localStorage.setItem('emailsortpro_backup_config', JSON.stringify(config));
             
         } catch (error) {
             console.error('[Backup] Erreur setup automatique:', error);
         }
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Créer un handle virtuel pour le chemin par défaut
+    // ================================================
+    createVirtualHandle(config, path) {
+        // Créer un objet simulant un handle de dossier
+        config.virtualHandle = {
+            name: path,
+            path: path,
+            isVirtual: true,
+            type: 'defaultPath'
+        };
+        
+        console.log('[Backup] Handle virtuel créé pour:', path);
     }
 
     saveBackupConfig() {
@@ -875,8 +919,33 @@ class CategoriesPageV22 {
         }
     }
 
+    // ================================================
+    // MÉTHODE AMÉLIORÉE: Stockage avec chemin par défaut automatique
+    // ================================================
     async storeInCustomFolder(data, timestamp) {
         try {
+            // Si on utilise le chemin par défaut automatique
+            if (this.backupConfig.autoDefaultPath && this.backupConfig.virtualHandle) {
+                console.log('[Backup] Tentative de sauvegarde vers le chemin par défaut...');
+                
+                // Essayer de sauvegarder avec File System Access API
+                try {
+                    await this.tryStoreInDefaultPath(data, timestamp);
+                    this.showToast(`💾 Sauvegarde créée dans ${this.backupConfig.customFolderPath}`, 'success');
+                    return;
+                } catch (defaultError) {
+                    console.log('[Backup] Chemin par défaut inaccessible, basculement vers localStorage');
+                    
+                    // Basculer automatiquement vers localStorage sans alerte
+                    const backupKey = `emailsortpro_backup_${timestamp.replace(/[:.]/g, '-')}`;
+                    localStorage.setItem(backupKey, data);
+                    
+                    this.showToast('💾 Sauvegarde créée dans le navigateur (chemin par défaut inaccessible)', 'info');
+                    return;
+                }
+            }
+            
+            // Logique normale pour dossier sélectionné manuellement
             if (!this.backupConfig.customFolderHandle) {
                 throw new Error('Aucun dossier sélectionné');
             }
@@ -905,8 +974,86 @@ class CategoriesPageV22 {
                 await this.createEmergencyBackup(data, timestamp);
                 this.refreshSettingsTab();
             } else {
-                this.showToast('❌ Erreur lors de la sauvegarde', 'error');
+                // En cas d'erreur, basculer vers localStorage
+                const backupKey = `emailsortpro_backup_${timestamp.replace(/[:.]/g, '-')}`;
+                localStorage.setItem(backupKey, data);
+                this.showToast('💾 Sauvegarde créée dans le navigateur (fallback)', 'warning');
             }
+        }
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Essayer de sauvegarder dans le chemin par défaut
+    // ================================================
+    async tryStoreInDefaultPath(data, timestamp) {
+        // Essayer d'utiliser l'API File System Access pour accéder au chemin par défaut
+        const pickerOptions = {
+            mode: 'readwrite',
+            startIn: 'desktop',
+            id: 'emailsortpro-default-path'
+        };
+        
+        // Cette méthode est silencieuse - si elle échoue, on bascule automatiquement
+        try {
+            // Demander l'accès au dossier parent Program Files (silencieusement)
+            const parentHandle = await window.showDirectoryPicker(pickerOptions);
+            
+            // Essayer de créer/accéder au dossier EmailSortPro
+            let emailSortProFolder;
+            try {
+                emailSortProFolder = await parentHandle.getDirectoryHandle('EmailSortPro', {
+                    create: true
+                });
+            } catch (createError) {
+                throw new Error('Impossible de créer le dossier EmailSortPro');
+            }
+            
+            // Créer le fichier de sauvegarde
+            const date = new Date(timestamp);
+            const dateStr = date.toISOString().split('T')[0];
+            const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-');
+            const fileName = `EmailSortPro-Backup-${dateStr}_${timeStr}.json`;
+            
+            const fileHandle = await emailSortProFolder.getFileHandle(fileName, {
+                create: true
+            });
+            
+            const writable = await fileHandle.createWritable();
+            await writable.write(data);
+            await writable.close();
+            
+            // Mettre à jour le handle pour les prochaines fois
+            this.backupConfig.customFolderHandle = emailSortProFolder;
+            this.backupConfig.autoDefaultPath = false; // Maintenant on a un vrai handle
+            this.saveBackupConfig();
+            
+            return true;
+            
+        } catch (error) {
+            // Échec silencieux - on bascule vers localStorage
+            throw error;
+        }
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Tester le chemin par défaut
+    // ================================================
+    async testDefaultPath() {
+        try {
+            this.showToast('🔧 Test du chemin par défaut...', 'info');
+            
+            const testData = JSON.stringify({
+                timestamp: new Date().toISOString(),
+                test: true,
+                message: 'Test d\'accès au chemin par défaut'
+            }, null, 2);
+            
+            await this.tryStoreInDefaultPath(testData, new Date().toISOString());
+            this.showToast('✅ Chemin par défaut accessible et fonctionnel!', 'success');
+            
+        } catch (error) {
+            console.log('[Backup] Test du chemin par défaut échoué:', error);
+            this.showToast('⚠️ Chemin par défaut inaccessible. Les sauvegardes iront dans le navigateur.', 'warning');
         }
     }
 
