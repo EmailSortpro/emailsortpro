@@ -72,7 +72,9 @@ class CategoriesPageV23 {
         console.log('[CategoriesPage] 🗂️ Initialisation système de fichiers...');
         
         if (!this.fileSystemSupported) {
-            console.warn('[CategoriesPage] ⚠️ File System Access API non supportée');
+            console.warn('[CategoriesPage] ⚠️ File System Access API non supportée - Configuration chemin par défaut');
+            // Même sans API, configurer un chemin par défaut pour information
+            this.filesystemConfig.currentPath = this.filesystemConfig.defaultPath;
             return;
         }
 
@@ -80,13 +82,127 @@ class CategoriesPageV23 {
             // Essayer de restaurer un accès précédent
             await this.restorePreviousDirectoryAccess();
             
-            // Si pas d'accès précédent, proposer l'auto-configuration
+            // NOUVEAU: Configuration automatique du chemin par défaut
             if (!this.filesystemConfig.directoryHandle) {
-                await this.attemptAutoConfiguration();
+                await this.setupDefaultPath();
             }
             
         } catch (error) {
-            console.log('[CategoriesPage] 📁 Configuration filesystem en attente:', error.message);
+            console.log('[CategoriesPage] 📁 Configuration filesystem:', error.message);
+            // Configurer le chemin par défaut même en cas d'erreur
+            this.filesystemConfig.currentPath = this.filesystemConfig.defaultPath;
+        }
+    }
+
+    async setupDefaultPath() {
+        console.log('[CategoriesPage] 🎯 Configuration du chemin par défaut...');
+        
+        try {
+            // Essayer de créer/accéder au répertoire par défaut
+            // Commencer par demander accès au répertoire Documents puis créer la structure
+            
+            const documentsHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                startIn: 'documents',
+                id: 'emailsortpro-default-setup'
+            });
+            
+            // Créer la structure EmailSortPro/Backups/Categories/
+            let emailSortProHandle;
+            try {
+                emailSortProHandle = await documentsHandle.getDirectoryHandle('EmailSortPro', { create: true });
+            } catch (error) {
+                emailSortProHandle = await documentsHandle.getDirectoryHandle('EmailSortPro', { create: true });
+            }
+            
+            let backupsHandle;
+            try {
+                backupsHandle = await emailSortProHandle.getDirectoryHandle('Backups', { create: true });
+            } catch (error) {
+                backupsHandle = await emailSortProHandle.getDirectoryHandle('Backups', { create: true });
+            }
+            
+            let categoriesHandle;
+            try {
+                categoriesHandle = await backupsHandle.getDirectoryHandle('Categories', { create: true });
+            } catch (error) {
+                categoriesHandle = await backupsHandle.getDirectoryHandle('Categories', { create: true });
+            }
+            
+            // Tester l'accès en écriture
+            await this.testDirectoryAccess(categoriesHandle);
+            
+            // Configurer le filesystem
+            this.filesystemConfig.directoryHandle = categoriesHandle;
+            this.filesystemConfig.enabled = true;
+            this.filesystemConfig.permissions = 'granted';
+            this.filesystemConfig.currentPath = await this.getDirectoryPath(categoriesHandle) || 'Documents\\EmailSortPro\\Backups\\Categories\\';
+            
+            await this.saveFilesystemConfig();
+            
+            // Créer un README dans le dossier
+            await this.createBackupReadme(categoriesHandle);
+            
+            // Créer un backup initial pour tester
+            await this.createFilesystemBackup('setup-default');
+            
+            console.log('[CategoriesPage] ✅ Chemin par défaut configuré:', this.filesystemConfig.currentPath);
+            
+            return true;
+            
+        } catch (error) {
+            console.log('[CategoriesPage] ⚠️ Impossible de configurer automatiquement - Mode manuel disponible');
+            
+            // Configurer au moins le chemin théorique par défaut
+            this.filesystemConfig.currentPath = this.filesystemConfig.defaultPath;
+            this.filesystemConfig.enabled = false;
+            this.filesystemConfig.permissions = 'prompt';
+            
+            return false;
+        }
+    }
+
+    async createBackupReadme(directoryHandle) {
+        try {
+            const readmeContent = `# EmailSortPro - Backups des Catégories
+
+Ce dossier contient les sauvegardes automatiques de vos catégories EmailSortPro.
+
+## 📁 Contenu
+- Fichiers de backup horodatés (EmailSortPro-Categories-YYYY-MM-DD_HH-MM-SS.json)
+- Fichier LATEST-Categories-Backup.json (dernière sauvegarde)
+- Ce fichier README pour information
+
+## 🔄 Fonctionnement
+- Sauvegarde automatique toutes les 30 secondes en cas de changement
+- Conservation des ${this.backupConfig.maxBackups} derniers fichiers
+- Format JSON avec toutes les données des catégories
+
+## 📋 Contenu des backups
+- Toutes les catégories et leurs paramètres
+- Mots-clés (absolus, forts, faibles, exclusions)
+- Filtres (domaines, emails autorisés/exclus)
+- Paramètres de pré-sélection pour les tâches
+- Statistiques et métadonnées
+
+## 🔧 Utilisation
+- Les backups se font automatiquement
+- Vous pouvez restaurer depuis l'interface EmailSortPro
+- Les fichiers sont lisibles en JSON standard
+
+---
+Généré automatiquement par EmailSortPro v23.0
+Date de création: ${new Date().toLocaleString('fr-FR')}
+Chemin: ${this.filesystemConfig.currentPath}
+`;
+
+            const readmeHandle = await directoryHandle.getFileHandle('README-Categories-Backup.txt', { create: true });
+            const writable = await readmeHandle.createWritable();
+            await writable.write(readmeContent);
+            await writable.close();
+
+        } catch (error) {
+            console.warn('[CategoriesPage] Impossible de créer README:', error);
         }
     }
 
@@ -1282,9 +1398,192 @@ class CategoriesPageV23 {
         `;
     }
 
-    // Méthodes stub simplifiées pour compatibilité
     renderCategoriesTab(categories, settings) {
-        return `<div class="categories-content">Interface catégories simplifiée pour économiser l'espace</div>`;
+        const filtered = this.filterCategories(categories);
+        const activeCategories = settings.activeCategories;
+        
+        return `
+            <!-- Stats rapides -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #3B82F6;">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">${Object.keys(categories).length}</div>
+                        <div class="stat-label">Total catégories</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #10B981;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">${this.getActiveCount(categories, activeCategories)}</div>
+                        <div class="stat-label">Catégories actives</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #F59E0B;">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div class="stat-info">
+                        <div class="stat-number">${this.getTotalKeywords(categories)}</div>
+                        <div class="stat-label">Mots-clés totaux</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Barre de recherche -->
+            <div class="search-section">
+                <div class="search-input">
+                    <i class="fas fa-search"></i>
+                    <input type="text" 
+                           placeholder="Rechercher une catégorie..." 
+                           onkeyup="window.categoriesPageV23.handleSearch(this.value)">
+                </div>
+            </div>
+            
+            <!-- Grille des catégories -->
+            <div class="categories-grid" id="categories-container">
+                ${this.renderCategories(categories, activeCategories)}
+            </div>
+        `;
+    }
+
+    renderCategories(categories, activeCategories) {
+        const filtered = this.filterCategories(categories);
+        
+        console.log('[CategoriesPage] 🏷️ Rendu des catégories:', {
+            total: Object.keys(categories).length,
+            filtered: Object.keys(filtered).length,
+            searchTerm: this.searchTerm
+        });
+        
+        if (Object.keys(filtered).length === 0) {
+            return `
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <h3>Aucune catégorie trouvée</h3>
+                    <p>Commencez par créer votre première catégorie</p>
+                    ${this.searchTerm ? `
+                        <button class="btn-secondary" onclick="window.categoriesPageV23.handleSearch('')">
+                            Effacer la recherche
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        // Calculer les statistiques pour chaque catégorie
+        const emailStats = this.calculateEmailStats();
+        console.log('[CategoriesPage] 📊 Statistiques emails:', emailStats);
+        
+        // Rendu des cartes de catégories
+        const categoryCards = Object.entries(filtered)
+            .map(([id, category]) => this.renderCategoryCard(id, category, activeCategories, emailStats[id] || 0))
+            .join('');
+        
+        // Ajouter la catégorie "Autre" si elle n'existe pas mais a des emails
+        const otherCount = emailStats.other || 0;
+        let otherCard = '';
+        
+        if (otherCount > 0 && !filtered.other) {
+            console.log(`[CategoriesPage] 📌 Ajout carte "Autre" avec ${otherCount} emails`);
+            
+            const isActive = activeCategories === null || activeCategories.includes('other');
+            const settings = this.loadSettings();
+            const isPreselected = settings.taskPreselectedCategories?.includes('other') || false;
+            
+            otherCard = `
+                <div class="category-card ${!isActive ? 'inactive' : ''}" 
+                     data-id="other"
+                     onclick="window.categoriesPageV23.showOtherCategoryInfo()">
+                    
+                    <div class="card-header">
+                        <div class="category-icon" style="background: #64748b;">
+                            <i class="fas fa-question"></i>
+                        </div>
+                        <div class="category-info">
+                            <div class="category-name">Autre</div>
+                            <div class="category-meta">
+                                <span class="keyword-count">0 mots-clés</span>
+                                <span class="email-count">${otherCount} emails</span>
+                                <span class="category-desc">Non catégorisés</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-actions" onclick="event.stopPropagation()">
+                        <button class="action-btn-small ${isActive ? 'active' : 'inactive'}" 
+                                onclick="window.categoriesPageV23.toggleOtherCategory()"
+                                title="Les emails 'Autre' sont toujours visibles">
+                            <i class="fas fa-${isActive ? 'eye' : 'eye-slash'}"></i>
+                        </button>
+                        <button class="action-btn-small ${isPreselected ? 'selected' : ''}" 
+                                onclick="window.categoriesPageV23.togglePreselection('other')"
+                                title="Pré-sélection tâches">
+                            <i class="fas fa-${isPreselected ? 'check' : 'square'}"></i>
+                        </button>
+                        <button class="action-btn-small" 
+                                onclick="window.categoriesPageV23.showOtherCategoryInfo()">
+                            <i class="fas fa-info"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        return categoryCards + otherCard;
+    }
+
+    renderCategoryCard(id, category, activeCategories, emailCount) {
+        const isActive = activeCategories === null || activeCategories.includes(id);
+        const stats = this.getCategoryStats(id);
+        const settings = this.loadSettings();
+        const isPreselected = settings.taskPreselectedCategories?.includes(id) || false;
+        
+        return `
+            <div class="category-card ${!isActive ? 'inactive' : ''}" 
+                 data-id="${id}"
+                 onclick="window.categoriesPageV23.openModal('${id}')">
+                
+                <div class="card-header">
+                    <div class="category-icon" style="background: ${category.color};">
+                        <i class="fas fa-${this.getCategoryIcon(category.icon)}"></i>
+                    </div>
+                    <div class="category-info">
+                        <div class="category-name">${category.name}</div>
+                        <div class="category-meta">
+                            <span class="keyword-count">${stats.keywords} mots-clés</span>
+                            <span class="email-count">${emailCount} emails</span>
+                            ${stats.absolute > 0 ? `<span class="absolute-count">★ ${stats.absolute} absolus</span>` : ''}
+                        </div>
+                        <div class="category-desc">${category.description || 'Catégorie personnalisée'}</div>
+                    </div>
+                </div>
+                
+                <div class="card-actions" onclick="event.stopPropagation()">
+                    <button class="action-btn-small ${isActive ? 'active' : 'inactive'}" 
+                            onclick="window.categoriesPageV23.toggleCategory('${id}')"
+                            title="${isActive ? 'Catégorie active' : 'Catégorie désactivée'}">
+                        <i class="fas fa-${isActive ? 'eye' : 'eye-slash'}"></i>
+                    </button>
+                    <button class="action-btn-small ${isPreselected ? 'selected' : ''}" 
+                            onclick="window.categoriesPageV23.togglePreselection('${id}')"
+                            title="${isPreselected ? 'Pré-sélectionnée pour les tâches' : 'Non pré-sélectionnée'}">
+                        <i class="fas fa-${isPreselected ? 'check' : 'square'}"></i>
+                    </button>
+                    <button class="action-btn-small" 
+                            onclick="window.categoriesPageV23.openModal('${id}')"
+                            title="Configurer la catégorie">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+        `;
     }
 
     switchTab(tabName) {
@@ -1307,12 +1606,535 @@ class CategoriesPageV23 {
         // Mettre à jour les informations de backup en temps réel
     }
 
-    showCreateModal() {
-        console.log('[CategoriesPage] Ouverture modal création');
+    // ================================================
+    // FONCTIONS COMPLÈTES DES CATÉGORIES
+    // ================================================
+    
+    toggleCategory(categoryId) {
+        console.log(`[CategoriesPage] 🔄 Toggle catégorie: ${categoryId}`);
+        
+        const settings = this.loadSettings();
+        let activeCategories = settings.activeCategories || null;
+        
+        if (activeCategories === null) {
+            // Si null, toutes sont actives - créer la liste sans celle-ci
+            const allCategories = Object.keys(window.categoryManager?.getCategories() || {});
+            activeCategories = allCategories.filter(id => id !== categoryId);
+        } else {
+            // Basculer l'état
+            if (activeCategories.includes(categoryId)) {
+                activeCategories = activeCategories.filter(id => id !== categoryId);
+            } else {
+                activeCategories.push(categoryId);
+            }
+        }
+        
+        settings.activeCategories = activeCategories;
+        this.saveSettings(settings);
+        
+        // Notifier CategoryManager
+        if (window.categoryManager && window.categoryManager.updateActiveCategories) {
+            window.categoryManager.updateActiveCategories(activeCategories);
+        }
+        
+        this.updateCategoriesDisplay();
+        
+        const category = window.categoryManager?.getCategory(categoryId);
+        const isActive = activeCategories.includes(categoryId);
+        this.showToast(`${category?.name || categoryId} ${isActive ? 'activée' : 'désactivée'}`, 'info');
+        
+        // Déclencher un backup automatique
+        this.onCategoriesChanged('toggle-category');
     }
 
-    showRestoreDialog() {
-        console.log('[CategoriesPage] Ouverture dialog restauration');
+    togglePreselection(categoryId) {
+        console.log(`[CategoriesPage] ⭐ Toggle pré-sélection: ${categoryId}`);
+        
+        const settings = this.loadSettings();
+        let taskPreselectedCategories = settings.taskPreselectedCategories || [];
+        
+        const isPreselected = taskPreselectedCategories.includes(categoryId);
+        
+        if (isPreselected) {
+            taskPreselectedCategories = taskPreselectedCategories.filter(id => id !== categoryId);
+        } else {
+            taskPreselectedCategories.push(categoryId);
+        }
+        
+        settings.taskPreselectedCategories = taskPreselectedCategories;
+        this.saveSettings(settings);
+        
+        // Synchroniser avec tous les modules
+        this.syncTaskPreselectedCategories(taskPreselectedCategories);
+        
+        this.updateCategoriesDisplay();
+        
+        const category = window.categoryManager?.getCategory(categoryId);
+        const message = isPreselected ? 
+            `☐ ${category?.name || categoryId} - Pré-sélection désactivée` : 
+            `☑️ ${category?.name || categoryId} - Pré-sélection activée`;
+        this.showToast(message, 'info');
+        
+        // Déclencher un backup automatique
+        this.onCategoriesChanged('toggle-preselection');
+    }
+
+    syncTaskPreselectedCategories(categories) {
+        console.log('[CategoriesPage] 🔄 Synchronisation pré-sélections:', categories);
+        
+        // CategoryManager
+        if (window.categoryManager && typeof window.categoryManager.updateTaskPreselectedCategories === 'function') {
+            window.categoryManager.updateTaskPreselectedCategories(categories);
+        }
+        
+        // EmailScanner
+        if (window.emailScanner && typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
+            window.emailScanner.updateTaskPreselectedCategories(categories);
+        }
+        
+        // PageManager
+        if (window.pageManager && typeof window.pageManager.updateSettings === 'function') {
+            window.pageManager.updateSettings({
+                taskPreselectedCategories: categories
+            });
+        }
+        
+        // AITaskAnalyzer
+        if (window.aiTaskAnalyzer && typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
+            window.aiTaskAnalyzer.updatePreselectedCategories(categories);
+        }
+        
+        // Dispatcher des événements
+        try {
+            window.dispatchEvent(new CustomEvent('categorySettingsChanged', { 
+                detail: {
+                    type: 'taskPreselectedCategories',
+                    value: categories,
+                    source: 'CategoriesPage'
+                }
+            }));
+        } catch (error) {
+            console.warn('[CategoriesPage] Erreur dispatch événements:', error);
+        }
+    }
+
+    toggleOtherCategory() {
+        this.showToast('ℹ️ La catégorie "Autre" est toujours visible (emails non catégorisés)', 'info');
+    }
+
+    showOtherCategoryInfo() {
+        console.log('[CategoriesPage] ℹ️ Affichage infos catégorie "Autre"');
+        
+        const emails = window.emailScanner?.getAllEmails() || [];
+        const otherEmails = emails.filter(email => {
+            const cat = email.category;
+            return !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
+        });
+        
+        this.showModal('Catégorie "Autre"', `
+            <div class="other-category-info">
+                <div class="info-section">
+                    <h4><i class="fas fa-info-circle"></i> À propos</h4>
+                    <p>La catégorie "Autre" contient tous les emails qui n'ont pas pu être automatiquement classés dans une catégorie spécifique.</p>
+                </div>
+                
+                <div class="stats-section">
+                    <h4><i class="fas fa-chart-bar"></i> Statistiques</h4>
+                    <div class="stats-grid-small">
+                        <div class="stat-item">
+                            <div class="stat-value">${otherEmails.length}</div>
+                            <div class="stat-label">Emails</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${new Set(otherEmails.map(e => e.from?.emailAddress?.address?.split('@')[1])).size}</div>
+                            <div class="stat-label">Domaines</div>
+                        </div>
+                    </div>
+                </div>
+                
+                ${otherEmails.length > 0 ? `
+                    <div class="emails-sample">
+                        <h4><i class="fas fa-envelope"></i> Échantillon d'emails</h4>
+                        <div class="emails-list">
+                            ${otherEmails.slice(0, 5).map(email => `
+                                <div class="email-item">
+                                    <div class="email-subject">${email.subject || 'Sans sujet'}</div>
+                                    <div class="email-from">${email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu'}</div>
+                                    <div class="email-date">${new Date(email.receivedDateTime).toLocaleDateString('fr-FR')}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `);
+    }
+
+    openModal(categoryId) {
+        console.log(`[CategoriesPage] 🔧 Ouverture modal pour: ${categoryId}`);
+        
+        const category = window.categoryManager?.getCategory(categoryId);
+        if (!category) {
+            this.showToast('❌ Catégorie non trouvée', 'error');
+            return;
+        }
+        
+        const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {
+            absolute: [], strong: [], weak: [], exclusions: []
+        };
+        
+        const filters = window.categoryManager?.getCategoryFilters(categoryId) || {
+            includeDomains: [], includeEmails: [], excludeDomains: [], excludeEmails: []
+        };
+        
+        this.showModal(`Configuration - ${category.name}`, `
+            <div class="category-config">
+                <!-- Informations générales -->
+                <div class="config-section">
+                    <h4><i class="fas fa-info"></i> Informations</h4>
+                    <div class="config-grid">
+                        <div class="config-item">
+                            <label>Nom de la catégorie</label>
+                            <input type="text" value="${category.name}" readonly>
+                        </div>
+                        <div class="config-item">
+                            <label>Couleur</label>
+                            <div class="color-display" style="background: ${category.color};">${category.color}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mots-clés -->
+                <div class="config-section">
+                    <h4><i class="fas fa-key"></i> Mots-clés</h4>
+                    
+                    <div class="keywords-summary">
+                        <div class="keyword-type">
+                            <strong>Absolus (${keywords.absolute.length}):</strong>
+                            <span class="keywords-list">${keywords.absolute.join(', ') || 'Aucun'}</span>
+                        </div>
+                        <div class="keyword-type">
+                            <strong>Forts (${keywords.strong.length}):</strong>
+                            <span class="keywords-list">${keywords.strong.join(', ') || 'Aucun'}</span>
+                        </div>
+                        <div class="keyword-type">
+                            <strong>Faibles (${keywords.weak.length}):</strong>
+                            <span class="keywords-list">${keywords.weak.join(', ') || 'Aucun'}</span>
+                        </div>
+                        <div class="keyword-type">
+                            <strong>Exclusions (${keywords.exclusions.length}):</strong>
+                            <span class="keywords-list">${keywords.exclusions.join(', ') || 'Aucun'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filtres -->
+                <div class="config-section">
+                    <h4><i class="fas fa-filter"></i> Filtres</h4>
+                    
+                    <div class="filters-summary">
+                        <div class="filter-type">
+                            <strong>Domaines autorisés:</strong>
+                            <span class="filters-list">${filters.includeDomains.join(', ') || 'Tous'}</span>
+                        </div>
+                        <div class="filter-type">
+                            <strong>Emails autorisés:</strong>
+                            <span class="filters-list">${filters.includeEmails.join(', ') || 'Tous'}</span>
+                        </div>
+                        <div class="filter-type">
+                            <strong>Domaines exclus:</strong>
+                            <span class="filters-list">${filters.excludeDomains.join(', ') || 'Aucun'}</span>
+                        </div>
+                        <div class="filter-type">
+                            <strong>Emails exclus:</strong>
+                            <span class="filters-list">${filters.excludeEmails.join(', ') || 'Aucun'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="config-section">
+                    <h4><i class="fas fa-tools"></i> Actions</h4>
+                    <div class="actions-buttons">
+                        <button class="btn-action secondary" onclick="window.categoriesPageV23.editCategory('${categoryId}')">
+                            <i class="fas fa-edit"></i> Modifier
+                        </button>
+                        ${category.isCustom ? `
+                            <button class="btn-action danger" onclick="window.categoriesPageV23.deleteCategory('${categoryId}')">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </button>
+                        ` : ''}
+                        <button class="btn-action primary" onclick="window.categoriesPageV23.testCategory('${categoryId}')">
+                            <i class="fas fa-vial"></i> Tester
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+
+    showCreateModal() {
+        console.log('[CategoriesPage] ➕ Ouverture modal création');
+        
+        this.showModal('Nouvelle Catégorie', `
+            <div class="create-category">
+                <div class="config-section">
+                    <h4><i class="fas fa-plus"></i> Informations de base</h4>
+                    
+                    <div class="config-grid">
+                        <div class="config-item">
+                            <label>Nom de la catégorie *</label>
+                            <input type="text" id="new-category-name" placeholder="Ex: Projets, Factures, Newsletter..." autofocus>
+                        </div>
+                        
+                        <div class="config-item">
+                            <label>Description</label>
+                            <input type="text" id="new-category-desc" placeholder="Description courte (optionnel)">
+                        </div>
+                    </div>
+                    
+                    <div class="config-grid">
+                        <div class="config-item">
+                            <label>Icône</label>
+                            <select id="new-category-icon">
+                                <option value="📁">📁 Dossier</option>
+                                <option value="📧">📧 Email</option>
+                                <option value="💼">💼 Travail</option>
+                                <option value="🎯">🎯 Objectif</option>
+                                <option value="⚡">⚡ Urgent</option>
+                                <option value="🔔">🔔 Notification</option>
+                                <option value="💡">💡 Idée</option>
+                                <option value="📊">📊 Rapport</option>
+                                <option value="🏷️">🏷️ Tag</option>
+                                <option value="📌">📌 Important</option>
+                            </select>
+                        </div>
+                        
+                        <div class="config-item">
+                            <label>Couleur</label>
+                            <select id="new-category-color">
+                                <option value="#3B82F6" style="background: #3B82F6; color: white;">🔵 Bleu</option>
+                                <option value="#10B981" style="background: #10B981; color: white;">🟢 Vert</option>
+                                <option value="#F59E0B" style="background: #F59E0B; color: white;">🟡 Orange</option>
+                                <option value="#EF4444" style="background: #EF4444; color: white;">🔴 Rouge</option>
+                                <option value="#8B5CF6" style="background: #8B5CF6; color: white;">🟣 Violet</option>
+                                <option value="#06B6D4" style="background: #06B6D4; color: white;">🩵 Cyan</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="config-section">
+                    <h4><i class="fas fa-key"></i> Mots-clés de base</h4>
+                    <p class="section-hint">Ajoutez quelques mots-clés pour commencer (vous pourrez en ajouter plus après création)</p>
+                    
+                    <div class="config-item">
+                        <label>Mots-clés principaux</label>
+                        <input type="text" id="new-category-keywords" placeholder="Séparez par des virgules : projet, travail, client...">
+                        <small>Ces mots-clés seront marqués comme "forts" dans la détection</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="btn-action secondary" onclick="window.categoriesPageV23.closeModal()">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+                <button class="btn-action primary" onclick="window.categoriesPageV23.createCategory()">
+                    <i class="fas fa-plus"></i> Créer la catégorie
+                </button>
+            </div>
+        `);
+    }
+
+    createCategory() {
+        const name = document.getElementById('new-category-name')?.value?.trim();
+        const desc = document.getElementById('new-category-desc')?.value?.trim();
+        const icon = document.getElementById('new-category-icon')?.value || '📁';
+        const color = document.getElementById('new-category-color')?.value || '#3B82F6';
+        const keywordsInput = document.getElementById('new-category-keywords')?.value?.trim();
+        
+        if (!name) {
+            this.showToast('⚠️ Le nom de la catégorie est requis', 'warning');
+            document.getElementById('new-category-name')?.focus();
+            return;
+        }
+        
+        const categoryData = {
+            name,
+            description: desc,
+            icon,
+            color,
+            priority: 30,
+            isCustom: true,
+            keywords: { absolute: [], strong: [], weak: [], exclusions: [] }
+        };
+        
+        // Traiter les mots-clés de base
+        if (keywordsInput) {
+            const keywords = keywordsInput.split(',').map(k => k.trim().toLowerCase()).filter(k => k);
+            categoryData.keywords.strong = keywords;
+        }
+        
+        try {
+            const newCategory = window.categoryManager?.createCustomCategory(categoryData);
+            
+            if (newCategory) {
+                this.closeModal();
+                this.showToast(`✅ Catégorie "${name}" créée avec succès!`, 'success');
+                this.updateCategoriesDisplay();
+                
+                // Déclencher un backup automatique
+                this.onCategoriesChanged('create-category');
+                
+                // Ouvrir la configuration après création
+                setTimeout(() => this.openModal(newCategory.id), 500);
+            } else {
+                this.showToast('❌ Erreur lors de la création de la catégorie', 'error');
+            }
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur création catégorie:', error);
+            this.showToast('❌ Erreur: ' + error.message, 'error');
+        }
+    }
+
+    editCategory(categoryId) {
+        this.showToast('🔧 Modification avancée - Fonctionnalité en cours de développement', 'info');
+        this.closeModal();
+    }
+
+    deleteCategory(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        if (!category) return;
+        
+        if (confirm(`Êtes-vous sûr de vouloir supprimer la catégorie "${category.name}" ?\n\nCette action est irréversible.`)) {
+            try {
+                const success = window.categoryManager?.deleteCustomCategory(categoryId);
+                
+                if (success) {
+                    this.closeModal();
+                    this.showToast(`🗑️ Catégorie "${category.name}" supprimée`, 'success');
+                    this.updateCategoriesDisplay();
+                    
+                    // Déclencher un backup automatique
+                    this.onCategoriesChanged('delete-category');
+                } else {
+                    this.showToast('❌ Erreur lors de la suppression', 'error');
+                }
+            } catch (error) {
+                console.error('[CategoriesPage] Erreur suppression:', error);
+                this.showToast('❌ Erreur: ' + error.message, 'error');
+            }
+        }
+    }
+
+    testCategory(categoryId) {
+        this.showToast('🧪 Test de catégorie - Fonctionnalité en cours de développement', 'info');
+        this.closeModal();
+    }
+
+    showModal(title, content) {
+        this.closeModal();
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h3>${title}</h3>
+                    <button class="modal-close" onclick="window.categoriesPageV23.closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    ${content}
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        this.currentModal = modal;
+    }
+
+    closeModal() {
+        if (this.currentModal) {
+            this.currentModal.remove();
+            this.currentModal = null;
+        }
+        
+        const existingModal = document.querySelector('.modal-overlay');
+        if (existingModal) {
+            existingModal.remove();
+        }
+    }
+
+    handleSearch(term) {
+        this.searchTerm = term.toLowerCase();
+        this.updateCategoriesDisplay();
+        
+        if (term) {
+            console.log(`[CategoriesPage] 🔍 Recherche: "${term}"`);
+        }
+    }
+
+    filterCategories(categories) {
+        if (!this.searchTerm) return categories;
+        
+        const filtered = {};
+        Object.entries(categories).forEach(([id, category]) => {
+            if (category.name.toLowerCase().includes(this.searchTerm) ||
+                (category.description && category.description.toLowerCase().includes(this.searchTerm))) {
+                filtered[id] = category;
+            }
+        });
+        return filtered;
+    }
+
+    updateCategoriesDisplay() {
+        const container = document.getElementById('categories-container');
+        if (!container) return;
+        
+        const categories = window.categoryManager?.getCategories() || {};
+        const settings = this.loadSettings();
+        
+        container.innerHTML = this.renderCategories(categories, settings.activeCategories);
+    }
+
+    getCategoryIcon(icon) {
+        // Convertir les emojis en icônes FontAwesome
+        const iconMap = {
+            '📁': 'folder',
+            '📧': 'envelope',
+            '💼': 'briefcase',
+            '🎯': 'bullseye',
+            '⚡': 'bolt',
+            '🔔': 'bell',
+            '💡': 'lightbulb',
+            '📊': 'chart-bar',
+            '🏷️': 'tag',
+            '📌': 'thumbtack',
+            '🌟': 'star',
+            '🚀': 'rocket',
+            '💎': 'gem',
+            '🎨': 'palette',
+            '🔥': 'fire'
+        };
+        
+        return iconMap[icon] || 'tag';
+    }
+
+    getActiveCount(categories, activeCategories) {
+        if (!activeCategories) return Object.keys(categories).length;
+        return activeCategories.filter(id => categories[id]).length;
+    }
+
+    getTotalKeywords(categories) {
+        let total = 0;
+        Object.keys(categories).forEach(id => {
+            const stats = this.getCategoryStats(id);
+            total += stats.keywords;
+        });
+        return total;
     }
 
     renderSettings(container) {
@@ -1617,8 +2439,511 @@ class CategoriesPageV23 {
                 box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
             }
 
-            /* Responsive filesystem */
-            @media (max-width: 768px) {
+            /* Styles pour les cartes de catégories complètes */
+            .categories-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                gap: 16px;
+                margin-top: 20px;
+            }
+
+            .category-card {
+                background: white;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 16px;
+                cursor: pointer;
+                transition: all 0.15s ease;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                min-height: 140px;
+            }
+
+            .category-card:hover {
+                border-color: #3B82F6;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                transform: translateY(-1px);
+            }
+
+            .category-card.inactive {
+                opacity: 0.6;
+                background: #f9fafb;
+            }
+
+            .card-header {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .category-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 16px;
+                flex-shrink: 0;
+            }
+
+            .category-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .category-name {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 4px;
+                line-height: 1.3;
+                word-wrap: break-word;
+            }
+
+            .category-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-bottom: 4px;
+            }
+
+            .keyword-count,
+            .email-count,
+            .absolute-count {
+                font-size: 11px;
+                padding: 2px 6px;
+                border-radius: 10px;
+                font-weight: 500;
+            }
+
+            .keyword-count {
+                background: #f3f4f6;
+                color: #6b7280;
+            }
+
+            .email-count {
+                background: #dbeafe;
+                color: #3B82F6;
+            }
+
+            .absolute-count {
+                background: #fef3c7;
+                color: #d97706;
+            }
+
+            .category-desc {
+                font-size: 12px;
+                color: #9ca3af;
+                line-height: 1.3;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .card-actions {
+                display: flex;
+                gap: 6px;
+                justify-content: flex-end;
+                margin-top: auto;
+            }
+
+            .action-btn-small {
+                width: 28px;
+                height: 28px;
+                border: 1px solid #d1d5db;
+                background: white;
+                border-radius: 4px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 11px;
+                transition: all 0.15s ease;
+                color: #6b7280;
+            }
+
+            .action-btn-small:hover {
+                border-color: #9ca3af;
+                transform: scale(1.05);
+            }
+
+            .action-btn-small.active {
+                background: #10b981;
+                border-color: #10b981;
+                color: white;
+            }
+
+            .action-btn-small.inactive {
+                background: #ef4444;
+                border-color: #ef4444;
+                color: white;
+            }
+
+            .action-btn-small.selected {
+                background: #3B82F6;
+                border-color: #3B82F6;
+                color: white;
+            }
+
+            /* Stats grid sobre */
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+                margin-bottom: 24px;
+            }
+
+            .stat-card {
+                background: white;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 16px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                transition: all 0.15s ease;
+            }
+
+            .stat-card:hover {
+                border-color: #3B82F6;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+
+            .stat-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 16px;
+            }
+
+            .stat-number {
+                font-size: 20px;
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 2px;
+            }
+
+            .stat-label {
+                font-size: 12px;
+                color: #6b7280;
+            }
+
+            /* Recherche sobre */
+            .search-section {
+                margin-bottom: 24px;
+            }
+
+            .search-input {
+                position: relative;
+                max-width: 400px;
+            }
+
+            .search-input i {
+                position: absolute;
+                left: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #9ca3af;
+            }
+
+            .search-input input {
+                width: 100%;
+                padding: 10px 12px 10px 36px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 14px;
+                transition: border-color 0.15s ease;
+            }
+
+            .search-input input:focus {
+                outline: none;
+                border-color: #3B82F6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+
+            /* Empty state */
+            .empty-state {
+                text-align: center;
+                padding: 60px 20px;
+                color: #6b7280;
+                grid-column: 1 / -1;
+            }
+
+            .empty-state .empty-icon {
+                font-size: 48px;
+                margin-bottom: 16px;
+                color: #d1d5db;
+            }
+
+            .empty-state h3 {
+                font-size: 16px;
+                font-weight: 600;
+                color: #374151;
+                margin: 0 0 8px 0;
+            }
+
+            .empty-state p {
+                font-size: 14px;
+                margin: 0 0 16px 0;
+            }
+
+            .btn-secondary {
+                background: #f3f4f6;
+                color: #374151;
+                border: 1px solid #d1d5db;
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 13px;
+                cursor: pointer;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .btn-secondary:hover {
+                background: #e5e7eb;
+            }
+
+            /* Modal styles complets */
+            .modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.6);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                padding: 20px;
+                animation: fadeIn 0.2s ease;
+            }
+
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+
+            .modal-content {
+                background: white;
+                border-radius: 8px;
+                width: 100%;
+                max-width: 600px;
+                max-height: 90vh;
+                overflow: hidden;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                animation: slideUp 0.2s ease;
+            }
+
+            .modal-content.large {
+                max-width: 800px;
+            }
+
+            @keyframes slideUp {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+
+            .modal-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 20px;
+                border-bottom: 1px solid #e2e8f0;
+                background: #f8fafc;
+            }
+
+            .modal-header h3 {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+                margin: 0;
+            }
+
+            .modal-close {
+                background: none;
+                border: none;
+                padding: 4px;
+                cursor: pointer;
+                color: #6b7280;
+                font-size: 16px;
+                border-radius: 4px;
+                transition: all 0.15s ease;
+            }
+
+            .modal-close:hover {
+                color: #374151;
+                background: #f3f4f6;
+            }
+
+            .modal-body {
+                padding: 20px;
+                overflow-y: auto;
+                max-height: 70vh;
+            }
+
+            .config-section {
+                margin-bottom: 24px;
+                padding-bottom: 20px;
+                border-bottom: 1px solid #f1f5f9;
+            }
+
+            .config-section:last-child {
+                border-bottom: none;
+                margin-bottom: 0;
+            }
+
+            .config-section h4 {
+                font-size: 14px;
+                font-weight: 600;
+                color: #1f2937;
+                margin: 0 0 12px 0;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .config-section h4 i {
+                color: #3B82F6;
+            }
+
+            .section-hint {
+                font-size: 13px;
+                color: #6b7280;
+                margin-bottom: 12px;
+                line-height: 1.4;
+            }
+
+            .keywords-summary,
+            .filters-summary {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .keyword-type,
+            .filter-type {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                padding: 8px 12px;
+                background: #f8fafc;
+                border-radius: 4px;
+                border-left: 3px solid #3B82F6;
+            }
+
+            .keywords-list,
+            .filters-list {
+                font-size: 13px;
+                color: #6b7280;
+                font-family: 'Courier New', monospace;
+                word-break: break-word;
+            }
+
+            .color-display {
+                width: 100%;
+                padding: 8px 12px;
+                border-radius: 4px;
+                color: white;
+                font-weight: 500;
+                text-align: center;
+                font-family: 'Courier New', monospace;
+                font-size: 13px;
+            }
+
+            .actions-buttons {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .modal-actions {
+                padding: 16px 20px;
+                border-top: 1px solid #e2e8f0;
+                background: #f8fafc;
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+
+            .other-category-info .stats-grid-small {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+                margin: 12px 0;
+            }
+
+            .stat-item {
+                text-align: center;
+                padding: 12px;
+                background: #f8fafc;
+                border-radius: 6px;
+                border: 1px solid #e2e8f0;
+            }
+
+            .stat-item .stat-value {
+                font-size: 20px;
+                font-weight: 600;
+                color: #3B82F6;
+                margin-bottom: 4px;
+            }
+
+            .stat-item .stat-label {
+                font-size: 12px;
+                color: #6b7280;
+            }
+
+            .emails-list {
+                max-height: 200px;
+                overflow-y: auto;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+            }
+
+            .email-item {
+                padding: 8px 12px;
+                border-bottom: 1px solid #f1f5f9;
+                display: grid;
+                grid-template-columns: 1fr auto;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .email-item:last-child {
+                border-bottom: none;
+            }
+
+            .email-subject {
+                font-size: 13px;
+                font-weight: 500;
+                color: #1f2937;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .email-from {
+                font-size: 11px;
+                color: #6b7280;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .email-date {
+                font-size: 10px;
+                color: #9ca3af;
+                white-space: nowrap;
+            }
                 .path-display {
                     flex-direction: column;
                     align-items: stretch;
@@ -2198,23 +3523,50 @@ window.forceFilesystemBackup = async function() {
     }
 };
 
-// Démarrer un test automatique après un délai pour laisser l'app s'initialiser
+// Démarrer un test automatique ET configuration par défaut après un délai
 setTimeout(async () => {
-    console.log('[CategoriesPage] 🎯 Test automatique du backup filesystem dans 5 secondes...');
+    console.log('[CategoriesPage] 🎯 Configuration automatique du backup filesystem...');
     
-    // Attendre que l'utilisateur interagisse avec la page ou que l'app soit prête
-    setTimeout(async () => {
-        // Test silencieux en arrière-plan
-        const testResult = await window.testFilesystemBackup().catch(() => false);
+    const instance = window.categoriesPageV23;
+    
+    // Si le filesystem est supporté, essayer de configurer automatiquement
+    if (instance.fileSystemSupported && !instance.filesystemConfig.enabled) {
+        console.log('[CategoriesPage] 🔧 Tentative de configuration automatique...');
         
-        if (testResult) {
-            console.log('[CategoriesPage] ✅ Test backup filesystem réussi !');
-            console.log('[CategoriesPage] 📁 Votre backup est dans:', window.getBackupFilePath());
-        } else {
-            console.log('[CategoriesPage] ℹ️ Test backup filesystem non effectué - Configuration manuelle requise');
-        }
-    }, 5000);
-}, 3000);
+        setTimeout(async () => {
+            try {
+                // Essayer la configuration automatique silencieuse
+                const autoConfigured = await instance.setupDefaultPath();
+                
+                if (autoConfigured) {
+                    console.log('[CategoriesPage] ✅ Configuration automatique réussie !');
+                    console.log('[CategoriesPage] 📁 Backup configuré dans:', instance.filesystemConfig.currentPath);
+                    
+                    // Test du backup
+                    const testResult = await instance.createFilesystemBackup('auto-config-test');
+                    if (testResult) {
+                        console.log('[CategoriesPage] ✅ Test backup automatique réussi !');
+                        console.log('[CategoriesPage] 💾 Fichier de backup créé et vérifié');
+                    }
+                } else {
+                    console.log('[CategoriesPage] ⚠️ Configuration automatique non possible - Mode manuel disponible');
+                    console.log('[CategoriesPage] 📋 Utilisez l\'onglet "Sauvegarde C://" pour configurer manuellement');
+                }
+            } catch (error) {
+                console.log('[CategoriesPage] ℹ️ Configuration par défaut en attente d\'interaction utilisateur');
+            }
+        }, 2000);
+    } else if (!instance.fileSystemSupported) {
+        console.warn('[CategoriesPage] ⚠️ File System API non supportée - Backup invisible uniquement');
+        
+        // Configurer au moins le chemin par défaut pour information
+        instance.filesystemConfig.currentPath = instance.filesystemConfig.defaultPath;
+        console.log('[CategoriesPage] 📁 Chemin par défaut configuré:', instance.filesystemConfig.currentPath);
+    } else {
+        console.log('[CategoriesPage] ✅ Filesystem déjà configuré');
+    }
+    
+}, 1000);
 
 // Vérifier la compatibilité avec le backup service
 if (window.getBackupStatus) {
