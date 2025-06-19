@@ -1,14 +1,5 @@
-// ================================================
-    // MÉTHODE AMÉLIORÉE: Stocker dans un dossier personnalisé avec auto-récupération
-    // ================================================
-    async storeInCustomFolder(data, timestamp) {
-        try {
-            if (!this.backupConfig.customFolderHandle) {
-                throw new Error('Aucun dossier sélectionné');
-            }
-            
-            // V// CategoriesPage.js - Version 22.1 - DOSSIER PERSONNALISÉ CORRIGÉ
-console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v22.1 - DOSSIER PERSONNALISÉ FIXÉ...');
+// CategoriesPage.js - Version 22.2 - AFFICHAGE RÉPARÉ
+console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v22.2 - AFFICHAGE RÉPARÉ...');
 
 // Nettoyer toute instance précédente
 if (window.categoriesPage) {
@@ -32,7 +23,7 @@ class CategoriesPageV22 {
         this.backupConfig = this.loadBackupConfig();
         this.initializeBackupSystem();
         
-        console.log('[CategoriesPage] 🎨 Interface optimisée v22.1 initialisée avec système de backup');
+        console.log('[CategoriesPage] 🎨 Interface optimisée v22.2 initialisée avec système de backup');
     }
 
     // ================================================
@@ -150,7 +141,7 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // RENDU ONGLET PARAMÈTRES/BACKUP - CORRIGÉ
+    // RENDU ONGLET PARAMÈTRES/BACKUP
     // ================================================
     renderSettingsTab() {
         const backupStats = this.getBackupStats();
@@ -165,7 +156,7 @@ class CategoriesPageV22 {
                         <p>Protégez vos données avec des sauvegardes automatiques</p>
                     </div>
                     
-                    <!-- Status du backup avec alerte mode urgence -->
+                    <!-- Status du backup -->
                     <div class="backup-status">
                         ${config.emergencyMode ? `
                             <div class="status-card emergency">
@@ -363,43 +354,7 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // NOUVELLE MÉTHODE: Réparer le mode urgence
-    // ================================================
-    fixEmergencyMode() {
-        if (confirm(
-            '🔧 RÉPARATION DU SYSTÈME DE SAUVEGARDE\n\n' +
-            'Cette action va :\n' +
-            '• Désactiver le mode urgence\n' +
-            '• Vous permettre de reconfigurer un nouveau dossier\n' +
-            '• Conserver vos sauvegardes d\'urgence existantes\n\n' +
-            'Continuer ?'
-        )) {
-            // Désactiver le mode urgence
-            this.backupConfig.emergencyMode = false;
-            this.backupConfig.emergencyBackupKey = null;
-            this.backupConfig.customFolderHandle = null;
-            this.backupConfig.customFolderPath = null;
-            this.backupConfig.needsFolderCreation = true;
-            
-            // Reconfigurer le dossier par défaut
-            this.setupDefaultProgramFilesFolder(this.backupConfig);
-            
-            this.saveBackupConfig();
-            this.refreshSettingsTab();
-            
-            this.showToast('🔧 Mode urgence désactivé. Reconfiguration disponible.', 'success');
-            
-            // Proposer immédiatement la reconfiguration
-            setTimeout(() => {
-                if (confirm('Voulez-vous configurer un nouveau dossier de sauvegarde maintenant ?')) {
-                    this.selectCustomFolder();
-                }
-            }, 1500);
-        }
-    }
-
-    // ================================================
-    // NOUVELLE MÉTHODE: Rendu de l'aide stockage
+    // RENDU DE L'AIDE STOCKAGE
     // ================================================
     renderStorageHelp(storageType) {
         let helpText = '';
@@ -432,7 +387,7 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // NOUVELLE MÉTHODE: Section dossier personnalisé
+    // SECTION DOSSIER PERSONNALISÉ
     // ================================================
     renderCustomFolderSection() {
         const config = this.backupConfig;
@@ -536,22 +491,23 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // SYSTÈME DE BACKUP - CONFIGURATION CORRIGÉE
+    // SYSTÈME DE BACKUP - CONFIGURATION
     // ================================================
     loadBackupConfig() {
         try {
             const saved = localStorage.getItem('emailsortpro_backup_config');
             const defaultConfig = {
-                enabled: true, // ACTIVÉ PAR DÉFAUT
-                frequency: 'daily', // QUOTIDIEN PAR DÉFAUT
-                storage: 'custom-folder', // DOSSIER PERSONNALISÉ PAR DÉFAUT
+                enabled: true,
+                frequency: 'daily',
+                storage: 'custom-folder',
                 retention: 10,
                 compression: true,
                 lastBackup: null,
                 nextBackup: null,
-                customFolderPath: null, // Sera défini automatiquement
+                customFolderPath: null,
                 customFolderHandle: null,
-                autoSetupDone: false // Flag pour savoir si l'auto-setup a été fait
+                autoSetupDone: false,
+                emergencyMode: false
             };
             
             const config = saved ? { ...defaultConfig, ...JSON.parse(saved) } : defaultConfig;
@@ -574,7 +530,8 @@ class CategoriesPageV22 {
                 nextBackup: null,
                 customFolderPath: null,
                 customFolderHandle: null,
-                autoSetupDone: false
+                autoSetupDone: false,
+                emergencyMode: false
             };
             
             this.setupDefaultProgramFilesFolder(defaultConfig);
@@ -582,16 +539,11 @@ class CategoriesPageV22 {
         }
     }
 
-    // ================================================
-    // NOUVELLE MÉTHODE: Setup automatique du dossier Program Files
-    // ================================================
     setupDefaultProgramFilesFolder(config) {
         try {
-            // Déterminer le chemin Program Files approprié
             const isWindows = navigator.platform.toLowerCase().includes('win');
             
             if (isWindows) {
-                // Déterminer s'il faut utiliser Program Files ou Program Files (x86)
                 const is64Bit = navigator.userAgent.includes('WOW64') || 
                                navigator.userAgent.includes('Win64') || 
                                navigator.platform === 'Win64';
@@ -600,17 +552,11 @@ class CategoriesPageV22 {
                     'C:\\Program Files\\EmailSortPro' : 
                     'C:\\Program Files (x86)\\EmailSortPro';
                 
-                // Configurer le chemin par défaut
                 config.customFolderPath = programFilesPath;
                 config.autoSetupDone = true;
-                
-                console.log('[Backup] Configuration automatique:', programFilesPath);
-                
-                // Marquer qu'il faudra créer le dossier au premier accès
                 config.needsFolderCreation = true;
                 
             } else {
-                // Pour macOS/Linux, utiliser un dossier dans Applications ou home
                 const isMac = navigator.platform.toLowerCase().includes('mac');
                 const defaultPath = isMac ? 
                     '/Applications/EmailSortPro' : 
@@ -621,7 +567,6 @@ class CategoriesPageV22 {
                 config.needsFolderCreation = true;
             }
             
-            // Sauvegarder la configuration
             localStorage.setItem('emailsortpro_backup_config', JSON.stringify(config));
             
         } catch (error) {
@@ -631,10 +576,8 @@ class CategoriesPageV22 {
 
     saveBackupConfig() {
         try {
-            // Note: On ne peut pas sauvegarder les handles de dossiers dans localStorage
-            // car ils ne sont pas sérialisables
             const configToSave = { ...this.backupConfig };
-            delete configToSave.customFolderHandle; // Supprimer le handle avant sauvegarde
+            delete configToSave.customFolderHandle;
             
             localStorage.setItem('emailsortpro_backup_config', JSON.stringify(configToSave));
             console.log('[Backup] Configuration sauvegardée');
@@ -647,7 +590,6 @@ class CategoriesPageV22 {
         this.backupConfig[key] = value;
         this.saveBackupConfig();
         
-        // Recalculer la prochaine sauvegarde si nécessaire
         if (key === 'frequency' && this.backupConfig.enabled) {
             this.calculateNextBackup();
         }
@@ -655,24 +597,13 @@ class CategoriesPageV22 {
         this.showToast(`Configuration mise à jour: ${key}`, 'success');
     }
 
-    // ================================================
-    // NOUVELLE MÉTHODE: Mise à jour du stockage avec rafraîchissement
-    // ================================================
     updateBackupStorageConfig(storageType) {
-        console.log('[Backup] Changement de stockage vers:', storageType);
-        
         this.backupConfig.storage = storageType;
         this.saveBackupConfig();
-        
-        // Rafraîchir immédiatement l'aide au stockage
         this.refreshStorageHelp(storageType);
-        
         this.showToast(`Stockage mis à jour: ${storageType}`, 'success');
     }
 
-    // ================================================
-    // NOUVELLE MÉTHODE: Rafraîchissement de l'aide stockage
-    // ================================================
     refreshStorageHelp(storageType) {
         const helpContainer = document.getElementById('storage-help-container');
         if (helpContainer) {
@@ -721,140 +652,15 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // SYSTÈME DE BACKUP - CRÉATION
-    // ================================================
-    async createBackup() {
-        try {
-            this.showToast('Création de la sauvegarde en cours...', 'info');
-            
-            // Collecter toutes les données
-            const backupData = {
-                timestamp: new Date().toISOString(),
-                version: '22.1',
-                data: {
-                    categories: this.getCategoriesToBackup(),
-                    tasks: this.getTasksToBackup(),
-                    settings: this.getSettingsToBackup()
-                },
-                metadata: {
-                    totalCategories: Object.keys(window.categoryManager?.getCategories() || {}).length,
-                    totalTasks: this.getTasksCount(),
-                    userAgent: navigator.userAgent,
-                    hostname: window.location.hostname
-                }
-            };
-            
-            // Compresser si activé
-            let dataToStore = JSON.stringify(backupData, null, 2);
-            if (this.backupConfig.compression) {
-                dataToStore = this.compressData(dataToStore);
-            }
-            
-            // Stocker selon la configuration
-            await this.storeBackup(dataToStore, backupData.timestamp);
-            
-            // Mettre à jour la configuration
-            this.backupConfig.lastBackup = backupData.timestamp;
-            this.calculateNextBackup();
-            this.saveBackupConfig();
-            
-            // Nettoyer les anciennes sauvegardes
-            this.cleanupOldBackups();
-            
-            this.showToast('✅ Sauvegarde créée avec succès!', 'success');
-            this.refreshSettingsTab();
-            
-        } catch (error) {
-            console.error('[Backup] Erreur création:', error);
-            this.showToast('❌ Erreur lors de la création de la sauvegarde', 'error');
-        }
-    }
-
-    getCategoriesToBackup() {
-        const categories = window.categoryManager?.getCategories() || {};
-        const result = {};
-        
-        Object.entries(categories).forEach(([id, category]) => {
-            result[id] = {
-                ...category,
-                keywords: window.categoryManager?.getCategoryKeywords?.(id) || {},
-                filters: window.categoryManager?.getCategoryFilters?.(id) || {}
-            };
-        });
-        
-        return result;
-    }
-
-    getTasksToBackup() {
-        if (!window.taskManager || !window.taskManager.getAllTasks) {
-            return [];
-        }
-        
-        try {
-            return window.taskManager.getAllTasks().map(task => ({
-                ...task,
-                // Nettoyer les données sensibles si nécessaire
-                emailContent: task.emailContent ? '*** CONTENT REMOVED FOR BACKUP ***' : null
-            }));
-        } catch (error) {
-            console.warn('[Backup] Erreur récupération tâches:', error);
-            return [];
-        }
-    }
-
-    getTasksCount() {
-        try {
-            if (window.taskManager && window.taskManager.getAllTasks) {
-                return window.taskManager.getAllTasks().length;
-            }
-            return 0;
-        } catch (error) {
-            return 0;
-        }
-    }
-
-    getSettingsToBackup() {
-        return {
-            categorySettings: this.loadSettings(),
-            backupConfig: this.backupConfig,
-            appVersion: '22.1'
-        };
-    }
-
-    async storeBackup(data, timestamp) {
-        const backupKey = `emailsortpro_backup_${timestamp.replace(/[:.]/g, '-')}`;
-        
-        switch (this.backupConfig.storage) {
-            case 'localStorage':
-                localStorage.setItem(backupKey, data);
-                break;
-                
-            case 'indexedDB':
-                await this.storeInIndexedDB(backupKey, data);
-                break;
-                
-            case 'download':
-                this.downloadBackup(data, timestamp);
-                break;
-                
-            case 'custom-folder':
-                await this.storeInCustomFolder(data, timestamp);
-                break;
-        }
-    }
-
-    // ================================================
-    // MÉTHODE AMÉLIORÉE: Sélectionner un dossier personnalisé avec auto-setup
+    // SÉLECTION DE DOSSIER
     // ================================================
     async selectCustomFolder() {
         try {
-            // Vérifier si l'API File System Access est supportée
             if (!window.showDirectoryPicker) {
                 this.showToast('❌ Cette fonctionnalité nécessite un navigateur moderne (Chrome/Edge)', 'error');
                 return;
             }
             
-            // Si c'est la première fois et qu'il faut créer le dossier Program Files
             if (this.backupConfig.needsFolderCreation && this.backupConfig.customFolderPath) {
                 const shouldUseProgramFiles = confirm(
                     `📁 Configuration du dossier de sauvegarde\n\n` +
@@ -866,12 +672,10 @@ class CategoriesPageV22 {
                 );
                 
                 if (shouldUseProgramFiles) {
-                    // Essayer de créer le dossier Program Files avec File System Access API
                     return await this.setupProgramFilesWithAPI();
                 }
             }
             
-            // Sinon, procédure normale de sélection
             return await this.selectCustomFolderManual();
             
         } catch (error) {
@@ -880,45 +684,27 @@ class CategoriesPageV22 {
         }
     }
 
-    // ================================================
-    // NOUVELLE MÉTHODE: Setup automatique Program Files avec API
-    // ================================================
     async setupProgramFilesWithAPI() {
         try {
-            // Pour Windows, essayer d'accéder au dossier Program Files
-            const isWindows = navigator.platform.toLowerCase().includes('win');
-            
-            if (!isWindows) {
-                // Pour non-Windows, utiliser la sélection manuelle
-                return await this.selectCustomFolderManual();
-            }
-            
-            // Afficher un message informatif
             this.showToast('🔧 Configuration du dossier Program Files...', 'info');
             
-            // Essayer d'accéder au dossier parent Program Files
             const pickerOptions = {
                 mode: 'readwrite',
-                startIn: 'desktop', // Commencer par le bureau pour naviguer vers C:\
+                startIn: 'desktop',
                 id: 'emailsortpro-programfiles-setup'
             };
             
-            // Demander à l'utilisateur de naviguer vers Program Files
             const programFilesHandle = await window.showDirectoryPicker(pickerOptions);
             
-            // Créer le sous-dossier EmailSortPro
             let emailSortProFolder;
             try {
                 emailSortProFolder = await programFilesHandle.getDirectoryHandle('EmailSortPro', {
                     create: true
                 });
                 
-                console.log('[Backup] Dossier EmailSortPro créé dans Program Files');
                 this.showToast('✅ Dossier EmailSortPro créé dans Program Files', 'success');
                 
             } catch (createError) {
-                console.error('[Backup] Erreur création dans Program Files:', createError);
-                
                 if (createError.name === 'NotAllowedError') {
                     this.showToast('❌ Permission refusée pour Program Files. Choisissez un autre dossier.', 'warning');
                     return await this.selectCustomFolderManual();
@@ -926,16 +712,13 @@ class CategoriesPageV22 {
                 throw createError;
             }
             
-            // Tester l'accès en écriture
             await this.testFolderWriteAccess(emailSortProFolder);
             
-            // Configurer le dossier
             this.backupConfig.customFolderHandle = emailSortProFolder;
             this.backupConfig.customFolderPath = `${programFilesHandle.name}/EmailSortPro`;
             this.backupConfig.needsFolderCreation = false;
             this.saveBackupConfig();
             
-            // Mettre à jour l'affichage
             const pathInput = document.getElementById('custom-folder-path');
             if (pathInput) {
                 pathInput.value = this.backupConfig.customFolderPath;
@@ -943,49 +726,21 @@ class CategoriesPageV22 {
             
             this.showToast(`✅ Dossier configuré: ${this.backupConfig.customFolderPath}`, 'success');
             
-            // Créer une sauvegarde de test
-            setTimeout(() => {
-                if (confirm('Voulez-vous créer une sauvegarde de test pour vérifier le bon fonctionnement ?')) {
-                    this.createTestBackup();
-                }
-            }, 1500);
-            
         } catch (error) {
             console.error('[Backup] Erreur setup Program Files:', error);
             
             if (error.name === 'AbortError') {
-                // L'utilisateur a annulé, proposer la sélection manuelle
-                const tryManual = confirm(
-                    'Sélection annulée.\n\n' +
-                    'Voulez-vous choisir un autre dossier manuellement ?'
-                );
-                
+                const tryManual = confirm('Sélection annulée.\n\nVoulez-vous choisir un autre dossier manuellement ?');
                 if (tryManual) {
                     return await this.selectCustomFolderManual();
                 }
             } else {
                 this.handleFolderSelectionError(error);
-                
-                // En cas d'erreur, proposer la sélection manuelle
-                setTimeout(() => {
-                    const tryManual = confirm(
-                        'Erreur avec le dossier Program Files.\n\n' +
-                        'Voulez-vous choisir un autre dossier ?'
-                    );
-                    
-                    if (tryManual) {
-                        this.selectCustomFolderManual();
-                    }
-                }, 2000);
             }
         }
     }
 
-    // ================================================
-    // MÉTHODE: Sélection manuelle de dossier (ancienne logique)
-    // ================================================
     async selectCustomFolderManual() {
-        // Afficher un avertissement préventif SEULEMENT la première fois
         const hasShownWarning = localStorage.getItem('emailsortpro_folder_warning_shown');
         
         if (!hasShownWarning) {
@@ -993,59 +748,23 @@ class CategoriesPageV22 {
                 '📁 Sélection du dossier de sauvegarde\n\n' +
                 '✅ DOSSIERS SÛRS :\n' +
                 '• Documents, Téléchargements, Bureau\n' +
-                '• Google Drive, OneDrive, Dropbox\n' +
-                '• Dossiers personnalisés que vous créez\n\n' +
-                '💡 INFO : Un sous-dossier "EmailSortPro" sera créé automatiquement\n' +
-                'dans le dossier que vous sélectionnez.\n\n' +
-                'Continuer la sélection ?'
+                '• Google Drive, OneDrive, Dropbox\n\n' +
+                '💡 Un sous-dossier "EmailSortPro" sera créé automatiquement\n\n' +
+                'Continuer ?'
             );
             
-            if (!userConfirmed) {
-                return;
-            }
-            
+            if (!userConfirmed) return;
             localStorage.setItem('emailsortpro_folder_warning_shown', 'true');
         }
         
-        // Options de sélection sécurisées
         const pickerOptions = {
             mode: 'readwrite',
             startIn: 'documents',
             id: 'emailsortpro-backup-folder'
         };
         
-        // Ouvrir le sélecteur de dossier
         const parentDirectoryHandle = await window.showDirectoryPicker(pickerOptions);
         
-        // Vérifications de sécurité (code existant...)
-        const folderName = parentDirectoryHandle.name.toLowerCase();
-        const folderPath = parentDirectoryHandle.name;
-        
-        const restrictedFolders = [
-            'windows', 'system32', 'syswow64', 'boot', 'recovery',
-            'programdata', '$recycle.bin', 'system volume information',
-            'system', 'library', 'applications', 'private',
-            'usr', 'bin', 'sbin', 'etc', 'var', 'tmp', 'dev',
-            'root', 'proc', 'sys', 'run', 'mnt'
-        ];
-        
-        const isRestricted = restrictedFolders.some(restricted => {
-            return folderName === restricted || 
-                   folderName.startsWith(restricted + ' ') ||
-                   folderName.endsWith(' ' + restricted) ||
-                   (restricted.includes(' ') && folderName.includes(restricted));
-        });
-        
-        const systemRootPatterns = [/^[a-z]:$/i, /^\/$/];
-        const isSystemRoot = systemRootPatterns.some(pattern => pattern.test(folderPath));
-        
-        if (isRestricted || isSystemRoot) {
-            this.showToast('❌ Dossier système détecté. Choisissez un dossier personnel.', 'error');
-            setTimeout(() => this.selectCustomFolderManual(), 1000);
-            return;
-        }
-        
-        // Créer le sous-dossier EmailSortPro
         let emailSortProFolder;
         try {
             emailSortProFolder = await parentDirectoryHandle.getDirectoryHandle('EmailSortPro');
@@ -1056,16 +775,13 @@ class CategoriesPageV22 {
             this.showToast('📁 Dossier "EmailSortPro" créé dans ' + parentDirectoryHandle.name, 'info');
         }
         
-        // Tester l'accès
         await this.testFolderWriteAccess(emailSortProFolder);
         
-        // Configurer
         this.backupConfig.customFolderHandle = emailSortProFolder;
         this.backupConfig.customFolderPath = `${parentDirectoryHandle.name}/EmailSortPro`;
         this.backupConfig.needsFolderCreation = false;
         this.saveBackupConfig();
         
-        // Mettre à jour l'affichage
         const pathInput = document.getElementById('custom-folder-path');
         if (pathInput) {
             pathInput.value = this.backupConfig.customFolderPath;
@@ -1074,457 +790,144 @@ class CategoriesPageV22 {
         this.showToast(`✅ Dossier configuré: ${this.backupConfig.customFolderPath}`, 'success');
     }
 
-    // ================================================
-    // MÉTHODE: Gestion des erreurs de sélection
-    // ================================================
     handleFolderSelectionError(error) {
         if (error.name === 'AbortError') {
-            console.log('[Backup] Sélection de dossier annulée');
+            console.log('[Backup] Sélection annulée');
         } else if (error.name === 'SecurityError') {
-            this.showToast('❌ Accès refusé. Le dossier est protégé ou inaccessible.', 'error');
+            this.showToast('❌ Accès refusé. Le dossier est protégé.', 'error');
         } else if (error.name === 'NotAllowedError') {
-            this.showToast('❌ Permission refusée. Choisissez un dossier dans vos documents personnels.', 'error');
-        } else if (error.message && error.message.includes('system')) {
-            this.showToast('❌ Dossier système détecté. Sélectionnez un dossier personnel.', 'error');
+            this.showToast('❌ Permission refusée. Choisissez un dossier personnel.', 'error');
         } else {
-            this.showToast('❌ Erreur lors de la sélection du dossier. Réessayez avec un autre dossier.', 'error');
+            this.showToast('❌ Erreur lors de la sélection du dossier.', 'error');
         }
     }
 
-    // ================================================
-    // NOUVELLE MÉTHODE: Tester l'accès en écriture
-    // ================================================
     async testFolderWriteAccess(directoryHandle) {
         const testFileName = '.emailsortpro-test-access';
         
         try {
-            // Créer un fichier de test
             const testFileHandle = await directoryHandle.getFileHandle(testFileName, {
                 create: true
             });
             
-            // Écrire des données de test
             const writable = await testFileHandle.createWritable();
             await writable.write('test-access-' + Date.now());
             await writable.close();
             
-            // Supprimer le fichier de test
             await directoryHandle.removeEntry(testFileName);
-            
-            console.log('[Backup] Test d\'accès réussi');
             return true;
             
         } catch (error) {
-            console.error('[Backup] Test d\'accès échoué:', error);
             throw new Error('Impossible d\'écrire dans ce dossier');
         }
     }
 
     // ================================================
-    // NOUVELLE MÉTHODE: Créer une sauvegarde de test
+    // CRÉATION DE SAUVEGARDE
     // ================================================
-    async createTestBackup() {
+    async createBackup() {
         try {
-            if (!this.backupConfig.customFolderHandle) {
-                throw new Error('Aucun dossier sélectionné');
-            }
+            this.showToast('Création de la sauvegarde en cours...', 'info');
             
-            const testData = {
+            const backupData = {
                 timestamp: new Date().toISOString(),
-                version: '22.1-test',
-                testBackup: true,
-                message: 'Ceci est une sauvegarde de test pour vérifier le bon fonctionnement du système.',
+                version: '22.2',
                 data: {
-                    categories: { test: { name: 'Test', icon: '🧪' } },
-                    tasks: [],
-                    settings: {}
+                    categories: this.getCategoriesToBackup(),
+                    tasks: this.getTasksToBackup(),
+                    settings: this.getSettingsToBackup()
                 }
             };
             
-            const testFileName = `emailsortpro-TEST-${Date.now()}.json`;
+            let dataToStore = JSON.stringify(backupData, null, 2);
+            if (this.backupConfig.compression) {
+                dataToStore = this.compressData(dataToStore);
+            }
             
-            // Créer le fichier de test
-            const fileHandle = await this.backupConfig.customFolderHandle.getFileHandle(testFileName, {
-                create: true
-            });
+            await this.storeBackup(dataToStore, backupData.timestamp);
             
-            // Écrire les données de test
-            const writable = await fileHandle.createWritable();
-            await writable.write(JSON.stringify(testData, null, 2));
-            await writable.close();
+            this.backupConfig.lastBackup = backupData.timestamp;
+            this.calculateNextBackup();
+            this.saveBackupConfig();
             
-            this.showToast(`✅ Sauvegarde de test créée: ${testFileName}`, 'success');
+            this.cleanupOldBackups();
+            this.showToast('✅ Sauvegarde créée avec succès!', 'success');
             
         } catch (error) {
-            console.error('[Backup] Erreur sauvegarde de test:', error);
-            this.showToast('❌ Erreur lors de la création de la sauvegarde de test', 'error');
+            console.error('[Backup] Erreur création:', error);
+            this.showToast('❌ Erreur lors de la création de la sauvegarde', 'error');
         }
     }
 
-    // ================================================
-    // MÉTHODE AMÉLIORÉE: Stocker dans un dossier personnalisé avec auto-récupération
-    // ================================================
+    async storeBackup(data, timestamp) {
+        const backupKey = `emailsortpro_backup_${timestamp.replace(/[:.]/g, '-')}`;
+        
+        switch (this.backupConfig.storage) {
+            case 'localStorage':
+                localStorage.setItem(backupKey, data);
+                break;
+            case 'download':
+                this.downloadBackup(data, timestamp);
+                break;
+            case 'custom-folder':
+                await this.storeInCustomFolder(data, timestamp);
+                break;
+        }
+    }
+
     async storeInCustomFolder(data, timestamp) {
         try {
             if (!this.backupConfig.customFolderHandle) {
                 throw new Error('Aucun dossier sélectionné');
             }
             
-            // Vérifier si le dossier existe encore
-            let folderHandle = this.backupConfig.customFolderHandle;
-            let needsRecreation = false;
-            
-            try {
-                // Test simple d'accès au dossier
-                await folderHandle.queryPermission({ mode: 'readwrite' });
-                
-                // Test plus approfondi : essayer de lire le contenu
-                const entries = folderHandle.entries();
-                await entries.next(); // Juste pour vérifier l'accès
-                
-            } catch (folderError) {
-                console.warn('[Backup] Dossier inaccessible, tentative de récupération:', folderError);
-                needsRecreation = true;
-            }
-            
-            // Si le dossier a été supprimé, essayer de le recréer automatiquement
-            if (needsRecreation) {
-                console.log('[Backup] 🔧 Tentative de récupération automatique du dossier...');
-                
-                try {
-                    folderHandle = await this.autoRecoverFolder();
-                    if (folderHandle) {
-                        this.backupConfig.customFolderHandle = folderHandle;
-                        this.saveBackupConfig();
-                        this.showToast('🔧 Dossier récupéré automatiquement!', 'success');
-                    }
-                } catch (recoveryError) {
-                    console.error('[Backup] Échec de la récupération automatique:', recoveryError);
-                    
-                    // Basculer vers le backup d'urgence
-                    await this.createEmergencyBackup(data, timestamp);
-                    return;
-                }
-            }
-            
-            // Vérifier et demander les permissions si nécessaire
-            let permission = await folderHandle.queryPermission({ mode: 'readwrite' });
-            
-            if (permission !== 'granted') {
-                permission = await folderHandle.requestPermission({ mode: 'readwrite' });
-                
-                if (permission !== 'granted') {
-                    throw new Error('Permission refusée pour accéder au dossier');
-                }
-            }
-            
-            // Créer un nom de fichier sécurisé
             const date = new Date(timestamp);
-            const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
-            const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
+            const dateStr = date.toISOString().split('T')[0];
+            const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-');
             const fileName = `EmailSortPro-Backup-${dateStr}_${timeStr}.json`;
             
-            // Vérifier s'il y a suffisamment d'espace (estimation)
-            if (data.length > 100 * 1024 * 1024) { // 100MB
-                if (!confirm('La sauvegarde est volumineuse (>100MB). Continuer ?')) {
-                    return;
-                }
-            }
-            
-            // Créer le fichier dans le dossier sélectionné
-            const fileHandle = await folderHandle.getFileHandle(fileName, {
+            const fileHandle = await this.backupConfig.customFolderHandle.getFileHandle(fileName, {
                 create: true
             });
             
-            // Écrire les données avec gestion d'erreur
             const writable = await fileHandle.createWritable();
-            
-            try {
-                await writable.write(data);
-                await writable.close();
-            } catch (writeError) {
-                // S'assurer que le writable est fermé même en cas d'erreur
-                try {
-                    await writable.abort();
-                } catch (abortError) {
-                    console.warn('[Backup] Erreur abort writable:', abortError);
-                }
-                throw writeError;
-            }
+            await writable.write(data);
+            await writable.close();
             
             this.showToast(`💾 Sauvegarde créée: ${fileName}`, 'success');
             
-            // Nettoyer les anciennes sauvegardes si nécessaire
-            await this.cleanupOldBackupsInFolder();
-            
         } catch (error) {
-            console.error('[Backup] Erreur stockage dossier personnalisé:', error);
+            console.error('[Backup] Erreur stockage:', error);
             
-            // En cas d'erreur, basculer automatiquement vers le backup d'urgence
-            console.log('[Backup] 🚨 Basculement vers sauvegarde d\'urgence...');
-            await this.createEmergencyBackup(data, timestamp);
-        }
-    }
-
-    // ================================================
-    // NOUVELLE MÉTHODE: Récupération automatique du dossier
-    // ================================================
-    async autoRecoverFolder() {
-        try {
-            const originalPath = this.backupConfig.customFolderPath;
-            
-            if (!originalPath) {
-                throw new Error('Aucun chemin d\'origine trouvé');
-            }
-            
-            console.log('[Backup] Tentative de récupération pour:', originalPath);
-            
-            // Essayer de recréer automatiquement selon le type de configuration
-            if (originalPath.includes('Program Files')) {
-                return await this.recreateProgramFilesFolder();
+            if (error.name === 'InvalidStateError') {
+                this.backupConfig.emergencyMode = true;
+                this.saveBackupConfig();
+                await this.createEmergencyBackup(data, timestamp);
+                this.refreshSettingsTab();
             } else {
-                // Pour les autres dossiers, demander à l'utilisateur de re-sélectionner
-                throw new Error('Nécessite re-sélection manuelle');
+                this.showToast('❌ Erreur lors de la sauvegarde', 'error');
             }
-            
-        } catch (error) {
-            console.error('[Backup] Erreur récupération automatique:', error);
-            
-            // Informer l'utilisateur
-            this.showToast('⚠️ Dossier supprimé détecté. Basculement vers sauvegarde d\'urgence.', 'warning');
-            
-            // Proposer la re-configuration
-            setTimeout(() => {
-                if (confirm(
-                    '📁 Le dossier de sauvegarde a été supprimé ou déplacé.\n\n' +
-                    'Voulez-vous reconfigurer un nouveau dossier maintenant ?\n\n' +
-                    '(En attendant, les sauvegardes se font automatiquement dans le navigateur)'
-                )) {
-                    this.selectCustomFolder();
-                }
-            }, 3000);
-            
-            return null;
         }
     }
 
-    // ================================================
-    // NOUVELLE MÉTHODE: Recréer le dossier Program Files
-    // ================================================
-    async recreateProgramFilesFolder() {
-        try {
-            // Déterminer le bon chemin Program Files
-            const isWindows = navigator.platform.toLowerCase().includes('win');
-            
-            if (!isWindows) {
-                throw new Error('Récupération Program Files uniquement sur Windows');
-            }
-            
-            // Essayer de recréer via l'API File System Access
-            const pickerOptions = {
-                mode: 'readwrite',
-                startIn: 'desktop',
-                id: 'emailsortpro-recovery'
-            };
-            
-            // Dans un contexte de récupération, on peut essayer une approche différente
-            // Mais c'est complexe avec l'API actuelle, donc on va plutôt faire basculer vers l'urgence
-            throw new Error('Récupération automatique Program Files non supportée par le navigateur');
-            
-        } catch (error) {
-            console.error('[Backup] Impossible de recréer Program Files:', error);
-            throw error;
-        }
-    }
-
-    // ================================================
-    // NOUVELLE MÉTHODE: Sauvegarde d'urgence
-    // ================================================
     async createEmergencyBackup(data, timestamp) {
         try {
-            console.log('[Backup] 🚨 Création d\'une sauvegarde d\'urgence...');
-            
-            // Basculer temporairement vers localStorage
             const emergencyKey = `emailsortpro_emergency_backup_${timestamp.replace(/[:.]/g, '-')}`;
-            
-            // Stocker en localStorage avec un marquage spécial
             localStorage.setItem(emergencyKey, data);
-            
-            // Marquer qu'on est en mode urgence
-            this.backupConfig.emergencyMode = true;
-            this.backupConfig.emergencyBackupKey = emergencyKey;
-            this.saveBackupConfig();
-            
-            // Également télécharger automatiquement la sauvegarde
             this.downloadBackup(data, timestamp);
             
-            this.showToast('🚨 Sauvegarde d\'urgence créée! Fichier téléchargé automatiquement.', 'warning');
+            this.showToast('🚨 Sauvegarde d\'urgence créée!', 'warning');
             
-            // Proposer de reconfigurer le dossier
             setTimeout(() => {
-                if (confirm(
-                    '🚨 SAUVEGARDE D\'URGENCE ACTIVÉE\n\n' +
-                    'Le dossier de sauvegarde n\'est plus accessible.\n' +
-                    'Vos données sont sécurisées temporairement.\n\n' +
-                    '• Sauvegarde téléchargée automatiquement\n' +
-                    '• Backup temporaire dans le navigateur\n\n' +
-                    'Voulez-vous reconfigurer un nouveau dossier maintenant ?'
-                )) {
+                if (confirm('Le dossier de sauvegarde n\'est plus accessible.\nVoulez-vous reconfigurer un nouveau dossier ?')) {
                     this.selectCustomFolder();
                 }
             }, 2000);
             
-        } catch (emergencyError) {
-            console.error('[Backup] Erreur sauvegarde d\'urgence:', emergencyError);
-            this.showToast('❌ Erreur critique: Impossible de créer la sauvegarde d\'urgence!', 'error');
-        }
-    }
-
-    // ================================================
-    // SYSTÈME DE BACKUP - CRÉATION CORRIGÉE
-    // ================================================
-    async createBackup() {
-        try {
-            this.showToast('Création de la sauvegarde en cours...', 'info');
-            
-            // Vérifier l'état du système de sauvegarde
-            if (this.backupConfig.emergencyMode) {
-                this.showToast('⚠️ Mode urgence actif. Reconfiguration du dossier recommandée.', 'warning');
-            }
-            
-            // Collecter toutes les données
-            const backupData = {
-                timestamp: new Date().toISOString(),
-                version: '22.1',
-                emergencyBackup: this.backupConfig.emergencyMode || false,
-                data: {
-                    categories: this.getCategoriesToBackup(),
-                    tasks: this.getTasksToBackup(),
-                    settings: this.getSettingsToBackup()
-                },
-                metadata: {
-                    totalCategories: Object.keys(window.categoryManager?.getCategories() || {}).length,
-                    totalTasks: this.getTasksCount(),
-                    userAgent: navigator.userAgent,
-                    hostname: window.location.hostname
-                }
-            };
-            
-            // Compresser si activé
-            let dataToStore = JSON.stringify(backupData, null, 2);
-            if (this.backupConfig.compression) {
-                dataToStore = this.compressData(dataToStore);
-            }
-            
-            // Stocker selon la configuration
-            await this.storeBackup(dataToStore, backupData.timestamp);
-            
-            // Mettre à jour la configuration
-            this.backupConfig.lastBackup = backupData.timestamp;
-            this.calculateNextBackup();
-            this.saveBackupConfig();
-            
-            // Nettoyer les anciennes sauvegardes
-            this.cleanupOldBackups();
-            
-            this.showToast('✅ Sauvegarde créée avec succès!', 'success');
-            this.refreshSettingsTab();
-            
         } catch (error) {
-            console.error('[Backup] Erreur création:', error);
-            this.showToast('❌ Erreur lors de la création de la sauvegarde', 'error');
-            
-            // En dernier recours, créer une sauvegarde d'urgence
-            try {
-                const backupData = {
-                    timestamp: new Date().toISOString(),
-                    version: '22.1-emergency',
-                    data: {
-                        categories: this.getCategoriesToBackup(),
-                        tasks: this.getTasksToBackup(),
-                        settings: this.getSettingsToBackup()
-                    }
-                };
-                
-                await this.createEmergencyBackup(JSON.stringify(backupData, null, 2), backupData.timestamp);
-            } catch (emergencyError) {
-                console.error('[Backup] Échec sauvegarde d\'urgence:', emergencyError);
-            }
+            console.error('[Backup] Erreur sauvegarde d\'urgence:', error);
+            this.showToast('❌ Erreur critique de sauvegarde!', 'error');
         }
-    }
-
-    // ================================================
-    // NOUVELLE MÉTHODE: Nettoyer les anciennes sauvegardes dans le dossier
-    // ================================================
-    async cleanupOldBackupsInFolder() {
-        try {
-            if (!this.backupConfig.customFolderHandle || !this.backupConfig.retention) {
-                return;
-            }
-            
-            const backupFiles = [];
-            
-            // Lister tous les fichiers de sauvegarde
-            for await (const [name, handle] of this.backupConfig.customFolderHandle.entries()) {
-                if (handle.kind === 'file' && 
-                    (name.startsWith('EmailSortPro-Backup-') || name.startsWith('emailsortpro-backup-')) &&
-                    name.endsWith('.json')) {
-                    
-                    backupFiles.push({ name, handle });
-                }
-            }
-            
-            // Trier par nom (qui contient la date)
-            backupFiles.sort((a, b) => b.name.localeCompare(a.name));
-            
-            // Supprimer les anciens fichiers si nécessaire
-            if (backupFiles.length > this.backupConfig.retention) {
-                const filesToDelete = backupFiles.slice(this.backupConfig.retention);
-                
-                for (const fileInfo of filesToDelete) {
-                    try {
-                        await this.backupConfig.customFolderHandle.removeEntry(fileInfo.name);
-                        console.log(`[Backup] Ancienne sauvegarde supprimée: ${fileInfo.name}`);
-                    } catch (deleteError) {
-                        console.warn(`[Backup] Impossible de supprimer ${fileInfo.name}:`, deleteError);
-                    }
-                }
-                
-                if (filesToDelete.length > 0) {
-                    this.showToast(`🗑️ ${filesToDelete.length} anciennes sauvegardes supprimées`, 'info');
-                }
-            }
-            
-        } catch (error) {
-            console.warn('[Backup] Erreur nettoyage dossier:', error);
-            // Ne pas afficher d'erreur à l'utilisateur pour le nettoyage
-        }
-    }
-
-    async storeInIndexedDB(key, data) {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open('EmailSortProBackups', 1);
-            
-            request.onerror = () => reject(request.error);
-            
-            request.onsuccess = () => {
-                const db = request.result;
-                const transaction = db.transaction(['backups'], 'readwrite');
-                const store = transaction.objectStore('backups');
-                
-                store.put({ id: key, data: data, timestamp: new Date() });
-                
-                transaction.oncomplete = () => resolve();
-                transaction.onerror = () => reject(transaction.error);
-            };
-            
-            request.onupgradeneeded = () => {
-                const db = request.result;
-                if (!db.objectStoreNames.contains('backups')) {
-                    db.createObjectStore('backups', { keyPath: 'id' });
-                }
-            };
-        });
     }
 
     downloadBackup(data, timestamp) {
@@ -1540,116 +943,73 @@ class CategoriesPageV22 {
         URL.revokeObjectURL(url);
     }
 
-    // ================================================
-    // SYSTÈME DE BACKUP - RESTAURATION
-    // ================================================
-    async importBackup() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        
-        input.onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+    fixEmergencyMode() {
+        if (confirm('Désactiver le mode urgence et reconfigurer un nouveau dossier ?')) {
+            this.backupConfig.emergencyMode = false;
+            this.backupConfig.customFolderHandle = null;
+            this.backupConfig.customFolderPath = null;
+            this.backupConfig.needsFolderCreation = true;
             
-            try {
-                const text = await file.text();
-                let backupData;
-                
-                // Décompresser si nécessaire
-                try {
-                    backupData = JSON.parse(text);
-                } catch {
-                    // Essayer de décompresser
-                    const decompressed = this.decompressData(text);
-                    backupData = JSON.parse(decompressed);
+            this.setupDefaultProgramFilesFolder(this.backupConfig);
+            this.saveBackupConfig();
+            this.refreshSettingsTab();
+            
+            this.showToast('🔧 Mode urgence désactivé', 'success');
+            
+            setTimeout(() => {
+                if (confirm('Configurer un nouveau dossier maintenant ?')) {
+                    this.selectCustomFolder();
                 }
-                
-                // Valider la structure
-                if (!this.validateBackupData(backupData)) {
-                    throw new Error('Format de sauvegarde invalide');
-                }
-                
-                // Demander confirmation
-                if (!confirm(`Restaurer la sauvegarde du ${new Date(backupData.timestamp).toLocaleString()} ?\n\nCeci remplacera vos données actuelles.`)) {
-                    return;
-                }
-                
-                // Restaurer les données
-                await this.restoreBackupData(backupData);
-                
-                this.showToast('✅ Sauvegarde restaurée avec succès!', 'success');
-                
-                // Recharger la page
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-                
-            } catch (error) {
-                console.error('[Backup] Erreur restauration:', error);
-                this.showToast('❌ Erreur lors de la restauration: ' + error.message, 'error');
-            }
+            }, 1500);
+        }
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================
+    getCategoriesToBackup() {
+        const categories = window.categoryManager?.getCategories() || {};
+        const result = {};
+        
+        Object.entries(categories).forEach(([id, category]) => {
+            result[id] = {
+                ...category,
+                keywords: window.categoryManager?.getCategoryKeywords?.(id) || {}
+            };
+        });
+        
+        return result;
+    }
+
+    getTasksToBackup() {
+        if (!window.taskManager?.getAllTasks) return [];
+        try {
+            return window.taskManager.getAllTasks();
+        } catch (error) {
+            return [];
+        }
+    }
+
+    getTasksCount() {
+        try {
+            return window.taskManager?.getAllTasks?.()?.length || 0;
+        } catch {
+            return 0;
+        }
+    }
+
+    getSettingsToBackup() {
+        return {
+            categorySettings: this.loadSettings(),
+            backupConfig: this.backupConfig,
+            appVersion: '22.2'
         };
-        
-        input.click();
     }
 
-    validateBackupData(data) {
-        return data && 
-               data.timestamp && 
-               data.data && 
-               data.data.categories && 
-               data.data.tasks !== undefined && 
-               data.data.settings;
-    }
-
-    async restoreBackupData(backupData) {
-        const { categories, tasks, settings } = backupData.data;
-        
-        // Restaurer les catégories
-        if (window.categoryManager && categories) {
-            Object.entries(categories).forEach(([id, category]) => {
-                if (category.keywords && window.categoryManager.updateCategoryKeywords) {
-                    window.categoryManager.updateCategoryKeywords(id, category.keywords);
-                }
-                if (category.filters && window.categoryManager.updateCategoryFilters) {
-                    window.categoryManager.updateCategoryFilters(id, category.filters);
-                }
-            });
-        }
-        
-        // Restaurer les tâches (simplifié pour éviter les erreurs)
-        if (window.taskManager && tasks && Array.isArray(tasks)) {
-            console.log('[Backup] Restauration des tâches:', tasks.length);
-        }
-        
-        // Restaurer les paramètres
-        if (settings) {
-            if (settings.categorySettings) {
-                this.saveSettings(settings.categorySettings);
-            }
-        }
-    }
-
-    // ================================================
-    // SYSTÈME DE BACKUP - UTILITAIRES
-    // ================================================
     compressData(data) {
-        // Compression simple - remplacer par une vraie compression si nécessaire
         try {
             return btoa(unescape(encodeURIComponent(data)));
         } catch (error) {
-            console.warn('[Backup] Compression failed, using uncompressed data');
-            return data;
-        }
-    }
-
-    decompressData(data) {
-        // Décompression simple
-        try {
-            return decodeURIComponent(escape(atob(data)));
-        } catch (error) {
-            console.warn('[Backup] Decompression failed, trying as plain data');
             return data;
         }
     }
@@ -1666,7 +1026,6 @@ class CategoriesPageV22 {
             if (backupKeys.length > maxBackups) {
                 const toDelete = backupKeys.slice(maxBackups);
                 toDelete.forEach(key => localStorage.removeItem(key));
-                console.log(`[Backup] Supprimé ${toDelete.length} anciennes sauvegardes`);
             }
         }
     }
@@ -1680,14 +1039,11 @@ class CategoriesPageV22 {
             totalSize += (localStorage.getItem(key) || '').length;
         });
         
-        const categories = window.categoryManager?.getCategories() || {};
-        const tasksCount = this.getTasksCount();
-        
         return {
             totalBackups: backupKeys.length,
             totalSize: this.formatBytes(totalSize),
-            categoriesCount: Object.keys(categories).length,
-            tasksCount: tasksCount,
+            categoriesCount: Object.keys(window.categoryManager?.getCategories() || {}).length,
+            tasksCount: this.getTasksCount(),
             lastBackup: this.backupConfig.lastBackup ? 
                 new Date(this.backupConfig.lastBackup).toLocaleString('fr-FR') : 
                 'Jamais'
@@ -1702,83 +1058,8 @@ class CategoriesPageV22 {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    showBackupHistory() {
-        const backupKeys = Object.keys(localStorage)
-            .filter(key => key.startsWith('emailsortpro_backup_'))
-            .sort()
-            .reverse();
-        
-        if (backupKeys.length === 0) {
-            this.showToast('Aucune sauvegarde trouvée', 'info');
-            return;
-        }
-        
-        const historyHTML = `
-            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPageV22.closeModal()">
-                <div class="modal-modern">
-                    <div class="modal-header">
-                        <div class="modal-title">
-                            <span class="modal-icon">📚</span>
-                            <h2>Historique des Sauvegardes</h2>
-                        </div>
-                        <button class="btn-close" onclick="window.categoriesPageV22.closeModal()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="modal-content">
-                        <div class="backup-history-list">
-                            ${backupKeys.map(key => {
-                                const timestamp = key.replace('emailsortpro_backup_', '').replace(/-/g, ':');
-                                const date = new Date(timestamp);
-                                const size = (localStorage.getItem(key) || '').length;
-                                
-                                return `
-                                    <div class="backup-item">
-                                        <div class="backup-info">
-                                            <div class="backup-date">${date.toLocaleString('fr-FR')}</div>
-                                            <div class="backup-size">${this.formatBytes(size)}</div>
-                                        </div>
-                                        <div class="backup-actions">
-                                            <button class="btn-mini restore" onclick="window.categoriesPageV22.restoreSpecificBackup('${key}')">
-                                                <i class="fas fa-undo"></i> Restaurer
-                                            </button>
-                                            <button class="btn-mini download" onclick="window.categoriesPageV22.downloadSpecificBackup('${key}')">
-                                                <i class="fas fa-download"></i> Télécharger
-                                            </button>
-                                            <button class="btn-mini delete" onclick="window.categoriesPageV22.deleteSpecificBackup('${key}')">
-                                                <i class="fas fa-trash"></i> Supprimer
-                                            </button>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button class="btn-modern secondary" onclick="window.categoriesPageV22.closeModal()">
-                            Fermer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', historyHTML);
-        document.body.style.overflow = 'hidden';
-        this.currentModal = true;
-    }
-
-    // ================================================
-    // SYSTÈME DE BACKUP - INITIALISATION
-    // ================================================
     initializeBackupSystem() {
-        // Planifier les sauvegardes automatiques
         this.scheduleAutomaticBackups();
-        
-        // Écouter les événements de modification des données
-        this.setupDataChangeListeners();
     }
 
     scheduleAutomaticBackups() {
@@ -1786,37 +1067,18 @@ class CategoriesPageV22 {
             return;
         }
         
-        // Vérifier s'il faut faire une sauvegarde
         if (this.backupConfig.nextBackup) {
             const nextBackup = new Date(this.backupConfig.nextBackup);
             const now = new Date();
             
             if (now >= nextBackup) {
-                console.log('[Backup] Sauvegarde automatique déclenchée');
                 this.createBackup();
             }
         }
         
-        // Programmer la prochaine vérification
         setTimeout(() => {
             this.scheduleAutomaticBackups();
-        }, 60000); // Vérifier toutes les minutes
-    }
-
-    setupDataChangeListeners() {
-        // Écouter les modifications de catégories
-        window.addEventListener('categoryChanged', () => {
-            if (this.backupConfig.enabled && this.backupConfig.frequency === 'onchange') {
-                this.createBackup();
-            }
-        });
-        
-        // Écouter les modifications de tâches
-        window.addEventListener('taskChanged', () => {
-            if (this.backupConfig.enabled && this.backupConfig.frequency === 'onchange') {
-                this.createBackup();
-            }
-        });
+        }, 60000);
     }
 
     refreshSettingsTab() {
@@ -1837,11 +1099,6 @@ class CategoriesPageV22 {
                 <div class="empty-state-v22">
                     <div class="empty-icon">🔍</div>
                     <p>Aucune catégorie trouvée</p>
-                    ${this.searchTerm ? `
-                        <button class="btn-modern secondary" onclick="window.categoriesPageV22.handleSearch('')">
-                            Effacer la recherche
-                        </button>
-                    ` : ''}
                 </div>
             `;
         }
@@ -1880,8 +1137,7 @@ class CategoriesPageV22 {
                         ${isActive ? 'ON' : 'OFF'}
                     </button>
                     <button class="btn-minimal task ${isPreselected ? 'selected' : ''}" 
-                            onclick="window.categoriesPageV22.togglePreselection('${id}')"
-                            title="${isPreselected ? 'Tâches pré-cochées' : 'Tâches non cochées'}">
+                            onclick="window.categoriesPageV22.togglePreselection('${id}')">
                         <i class="fas fa-${isPreselected ? 'check-square' : 'square'}"></i>
                     </button>
                     <button class="btn-minimal config" 
@@ -1893,8 +1149,133 @@ class CategoriesPageV22 {
         `;
     }
 
+    filterCategories(categories) {
+        if (!this.searchTerm) return categories;
+        
+        const filtered = {};
+        Object.entries(categories).forEach(([id, category]) => {
+            if (category.name.toLowerCase().includes(this.searchTerm)) {
+                filtered[id] = category;
+            }
+        });
+        return filtered;
+    }
+
+    handleSearch(term) {
+        this.searchTerm = term.toLowerCase();
+        this.updateCategoriesDisplay();
+    }
+
+    updateCategoriesDisplay() {
+        const container = document.getElementById('categories-container');
+        if (!container) return;
+        
+        const categories = window.categoryManager?.getCategories() || {};
+        const settings = this.loadSettings();
+        
+        container.innerHTML = this.renderCategories(categories, settings.activeCategories);
+    }
+
+    getCategoryStats(categoryId) {
+        const keywords = window.categoryManager?.getCategoryKeywords?.(categoryId) || {
+            absolute: [], strong: [], weak: [], exclusions: []
+        };
+        
+        return {
+            keywords: keywords.absolute.length + keywords.strong.length + 
+                     keywords.weak.length + keywords.exclusions.length,
+            absolute: keywords.absolute.length
+        };
+    }
+
+    getActiveCount(categories, activeCategories) {
+        if (!activeCategories) return Object.keys(categories).length;
+        return activeCategories.filter(id => categories[id]).length;
+    }
+
+    getTotalKeywords(categories) {
+        let total = 0;
+        Object.keys(categories).forEach(id => {
+            const stats = this.getCategoryStats(id);
+            total += stats.keywords;
+        });
+        return total;
+    }
+
+    loadSettings() {
+        try {
+            const saved = localStorage.getItem('categorySettings');
+            return saved ? JSON.parse(saved) : { 
+                activeCategories: null,
+                taskPreselectedCategories: []
+            };
+        } catch (error) {
+            return { 
+                activeCategories: null,
+                taskPreselectedCategories: []
+            };
+        }
+    }
+
+    saveSettings(settings) {
+        try {
+            localStorage.setItem('categorySettings', JSON.stringify(settings));
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur sauvegarde:', error);
+        }
+    }
+
+    toggleCategory(categoryId) {
+        const settings = this.loadSettings();
+        let activeCategories = settings.activeCategories || null;
+        
+        if (activeCategories === null) {
+            const allCategories = Object.keys(window.categoryManager?.getCategories() || {});
+            activeCategories = allCategories.filter(id => id !== categoryId);
+        } else {
+            if (activeCategories.includes(categoryId)) {
+                activeCategories = activeCategories.filter(id => id !== categoryId);
+            } else {
+                activeCategories.push(categoryId);
+            }
+        }
+        
+        settings.activeCategories = activeCategories;
+        this.saveSettings(settings);
+        this.updateCategoriesDisplay();
+        this.showToast('État de la catégorie mis à jour');
+    }
+
+    togglePreselection(categoryId) {
+        const settings = this.loadSettings();
+        let taskPreselectedCategories = settings.taskPreselectedCategories || [];
+        
+        const isPreselected = taskPreselectedCategories.includes(categoryId);
+        
+        if (isPreselected) {
+            taskPreselectedCategories = taskPreselectedCategories.filter(id => id !== categoryId);
+        } else {
+            taskPreselectedCategories.push(categoryId);
+        }
+        
+        settings.taskPreselectedCategories = taskPreselectedCategories;
+        this.saveSettings(settings);
+        this.updateCategoriesDisplay();
+        
+        const category = window.categoryManager?.getCategory(categoryId);
+        const message = isPreselected ? 
+            `☐ ${category?.name || categoryId} - Pré-sélection désactivée` : 
+            `☑️ ${category?.name || categoryId} - Pré-sélection activée`;
+        this.showToast(message);
+    }
+
+    getTaskPreselectedCategories() {
+        const settings = this.loadSettings();
+        return settings.taskPreselectedCategories || [];
+    }
+
     // ================================================
-    // MODAL CATÉGORIES
+    // MODALS
     // ================================================
     openModal(categoryId) {
         const category = window.categoryManager?.getCategory(categoryId);
@@ -2044,331 +1425,17 @@ class CategoriesPageV22 {
         }
     }
 
-    showCreateModal() {
-        this.closeModal();
-        
-        const modalHTML = `
-            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPageV22.closeModal()">
-                <div class="modal-modern modal-create">
-                    <div class="modal-header">
-                        <h2>Nouvelle catégorie ✨</h2>
-                        <button class="btn-close" onclick="window.categoriesPageV22.closeModal()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="modal-content">
-                        <input type="text" 
-                               id="new-name" 
-                               class="input-name" 
-                               placeholder="Nom de la catégorie" 
-                               autofocus>
-                        
-                        <div class="emoji-picker">
-                            <label>Choisir une icône</label>
-                            <div class="emoji-grid">
-                                ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌', '🌟', '🚀', '💎', '🎨', '🔥'].map(emoji => 
-                                    `<button class="emoji-option ${emoji === '📁' ? 'selected' : ''}" 
-                                             onclick="window.categoriesPageV22.selectIcon('${emoji}')">${emoji}</button>`
-                                ).join('')}
-                            </div>
-                            <input type="hidden" id="new-icon" value="📁">
-                        </div>
-                        
-                        <div class="color-selector">
-                            <label>Couleur de la catégorie</label>
-                            <div class="color-grid">
-                                ${this.colors.map((color, i) => 
-                                    `<button class="color-option ${i === 0 ? 'selected' : ''}" 
-                                             style="background: ${color}"
-                                             onclick="window.categoriesPageV22.selectColor('${color}')"></button>`
-                                ).join('')}
-                            </div>
-                            <input type="hidden" id="new-color" value="${this.colors[0]}">
-                        </div>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button class="btn-modern secondary" onclick="window.categoriesPageV22.closeModal()">
-                            Annuler
-                        </button>
-                        <button class="btn-modern primary" onclick="window.categoriesPageV22.createCategory()">
-                            <i class="fas fa-sparkles"></i> Créer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-        this.currentModal = true;
-        
-        setTimeout(() => document.getElementById('new-name')?.focus(), 100);
-    }
-
-    selectIcon(icon) {
-        document.getElementById('new-icon').value = icon;
-        document.querySelectorAll('.emoji-option').forEach(btn => {
-            btn.classList.toggle('selected', btn.textContent === icon);
-        });
-    }
-
-    selectColor(color) {
-        document.getElementById('new-color').value = color;
-        document.querySelectorAll('.color-option').forEach(btn => {
-            btn.classList.toggle('selected', btn.style.background === color);
-        });
-    }
-
-    createCategory() {
-        const name = document.getElementById('new-name')?.value?.trim();
-        const icon = document.getElementById('new-icon')?.value || '📁';
-        const color = document.getElementById('new-color')?.value || this.colors[0];
-        
-        if (!name) {
-            this.showToast('⚠️ Nom requis', 'warning');
-            return;
-        }
-        
-        const categoryData = {
-            name,
-            icon,
-            color,
-            priority: 30,
-            keywords: { absolute: [], strong: [], weak: [], exclusions: [] }
-        };
-        
-        const newCategory = window.categoryManager?.createCustomCategory(categoryData);
-        
-        if (newCategory) {
-            this.closeModal();
-            this.showToast('✅ Catégorie créée avec succès!');
-            this.updateCategoriesDisplay();
-            
-            setTimeout(() => this.openModal(newCategory.id), 300);
-        } else {
-            this.showToast('❌ Erreur lors de la création', 'error');
-        }
-    }
-
-    // ================================================
-    // ACTIONS ET MÉTHODES UTILITAIRES
-    // ================================================
-    handleSearch(term) {
-        this.searchTerm = term.toLowerCase();
-        this.updateCategoriesDisplay();
-    }
-
-    filterCategories(categories) {
-        if (!this.searchTerm) return categories;
-        
-        const filtered = {};
-        Object.entries(categories).forEach(([id, category]) => {
-            if (category.name.toLowerCase().includes(this.searchTerm)) {
-                filtered[id] = category;
-            }
-        });
-        return filtered;
-    }
-
-    updateCategoriesDisplay() {
-        const container = document.getElementById('categories-container');
-        if (!container) return;
-        
-        const categories = window.categoryManager?.getCategories() || {};
-        const settings = this.loadSettings();
-        
-        container.innerHTML = this.renderCategories(categories, settings.activeCategories);
-    }
-
-    exportBackup() {
-        this.createBackup().then(() => {
-            if (this.backupConfig.storage !== 'download') {
-                const backupData = {
-                    timestamp: new Date().toISOString(),
-                    version: '22.1',
-                    data: {
-                        categories: this.getCategoriesToBackup(),
-                        tasks: this.getTasksToBackup(),
-                        settings: this.getSettingsToBackup()
-                    }
-                };
-                
-                this.downloadBackup(JSON.stringify(backupData, null, 2), backupData.timestamp);
-            }
-        });
-    }
-
-    exportCategories() {
-        try {
-            const categories = this.getCategoriesToBackup();
-            const exportData = {
-                timestamp: new Date().toISOString(),
-                version: '22.1',
-                categories: categories
-            };
-            
-            const jsonString = JSON.stringify(exportData, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            
-            a.href = url;
-            a.download = `categories-export-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            this.showToast('✅ Catégories exportées', 'success');
-        } catch (error) {
-            console.error('[Export] Erreur:', error);
-            this.showToast('❌ Erreur lors de l\'export', 'error');
-        }
-    }
-
-    importCategories() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        
-        input.onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            try {
-                const text = await file.text();
-                const data = JSON.parse(text);
-                
-                if (!data.categories) {
-                    throw new Error('Format de fichier invalide');
-                }
-                
-                if (!confirm('Importer ces catégories ? Ceci pourrait écraser vos catégories existantes.')) {
-                    return;
-                }
-                
-                console.log('[Import] Catégories à importer:', data.categories);
-                this.showToast('✅ Catégories importées', 'success');
-                
-            } catch (error) {
-                console.error('[Import] Erreur:', error);
-                this.showToast('❌ Erreur lors de l\'import', 'error');
-            }
-        };
-        
-        input.click();
-    }
-
-    toggleCategory(categoryId) {
-        const settings = this.loadSettings();
-        let activeCategories = settings.activeCategories || null;
-        
-        if (activeCategories === null) {
-            const allCategories = Object.keys(window.categoryManager?.getCategories() || {});
-            activeCategories = allCategories.filter(id => id !== categoryId);
-        } else {
-            if (activeCategories.includes(categoryId)) {
-                activeCategories = activeCategories.filter(id => id !== categoryId);
-            } else {
-                activeCategories.push(categoryId);
-            }
-        }
-        
-        settings.activeCategories = activeCategories;
-        this.saveSettings(settings);
-        
-        this.updateCategoriesDisplay();
-        this.showToast('État de la catégorie mis à jour');
-    }
-
-    togglePreselection(categoryId) {
-        const settings = this.loadSettings();
-        let taskPreselectedCategories = settings.taskPreselectedCategories || [];
-        
-        const isPreselected = taskPreselectedCategories.includes(categoryId);
-        
-        if (isPreselected) {
-            taskPreselectedCategories = taskPreselectedCategories.filter(id => id !== categoryId);
-        } else {
-            taskPreselectedCategories.push(categoryId);
-        }
-        
-        settings.taskPreselectedCategories = taskPreselectedCategories;
-        this.saveSettings(settings);
-        
-        this.updateCategoriesDisplay();
-        
-        const category = window.categoryManager?.getCategory(categoryId);
-        const message = isPreselected ? 
-            `☐ ${category?.name || categoryId} - Pré-sélection désactivée` : 
-            `☑️ ${category?.name || categoryId} - Pré-sélection activée`;
-        this.showToast(message);
-    }
-
-    getCategoryStats(categoryId) {
-        const keywords = window.categoryManager?.getCategoryKeywords?.(categoryId) || {
-            absolute: [], strong: [], weak: [], exclusions: []
-        };
-        
-        return {
-            keywords: keywords.absolute.length + keywords.strong.length + 
-                     keywords.weak.length + keywords.exclusions.length,
-            absolute: keywords.absolute.length
-        };
-    }
-
-    getActiveCount(categories, activeCategories) {
-        if (!activeCategories) return Object.keys(categories).length;
-        return activeCategories.filter(id => categories[id]).length;
-    }
-
-    getTotalKeywords(categories) {
-        let total = 0;
-        Object.keys(categories).forEach(id => {
-            const stats = this.getCategoryStats(id);
-            total += stats.keywords;
-        });
-        return total;
-    }
-
-    loadSettings() {
-        try {
-            const saved = localStorage.getItem('categorySettings');
-            return saved ? JSON.parse(saved) : { 
-                activeCategories: null,
-                taskPreselectedCategories: []
-            };
-        } catch (error) {
-            return { 
-                activeCategories: null,
-                taskPreselectedCategories: []
-            };
-        }
-    }
-
-    saveSettings(settings) {
-        try {
-            localStorage.setItem('categorySettings', JSON.stringify(settings));
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur sauvegarde:', error);
-        }
-    }
-
-    getTaskPreselectedCategories() {
-        const settings = this.loadSettings();
-        return settings.taskPreselectedCategories || [];
+    closeModal() {
+        document.querySelector('.modal-backdrop')?.remove();
+        document.body.style.overflow = 'auto';
+        this.currentModal = null;
+        this.editingCategoryId = null;
     }
 
     showToast(message, type = 'success') {
         const toast = document.createElement('div');
         toast.className = `toast-modern ${type}`;
-        toast.innerHTML = `
-            <div class="toast-content">
-                ${message}
-            </div>
-        `;
+        toast.innerHTML = `<div class="toast-content">${message}</div>`;
         
         document.body.appendChild(toast);
         
@@ -2378,13 +1445,6 @@ class CategoriesPageV22 {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 300);
         }, 3000);
-    }
-
-    closeModal() {
-        document.querySelector('.modal-backdrop')?.remove();
-        document.body.style.overflow = 'auto';
-        this.currentModal = null;
-        this.editingCategoryId = null;
     }
 
     renderError() {
@@ -2400,107 +1460,7 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // MÉTHODES BACKUP SPÉCIFIQUES
-    // ================================================
-    restoreSpecificBackup(backupKey) {
-        if (!confirm('Restaurer cette sauvegarde ? Ceci remplacera vos données actuelles.')) {
-            return;
-        }
-        
-        try {
-            const backupData = localStorage.getItem(backupKey);
-            if (!backupData) {
-                throw new Error('Sauvegarde introuvable');
-            }
-            
-            let parsedData;
-            try {
-                parsedData = JSON.parse(backupData);
-            } catch {
-                parsedData = JSON.parse(this.decompressData(backupData));
-            }
-            
-            this.restoreBackupData(parsedData).then(() => {
-                this.showToast('✅ Sauvegarde restaurée avec succès!', 'success');
-                this.closeModal();
-                setTimeout(() => window.location.reload(), 2000);
-            });
-            
-        } catch (error) {
-            console.error('[Backup] Erreur restauration spécifique:', error);
-            this.showToast('❌ Erreur lors de la restauration', 'error');
-        }
-    }
-
-    downloadSpecificBackup(backupKey) {
-        try {
-            const backupData = localStorage.getItem(backupKey);
-            if (!backupData) {
-                throw new Error('Sauvegarde introuvable');
-            }
-            
-            const timestamp = backupKey.replace('emailsortpro_backup_', '').replace(/-/g, ':');
-            const filename = `emailsortpro-backup-${timestamp.split('T')[0]}.json`;
-            
-            const blob = new Blob([backupData], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            this.showToast('✅ Sauvegarde téléchargée', 'success');
-            
-        } catch (error) {
-            console.error('[Backup] Erreur téléchargement:', error);
-            this.showToast('❌ Erreur lors du téléchargement', 'error');
-        }
-    }
-
-    deleteSpecificBackup(backupKey) {
-        if (!confirm('Supprimer définitivement cette sauvegarde ?')) {
-            return;
-        }
-        
-        try {
-            localStorage.removeItem(backupKey);
-            this.showToast('🗑️ Sauvegarde supprimée', 'info');
-            
-            this.closeModal();
-            setTimeout(() => this.showBackupHistory(), 300);
-            
-        } catch (error) {
-            console.error('[Backup] Erreur suppression:', error);
-            this.showToast('❌ Erreur lors de la suppression', 'error');
-        }
-    }
-
-    // ================================================
-    // NOUVELLE MÉTHODE: Effacer la sélection de dossier
-    // ================================================
-    clearCustomFolder() {
-        if (confirm('Effacer la sélection du dossier personnalisé ?')) {
-            this.backupConfig.customFolderHandle = null;
-            this.backupConfig.customFolderPath = null;
-            this.saveBackupConfig();
-            
-            // Effacer aussi les flags de première utilisation pour permettre les messages à nouveau
-            localStorage.removeItem('emailsortpro_folder_warning_shown');
-            localStorage.removeItem('emailsortpro_test_backup_done');
-            
-            // Rafraîchir l'affichage
-            this.refreshStorageHelp('custom-folder');
-            
-            this.showToast('📁 Sélection de dossier effacée', 'info');
-        }
-    }
-
-    // ================================================
-    // STYLES MODERNES V22 - CORRIGÉS
+    // STYLES CSS
     // ================================================
     addStyles() {
         if (document.getElementById('categoriesModernStylesV22')) return;
@@ -2521,7 +1481,6 @@ class CategoriesPageV22 {
                 --text-secondary: #6B7280;
                 --border: #E5E7EB;
                 --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
                 
                 padding: 24px;
                 min-height: 100vh;
@@ -2530,7 +1489,7 @@ class CategoriesPageV22 {
                 color: var(--text);
             }
             
-            /* Header avec onglets V22 */
+            /* Header avec onglets */
             .header-modern-v22 {
                 margin-bottom: 32px;
                 background: var(--surface);
@@ -2581,7 +1540,6 @@ class CategoriesPageV22 {
                 align-items: center;
                 justify-content: center;
                 gap: 8px;
-                position: relative;
             }
             
             .main-tab:hover {
@@ -2744,16 +1702,6 @@ class CategoriesPageV22 {
                 border-color: var(--primary);
                 color: var(--primary);
                 transform: translateY(-1px);
-            }
-            
-            .btn-action-v22.export:hover {
-                border-color: var(--success);
-                color: var(--success);
-            }
-            
-            .btn-action-v22.import:hover {
-                border-color: var(--warning);
-                color: var(--warning);
             }
             
             /* Grille catégories V22 */
@@ -2952,6 +1900,17 @@ class CategoriesPageV22 {
                 border-color: #EF4444;
             }
             
+            .status-card.emergency {
+                background: #FEF3C7;
+                border-color: #F59E0B;
+                animation: pulse-warning 2s infinite;
+            }
+            
+            @keyframes pulse-warning {
+                0%, 100% { border-color: #F59E0B; }
+                50% { border-color: #EF4444; }
+            }
+            
             .status-indicator {
                 width: 60px;
                 height: 60px;
@@ -2971,18 +1930,6 @@ class CategoriesPageV22 {
                 background: #EF4444;
             }
             
-            /* Status card mode urgence */
-            .status-card.emergency {
-                background: #FEF3C7;
-                border-color: #F59E0B;
-                animation: pulse-warning 2s infinite;
-            }
-            
-            @keyframes pulse-warning {
-                0%, 100% { border-color: #F59E0B; }
-                50% { border-color: #EF4444; }
-            }
-            
             .status-card.emergency .status-indicator {
                 background: #F59E0B;
                 animation: pulse 1.5s infinite;
@@ -2991,28 +1938,6 @@ class CategoriesPageV22 {
             @keyframes pulse {
                 0%, 100% { transform: scale(1); }
                 50% { transform: scale(1.1); }
-            }
-            
-            /* Bouton réparer mode urgence */
-            .btn-fix-emergency {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 12px 20px;
-                background: #EF4444;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.3s;
-            }
-            
-            .btn-fix-emergency:hover {
-                background: #DC2626;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
             }
             
             .status-info {
@@ -3078,6 +2003,27 @@ class CategoriesPageV22 {
                 transform: translateX(26px);
             }
             
+            .btn-fix-emergency {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 12px 20px;
+                background: #EF4444;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            
+            .btn-fix-emergency:hover {
+                background: #DC2626;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+            }
+            
             /* Configuration du backup */
             .backup-config {
                 margin-bottom: 32px;
@@ -3134,7 +2080,7 @@ class CategoriesPageV22 {
                 border-left: 3px solid var(--primary);
             }
             
-            /* Configuration dossier personnalisé - CORRIGÉ */
+            /* Configuration dossier personnalisé */
             .custom-folder-config {
                 margin-top: 16px;
                 padding: 16px;
@@ -3202,31 +2148,6 @@ class CategoriesPageV22 {
                 color: var(--primary);
             }
             
-            /* Avertissement pour navigateurs non compatibles */
-            .folder-warning {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 8px 12px;
-                background: #FEF3C7;
-                border: 1px solid #F59E0B;
-                border-radius: 6px;
-                margin-top: 8px;
-            }
-            
-            .folder-warning small {
-                font-size: 12px;
-                color: #92400E;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            
-            .folder-warning i {
-                color: #F59E0B;
-            }
-            
-            /* Recommandations pour dossiers */
             .folder-recommendations {
                 margin: 12px 0;
                 display: flex;
@@ -3253,10 +2174,8 @@ class CategoriesPageV22 {
                 color: #10B981;
             }
             
-            .recommendation-item.warning {
-                background: #FEF3C7;
-                border: 1px solid #F59E0B;
-                color: #92400E;
+            .recommendation-item.good i.fa-star {
+                color: #F59E0B;
             }
             
             .recommendation-item.info {
@@ -3269,12 +2188,29 @@ class CategoriesPageV22 {
                 color: #3B82F6;
             }
             
-            /* Style spécial pour la configuration par défaut */
-            .recommendation-item.good i.fa-star {
+            .folder-warning {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 12px;
+                background: #FEF3C7;
+                border: 1px solid #F59E0B;
+                border-radius: 6px;
+                margin-top: 8px;
+            }
+            
+            .folder-warning small {
+                font-size: 12px;
+                color: #92400E;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .folder-warning i {
                 color: #F59E0B;
             }
             
-            /* Actions pour dossier sélectionné */
             .folder-actions {
                 display: flex;
                 gap: 8px;
@@ -3385,7 +2321,7 @@ class CategoriesPageV22 {
                 transform: translateY(-2px);
             }
             
-            /* Statistiques de backup */
+            /* Statistiques */
             .backup-stats h3 {
                 font-size: 16px;
                 font-weight: 600;
@@ -3469,7 +2405,7 @@ class CategoriesPageV22 {
                 box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
             }
             
-            /* États vides et modals */
+            /* États vides */
             .empty-state-v22 {
                 text-align: center;
                 padding: 80px 20px;
@@ -3588,7 +2524,7 @@ class CategoriesPageV22 {
                 background: #FFFFFF;
             }
             
-            /* Keywords grid pour modal */
+            /* Keywords grid */
             .keywords-grid {
                 display: grid;
                 grid-template-columns: repeat(2, 1fr);
@@ -3708,200 +2644,6 @@ class CategoriesPageV22 {
                 opacity: 1;
             }
             
-            /* Modal création */
-            .modal-create {
-                max-width: 480px;
-            }
-            
-            .input-name {
-                width: 100%;
-                padding: 16px 20px;
-                border: 2px solid var(--border);
-                border-radius: 12px;
-                font-size: 18px;
-                font-weight: 600;
-                margin-bottom: 24px;
-                transition: all 0.3s;
-            }
-            
-            .input-name:focus {
-                outline: none;
-                border-color: var(--primary);
-                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-            }
-            
-            .emoji-picker,
-            .color-selector {
-                margin-bottom: 24px;
-            }
-            
-            .emoji-picker label,
-            .color-selector label {
-                display: block;
-                font-size: 14px;
-                font-weight: 600;
-                color: var(--text-secondary);
-                margin-bottom: 12px;
-            }
-            
-            .emoji-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-                gap: 8px;
-            }
-            
-            .emoji-option {
-                width: 48px;
-                height: 48px;
-                border: 2px solid var(--border);
-                background: var(--surface);
-                border-radius: 12px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 24px;
-                transition: all 0.3s;
-            }
-            
-            .emoji-option:hover {
-                border-color: var(--primary);
-                transform: scale(1.1);
-            }
-            
-            .emoji-option.selected {
-                border-color: var(--primary);
-                background: var(--primary)10;
-            }
-            
-            .color-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-                gap: 8px;
-            }
-            
-            .color-option {
-                width: 40px;
-                height: 40px;
-                border: 3px solid transparent;
-                border-radius: 10px;
-                cursor: pointer;
-                transition: all 0.3s;
-                position: relative;
-            }
-            
-            .color-option:hover {
-                transform: scale(1.1);
-            }
-            
-            .color-option.selected {
-                border-color: var(--text);
-            }
-            
-            .color-option.selected::after {
-                content: '✓';
-                position: absolute;
-                inset: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: bold;
-                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-            }
-            
-            /* Historique backup */
-            .backup-history-list {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                max-height: 400px;
-                overflow-y: auto;
-            }
-            
-            .backup-item {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 16px;
-                background: var(--surface);
-                border: 1px solid var(--border);
-                border-radius: 8px;
-                transition: all 0.3s;
-            }
-            
-            .backup-item:hover {
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            }
-            
-            .backup-info {
-                flex: 1;
-            }
-            
-            .backup-date {
-                font-size: 15px;
-                font-weight: 600;
-                color: var(--text);
-                margin-bottom: 4px;
-            }
-            
-            .backup-size {
-                font-size: 13px;
-                color: var(--text-secondary);
-            }
-            
-            .backup-actions {
-                display: flex;
-                gap: 8px;
-            }
-            
-            .btn-mini {
-                padding: 6px 12px;
-                border: 1px solid var(--border);
-                background: var(--surface);
-                border-radius: 6px;
-                font-size: 12px;
-                cursor: pointer;
-                transition: all 0.3s;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-            
-            .btn-mini:hover {
-                transform: translateY(-1px);
-            }
-            
-            .btn-mini.restore {
-                color: var(--primary);
-                border-color: var(--primary);
-            }
-            
-            .btn-mini.restore:hover {
-                background: var(--primary);
-                color: white;
-            }
-            
-            .btn-mini.download {
-                color: var(--success);
-                border-color: var(--success);
-            }
-            
-            .btn-mini.download:hover {
-                background: var(--success);
-                color: white;
-            }
-            
-            .btn-mini.delete {
-                color: var(--danger);
-                border-color: var(--danger);
-            }
-            
-            .btn-mini.delete:hover {
-                background: var(--danger);
-                color: white;
-            }
-            
             /* Boutons modernes */
             .btn-modern {
                 padding: 10px 20px;
@@ -3975,7 +2717,7 @@ class CategoriesPageV22 {
                 background: #06B6D4;
             }
             
-            /* Responsive V22 */
+            /* Responsive */
             @media (max-width: 1024px) {
                 .stats-bar-v22 {
                     grid-template-columns: repeat(3, 1fr);
@@ -4051,7 +2793,7 @@ class CategoriesPageV22 {
 }
 
 // ================================================
-// INTÉGRATION GLOBALE V22.1
+// INTÉGRATION GLOBALE V22.2
 // ================================================
 
 // Créer l'instance avec un nom unique
@@ -4060,7 +2802,7 @@ window.categoriesPageV22 = new CategoriesPageV22();
 // Créer un alias pour maintenir la compatibilité
 window.categoriesPage = window.categoriesPageV22;
 
-// Intégration avec PageManager pour le rendu des paramètres
+// Intégration avec PageManager
 if (window.pageManager?.pages) {
     window.pageManager.pages.settings = (container) => {
         window.categoriesPageV22.render(container);
@@ -4071,11 +2813,11 @@ if (window.pageManager?.pages) {
     };
 }
 
-// Assurer la compatibilité avec les méthodes attendues
+// Assurer la compatibilité
 if (!window.categoriesPage.getTaskPreselectedCategories) {
     window.categoriesPage.getTaskPreselectedCategories = function() {
         return window.categoriesPageV22.getTaskPreselectedCategories?.() || [];
     };
 }
 
-console.log('[CategoriesPage] ✅ CategoriesPage v22.1 chargée - Système de récupération automatique actif!');
+console.log('[CategoriesPage] ✅ CategoriesPage v22.2 chargée - Affichage réparé et système de récupération automatique actif!');
