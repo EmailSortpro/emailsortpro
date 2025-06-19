@@ -71,12 +71,102 @@ class CategoriesPageV24 {
         if (!this.filesystemConfig.enabled && !authorizationGranted) {
             console.log('[CategoriesPage] 🎯 Première utilisation - Préparation autorisation...');
             this.filesystemConfig.currentPath = 'Autorisation requise pour création automatique';
+            
+            // Afficher une notification discrète pour configurer le backup
+            setTimeout(() => {
+                this.showBackupConfigNotification();
+            }, 5000); // 5 secondes après le chargement
+            
         } else if (!this.filesystemConfig.enabled && authorizationGranted) {
             console.log('[CategoriesPage] ✅ Autorisation précédente trouvée - Configuration disponible');
             this.filesystemConfig.currentPath = 'Prêt pour création automatique';
         }
         
         this.initializeBackup();
+    }
+
+    showBackupConfigNotification() {
+        // Vérifier si l'utilisateur n'a pas déjà vu cette notification
+        const notificationShown = localStorage.getItem('emailsortpro_backup_notification_shown');
+        if (notificationShown) return;
+        
+        // Créer une notification discrète
+        const notification = document.createElement('div');
+        notification.className = 'backup-config-notification';
+        notification.innerHTML = `
+            <div class="notification-content">
+                <div class="notification-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="notification-text">
+                    <strong>Sauvegarde automatique disponible</strong>
+                    <span>Configurez la sauvegarde de vos catégories sur votre ordinateur</span>
+                </div>
+                <div class="notification-actions">
+                    <button class="notification-btn primary" onclick="window.categoriesPageV24.handleNotificationConfigure()">
+                        <i class="fas fa-cog"></i> Configurer
+                    </button>
+                    <button class="notification-btn secondary" onclick="window.categoriesPageV24.handleNotificationDismiss()">
+                        <i class="fas fa-times"></i> Plus tard
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animation d'apparition
+        setTimeout(() => {
+            notification.classList.add('visible');
+        }, 100);
+        
+        // Auto-dismiss après 10 secondes
+        setTimeout(() => {
+            if (notification.parentElement) {
+                this.handleNotificationDismiss();
+            }
+        }, 10000);
+        
+        this.currentNotification = notification;
+    }
+
+    handleNotificationConfigure() {
+        console.log('[CategoriesPage] 🎯 Configuration via notification...');
+        
+        // Marquer la notification comme vue
+        localStorage.setItem('emailsortpro_backup_notification_shown', 'true');
+        
+        // Fermer la notification
+        if (this.currentNotification) {
+            this.currentNotification.classList.add('closing');
+            setTimeout(() => {
+                if (this.currentNotification && this.currentNotification.parentElement) {
+                    this.currentNotification.remove();
+                }
+                this.currentNotification = null;
+            }, 300);
+        }
+        
+        // Déclencher la configuration
+        this.configureDirectAccess();
+    }
+
+    handleNotificationDismiss() {
+        console.log('[CategoriesPage] 📝 Notification rejetée - Sera reproposée plus tard');
+        
+        // Marquer comme vue pour cette session seulement
+        sessionStorage.setItem('emailsortpro_backup_notification_dismissed', 'true');
+        
+        // Fermer la notification
+        if (this.currentNotification) {
+            this.currentNotification.classList.add('closing');
+            setTimeout(() => {
+                if (this.currentNotification && this.currentNotification.parentElement) {
+                    this.currentNotification.remove();
+                }
+                this.currentNotification = null;
+            }, 300);
+        }
     }
 
     async showAuthorizationModal() {
@@ -2681,6 +2771,114 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 font-size: 16px;
             }
 
+            /* Notification de configuration backup */
+            .backup-config-notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: white;
+                border: 2px solid #3B82F6;
+                border-radius: 12px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+                max-width: 400px;
+                z-index: 2000;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+            }
+
+            .backup-config-notification.visible {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            .backup-config-notification.closing {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+
+            .notification-content {
+                padding: 16px;
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .notification-icon {
+                width: 40px;
+                height: 40px;
+                background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 16px;
+                flex-shrink: 0;
+            }
+
+            .notification-text {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .notification-text strong {
+                font-size: 14px;
+                font-weight: 600;
+                color: #1f2937;
+            }
+
+            .notification-text span {
+                font-size: 13px;
+                color: #6b7280;
+                line-height: 1.4;
+            }
+
+            .notification-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                margin-top: 12px;
+                padding-top: 12px;
+                border-top: 1px solid #f1f5f9;
+            }
+
+            .notification-btn {
+                border: none;
+                border-radius: 6px;
+                padding: 6px 12px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                transition: all 0.15s ease;
+                justify-content: center;
+            }
+
+            .notification-btn.primary {
+                background: #3B82F6;
+                color: white;
+            }
+
+            .notification-btn.primary:hover {
+                background: #2563EB;
+            }
+
+            .notification-btn.secondary {
+                background: #f3f4f6;
+                color: #6b7280;
+                border: 1px solid #e5e7eb;
+            }
+
+            .notification-btn.secondary:hover {
+                background: #e5e7eb;
+                color: #374151;
+            }
+
             @media (max-width: 768px) {
                 .categories-page-container {
                     padding: 12px;
@@ -2791,42 +2989,47 @@ window.forceConfigureBackup = async function() {
     }
 };
 
-// API pour déclencher l'autorisation à la première connexion (CORRIGÉE)
-window.requestFirstTimeAuthorization = async function() {
-    console.log('[API] 🎯 Demande autorisation première connexion...');
+// API pour forcer le déclenchement manuel du modal d'autorisation
+window.triggerAuthorizationModal = function() {
+    console.log('[API] 🎨 Déclenchement manuel du modal d\'autorisation...');
     
     try {
-        const instance = window.categoriesPageV24;
-        
-        if (!instance) {
-            console.log('[API] ⚠️ CategoriesPage pas encore chargée');
-            return { success: false, error: 'CategoriesPage not ready' };
+        if (window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal) {
+            window.categoriesPageV24.showAuthorizationModal();
+            console.log('[API] ✅ Modal d\'autorisation affiché manuellement');
+            return { success: true };
+        } else {
+            console.error('[API] ❌ CategoriesPage non disponible');
+            return { success: false, error: 'CategoriesPage not available' };
         }
-        
-        if (!instance.fileSystemSupported) {
-            console.log('[API] ⚠️ File System API non supportée');
-            return { success: false, error: 'File System API not supported' };
-        }
-        
-        // Vérifier si l'autorisation a déjà été donnée
-        const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
-        if (authorizationGranted) {
-            console.log('[API] ✅ Autorisation déjà accordée');
-            return { success: true, alreadyAuthorized: true };
-        }
-        
-        // Afficher le modal d'autorisation - SEULEMENT SI NÉCESSAIRE
-        await instance.showAuthorizationModal();
-        
-        return { success: true, modalShown: true };
-        
     } catch (error) {
-        console.error('[API] ❌ Erreur demande autorisation:', error);
+        console.error('[API] ❌ Erreur déclenchement manuel:', error);
         return { success: false, error: error.message };
     }
 };
 
-// Script d'intégration pour la première connexion (CORRIGÉ)
+// API pour vérifier l'état d'autorisation
+window.checkAuthorizationStatus = function() {
+    const hasConnected = localStorage.getItem('emailsortpro_has_connected');
+    const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
+    const authDate = localStorage.getItem('emailsortpro_authorization_date');
+    const firstConnectionDate = localStorage.getItem('emailsortpro_first_connection_date');
+    
+    const status = {
+        hasConnectedBefore: !!hasConnected,
+        authorizationGranted: !!authorizationGranted,
+        isFirstTime: !hasConnected && !authorizationGranted,
+        shouldShowModal: !hasConnected && !authorizationGranted,
+        authorizationDate: authDate,
+        firstConnectionDate: firstConnectionDate,
+        categoriesPageReady: !!(window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal)
+    };
+    
+    console.log('[API] 📊 Statut autorisation:', status);
+    return status;
+};
+
+// Script d'intégration pour la première connexion (CORRIGÉ AVEC AUTO-TRIGGER)
 window.setupFirstTimeAuth = function() {
     console.log('[SETUP] 🎯 Configuration autorisation première connexion...');
     
@@ -2837,14 +3040,38 @@ window.setupFirstTimeAuth = function() {
         const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
         
         if (!hasConnectedBefore && !authorizationGranted) {
-            console.log('[SETUP] 🆕 Première connexion détectée - Préparation autorisation...');
+            console.log('[SETUP] 🆕 Première connexion détectée - Déclenchement automatique...');
             
             // Marquer que l'utilisateur s'est connecté
             localStorage.setItem('emailsortpro_has_connected', 'true');
             localStorage.setItem('emailsortpro_first_connection_date', new Date().toISOString());
             
-            // NE PAS déclencher automatiquement - Attendre l'interaction utilisateur
-            console.log('[SETUP] ✅ Marqué pour autorisation - Attente interaction utilisateur');
+            // DÉCLENCHER automatiquement le modal d'autorisation après un délai
+            setTimeout(async () => {
+                try {
+                    console.log('[SETUP] 🎨 Déclenchement automatique du modal d\'autorisation...');
+                    
+                    // Vérifier que CategoriesPage est prêt
+                    if (window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal) {
+                        await window.categoriesPageV24.showAuthorizationModal();
+                        console.log('[SETUP] ✅ Modal d\'autorisation affiché automatiquement');
+                    } else {
+                        console.warn('[SETUP] ⚠️ CategoriesPage pas encore prêt - Nouvelle tentative...');
+                        
+                        // Deuxième tentative après 2 secondes supplémentaires
+                        setTimeout(async () => {
+                            if (window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal) {
+                                await window.categoriesPageV24.showAuthorizationModal();
+                                console.log('[SETUP] ✅ Modal d\'autorisation affiché (2ème tentative)');
+                            } else {
+                                console.warn('[SETUP] ⚠️ Impossible d\'afficher le modal - Disponible manuellement');
+                            }
+                        }, 2000);
+                    }
+                } catch (error) {
+                    console.error('[SETUP] ❌ Erreur déclenchement modal:', error);
+                }
+            }, 3000); // 3 secondes après l'activation de l'app
             
         } else {
             console.log('[SETUP] ✅ Utilisateur existant - Pas d\'autorisation automatique requise');
@@ -2879,10 +3106,11 @@ setTimeout(() => {
     window.setupFirstTimeAuth();
 }, 1000);
 
-console.log('[CategoriesPage] ✅ CategoriesPage v24.1 chargée - USER GESTURE FIXÉ !');
+console.log('[CategoriesPage] ✅ CategoriesPage v24.1 chargée - AUTO-TRIGGER PREMIÈRE CONNEXION !');
 console.log('[CategoriesPage] 🎯 Fonctionnalités principales:');
 console.log('[CategoriesPage]   • 🔧 CORRIGÉ: User Gesture pour File Picker API');
-console.log('[CategoriesPage]   • 🎨 Modal d\'autorisation esthétique');
+console.log('[CategoriesPage]   • 🎨 Modal d\'autorisation esthétique AUTO-DÉCLENCHEMENT');
+console.log('[CategoriesPage]   • 🔔 Notification discrète de configuration backup');
 console.log('[CategoriesPage]   • 🎯 Modal de création directe après autorisation');
 console.log('[CategoriesPage]   • ✨ Autorisation unique - Ne se reproduit jamais');
 console.log('[CategoriesPage]   • 📁 Création automatique dans Documents après clic utilisateur');
@@ -2894,5 +3122,6 @@ console.log('[CategoriesPage] 📁 API disponible:');
 console.log('[CategoriesPage]   • window.testCategoriesBackup() - Tester');
 console.log('[CategoriesPage]   • window.getCategoriesBackupInfo() - Infos');
 console.log('[CategoriesPage]   • window.forceConfigureBackup() - Configurer');
-console.log('[CategoriesPage]   • window.requestFirstTimeAuthorization() - Modal autorisation');
-console.log('[CategoriesPage] ⚡ User Gesture correctement géré pour File Picker !');
+console.log('[CategoriesPage]   • window.triggerAuthorizationModal() - Déclencher modal');
+console.log('[CategoriesPage]   • window.checkAuthorizationStatus() - Vérifier statut');
+console.log('[CategoriesPage] ⚡ Auto-déclenchement à la première connexion + notification discrète !');
