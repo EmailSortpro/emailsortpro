@@ -576,212 +576,8 @@
             color: #6b7280;
         }
 
-        .welcome-permissions {
-            margin-bottom: 32px;
-        }
-
-        .permissions-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .permissions-subtitle {
-            font-size: 1rem;
-            color: #6b7280;
-            margin-bottom: 24px;
-            text-align: center;
-        }
-
-        .permission-card {
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
-            display: flex;
-            gap: 16px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .permission-card:hover {
-            border-color: #4F46E5;
-            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.1);
-        }
-
-        .permission-card.granted {
-            border-color: #10b981;
-            background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
-        }
-
-        .permission-card.denied {
-            border-color: #e5e7eb;
-            background: #f9fafb;
-            opacity: 0.7;
-        }
-
-        .permission-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-        }
-
-        .permission-card.granted .permission-icon {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-
-        .permission-card.denied .permission-icon {
-            background: #9ca3af;
-        }
-
-        .permission-content {
-            flex: 1;
-        }
-
-        .permission-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .permission-header h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin: 0;
-        }
-
-        .permission-status {
-            display: flex;
-            align-items: center;
-        }
-
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .status-badge.pending {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .status-badge.granted {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .status-badge.denied {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .permission-description {
-            font-size: 0.95rem;
-            color: #6b7280;
-            line-height: 1.5;
-            margin-bottom: 16px;
-        }
-
-        .permission-description small {
-            display: block;
-            margin-top: 4px;
-            font-size: 0.85rem;
-            color: #9ca3af;
-        }
-
-        .permission-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .permission-btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .permission-btn.primary {
-            background: #4F46E5;
-            color: white;
-        }
-
-        .permission-btn.primary:hover {
-            background: #4338CA;
-            transform: translateY(-1px);
-        }
-
-        .permission-btn.secondary {
-            background: #f3f4f6;
-            color: #6b7280;
-            border: 1px solid #d1d5db;
-        }
-
-        .permission-btn.secondary:hover {
-            background: #e5e7eb;
-            color: #374151;
-        }
-
-        .permission-card.granted .permission-actions,
-        .permission-card.denied .permission-actions {
-            display: none;
-        }
-
         .welcome-actions {
             margin-bottom: 24px;
-        }
-
-        .welcome-progress {
-            margin-bottom: 24px;
-            text-align: center;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #e5e7eb;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 8px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            border-radius: 4px;
-            transition: width 0.5s ease;
-        }
-
-        .progress-text {
-            font-size: 0.9rem;
-            color: #6b7280;
-            font-weight: 500;
         }
 
         .action-buttons {
@@ -1396,17 +1192,6 @@
                 font-size: 1.8rem;
             }
 
-            .permission-card {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .permission-header {
-                flex-direction: column;
-                gap: 8px;
-                text-align: center;
-            }
-
             .action-buttons {
                 flex-direction: column;
             }
@@ -1718,7 +1503,7 @@
                 </div>
             </div>
 
-            <!-- Page de Bienvenue avec Autorisations -->
+            <!-- Page de Bienvenue simplifiée -->
             <div id="welcomePage" class="welcome-page-styles" style="display: none;">
                 <div class="welcome-container">
                     <div class="welcome-header">
@@ -1728,7 +1513,7 @@
                         
                         <h1 class="welcome-title">Bienvenue dans EmailSortPro !</h1>
                         <p class="welcome-subtitle">
-                            Votre connexion a réussi. Configurons maintenant quelques fonctionnalités pour optimiser votre expérience.
+                            Votre connexion a réussi. Commençons à organiser vos emails efficacement.
                         </p>
                         
                         <div class="user-welcome-info">
@@ -1742,59 +1527,10 @@
                         </div>
                     </div>
 
-                    <div class="welcome-permissions">
-                        <h2 class="permissions-title">
-                            <i class="fas fa-shield-alt"></i>
-                            Autorisations Optionnelles
-                        </h2>
-                        <p class="permissions-subtitle">
-                            Ces autorisations amélioreront votre expérience mais ne sont pas obligatoires.
-                        </p>
-
-                        <!-- Autorisation Sauvegarde -->
-                        <div class="permission-card" id="backupPermissionCard">
-                            <div class="permission-icon">
-                                <i class="fas fa-hdd"></i>
-                            </div>
-                            <div class="permission-content">
-                                <div class="permission-header">
-                                    <h3>Sauvegarde Automatique</h3>
-                                    <div class="permission-status" id="backupStatus">
-                                        <span class="status-badge pending">En attente</span>
-                                    </div>
-                                </div>
-                                <p class="permission-description">
-                                    Sauvegarder automatiquement vos catégories et paramètres sur votre ordinateur.
-                                    <br><small>📁 Emplacement : Documents/EmailSortPro/</small>
-                                </p>
-                                <div class="permission-actions">
-                                    <button class="permission-btn primary" onclick="welcomeSystem.requestBackupPermission()">
-                                        <i class="fas fa-check"></i> Autoriser
-                                    </button>
-                                    <button class="permission-btn secondary" onclick="welcomeSystem.skipLocationPermission()">
-                                        <i class="fas fa-times"></i> Refuser
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="welcome-actions">
-                        <div class="welcome-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="welcomeProgress" style="width: 0%"></div>
-                            </div>
-                            <div class="progress-text">
-                                <span id="permissionsCompleted">0</span> sur <span id="permissionsTotal">3</span> configurées
-                            </div>
-                        </div>
-
                         <div class="action-buttons">
-                            <button class="welcome-btn secondary" onclick="welcomeSystem.skipAll()">
-                                <i class="fas fa-forward"></i> Passer toutes
-                            </button>
-                            <button class="welcome-btn primary" id="continueBtn" onclick="welcomeSystem.continueToApp()" disabled>
-                                <i class="fas fa-arrow-right"></i> Continuer vers l'app
+                            <button class="welcome-btn primary" id="continueBtn" onclick="welcomeSystem.continueToApp()">
+                                <i class="fas fa-rocket"></i> Lancer EmailSortPro
                             </button>
                         </div>
                     </div>
@@ -1867,32 +1603,20 @@
         let appAlreadyShown = false;
 
         // ===============================================
-        // SYSTÈME DE BIENVENUE AVEC AUTORISATIONS
+        // SYSTÈME DE BIENVENUE SIMPLIFIÉ (SANS MODALS DE SAUVEGARDE)
         // ===============================================
         
-        // Système de gestion de la page de bienvenue avec autorisations
+        // Système de gestion de la page de bienvenue SANS demandes d'autorisations
         window.welcomeSystem = {
-            permissions: {
-                backup: { status: 'pending', required: false },
-                notifications: { status: 'pending', required: false },
-                location: { status: 'pending', required: false }
-            },
-            
             // Initialiser le système de bienvenue
             init(user) {
-                console.log('[Welcome] 🎉 Initializing welcome system for user:', user?.name || 'Unknown');
+                console.log('[Welcome] 🎉 Initializing simplified welcome system for user:', user?.name || 'Unknown');
                 
                 // Mettre à jour les informations utilisateur
                 this.updateUserInfo(user);
                 
-                // Réinitialiser les permissions
-                this.resetPermissions();
-                
                 // Afficher la page de bienvenue
                 this.show();
-                
-                // Démarrer la vérification automatique des permissions
-                this.checkExistingPermissions();
             },
             
             // Mettre à jour les informations utilisateur
@@ -1910,7 +1634,7 @@
             
             // Afficher la page de bienvenue
             show() {
-                console.log('[Welcome] 📺 Showing welcome page...');
+                console.log('[Welcome] 📺 Showing simplified welcome page...');
                 document.getElementById('welcomePage').style.display = 'flex';
                 
                 // Masquer la page de login
@@ -1932,319 +1656,32 @@
                 document.getElementById('welcomePage').style.display = 'none';
             },
             
-            // Réinitialiser les permissions
-            resetPermissions() {
-                Object.keys(this.permissions).forEach(key => {
-                    this.permissions[key].status = 'pending';
-                    this.updatePermissionCard(key, 'pending');
-                });
-                this.updateProgress();
-            },
-            
-            // Vérifier les permissions existantes
-            async checkExistingPermissions() {
-                console.log('[Welcome] 🔍 Checking existing permissions...');
-                
-                // Vérifier les notifications
-                if ('Notification' in window) {
-                    if (Notification.permission === 'granted') {
-                        this.setPermissionStatus('notifications', 'granted');
-                    } else if (Notification.permission === 'denied') {
-                        this.setPermissionStatus('notifications', 'denied');
-                    }
-                }
-                
-                // Vérifier la géolocalisation
-                if ('geolocation' in navigator) {
-                    try {
-                        await new Promise((resolve) => {
-                            if (navigator.permissions) {
-                                navigator.permissions.query({name: 'geolocation'}).then(result => {
-                                    if (result.state === 'granted') {
-                                        this.setPermissionStatus('location', 'granted');
-                                    } else if (result.state === 'denied') {
-                                        this.setPermissionStatus('location', 'denied');
-                                    }
-                                    resolve();
-                                }).catch(() => resolve()); // Ignore les erreurs
-                            } else {
-                                resolve();
-                            }
-                        });
-                    } catch (e) {
-                        // Ignore les erreurs de permissions API
-                    }
-                }
-                
-                // Vérifier le backup (via CategoriesPage si disponible)
-                this.checkBackupStatus();
-                
-                this.updateProgress();
-            },
-            
-            // Vérifier le statut du backup
-            checkBackupStatus() {
-                // Attendre que CategoriesPage soit chargé
-                setTimeout(() => {
-                    if (window.categoriesPageV24) {
-                        const backupInfo = window.categoriesPageV24.filesystemConfig;
-                        if (backupInfo && backupInfo.enabled) {
-                            this.setPermissionStatus('backup', 'granted');
-                        }
-                    }
-                }, 2000);
-            },
-            
-            // Demander l'autorisation de sauvegarde
-            async requestBackupPermission() {
-                console.log('[Welcome] 💾 Requesting backup permission...');
-                
-                try {
-                    // Marquer comme en cours
-                    this.updatePermissionCard('backup', 'loading');
-                    
-                    // Attendre que CategoriesPage soit prêt
-                    let attempts = 0;
-                    while (!window.categoriesPageV24 && attempts < 50) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        attempts++;
-                    }
-                    
-                    if (window.categoriesPageV24 && window.categoriesPageV24.configureDirectAccess) {
-                        const success = await window.categoriesPageV24.configureDirectAccess();
-                        
-                        if (success) {
-                            this.setPermissionStatus('backup', 'granted');
-                            this.showToast('✅ Sauvegarde automatique configurée !', 'success');
-                        } else {
-                            // Même si l'utilisateur n'a pas configuré, on considère comme traité
-                            this.setPermissionStatus('backup', 'denied');
-                            this.showToast('📁 Sauvegarde disponible dans les Paramètres', 'info');
-                        }
-                    } else {
-                        // Fallback : marquer comme traité
-                        this.setPermissionStatus('backup', 'denied');
-                        this.showToast('📁 Sauvegarde sera configurée dans l\'application', 'info');
-                    }
-                } catch (error) {
-                    console.error('[Welcome] ❌ Backup permission error:', error);
-                    this.setPermissionStatus('backup', 'denied');
-                    this.showToast('📁 Configuration de sauvegarde reportée', 'info');
-                }
-                
-                this.updateProgress();
-            },
-            
-            // Ignorer l'autorisation de sauvegarde
-            skipBackupPermission() {
-                this.setPermissionStatus('backup', 'denied');
-                this.showToast('📁 Sauvegarde disponible dans les Paramètres', 'info');
-                this.updateProgress();
-            },
-            
-            // Demander l'autorisation de notifications
-            async requestNotificationPermission() {
-                console.log('[Welcome] 🔔 Requesting notification permission...');
-                
-                try {
-                    if ('Notification' in window) {
-                        this.updatePermissionCard('notifications', 'loading');
-                        
-                        const permission = await Notification.requestPermission();
-                        
-                        if (permission === 'granted') {
-                            this.setPermissionStatus('notifications', 'granted');
-                            this.showToast('✅ Notifications activées !', 'success');
-                            
-                            // Notification de test
-                            new Notification('EmailSortPro', {
-                                body: 'Notifications configurées avec succès !',
-                                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📧</text></svg>'
-                            });
-                        } else {
-                            this.setPermissionStatus('notifications', 'denied');
-                            this.showToast('🔕 Notifications désactivées', 'info');
-                        }
-                    } else {
-                        this.setPermissionStatus('notifications', 'denied');
-                        this.showToast('❌ Notifications non supportées', 'error');
-                    }
-                } catch (error) {
-                    console.error('[Welcome] ❌ Notification permission error:', error);
-                    this.setPermissionStatus('notifications', 'denied');
-                    this.showToast('🔕 Notifications désactivées', 'info');
-                }
-                
-                this.updateProgress();
-            },
-            
-            // Refuser l'autorisation de notifications
-            skipNotificationPermission() {
-                this.setPermissionStatus('notifications', 'denied');
-                this.showToast('🔕 Notifications désactivées', 'info');
-                this.updateProgress();
-            },
-            
-            // Demander l'autorisation de géolocalisation
-            async requestLocationPermission() {
-                console.log('[Welcome] 🗺️ Requesting location permission...');
-                
-                try {
-                    if ('geolocation' in navigator) {
-                        this.updatePermissionCard('location', 'loading');
-                        
-                        await new Promise((resolve, reject) => {
-                            navigator.geolocation.getCurrentPosition(
-                                (position) => {
-                                    this.setPermissionStatus('location', 'granted');
-                                    this.showToast('✅ Géolocalisation activée !', 'success');
-                                    resolve(position);
-                                },
-                                (error) => {
-                                    this.setPermissionStatus('location', 'denied');
-                                    this.showToast('🗺️ Géolocalisation refusée', 'info');
-                                    resolve();
-                                },
-                                { timeout: 10000, enableHighAccuracy: false }
-                            );
-                        });
-                    } else {
-                        this.setPermissionStatus('location', 'denied');
-                        this.showToast('❌ Géolocalisation non supportée', 'error');
-                    }
-                } catch (error) {
-                    console.error('[Welcome] ❌ Location permission error:', error);
-                    this.setPermissionStatus('location', 'denied');
-                    this.showToast('🗺️ Géolocalisation désactivée', 'info');
-                }
-                
-                this.updateProgress();
-            },
-            
-            // Refuser l'autorisation de géolocalisation
-            skipLocationPermission() {
-                this.setPermissionStatus('location', 'denied');
-                this.showToast('🗺️ Géolocalisation désactivée', 'info');
-                this.updateProgress();
-            },
-            
-            // Passer toutes les autorisations
-            skipAll() {
-                console.log('[Welcome] ⏭️ Skipping all permissions...');
-                Object.keys(this.permissions).forEach(key => {
-                    if (this.permissions[key].status === 'pending') {
-                        this.setPermissionStatus(key, 'denied');
-                    }
-                });
-                this.updateProgress();
-                this.showToast('⏭️ Configuration terminée - Options disponibles dans les Paramètres', 'info');
-                
-                // Activer le bouton continuer
-                setTimeout(() => {
-                    this.continueToApp();
-                }, 1500);
-            },
-            
             // Continuer vers l'application
             continueToApp() {
                 console.log('[Welcome] 🚀 Continuing to app...');
                 
-                // Sauvegarder les préférences
-                this.savePreferences();
+                // Marquer la première connexion comme effectuée
+                try {
+                    localStorage.setItem('emailsortpro_has_connected', 'true');
+                    localStorage.setItem('emailsortpro_first_connection_date', new Date().toISOString());
+                } catch (error) {
+                    console.warn('[Welcome] Could not save connection markers:', error);
+                }
                 
                 // Masquer la page de bienvenue
                 this.hide();
                 
-                // Afficher l'application (sera intercepté par le système)
+                // Afficher l'application directement
+                window.showAppDirectly();
+                
                 this.showToast('🎉 Bienvenue dans EmailSortPro !', 'success');
-            },
-            
-            // Définir le statut d'une permission
-            setPermissionStatus(permission, status) {
-                this.permissions[permission].status = status;
-                this.updatePermissionCard(permission, status);
-            },
-            
-            // Mettre à jour l'affichage d'une carte de permission
-            updatePermissionCard(permission, status) {
-                const card = document.getElementById(`${permission}PermissionCard`);
-                const statusElement = document.getElementById(`${permission}Status`);
-                
-                if (!card || !statusElement) return;
-                
-                // Retirer les anciennes classes
-                card.classList.remove('granted', 'denied');
-                
-                // Mettre à jour le statut
-                let statusText = '';
-                let statusClass = '';
-                
-                switch (status) {
-                    case 'granted':
-                        statusText = 'Accordée';
-                        statusClass = 'granted';
-                        card.classList.add('granted');
-                        break;
-                    case 'denied':
-                        statusText = 'Refusée';
-                        statusClass = 'denied';
-                        card.classList.add('denied');
-                        break;
-                    case 'loading':
-                        statusText = 'Configuration...';
-                        statusClass = 'pending';
-                        break;
-                    default:
-                        statusText = 'En attente';
-                        statusClass = 'pending';
-                }
-                
-                statusElement.innerHTML = `<span class="status-badge ${statusClass}">${statusText}</span>`;
-            },
-            
-            // Mettre à jour la barre de progression
-            updateProgress() {
-                const total = Object.keys(this.permissions).length;
-                const completed = Object.values(this.permissions).filter(p => p.status !== 'pending').length;
-                
-                const percentage = (completed / total) * 100;
-                
-                document.getElementById('welcomeProgress').style.width = `${percentage}%`;
-                document.getElementById('permissionsCompleted').textContent = completed;
-                document.getElementById('permissionsTotal').textContent = total;
-                
-                // Activer/désactiver le bouton continuer
-                const continueBtn = document.getElementById('continueBtn');
-                if (completed >= total) {
-                    continueBtn.disabled = false;
-                    continueBtn.innerHTML = '<i class="fas fa-rocket"></i> Lancer EmailSortPro';
-                } else {
-                    continueBtn.disabled = true;
-                    continueBtn.innerHTML = '<i class="fas fa-arrow-right"></i> Continuer vers l\'app';
-                }
-            },
-            
-            // Sauvegarder les préférences
-            savePreferences() {
-                try {
-                    const preferences = {
-                        permissions: this.permissions,
-                        completedAt: new Date().toISOString(),
-                        version: '1.0'
-                    };
-                    
-                    localStorage.setItem('emailsortpro_welcome_preferences', JSON.stringify(preferences));
-                    console.log('[Welcome] 💾 Preferences saved:', preferences);
-                } catch (error) {
-                    console.error('[Welcome] ❌ Error saving preferences:', error);
-                }
             },
             
             // Vérifier si l'utilisateur a déjà passé le processus de bienvenue
             hasCompletedWelcome() {
                 try {
-                    const preferences = localStorage.getItem('emailsortpro_welcome_preferences');
-                    return !!preferences;
+                    const hasConnected = localStorage.getItem('emailsortpro_has_connected');
+                    return !!hasConnected;
                 } catch (error) {
                     return false;
                 }
@@ -2284,7 +1721,7 @@
         };
 
         // ===============================================
-        // INTÉGRATION DU SYSTÈME DE BIENVENUE
+        // INTÉGRATION DU SYSTÈME DE BIENVENUE SIMPLIFIÉ
         // ===============================================
 
         // Vérification précoce IMMÉDIATE de l'authentification
@@ -2333,9 +1770,9 @@
             console.log('[FORCE] ✅ App display activated');
         };
 
-        // Fonction pour masquer le loading et afficher l'app AVEC BIENVENUE
+        // Fonction pour masquer le loading et afficher l'app AVEC BIENVENUE SIMPLIFIÉE
         window.showApp = function(user) {
-            console.log('[SHOW_APP] 🎬 Switching to app interface with welcome system...');
+            console.log('[SHOW_APP] 🎬 Switching to app interface with simplified welcome system...');
             
             if (appAlreadyShown) {
                 console.log('[SHOW_APP] App already shown, skipping...');
@@ -2353,16 +1790,18 @@
             
             console.log('[SHOW_APP] 👤 User info:', userInfo?.name || 'Unknown');
             
-            // Vérifier si l'utilisateur a déjà passé le processus de bienvenue
-            if (window.welcomeSystem.hasCompletedWelcome()) {
-                console.log('[SHOW_APP] ✅ User has completed welcome, showing app directly');
+            // CONTRÔLE STRICT : Vérifier si l'utilisateur a déjà passé le processus de bienvenue
+            const hasConnectedBefore = window.welcomeSystem.hasCompletedWelcome();
+            
+            if (hasConnectedBefore) {
+                console.log('[SHOW_APP] ✅ User has completed welcome before, showing app directly');
                 this.showAppDirectly();
                 return;
             }
             
-            console.log('[SHOW_APP] 🎉 First time user, showing welcome page');
+            console.log('[SHOW_APP] 🎉 First time user, showing simplified welcome page');
             
-            // Première fois : afficher la page de bienvenue
+            // Première fois : afficher la page de bienvenue SIMPLIFIÉE (sans modals)
             document.body.classList.remove('login-mode');
             
             const loadingOverlay = document.getElementById('loadingOverlay');
@@ -2370,7 +1809,7 @@
                 loadingOverlay.classList.remove('active');
             }
             
-            // Afficher la page de bienvenue
+            // Afficher la page de bienvenue SIMPLIFIÉE
             window.welcomeSystem.init(userInfo);
             
             appAlreadyShown = true;
@@ -2414,23 +1853,6 @@
             }, 1000);
             
             console.log('[SHOW_APP] ✅ App interface activated with dashboard module');
-        };
-
-        // Modifier la fonction continueToApp pour utiliser showAppDirectly
-        const originalContinueToApp = window.welcomeSystem.continueToApp;
-        window.welcomeSystem.continueToApp = function() {
-            console.log('[Welcome] 🎯 Continuing to app from welcome...');
-            
-            // Sauvegarder les préférences
-            this.savePreferences();
-            
-            // Masquer la page de bienvenue
-            this.hide();
-            
-            // Afficher l'application directement
-            window.showAppDirectly();
-            
-            this.showToast('🎉 Bienvenue dans EmailSortPro !', 'success');
         };
 
         // Fonction pour vérifier si le scroll est nécessaire
@@ -2649,9 +2071,75 @@
             }
         };
 
+        // ===============================================
+        // DÉSACTIVATION COMPLÈTE DES MODALS DE SAUVEGARDE AUTO
+        // ===============================================
+        
+        // Fonction pour EMPÊCHER les modals automatiques de sauvegarde
+        window.preventBackupModals = function() {
+            console.log('[PREVENT_MODALS] 🚫 Désactivation des modals automatiques de sauvegarde...');
+            
+            // Marquer que l'utilisateur ne veut pas les modals automatiques
+            try {
+                localStorage.setItem('emailsortpro_disable_auto_backup_modals', 'true');
+                localStorage.setItem('emailsortpro_backup_notification_shown', 'true');
+                console.log('[PREVENT_MODALS] ✅ Modals automatiques désactivés');
+            } catch (error) {
+                console.warn('[PREVENT_MODALS] Could not disable modals:', error);
+            }
+        };
+
+        // Appeler immédiatement la désactivation
+        window.preventBackupModals();
+
+        // Intercepter et bloquer les tentatives d'affichage automatique des modals
+        window.blockAutomaticBackupModals = function() {
+            // Bloquer toutes les tentatives d'auto-déclenchement
+            if (window.categoriesPageV24) {
+                // Désactiver les timers d'auto-déclenchement
+                if (window.categoriesPageV24.showBackupConfigNotification) {
+                    const original = window.categoriesPageV24.showBackupConfigNotification;
+                    window.categoriesPageV24.showBackupConfigNotification = function() {
+                        console.log('[BLOCK_MODAL] 🚫 Notification de sauvegarde bloquée');
+                        return; // Ne rien faire
+                    };
+                }
+                
+                if (window.categoriesPageV24.showAuthorizationModal) {
+                    const originalAuth = window.categoriesPageV24.showAuthorizationModal;
+                    window.categoriesPageV24.showAuthorizationModal = function() {
+                        console.log('[BLOCK_MODAL] 🚫 Modal d\'autorisation automatique bloqué');
+                        // Ne s'exécuter QUE si appelé manuellement
+                        if (arguments.length > 0 && arguments[0] === 'manual') {
+                            return originalAuth.call(this);
+                        }
+                        return; // Bloquer les appels automatiques
+                    };
+                }
+            }
+            
+            // Bloquer les scripts d'auto-setup
+            if (window.setupFirstTimeAuth) {
+                window.setupFirstTimeAuth = function() {
+                    console.log('[BLOCK_MODAL] 🚫 Setup première connexion bloqué');
+                    return; // Ne rien faire
+                };
+            }
+            
+            console.log('[BLOCK_MODAL] ✅ Auto-modals de sauvegarde bloqués');
+        };
+
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[DOM] 📄 DOM Content Loaded - Setting up welcome system...');
+            console.log('[DOM] 📄 DOM Content Loaded - Setting up simplified welcome system...');
+            
+            // DÉSACTIVER IMMÉDIATEMENT tous les modals automatiques
+            window.preventBackupModals();
+            
+            // Bloquer après un délai pour s'assurer que les modules sont chargés
+            setTimeout(() => {
+                window.blockAutomaticBackupModals();
+            }, 2000);
             
             if (appAlreadyShown) {
                 return;
@@ -2895,7 +2383,8 @@
                 authenticationStatus: {
                     microsoft: window.authService ? window.authService.isAuthenticated() : false,
                     google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false
-                }
+                },
+                backupModalsDisabled: localStorage.getItem('emailsortpro_disable_auto_backup_modals') === 'true'
             };
         };
 
@@ -2928,62 +2417,10 @@
             window.checkGoogleCallback();
         }, 500);
 
-        console.log('[INDEX] ✅ Welcome system integrated with dual authentication');
+        console.log('[INDEX] ✅ Simplified welcome system integrated - NO AUTOMATIC BACKUP MODALS');
     </script>
 
     <!-- 9. Application Principal EN DERNIER -->
     <script src="app.js"></script>
 </body>
-</html>eSystem.skipBackupPermission()">
-                                        <i class="fas fa-clock"></i> Plus tard
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Autorisation Notifications -->
-                        <div class="permission-card" id="notificationPermissionCard">
-                            <div class="permission-icon">
-                                <i class="fas fa-bell"></i>
-                            </div>
-                            <div class="permission-content">
-                                <div class="permission-header">
-                                    <h3>Notifications</h3>
-                                    <div class="permission-status" id="notificationStatus">
-                                        <span class="status-badge pending">En attente</span>
-                                    </div>
-                                </div>
-                                <p class="permission-description">
-                                    Recevoir des notifications pour les nouvelles tâches et les mises à jour importantes.
-                                </p>
-                                <div class="permission-actions">
-                                    <button class="permission-btn primary" onclick="welcomeSystem.requestNotificationPermission()">
-                                        <i class="fas fa-check"></i> Autoriser
-                                    </button>
-                                    <button class="permission-btn secondary" onclick="welcomeSystem.skipNotificationPermission()">
-                                        <i class="fas fa-times"></i> Refuser
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Autorisation Géolocalisation (optionnelle) -->
-                        <div class="permission-card" id="locationPermissionCard">
-                            <div class="permission-icon">
-                                <i class="fas fa-map-marker-alt"></i>
-                            </div>
-                            <div class="permission-content">
-                                <div class="permission-header">
-                                    <h3>Géolocalisation</h3>
-                                    <div class="permission-status" id="locationStatus">
-                                        <span class="status-badge pending">En attente</span>
-                                    </div>
-                                </div>
-                                <p class="permission-description">
-                                    Améliorer la détection automatique de tâches liées à des lieux spécifiques.
-                                </p>
-                                <div class="permission-actions">
-                                    <button class="permission-btn primary" onclick="welcomeSystem.requestLocationPermission()">
-                                        <i class="fas fa-check"></i> Autoriser
-                                    </button>
-                                    <button class="permission-btn secondary" onclick="welcom
+</html>
