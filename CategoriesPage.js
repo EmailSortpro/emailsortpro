@@ -398,11 +398,11 @@ class CategoriesPageV22 {
                 <div class="folder-recommendations">
                     <div class="recommendation-item good">
                         <i class="fas fa-check-circle"></i>
-                        <span><strong>Recommandé :</strong> Documents, Bureau, ou créez un dossier "EmailSortPro-Backups"</span>
+                        <span><strong>Dossiers sûrs :</strong> Documents, Téléchargements, Bureau, Google Drive, OneDrive, Dropbox</span>
                     </div>
                     <div class="recommendation-item warning">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <span><strong>À éviter :</strong> Dossiers système (Windows, Program Files, System32, etc.)</span>
+                        <span><strong>Évitez seulement :</strong> Dossiers système (Windows, Program Files, System32)</span>
                     </div>
                 </div>
                 
@@ -720,11 +720,14 @@ class CategoriesPageV22 {
             
             // Afficher un avertissement préventif
             const userConfirmed = confirm(
-                '⚠️ IMPORTANT - Sélection de dossier de sauvegarde\n\n' +
-                '• Choisissez un dossier dans vos Documents, Bureau ou un dossier personnel\n' +
-                '• ÉVITEZ : Dossiers système (C:\\Windows, /System, etc.)\n' +
-                '• ÉVITEZ : Dossiers protégés (Program Files, etc.)\n' +
-                '• RECOMMANDÉ : Créez un nouveau dossier "EmailSortPro-Backups"\n\n' +
+                '📁 Sélection du dossier de sauvegarde\n\n' +
+                '✅ DOSSIERS SÛRS :\n' +
+                '• Documents, Téléchargements, Bureau\n' +
+                '• Google Drive, OneDrive, Dropbox\n' +
+                '• Dossiers personnalisés que vous créez\n\n' +
+                '❌ ÉVITEZ SEULEMENT :\n' +
+                '• Dossiers système (C:\\Windows, /System, etc.)\n' +
+                '• Program Files\n\n' +
                 'Continuer la sélection ?'
             );
             
@@ -744,18 +747,40 @@ class CategoriesPageV22 {
             
             // Vérifier que le dossier n'est pas un dossier système
             const folderName = directoryHandle.name.toLowerCase();
+            const folderPath = directoryHandle.name; // Nom complet potentiel
+            
+            // VRAIS dossiers système à éviter (très restrictif)
             const restrictedFolders = [
-                'windows', 'system32', 'program files', 'program files (x86)',
-                'system', 'usr', 'bin', 'sbin', 'etc', 'var', 'tmp',
-                'applications', 'library', 'system library',
-                'recovery', 'boot', 'efi', '$recycle.bin'
+                // Windows système
+                'windows', 'system32', 'syswow64', 'boot', 'recovery',
+                'program files', 'program files (x86)', 'programdata',
+                '$recycle.bin', 'system volume information',
+                
+                // macOS système
+                'system', 'library', 'applications', 'private',
+                'usr', 'bin', 'sbin', 'etc', 'var', 'tmp', 'dev',
+                
+                // Linux système
+                'root', 'proc', 'sys', 'run', 'mnt'
             ];
             
-            const isRestricted = restrictedFolders.some(restricted => 
-                folderName.includes(restricted) || restricted.includes(folderName)
-            );
+            // Vérification plus intelligente - dossier exact ou contenu dans le nom
+            const isRestricted = restrictedFolders.some(restricted => {
+                return folderName === restricted || 
+                       folderName.startsWith(restricted + ' ') ||
+                       folderName.endsWith(' ' + restricted) ||
+                       (restricted.includes(' ') && folderName.includes(restricted));
+            });
             
-            if (isRestricted) {
+            // Vérification spéciale pour éviter les dossiers racine système
+            const systemRootPatterns = [
+                /^[a-z]:$/i, // C:, D:, etc. (racine de disque Windows)
+                /^\/$/,      // / (racine Linux/macOS)
+            ];
+            
+            const isSystemRoot = systemRootPatterns.some(pattern => pattern.test(folderPath));
+            
+            if (isRestricted || isSystemRoot) {
                 this.showToast('❌ Dossier système détecté. Choisissez un dossier personnel.', 'error');
                 // Relancer la sélection
                 setTimeout(() => this.selectCustomFolder(), 1000);
