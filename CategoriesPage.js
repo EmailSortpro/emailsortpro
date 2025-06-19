@@ -1829,7 +1829,7 @@ window.categoriesPageV24 = new CategoriesPageV24();
 window.categoriesPage = window.categoriesPageV24;
 
 // Intégration avec PageManager
-if (window.pageManager?.pages) {
+if (window.pageManager && window.pageManager.pages) {
     window.pageManager.pages.settings = (container) => {
         window.categoriesPageV24.render(container);
     };
@@ -1897,4 +1897,4 @@ console.log('[CategoriesPage] 📁 API disponible:');
 console.log('[CategoriesPage]   • window.testCategoriesBackup() - Tester');
 console.log('[CategoriesPage]   • window.getCategoriesBackupInfo() - Infos');
 console.log('[CategoriesPage]   • window.forceConfigureBackup() - Configurer');
-console.log('[CategoriesPage] 🚀 Prêt pour stockage C:// direct!
+console.log('[CategoriesPage] 🚀 Prêt pour stockage C:// direct!');
