@@ -1381,7 +1381,7 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // MÉTHODE AMÉLIORÉE: Création de backup avec vérification
+    // SYSTÈME DE BACKUP - CRÉATION CORRIGÉE
     // ================================================
     async createBackup() {
         try {
@@ -4078,4 +4078,4 @@ if (!window.categoriesPage.getTaskPreselectedCategories) {
     };
 }
 
-console.log('[CategoriesPage] ✅ CategoriesPage v22.1 chargée - Dossier personnalisé corrigé!');
+console.log('[CategoriesPage] ✅ CategoriesPage v22.1 chargée - Système de récupération automatique actif!');
