@@ -239,7 +239,7 @@
         })();
     </script>
 
-    <!-- Styles intégrés pour l'application sobre -->
+    <!-- Styles intégrés pour l'application sobre (styles existants...) -->
     <style>
         /* Reset et styles de base */
         * {
@@ -1345,7 +1345,7 @@
         <div id="toastContainer" class="toast-container"></div>
     </div>
 
-    <!-- Scripts - Ordre critique pour unification -->
+    <!-- Scripts - Ordre critique pour unification AVEC BACKUP.JS AJOUTÉ -->
     <!-- 1. Services Core -->
     <script src="AuthService.js"></script>
     <script src="GoogleAuthService.js"></script>
@@ -1358,29 +1358,32 @@
     <!-- 3. TaskManager AVANT PageManager -->
     <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
     
-    <!-- 4. Autres Managers -->
+    <!-- 4. SYSTÈME DE BACKUP - AJOUTÉ ICI -->
+    <script src="backup.js" onerror="console.error('backup.js manquant - système de backup non disponible')"></script>
+    
+    <!-- 5. Autres Managers -->
     <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
     <script src="EmailDeduplicationManager.js"></script>
     <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
     
-    <!-- 5. DASHBOARD MODULE - NOUVEAU -->
+    <!-- 6. DASHBOARD MODULE -->
     <script src="dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
     
-    <!-- 6. Page Manager APRÈS Dashboard et TaskManager -->
+    <!-- 7. Page Manager APRÈS Dashboard et TaskManager -->
     <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
     
-    <!-- 7. Modules de pages -->
+    <!-- 8. Modules de pages -->
     <script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
     <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
     <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
     
-    <!-- 8. Modules Optionnels -->
+    <!-- 9. Modules Optionnels -->
     <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
     
-    <!-- 9. Application Principal EN DERNIER -->
+    <!-- 10. Application Principal EN DERNIER -->
     <script src="app.js"></script>
     
-    <!-- Scripts de gestion des événements -->
+    <!-- Scripts de gestion des événements (scripts existants...) -->
     <script>
         // Variable pour éviter les vérifications multiples
         let authCheckInProgress = false;
@@ -1922,6 +1925,7 @@
                 pageManager: window.pageManager ? 'OK' : 'MANQUANT',
                 categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
                 dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
+                backupService: window.backupService ? 'OK' : 'MANQUANT', // AJOUTÉ
                 hostname: window.location.hostname,
                 expectedHostname: 'emailsortpro.netlify.app',
                 authenticationStatus: {
