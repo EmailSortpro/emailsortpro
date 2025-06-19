@@ -18,10 +18,10 @@ class CategoriesPageV24 {
             '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'
         ];
         
-        // Configuration filesystem simplifiée - DIRECTEMENT vers C://
+        // Configuration filesystem simplifiée - DIRECTEMENT vers Documents
         this.filesystemConfig = {
             enabled: false,
-            defaultPath: 'C:\\EmailSortPro\\Categories\\',
+            defaultPath: 'C:\\Users\\[Utilisateur]\\Documents\\EmailSortPro\\Categories\\',
             currentPath: null,
             directoryHandle: null,
             autoSave: true,
@@ -84,17 +84,17 @@ class CategoriesPageV24 {
                 return true;
             }
             
-            // STRATÉGIE 2: Demander l'accès avec message explicatif
-            console.log('[CategoriesPage] 📂 FORCE: Demande accès pour création dossier...');
-            this.showToast('📁 Création automatique du dossier EmailSortPro - Veuillez sélectionner votre bureau ou dossier racine', 'info');
+            // STRATÉGIE 2: Demander l'accès aux DOCUMENTS (le plus professionnel et fiable)
+            console.log('[CategoriesPage] 📂 FORCE: Demande accès Documents pour création dossier...');
+            this.showToast('📁 Création dans DOCUMENTS - Sélectionnez votre dossier Documents', 'info');
             
             const directoryHandle = await window.showDirectoryPicker({
                 mode: 'readwrite',
-                startIn: 'desktop',
-                id: 'emailsortpro-auto-setup'
+                startIn: 'documents', // Force vers Documents
+                id: 'emailsortpro-documents-setup'
             });
             
-            // FORCER la création de la structure complète
+            // FORCER la création de la structure complète dans Documents
             await this.createCompleteStructure(directoryHandle);
             
             return true;
@@ -102,10 +102,10 @@ class CategoriesPageV24 {
         } catch (error) {
             if (error.name === 'AbortError') {
                 console.log('[CategoriesPage] 📂 FORCE: Sélection annulée par utilisateur');
-                this.filesystemConfig.currentPath = 'Configuration annulée - Cliquez "Configurer C://" pour réessayer';
+                this.filesystemConfig.currentPath = 'Configuration annulée - Cliquez "CRÉER DANS DOCUMENTS" pour réessayer';
             } else {
                 console.error('[CategoriesPage] ❌ FORCE: Erreur création automatique:', error);
-                this.filesystemConfig.currentPath = 'Erreur auto-configuration - Cliquez "Configurer C://"';
+                this.filesystemConfig.currentPath = 'Erreur auto-configuration - Cliquez "CRÉER DANS DOCUMENTS"';
             }
             return false;
         }
@@ -184,14 +184,14 @@ class CategoriesPageV24 {
         const baseName = baseHandle.name || 'DossierSelectionne';
         
         // Déterminer le chemin probable basé sur le nom du dossier
-        if (baseName.toLowerCase().includes('desktop') || baseName.toLowerCase().includes('bureau')) {
+        if (baseName.toLowerCase().includes('documents')) {
+            return `C:\\Users\\[Utilisateur]\\Documents\\${subPath}`;
+        } else if (baseName.toLowerCase().includes('desktop') || baseName.toLowerCase().includes('bureau')) {
             return `C:\\Users\\[Utilisateur]\\Desktop\\${baseName}\\${subPath}`;
-        } else if (baseName.toLowerCase().includes('documents')) {
-            return `C:\\Users\\[Utilisateur]\\Documents\\${baseName}\\${subPath}`;
         } else if (baseName === 'C:' || baseName.toLowerCase().includes('disque')) {
             return `C:\\${subPath}`;
         } else {
-            return `C:\\Users\\[Utilisateur]\\${baseName}\\${subPath}`;
+            return `C:\\Users\\[Utilisateur]\\Documents\\${baseName}\\${subPath}`;
         }
     }
 
@@ -274,12 +274,12 @@ Félicitations ! Votre système de sauvegarde est maintenant actif.
         }
 
         try {
-            this.showToast('📂 CONFIGURATION: Sélectionnez votre bureau ou un dossier sur C:// pour créer EmailSortPro', 'info');
+            this.showToast('📂 CONFIGURATION: Sélectionnez votre dossier Documents pour créer EmailSortPro', 'info');
             
             const directoryHandle = await window.showDirectoryPicker({
                 mode: 'readwrite',
-                startIn: 'desktop',
-                id: 'emailsortpro-manual-setup'
+                startIn: 'documents', // Force vers Documents
+                id: 'emailsortpro-docs-setup'
             });
             
             // FORCER la création de la structure complète (même méthode que l'auto)
@@ -731,13 +731,13 @@ Date: ${new Date().toLocaleString('fr-FR')}
                         ${this.fileSystemSupported ? `
                             <button class="btn-action ${isConfigured ? 'secondary' : 'warning'}" 
                                     onclick="window.categoriesPageV24.configureDirectAccess()">
-                                <i class="fas fa-folder-open"></i> 
-                                ${isConfigured ? 'Reconfigurer Dossier' : 'CRÉER DOSSIER C://'}
+                                <i class="fas fa-folder"></i> 
+                                ${isConfigured ? 'Reconfigurer' : 'CRÉER DANS DOCUMENTS'}
                             </button>
                         ` : `
                             <p class="browser-notice">
                                 <i class="fas fa-info-circle"></i>
-                                Utilisez Chrome ou Edge pour l'accès aux fichiers C://
+                                Utilisez Chrome ou Edge pour l'accès aux fichiers
                             </p>
                         `}
                     </div>
@@ -784,30 +784,34 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 ` : `
                     <!-- Guide -->
                     <div class="guide-card">
-                        <h4><i class="fas fa-lightbulb"></i> Création Automatique C://</h4>
+                        <h4><i class="fas fa-lightbulb"></i> Création Automatique dans Documents</h4>
                         <div class="auto-setup-info">
                             <div class="setup-highlight">
-                                🚀 <strong>NOUVEAU:</strong> Création automatique du dossier EmailSortPro !
+                                📁 <strong>MEILLEUR CHOIX:</strong> Création automatique dans vos Documents !
                             </div>
                             <ol>
-                                <li>Cliquez sur <strong>"CRÉER DOSSIER C://"</strong></li>
-                                <li>Sélectionnez votre <strong>Bureau</strong> ou un dossier sur <strong>C://</strong></li>
+                                <li>Cliquez sur <strong>"CRÉER DANS DOCUMENTS"</strong></li>
+                                <li>Sélectionnez votre dossier <strong>Documents</strong></li>
                                 <li>Le système créera automatiquement <strong>EmailSortPro/Categories/</strong></li>
-                                <li>Vos sauvegardes seront immédiatement actives !</li>
+                                <li>Dossier accessible via "Mes Documents" !</li>
                             </ol>
                             <div class="setup-benefits">
-                                <h5>✅ Avantages:</h5>
+                                <h5>✅ Pourquoi Documents ?</h5>
                                 <ul>
-                                    <li>Structure complète créée automatiquement</li>
-                                    <li>Accès direct aux fichiers depuis l'explorateur</li>
-                                    <li>Documentation générée automatiquement</li>
-                                    <li>Backup de test immédiat</li>
+                                    <li><strong>AUCUNE restriction</strong> - Permissions garanties</li>
+                                    <li><strong>Emplacement professionnel</strong> - Organisé avec vos fichiers</li>
+                                    <li><strong>Sauvegardé par Windows</strong> - Protection automatique</li>
+                                    <li><strong>Accès rapide</strong> - Dans l'explorateur de fichiers</li>
+                                    <li><strong>Synchronisation cloud</strong> - OneDrive/iCloud compatible</li>
                                 </ul>
+                            </div>
+                            <div class="path-example">
+                                📁 Emplacement final: <code>Documents\\EmailSortPro\\Categories\\</code>
                             </div>
                         </div>
                         <p class="note">
                             <i class="fas fa-shield-alt"></i>
-                            Le système force la création du dossier et teste l'accès automatiquement
+                            Documents est l'emplacement le plus professionnel et sûr - Idéal pour les données importantes !
                         </p>
                     </div>
                 `}
@@ -1980,9 +1984,21 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 color: #166534;
             }
 
-            .setup-benefits li {
+            .path-example {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 4px;
+                padding: 8px 12px;
+                margin-top: 12px;
+                font-family: monospace;
                 font-size: 12px;
-                margin-bottom: 4px;
+                color: #374151;
+            }
+
+            .path-example code {
+                background: none;
+                color: #1f2937;
+                font-weight: 600;
             }
 
             .error {
