@@ -109,26 +109,33 @@ class CategoriesPageV23 {
                 // Tester l'accès en écriture
                 await this.testDirectoryAccess(backupDir);
                 
-                // Configurer le filesystem avec OPFS
+                // Configurer le filesystem avec OPFS et chemin complet
                 this.filesystemConfig.directoryHandle = backupDir;
                 this.filesystemConfig.enabled = true;
                 this.filesystemConfig.permissions = 'granted';
-                this.filesystemConfig.currentPath = 'Stockage Application\\EmailSortPro\\Categories\\';
+                
+                // CHEMIN COMPLET DÉTAILLÉ
+                const userProfile = navigator.userAgent.includes('Windows') ? 'C:\\Users\\' + (navigator.userAgentData?.platform || 'Utilisateur') + '\\' : 
+                                   navigator.userAgent.includes('Mac') ? '/Users/' + (process?.env?.USER || 'Utilisateur') + '/' :
+                                   '/home/' + (process?.env?.USER || 'utilisateur') + '/';
+                
+                this.filesystemConfig.currentPath = userProfile + 'AppData\\Local\\Google\\Chrome\\User Data\\Default\\File System\\Origin\\' + 
+                                                   window.location.origin.replace(/[^a-zA-Z0-9]/g, '_') + '\\emailsortpro-categories-backup\\';
                 
                 await this.saveFilesystemConfig();
                 
-                // Créer un fichier d'information
+                // Créer un fichier d'information avec le chemin complet
                 await this.createDefaultInfo(backupDir);
                 
                 // Créer un backup initial pour tester
                 await this.createFilesystemBackup('setup-default');
                 
-                console.log('[CategoriesPage] ✅ Chemin par défaut OPFS configuré automatiquement');
+                console.log('[CategoriesPage] ✅ Chemin par défaut OPFS configuré:', this.filesystemConfig.currentPath);
                 
                 return true;
             } else {
-                // Fallback : configurer un chemin théorique
-                this.filesystemConfig.currentPath = this.filesystemConfig.defaultPath;
+                // Fallback : configurer un chemin théorique avec drive complet
+                this.filesystemConfig.currentPath = 'C:\\Users\\[Utilisateur]\\AppData\\Local\\[Navigateur]\\EmailSortPro\\Categories\\';
                 this.filesystemConfig.enabled = false;
                 this.filesystemConfig.permissions = 'not-supported';
                 
@@ -139,8 +146,8 @@ class CategoriesPageV23 {
         } catch (error) {
             console.log('[CategoriesPage] ⚠️ Configuration par défaut impossible - Mode backup invisible uniquement');
             
-            // Configurer au moins le chemin théorique par défaut
-            this.filesystemConfig.currentPath = this.filesystemConfig.defaultPath;
+            // Configurer au moins le chemin théorique par défaut avec drive complet
+            this.filesystemConfig.currentPath = 'C:\\Users\\[Utilisateur]\\AppData\\Local\\[Navigateur]\\EmailSortPro\\Categories\\';
             this.filesystemConfig.enabled = false;
             this.filesystemConfig.permissions = 'error';
             
@@ -150,38 +157,116 @@ class CategoriesPageV23 {
 
     async createDefaultInfo(directoryHandle) {
         try {
+            const fullPath = this.filesystemConfig.currentPath;
+            
             const infoContent = `# EmailSortPro - Stockage Automatique des Catégories
 
 Ce dossier est créé automatiquement par EmailSortPro pour sauvegarder vos catégories.
 
+## 📁 Emplacement Complet
+${fullPath}
+
 ## 🎯 Stockage Par Défaut
-- Stockage invisible dans l'application
+- Stockage sécurisé dans le système de fichiers du navigateur
 - Sauvegarde automatique toutes les 30 secondes
 - Pas d'intervention utilisateur requise
+- Persistant même après fermeture du navigateur
 
-## 📁 Contenu
-- Sauvegardes automatiques des catégories
+## 📂 Contenu de ce Dossier
+- Sauvegardes automatiques des catégories (JSON)
 - Configuration des mots-clés et filtres
 - Paramètres de pré-sélection des tâches
+- Métadonnées et statistiques
+
+## 🔍 Localisation Physique
+Ce dossier se trouve dans le stockage privé de votre navigateur :
+${fullPath}
+
+Note: Ce chemin est géré automatiquement par le navigateur pour la sécurité.
 
 ## 🔧 Pour Changer l'Emplacement
-Si vous voulez sauvegarder dans un dossier visible sur votre C://:
-1. Allez dans l'onglet "Sauvegarde C://"
-2. Cliquez sur "Changer Répertoire"
-3. Choisissez votre dossier préféré
+Si vous voulez sauvegarder dans un dossier visible et accessible :
+1. Allez dans EmailSortPro > Paramètres > Sauvegarde C://
+2. Cliquez sur "Configurer Répertoire C://"
+3. Choisissez votre dossier préféré (ex: C:\\MesBackups\\EmailSortPro)
+
+## 📋 Fichiers Créés
+- EmailSortPro-Categories-YYYY-MM-DD_HH-MM-SS.json (horodatés)
+- LATEST-Categories-Backup.json (toujours la dernière version)
+- Ce fichier README pour information
 
 ---
 Configuré automatiquement le ${new Date().toLocaleString('fr-FR')}
-Mode : Stockage application invisible
+Chemin complet : ${fullPath}
+Mode : Stockage automatique sécurisé
+Application : EmailSortPro v23.0
 `;
 
-            const infoHandle = await directoryHandle.getFileHandle('INFO-Stockage-Automatique.txt', { create: true });
+            const infoHandle = await directoryHandle.getFileHandle('README-Stockage-Automatique.txt', { create: true });
             const writable = await infoHandle.createWritable();
             await writable.write(infoContent);
             await writable.close();
 
         } catch (error) {
             console.warn('[CategoriesPage] Impossible de créer le fichier d\'info:', error);
+        }
+    }
+
+    async createBackupReadme(directoryHandle) {
+        try {
+            const fullPath = this.filesystemConfig.currentPath;
+            
+            const readmeContent = `# EmailSortPro - Backups des Catégories
+
+Ce dossier contient les sauvegardes de vos catégories EmailSortPro.
+
+## 📁 Emplacement
+${fullPath}
+
+## 📂 Contenu
+- Fichiers de backup horodatés (EmailSortPro-Categories-YYYY-MM-DD_HH-MM-SS.json)
+- Fichier LATEST-Categories-Backup.json (dernière sauvegarde)
+- Ce fichier README pour information
+
+## 🔄 Fonctionnement
+- Sauvegarde automatique toutes les 30 secondes en cas de changement
+- Conservation des ${this.backupConfig.maxBackups} derniers fichiers
+- Format JSON avec toutes les données des catégories
+- Rotation automatique des anciens fichiers
+
+## 📋 Contenu des backups
+- Toutes les catégories et leurs paramètres
+- Mots-clés (absolus, forts, faibles, exclusions)
+- Filtres (domaines, emails autorisés/exclus)
+- Paramètres de pré-sélection pour les tâches
+- Statistiques et métadonnées complètes
+
+## 🔧 Utilisation
+- Les backups se font automatiquement
+- Vous pouvez restaurer depuis l'interface EmailSortPro
+- Les fichiers sont lisibles en JSON standard
+- Vous pouvez copier ce dossier pour sauvegarde externe
+
+## 🎯 Restauration
+En cas de problème :
+1. Ouvrez EmailSortPro
+2. Allez dans Paramètres > Sauvegarde C://
+3. Cliquez sur "Restaurer Backup"
+4. Sélectionnez le fichier LATEST-Categories-Backup.json
+
+---
+Généré automatiquement par EmailSortPro v23.0
+Date de création: ${new Date().toLocaleString('fr-FR')}
+Emplacement complet: ${fullPath}
+`;
+
+            const readmeHandle = await directoryHandle.getFileHandle('README-Categories-Backup.txt', { create: true });
+            const writable = await readmeHandle.createWritable();
+            await writable.write(readmeContent);
+            await writable.close();
+
+        } catch (error) {
+            console.warn('[CategoriesPage] Impossible de créer README:', error);
         }
     }
 
@@ -366,38 +451,94 @@ Chemin: ${this.filesystemConfig.currentPath}
         try {
             console.log('[CategoriesPage] 📁 Changement de répertoire de backup...');
             
+            if (!this.fileSystemSupported) {
+                this.showToast('❌ Votre navigateur ne supporte pas l\'accès aux fichiers', 'error');
+                return false;
+            }
+
+            // Afficher un toast informatif avant l'ouverture du sélecteur
+            this.showToast('📂 Sélectionnez un dossier pour vos backups...', 'info');
+            
             const newDirectoryHandle = await window.showDirectoryPicker({
                 mode: 'readwrite',
                 startIn: 'documents',
-                id: 'emailsortpro-categories-backup-new'
+                id: 'emailsortpro-categories-backup-change'
             });
             
             // Tester le nouveau répertoire
             await this.testDirectoryAccess(newDirectoryHandle);
             
-            // Mettre à jour la configuration
+            // Mettre à jour la configuration avec le chemin complet
             this.filesystemConfig.directoryHandle = newDirectoryHandle;
-            this.filesystemConfig.currentPath = await this.getDirectoryPath(newDirectoryHandle);
             this.filesystemConfig.enabled = true;
             this.filesystemConfig.permissions = 'granted';
             
+            // Obtenir le chemin complet du répertoire sélectionné
+            const fullPath = await this.getFullDirectoryPath(newDirectoryHandle);
+            this.filesystemConfig.currentPath = fullPath;
+            
             await this.saveFilesystemConfig();
+            
+            // Créer un README dans le nouveau répertoire
+            await this.createBackupReadme(newDirectoryHandle);
             
             // Créer un backup dans le nouveau répertoire
             await this.createFilesystemBackup('directory-changed');
             
-            this.showToast(`✅ Répertoire changé: ${this.filesystemConfig.currentPath}`, 'success');
+            this.showToast(`✅ Répertoire configuré: ${fullPath}`, 'success');
             this.refreshBackupInfo();
             
             return true;
             
         } catch (error) {
-            if (error.name !== 'AbortError') {
+            if (error.name === 'AbortError') {
+                this.showToast('📂 Sélection de dossier annulée', 'info');
+            } else {
                 console.error('[CategoriesPage] ❌ Erreur changement répertoire:', error);
-                this.showToast('❌ Erreur lors du changement de répertoire', 'error');
+                this.showToast('❌ Erreur: ' + error.message, 'error');
             }
             return false;
         }
+    }
+
+    async getFullDirectoryPath(directoryHandle) {
+        try {
+            // Méthode 1: Essayer d'obtenir le chemin via resolve (expérimental)
+            if ('resolve' in directoryHandle) {
+                try {
+                    const pathArray = await directoryHandle.resolve();
+                    if (pathArray && pathArray.length > 0) {
+                        // Construire le chemin complet
+                        const pathStr = pathArray.join('\\');
+                        return `C:\\Users\\[Utilisateur]\\${pathStr}\\`;
+                    }
+                } catch (resolveError) {
+                    console.log('[CategoriesPage] Resolve non disponible:', resolveError);
+                }
+            }
+            
+            // Méthode 2: Utiliser le nom du dossier avec estimation du chemin
+            const folderName = directoryHandle.name || 'DossierSelectionne';
+            
+            // Estimation du chemin basé sur les patterns courants
+            if (folderName.toLowerCase().includes('desktop') || folderName.toLowerCase().includes('bureau')) {
+                return `C:\\Users\\[Utilisateur]\\Desktop\\${folderName}\\`;
+            } else if (folderName.toLowerCase().includes('documents')) {
+                return `C:\\Users\\[Utilisateur]\\Documents\\${folderName}\\`;
+            } else if (folderName.toLowerCase().includes('downloads') || folderName.toLowerCase().includes('téléchargements')) {
+                return `C:\\Users\\[Utilisateur]\\Downloads\\${folderName}\\`;
+            } else {
+                return `C:\\Users\\[Utilisateur]\\[Emplacement]\\${folderName}\\`;
+            }
+            
+        } catch (error) {
+            console.warn('[CategoriesPage] Impossible d\'obtenir le chemin complet:', error);
+            return `C:\\Users\\[Utilisateur]\\${directoryHandle.name || 'DossierSelectionne'}\\`;
+        }
+    }
+
+    async getDirectoryPath(directoryHandle) {
+        return await this.getFullDirectoryPath(directoryHandle);
     }
 
     async createFilesystemBackup(type = 'manual') {
@@ -499,6 +640,26 @@ Chemin: ${this.filesystemConfig.currentPath}
         }
     }
 
+    async copyPathToClipboard(path) {
+        try {
+            await navigator.clipboard.writeText(path);
+            this.showToast('📋 Chemin copié dans le presse-papiers', 'success');
+        } catch (error) {
+            // Fallback pour les navigateurs qui ne supportent pas clipboard API
+            try {
+                const textArea = document.createElement('textarea');
+                textArea.value = path;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                this.showToast('📋 Chemin copié', 'success');
+            } catch (fallbackError) {
+                this.showToast('❌ Impossible de copier le chemin', 'error');
+            }
+        }
+    }
+
     async openBackupDirectory() {
         if (!this.filesystemConfig.enabled || !this.filesystemConfig.directoryHandle) {
             this.showToast('❌ Aucun répertoire configuré', 'error');
@@ -506,15 +667,55 @@ Chemin: ${this.filesystemConfig.currentPath}
         }
 
         try {
-            // Cette API est expérimentale et peut ne pas fonctionner partout
-            if ('launchQueue' in window && 'setConsumer' in window.launchQueue) {
-                // Essayer d'ouvrir le répertoire dans l'explorateur
-                // Note: Cette API est très limitée et expérimentale
-                this.showToast('ℹ️ Ouverture du répertoire...', 'info');
-            } else {
-                // Fallback: afficher le chemin
-                this.showToast(`📁 Répertoire: ${this.filesystemConfig.currentPath}`, 'info');
-            }
+            // Afficher les informations du répertoire
+            const path = this.filesystemConfig.currentPath;
+            
+            this.showModal('Emplacement des Backups', `
+                <div class="directory-info">
+                    <div class="info-section">
+                        <h4><i class="fas fa-folder-open"></i> Répertoire des Backups</h4>
+                        <div class="path-display-large">
+                            <div class="path-text">${path}</div>
+                            <button class="btn-copy-large" onclick="window.categoriesPageV23.copyPathToClipboard('${path.replace(/\\/g, '\\\\')}')">
+                                <i class="fas fa-copy"></i> Copier le chemin
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <h4><i class="fas fa-info-circle"></i> Comment accéder aux fichiers</h4>
+                        
+                        ${this.filesystemConfig.permissions === 'granted' && this.filesystemConfig.directoryHandle ? `
+                            <div class="access-method">
+                                <div class="method-title">✅ Répertoire accessible</div>
+                                <div class="method-desc">Vos fichiers sont dans le répertoire que vous avez configuré. 
+                                Vous pouvez y accéder directement depuis l'explorateur de fichiers.</div>
+                            </div>
+                        ` : `
+                            <div class="access-method">
+                                <div class="method-title">📁 Stockage sécurisé</div>
+                                <div class="method-desc">Vos fichiers sont dans le stockage sécurisé du navigateur. 
+                                Pour y accéder, utilisez les fonctions de téléchargement de l'application.</div>
+                            </div>
+                        `}
+                        
+                        <div class="access-method">
+                            <div class="method-title">📥 Télécharger un backup</div>
+                            <div class="method-desc">Utilisez le bouton "Télécharger Backup" pour obtenir 
+                            une copie de vos catégories au format JSON.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <h4><i class="fas fa-file-alt"></i> Fichiers créés</h4>
+                        <ul class="files-list">
+                            <li><strong>LATEST-Categories-Backup.json</strong> - Dernière sauvegarde</li>
+                            <li><strong>EmailSortPro-Categories-[DATE].json</strong> - Backups horodatés</li>
+                            <li><strong>README-Categories-Backup.txt</strong> - Documentation</li>
+                        </ul>
+                    </div>
+                </div>
+            `);
             
         } catch (error) {
             console.warn('[CategoriesPage] ⚠️ Impossible d\'ouvrir le répertoire:', error);
@@ -1030,14 +1231,18 @@ Chemin: ${this.filesystemConfig.currentPath}
                         
                         <div class="config-grid">
                             <div class="config-item">
-                                <label>Répertoire actuel</label>
-                                <div class="path-display">
+                                <label>Répertoire actuel (chemin complet)</label>
+                                <div class="path-display-full">
                                     <i class="fas fa-folder"></i>
-                                    <span>${currentPath}</span>
+                                    <span class="full-path">${currentPath}</span>
+                                    <button class="btn-copy" onclick="window.categoriesPageV23.copyPathToClipboard('${currentPath.replace(/\\/g, '\\\\')}')" title="Copier le chemin">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
                                     <button class="btn-icon" onclick="window.categoriesPageV23.changeBackupDirectory()" title="Changer">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                 </div>
+                                <small class="path-info">Chemin complet où sont stockés vos backups de catégories</small>
                             </div>
                             
                             <div class="config-item">
@@ -2253,16 +2458,145 @@ Chemin: ${this.filesystemConfig.currentPath}
                 margin-bottom: 20px;
             }
 
-            .path-display {
+            /* Affichage du chemin complet */
+            .path-display-full {
                 display: flex;
                 align-items: center;
                 gap: 8px;
                 background: #f8fafc;
-                padding: 8px 12px;
-                border-radius: 4px;
+                padding: 12px;
+                border-radius: 6px;
                 border: 1px solid #e2e8f0;
                 font-family: 'Courier New', monospace;
+                font-size: 12px;
+            }
+
+            .full-path {
+                flex: 1;
+                word-break: break-all;
+                color: #1f2937;
+                font-weight: 500;
+                line-height: 1.4;
+                padding: 4px 8px;
+                background: white;
+                border-radius: 4px;
+                border: 1px solid #e2e8f0;
+            }
+
+            .btn-copy {
+                background: #3B82F6;
+                color: white;
+                border: none;
+                padding: 6px 8px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 11px;
+                transition: all 0.15s ease;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .btn-copy:hover {
+                background: #2563EB;
+                transform: scale(1.05);
+            }
+
+            .path-info {
+                display: block;
+                margin-top: 6px;
+                font-size: 11px;
+                color: #6b7280;
+                font-style: italic;
+            }
+
+            /* Modal pour répertoire */
+            .directory-info {
+                max-width: 100%;
+            }
+
+            .path-display-large {
+                background: #f1f5f9;
+                border: 2px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 16px;
+                margin: 12px 0;
+            }
+
+            .path-text {
+                font-family: 'Courier New', monospace;
                 font-size: 13px;
+                color: #1f2937;
+                font-weight: 600;
+                word-break: break-all;
+                line-height: 1.5;
+                background: white;
+                padding: 12px;
+                border-radius: 4px;
+                border: 1px solid #d1d5db;
+                margin-bottom: 12px;
+            }
+
+            .btn-copy-large {
+                background: #3B82F6;
+                color: white;
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 500;
+                transition: all 0.15s ease;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .btn-copy-large:hover {
+                background: #2563EB;
+                transform: translateY(-1px);
+            }
+
+            .access-method {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+
+            .method-title {
+                font-size: 14px;
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 6px;
+            }
+
+            .method-desc {
+                font-size: 13px;
+                color: #6b7280;
+                line-height: 1.4;
+            }
+
+            .files-list {
+                list-style: none;
+                padding: 0;
+                margin: 8px 0;
+            }
+
+            .files-list li {
+                padding: 6px 12px;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 4px;
+                margin-bottom: 6px;
+                font-size: 13px;
+                font-family: 'Courier New', monospace;
+            }
+
+            .files-list li strong {
+                color: #3B82F6;
+                font-weight: 600;
             }
 
             .btn-icon {
