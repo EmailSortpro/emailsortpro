@@ -23,7 +23,7 @@
             this.autoBackupEnabled = true;
             
             this.init();
-        }
+        showNotification(message, type = 'info', duration = 4000) {
 
         // ================================================
         // INITIALISATION
@@ -838,20 +838,307 @@
                     </div>
 
                     <div class="categories-list">
-                        <div class="categories-placeholder">
-                            <i class="fas fa-tags"></i>
-                            <h4>Interface de gestion des catégories</h4>
-                            <p>Cette section contient votre système de gestion des catégories existant.</p>
-                            <p><em>Intégrez ici votre interface de catégories actuelle.</em></p>
-                            <div style="margin-top: 20px;">
-                                <span style="background: #e9ecef; padding: 8px 12px; border-radius: 6px; font-size: 14px; color: #495057;">
-                                    ${this.getCategoriesCount()} catégories chargées
-                                </span>
-                            </div>
-                        </div>
+                        ${this.renderCategoriesList()}
+                    </div>
+
+                    <div class="categories-pagination">
+                        ${this.renderPagination()}
                     </div>
                 </div>
             `;
+        }
+
+        renderCategoriesList() {
+            if (!this.categories || this.categories.length === 0) {
+                return `
+                    <div class="categories-placeholder">
+                        <i class="fas fa-tags"></i>
+                        <h4>Aucune catégorie trouvée</h4>
+                        <p>Commencez par créer votre première catégorie personnalisée.</p>
+                        <button class="btn btn-primary" onclick="this.addNewCategory()">
+                            <i class="fas fa-plus"></i>
+                            Créer une catégorie
+                        </button>
+                    </div>
+                `;
+            }
+
+            const filteredCategories = this.getFilteredCategories();
+            const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+            const endIndex = startIndex + this.itemsPerPage;
+            const paginatedCategories = filteredCategories.slice(startIndex, endIndex);
+
+            return `
+                <div class="categories-grid">
+                    ${paginatedCategories.map(category => this.renderCategoryCard(category)).join('')}
+                </div>
+                
+                <style>
+                .categories-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                    gap: 20px;
+                    margin-top: 20px;
+                }
+
+                .category-card {
+                    background: white;
+                    border: 1px solid #e9ecef;
+                    border-radius: 10px;
+                    padding: 20px;
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                }
+
+                .category-card:hover {
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                    transform: translateY(-2px);
+                    border-color: #007bff;
+                }
+
+                .category-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: 15px;
+                }
+
+                .category-name {
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #2c3e50;
+                    margin: 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .category-badge {
+                    background: #e9ecef;
+                    color: #6c757d;
+                    font-size: 10px;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    text-transform: uppercase;
+                    font-weight: 500;
+                }
+
+                .category-badge.custom {
+                    background: #d4edda;
+                    color: #155724;
+                }
+
+                .category-actions {
+                    display: flex;
+                    gap: 5px;
+                }
+
+                .category-btn {
+                    background: none;
+                    border: 1px solid #e9ecef;
+                    color: #6c757d;
+                    padding: 5px 8px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    transition: all 0.2s;
+                }
+
+                .category-btn:hover {
+                    background: #f8f9fa;
+                    border-color: #007bff;
+                    color: #007bff;
+                }
+
+                .category-description {
+                    color: #6c757d;
+                    font-size: 14px;
+                    line-height: 1.4;
+                    margin-bottom: 15px;
+                }
+
+                .category-keywords {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 5px;
+                }
+
+                .keyword-tag {
+                    background: #f8f9fa;
+                    color: #495057;
+                    padding: 3px 8px;
+                    border-radius: 4px;
+                    font-size: 11px;
+                    border: 1px solid #e9ecef;
+                }
+
+                .category-stats {
+                    margin-top: 15px;
+                    padding-top: 15px;
+                    border-top: 1px solid #e9ecef;
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 12px;
+                    color: #6c757d;
+                }
+                </style>
+            `;
+        }
+
+        renderCategoryCard(category) {
+            const isCustom = this.customCategories.includes(category);
+            const keywords = category.keywords || [];
+            
+            return `
+                <div class="category-card" data-category-id="${category.id || category.name}">
+                    <div class="category-header">
+                        <div>
+                            <h3 class="category-name">
+                                <i class="fas fa-tag" style="color: ${category.color || '#007bff'}"></i>
+                                ${category.name || category.label}
+                                <span class="category-badge ${isCustom ? 'custom' : ''}">${isCustom ? 'Personnalisé' : 'Défaut'}</span>
+                            </h3>
+                        </div>
+                        <div class="category-actions">
+                            <button class="category-btn" onclick="this.editCategory('${category.id || category.name}')" title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            ${isCustom ? `<button class="category-btn" onclick="this.deleteCategory('${category.id || category.name}')" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="category-description">
+                        ${category.description || 'Aucune description disponible'}
+                    </div>
+                    
+                    ${keywords.length > 0 ? `
+                        <div class="category-keywords">
+                            ${keywords.slice(0, 5).map(keyword => `<span class="keyword-tag">${keyword}</span>`).join('')}
+                            ${keywords.length > 5 ? `<span class="keyword-tag">+${keywords.length - 5} autres</span>` : ''}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="category-stats">
+                        <span>${keywords.length} mots-clés</span>
+                        <span>Créé ${category.createdAt ? new Date(category.createdAt).toLocaleDateString('fr-FR') : 'N/A'}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        renderPagination() {
+            const filteredCategories = this.getFilteredCategories();
+            const totalPages = Math.ceil(filteredCategories.length / this.itemsPerPage);
+            
+            if (totalPages <= 1) return '';
+
+            return `
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Affichage ${(this.currentPage - 1) * this.itemsPerPage + 1}-${Math.min(this.currentPage * this.itemsPerPage, filteredCategories.length)} 
+                        sur ${filteredCategories.length} catégories
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="pagination-btn" ${this.currentPage === 1 ? 'disabled' : ''} onclick="this.goToPage(${this.currentPage - 1})">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        ${Array.from({length: totalPages}, (_, i) => i + 1).map(page => `
+                            <button class="pagination-btn ${page === this.currentPage ? 'active' : ''}" onclick="this.goToPage(${page})">
+                                ${page}
+                            </button>
+                        `).join('')}
+                        <button class="pagination-btn" ${this.currentPage === totalPages ? 'disabled' : ''} onclick="this.goToPage(${this.currentPage + 1})">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <style>
+                .pagination-container {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-top: 30px;
+                    padding: 20px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                }
+
+                .pagination-info {
+                    color: #6c757d;
+                    font-size: 14px;
+                }
+
+                .pagination-controls {
+                    display: flex;
+                    gap: 5px;
+                }
+
+                .pagination-btn {
+                    padding: 8px 12px;
+                    border: 1px solid #e9ecef;
+                    background: white;
+                    color: #6c757d;
+                    cursor: pointer;
+                    border-radius: 4px;
+                    transition: all 0.2s;
+                }
+
+                .pagination-btn:hover:not(:disabled) {
+                    background: #007bff;
+                    color: white;
+                    border-color: #007bff;
+                }
+
+                .pagination-btn.active {
+                    background: #007bff;
+                    color: white;
+                    border-color: #007bff;
+                }
+
+                .pagination-btn:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+                </style>
+            `;
+        }
+
+        getFilteredCategories() {
+            let filtered = [...(this.categories || [])];
+            
+            if (this.selectedFilter === 'custom') {
+                filtered = filtered.filter(cat => this.customCategories.includes(cat));
+            } else if (this.selectedFilter === 'default') {
+                filtered = filtered.filter(cat => !this.customCategories.includes(cat));
+            }
+            
+            if (this.searchTerm) {
+                const term = this.searchTerm.toLowerCase();
+                filtered = filtered.filter(cat => 
+                    (cat.name || cat.label || '').toLowerCase().includes(term) ||
+                    (cat.description || '').toLowerCase().includes(term)
+                );
+            }
+            
+            return filtered;
+        }
+
+        goToPage(page) {
+            this.currentPage = page;
+            this.switchTab('categories'); // Recharger l'onglet
+        }
+
+        editCategory(categoryId) {
+            this.showNotification(`✏️ Édition de la catégorie "${categoryId}" à implémenter`, 'info');
+        }
+
+        deleteCategory(categoryId) {
+            if (confirm(`Êtes-vous sûr de vouloir supprimer la catégorie "${categoryId}" ?`)) {
+                this.showNotification(`🗑️ Suppression de la catégorie "${categoryId}" à implémenter`, 'info');
+            }
         }
 
         renderSettingsContent() {
@@ -881,8 +1168,9 @@
                                 </div>
                                 <div class="backup-info">
                                     <i class="fas fa-info-circle"></i>
-                                    <strong>Fichiers créés :</strong> EmailSortPro-Auto-[Date]_[Heure].json dans votre dossier Téléchargements.
-                                    Les fichiers sont accessibles via l'Explorateur Windows/Mac.
+                                    <strong>Fichiers créés :</strong> EmailSortPro-Auto-[Date]_[Heure].json dans votre dossier <strong>Téléchargements</strong>.
+                                    <br><strong>Chemin complet :</strong> <code>C:\Users\[VotreNom]\Downloads\EmailSortPro-*.json</code>
+                                    <br>Les fichiers sont accessibles via l'Explorateur Windows/Mac.
                                 </div>
                             </div>
 
@@ -902,7 +1190,8 @@
                                 <div class="backup-info">
                                     <i class="fas fa-check-circle"></i>
                                     <strong>Status :</strong> ${this.autoBackupEnabled ? 'Sauvegarde active' : 'Sauvegarde en pause'}.
-                                    Prochaine sauvegarde dans ${this.getNextBackupTime()}.
+                                    <br><strong>Dossier de destination :</strong> <code>Téléchargements/EmailSortPro-*.json</code>
+                                    <br>Prochaine sauvegarde dans ${this.getNextBackupTime()}.
                                 </div>
                             </div>
                         </div>
@@ -1038,7 +1327,7 @@
 
             // Ouvrir dossier téléchargements (conseil à l'utilisateur)
             document.getElementById('view-backup-folder-btn')?.addEventListener('click', () => {
-                this.showNotification('💡 Ouvrez votre dossier Téléchargements et recherchez les fichiers "EmailSortPro-"', 'info', 6000);
+                this.showBackupLocationInfo();
             });
 
             // Contrôles catégories
@@ -1268,15 +1557,94 @@
         // ================================================
         async loadCategories() {
             try {
+                console.log('[CategoriesPage] 📂 Chargement des catégories...');
+                
+                // Essayer de charger depuis categoryManager
                 if (window.categoryManager) {
                     this.categories = window.categoryManager.getCategories() || [];
                     this.customCategories = window.categoryManager.getCustomCategories() || [];
+                    console.log(`[CategoriesPage] ✅ Chargé ${this.categories.length} catégories depuis categoryManager`);
+                } else {
+                    console.log('[CategoriesPage] ⚠️ categoryManager non disponible, chargement des catégories par défaut');
+                    this.loadDefaultCategories();
                 }
+                
+                // Si pas de catégories, charger des exemples
+                if (this.categories.length === 0) {
+                    this.loadDefaultCategories();
+                }
+                
             } catch (error) {
-                console.warn('[CategoriesPage] Erreur chargement catégories:', error);
-                this.categories = [];
-                this.customCategories = [];
+                console.warn('[CategoriesPage] ❌ Erreur chargement catégories:', error);
+                this.loadDefaultCategories();
             }
+        }
+
+        loadDefaultCategories() {
+            // Catégories par défaut pour démonstration
+            this.categories = [
+                {
+                    id: 'important',
+                    name: 'Important',
+                    description: 'Emails prioritaires et urgents',
+                    color: '#dc3545',
+                    keywords: ['urgent', 'important', 'priorité', 'asap'],
+                    createdAt: new Date('2024-01-01').toISOString()
+                },
+                {
+                    id: 'work',
+                    name: 'Travail',
+                    description: 'Emails professionnels et projets',
+                    color: '#007bff',
+                    keywords: ['projet', 'réunion', 'deadline', 'client'],
+                    createdAt: new Date('2024-01-01').toISOString()
+                },
+                {
+                    id: 'finance',
+                    name: 'Finance',
+                    description: 'Factures, banque et finances',
+                    color: '#28a745',
+                    keywords: ['facture', 'banque', 'paiement', 'budget'],
+                    createdAt: new Date('2024-01-01').toISOString()
+                },
+                {
+                    id: 'personal',
+                    name: 'Personnel',
+                    description: 'Emails personnels et famille',
+                    color: '#ffc107',
+                    keywords: ['famille', 'ami', 'personnel', 'vacances'],
+                    createdAt: new Date('2024-01-01').toISOString()
+                },
+                {
+                    id: 'shopping',
+                    name: 'Achats',
+                    description: 'Commandes et livraisons',
+                    color: '#17a2b8',
+                    keywords: ['commande', 'livraison', 'amazon', 'achat'],
+                    createdAt: new Date('2024-01-01').toISOString()
+                },
+                {
+                    id: 'newsletters',
+                    name: 'Newsletters',
+                    description: 'Newsletters et publications',
+                    color: '#6c757d',
+                    keywords: ['newsletter', 'publication', 'abonnement'],
+                    createdAt: new Date('2024-01-01').toISOString()
+                }
+            ];
+            
+            this.customCategories = [
+                {
+                    id: 'custom-travel',
+                    name: 'Voyages',
+                    description: 'Réservations et voyages',
+                    color: '#fd7e14',
+                    keywords: ['vol', 'hôtel', 'voyage', 'booking'],
+                    createdAt: new Date('2024-06-01').toISOString()
+                }
+            ];
+            
+            console.log('[CategoriesPage] ✅ Catégories par défaut chargées');
         }
 
         filterCategories() {
@@ -1364,7 +1732,246 @@
             return `${minutes} min`;
         }
 
-        showNotification(message, type = 'info', duration = 4000) {
+        showBackupLocationInfo() {
+            const modal = document.createElement('div');
+            modal.className = 'backup-location-modal';
+            modal.innerHTML = `
+                <div class="modal-overlay"></div>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-folder-open"></i> Localisation des sauvegardes</h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="location-info">
+                            <h4>📁 Vos fichiers de sauvegarde se trouvent ici :</h4>
+                            
+                            <div class="path-section">
+                                <h5>🪟 Windows :</h5>
+                                <code class="path-code">C:\\Users\\[VotreNom]\\Downloads\\EmailSortPro-*.json</code>
+                                <button onclick="navigator.clipboard.writeText('C:\\\\Users\\\\' + (process.env.USERNAME || '[VotreNom]') + '\\\\Downloads\\\\EmailSortPro-')" class="copy-btn">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="path-section">
+                                <h5>🍎 Mac :</h5>
+                                <code class="path-code">/Users/[VotreNom]/Downloads/EmailSortPro-*.json</code>
+                                <button onclick="navigator.clipboard.writeText('/Users/' + (process.env.USER || '[VotreNom]') + '/Downloads/EmailSortPro-')" class="copy-btn">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="files-examples">
+                                <h5>📄 Types de fichiers créés :</h5>
+                                <ul>
+                                    <li><code>EmailSortPro-Auto-2025-06-19_14h.json</code> - Sauvegarde automatique</li>
+                                    <li><code>EmailSortPro-Latest.json</code> - Dernière sauvegarde</li>
+                                    <li><code>EmailSortPro-Manuel-2025-06-19_14-30-45.json</code> - Sauvegarde manuelle</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="access-instructions">
+                                <h5>🔍 Comment y accéder :</h5>
+                                <ol>
+                                    <li>Ouvrez l'<strong>Explorateur de fichiers</strong> (Windows) ou <strong>Finder</strong> (Mac)</li>
+                                    <li>Naviguez vers votre dossier <strong>"Téléchargements"</strong></li>
+                                    <li>Recherchez les fichiers commençant par <strong>"EmailSortPro-"</strong></li>
+                                    <li>Double-cliquez pour ouvrir avec un éditeur de texte</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="btn btn-primary">
+                            <i class="fas fa-check"></i>
+                            Compris
+                        </button>
+                    </div>
+                </div>
+
+                <style>
+                .backup-location-modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 10000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                .modal-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    backdrop-filter: blur(2px);
+                }
+
+                .modal-content {
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                    max-width: 700px;
+                    width: 90%;
+                    max-height: 80vh;
+                    overflow: auto;
+                    position: relative;
+                    z-index: 1;
+                }
+
+                .modal-header {
+                    background: linear-gradient(135deg, #007bff, #0056b3);
+                    color: white;
+                    padding: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    border-radius: 12px 12px 0 0;
+                }
+
+                .modal-header h3 {
+                    margin: 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .modal-close {
+                    background: none;
+                    border: none;
+                    color: white;
+                    font-size: 24px;
+                    cursor: pointer;
+                    padding: 0;
+                    width: 30px;
+                    height: 30px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 50%;
+                    transition: background 0.2s;
+                }
+
+                .modal-close:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                }
+
+                .modal-body {
+                    padding: 30px;
+                }
+
+                .location-info h4 {
+                    color: #2c3e50;
+                    margin: 0 0 20px 0;
+                }
+
+                .path-section {
+                    background: #f8f9fa;
+                    border: 1px solid #e9ecef;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin-bottom: 15px;
+                    position: relative;
+                }
+
+                .path-section h5 {
+                    margin: 0 0 10px 0;
+                    color: #495057;
+                    font-size: 14px;
+                }
+
+                .path-code {
+                    background: #2c3e50;
+                    color: #e9ecef;
+                    padding: 8px 12px;
+                    border-radius: 4px;
+                    font-family: 'Courier New', monospace;
+                    font-size: 13px;
+                    display: block;
+                    margin-right: 40px;
+                    word-break: break-all;
+                }
+
+                .copy-btn {
+                    position: absolute;
+                    top: 45px;
+                    right: 15px;
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 6px 8px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 12px;
+                }
+
+                .copy-btn:hover {
+                    background: #0056b3;
+                }
+
+                .files-examples,
+                .access-instructions {
+                    background: #e7f3ff;
+                    border: 1px solid #b3d9ff;
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin-bottom: 15px;
+                }
+
+                .files-examples h5,
+                .access-instructions h5 {
+                    margin: 0 0 10px 0;
+                    color: #0c5460;
+                }
+
+                .files-examples ul,
+                .access-instructions ol {
+                    margin: 0;
+                    padding-left: 20px;
+                    color: #0c5460;
+                }
+
+                .files-examples li,
+                .access-instructions li {
+                    margin-bottom: 5px;
+                    font-size: 13px;
+                }
+
+                .files-examples code {
+                    background: rgba(255, 255, 255, 0.7);
+                    padding: 2px 4px;
+                    border-radius: 3px;
+                    font-size: 12px;
+                }
+
+                .modal-footer {
+                    background: #f8f9fa;
+                    padding: 20px;
+                    display: flex;
+                    justify-content: center;
+                    border-top: 1px solid #e9ecef;
+                    border-radius: 0 0 12px 12px;
+                }
+                </style>
+            `;
+
+            // Événements du modal
+            modal.querySelector('.modal-close').addEventListener('click', () => {
+                modal.remove();
+            });
+
+            modal.querySelector('.modal-overlay').addEventListener('click', () => {
+                modal.remove();
+            });
+
+            document.body.appendChild(modal);
+        }
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             notification.textContent = message;
