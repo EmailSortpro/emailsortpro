@@ -1,13 +1,19 @@
-// categoryPage.js - Page paramètres intégrée avec système de backup
+// categoryPage.js - Page paramètres avec système de backup simplifié et fonctionnel
 
 class CategoryPage {
     constructor() {
+        this.backupService = null;
         this.initPage();
+        this.initBackupService();
     }
 
     initPage() {
         this.createSettingsPage();
         this.attachEventListeners();
+    }
+
+    initBackupService() {
+        this.backupService = new SimpleBackupService();
     }
 
     createSettingsPage() {
@@ -137,8 +143,90 @@ class CategoryPage {
                         </div>
                     </div>
 
-                    <!-- Section de backup - sera ajoutée par le service de backup -->
-                    <!-- La section backup sera automatiquement ajoutée ici par backup.js -->
+                    <!-- Section Sauvegarde Simplifiée -->
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">
+                            <i class="fas fa-save"></i> Sauvegarde
+                        </h3>
+                        <div class="settings-content">
+                            <!-- Statut de la sauvegarde -->
+                            <div class="setting-item">
+                                <div class="backup-status-display">
+                                    <div class="status-indicator">
+                                        <i class="fas fa-circle" id="backup-status-icon"></i>
+                                        <span id="backup-status-text">Non configuré</span>
+                                    </div>
+                                    <p id="backup-status-detail">Configurez un dossier de sauvegarde pour protéger vos données</p>
+                                </div>
+                            </div>
+
+                            <!-- Configuration du dossier -->
+                            <div class="setting-item">
+                                <label>
+                                    <input type="checkbox" id="backup-enabled">
+                                    Activer les sauvegardes automatiques
+                                </label>
+                            </div>
+
+                            <div class="setting-item">
+                                <button id="select-backup-folder-btn" class="btn btn-primary">
+                                    <i class="fas fa-folder-open"></i> Choisir le dossier de sauvegarde
+                                </button>
+                                <p class="setting-description">
+                                    Sélectionnez un dossier sur votre ordinateur pour sauvegarder vos données
+                                </p>
+                                <div id="backup-folder-display" style="display: none;">
+                                    <p class="folder-path"><strong>Dossier :</strong> <span id="backup-folder-path">Aucun</span></p>
+                                </div>
+                            </div>
+
+                            <!-- Fréquence de sauvegarde -->
+                            <div class="setting-item">
+                                <label for="backup-frequency">Fréquence de sauvegarde :</label>
+                                <select id="backup-frequency" class="form-control">
+                                    <option value="15">Toutes les 15 minutes</option>
+                                    <option value="30">Toutes les 30 minutes</option>
+                                    <option value="60" selected>Toutes les heures</option>
+                                    <option value="360">Toutes les 6 heures</option>
+                                    <option value="1440">Quotidienne</option>
+                                </select>
+                            </div>
+
+                            <!-- Actions manuelles -->
+                            <div class="setting-item">
+                                <div class="backup-actions">
+                                    <button id="manual-backup-btn" class="btn btn-success" disabled>
+                                        <i class="fas fa-save"></i> Sauvegarder maintenant
+                                    </button>
+                                    <button id="export-backup-btn" class="btn btn-secondary">
+                                        <i class="fas fa-download"></i> Exporter vers fichier
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Import/Restauration -->
+                            <div class="setting-item">
+                                <label for="import-backup-file">Restaurer depuis une sauvegarde :</label>
+                                <input type="file" id="import-backup-file" accept=".json" class="form-control">
+                                <button id="import-backup-btn" class="btn btn-info" disabled>
+                                    <i class="fas fa-upload"></i> Restaurer les données
+                                </button>
+                                <p class="setting-description">
+                                    Sélectionnez un fichier de sauvegarde (.json) pour restaurer vos données
+                                </p>
+                            </div>
+
+                            <!-- Informations -->
+                            <div class="setting-item">
+                                <div class="backup-info">
+                                    <h5>Informations de sauvegarde :</h5>
+                                    <p><strong>Dernière sauvegarde :</strong> <span id="last-backup-time">Jamais</span></p>
+                                    <p><strong>Nombre de fichiers :</strong> <span id="backup-files-count">0</span></p>
+                                    <p><strong>Taille estimée :</strong> <span id="backup-size">0 KB</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Section Confidentialité -->
                     <div class="settings-section">
@@ -398,6 +486,11 @@ class CategoryPage {
                     color: white;
                 }
 
+                .btn-info {
+                    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                    color: white;
+                }
+
                 .btn-outline-secondary {
                     background: transparent;
                     color: #6c757d;
@@ -409,6 +502,69 @@ class CategoryPage {
                     cursor: not-allowed;
                     transform: none !important;
                     box-shadow: none !important;
+                }
+
+                /* Styles spécifiques pour la sauvegarde */
+                .backup-status-display {
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    padding: 16px;
+                    border: 1px solid #e9ecef;
+                }
+
+                .status-indicator {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-bottom: 8px;
+                }
+
+                .status-indicator i {
+                    font-size: 16px;
+                }
+
+                .status-indicator.active i {
+                    color: #10b981;
+                }
+
+                .status-indicator.inactive i {
+                    color: #ef4444;
+                }
+
+                .status-indicator.warning i {
+                    color: #f59e0b;
+                }
+
+                .backup-actions {
+                    display: flex;
+                    gap: 10px;
+                    flex-wrap: wrap;
+                }
+
+                .folder-path {
+                    background: #e3f2fd;
+                    padding: 8px 12px;
+                    border-radius: 4px;
+                    border-left: 3px solid #2196f3;
+                    margin-top: 10px;
+                    font-size: 13px;
+                }
+
+                .backup-info {
+                    background: #f0f9ff;
+                    padding: 15px;
+                    border-radius: 6px;
+                    border: 1px solid #bae6fd;
+                }
+
+                .backup-info h5 {
+                    margin: 0 0 10px 0;
+                    color: #0369a1;
+                }
+
+                .backup-info p {
+                    margin: 5px 0;
+                    font-size: 14px;
                 }
 
                 .about-info h4 {
@@ -456,44 +612,6 @@ class CategoryPage {
                     flex-wrap: wrap;
                 }
 
-                /* Styles pour les sections de backup */
-                .backup-status {
-                    padding: 10px 15px;
-                    border-radius: 6px;
-                    font-size: 0.9rem;
-                    margin: 10px 0;
-                }
-
-                .status-active {
-                    background: #d1fae5;
-                    color: #065f46;
-                    border: 1px solid #10b981;
-                }
-
-                .status-browser {
-                    background: #dbeafe;
-                    color: #1e40af;
-                    border: 1px solid #3b82f6;
-                }
-
-                .backup-status-text {
-                    font-size: 0.9rem;
-                    color: #6c757d;
-                    margin-left: 10px;
-                }
-
-                .backup-details {
-                    background: #f8f9fa;
-                    padding: 15px;
-                    border-radius: 6px;
-                    margin-top: 10px;
-                }
-
-                .backup-details p {
-                    margin-bottom: 8px;
-                    font-size: 0.9rem;
-                }
-
                 /* Responsive */
                 @media (max-width: 768px) {
                     .settings-container {
@@ -511,6 +629,10 @@ class CategoryPage {
                     
                     .links {
                         justify-content: center;
+                    }
+
+                    .backup-actions {
+                        flex-direction: column;
                     }
                 }
 
@@ -541,8 +663,201 @@ class CategoryPage {
             this.setupFormHandlers();
             this.setupFileHandlers();
             this.setupResetHandlers();
+            this.setupBackupHandlers();
             this.loadSettings();
         }, 100);
+    }
+
+    setupBackupHandlers() {
+        // Activer/Désactiver les sauvegardes
+        const backupEnabled = document.getElementById('backup-enabled');
+        if (backupEnabled) {
+            backupEnabled.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    this.backupService.enable();
+                } else {
+                    this.backupService.disable();
+                }
+                this.updateBackupUI();
+            });
+        }
+
+        // Sélectionner le dossier de sauvegarde
+        const selectFolderBtn = document.getElementById('select-backup-folder-btn');
+        if (selectFolderBtn) {
+            selectFolderBtn.addEventListener('click', async () => {
+                selectFolderBtn.disabled = true;
+                selectFolderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sélection...';
+
+                const success = await this.backupService.selectBackupFolder();
+                
+                selectFolderBtn.disabled = false;
+                selectFolderBtn.innerHTML = '<i class="fas fa-folder-open"></i> Choisir le dossier de sauvegarde';
+                
+                if (success) {
+                    this.updateBackupUI();
+                    this.showNotification('Dossier de sauvegarde configuré avec succès!', 'success');
+                }
+            });
+        }
+
+        // Changer la fréquence
+        const frequencySelect = document.getElementById('backup-frequency');
+        if (frequencySelect) {
+            frequencySelect.addEventListener('change', (e) => {
+                const minutes = parseInt(e.target.value);
+                this.backupService.setFrequency(minutes);
+                this.showNotification(`Fréquence mise à jour: toutes les ${this.formatFrequency(minutes)}`, 'info');
+            });
+        }
+
+        // Sauvegarde manuelle
+        const manualBackupBtn = document.getElementById('manual-backup-btn');
+        if (manualBackupBtn) {
+            manualBackupBtn.addEventListener('click', async () => {
+                manualBackupBtn.disabled = true;
+                manualBackupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
+
+                const success = await this.backupService.performManualBackup();
+                
+                manualBackupBtn.disabled = false;
+                manualBackupBtn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder maintenant';
+                
+                if (success) {
+                    this.showNotification('Sauvegarde effectuée avec succès!', 'success');
+                    this.updateBackupUI();
+                } else {
+                    this.showNotification('Erreur lors de la sauvegarde', 'error');
+                }
+            });
+        }
+
+        // Export vers fichier
+        const exportBackupBtn = document.getElementById('export-backup-btn');
+        if (exportBackupBtn) {
+            exportBackupBtn.addEventListener('click', () => {
+                this.backupService.exportToFile();
+            });
+        }
+
+        // Import de sauvegarde
+        const importBackupFile = document.getElementById('import-backup-file');
+        const importBackupBtn = document.getElementById('import-backup-btn');
+        
+        if (importBackupFile) {
+            importBackupFile.addEventListener('change', (e) => {
+                if (importBackupBtn) {
+                    importBackupBtn.disabled = !e.target.files.length;
+                }
+            });
+        }
+
+        if (importBackupBtn) {
+            importBackupBtn.addEventListener('click', async () => {
+                const file = importBackupFile.files[0];
+                if (!file) return;
+
+                importBackupBtn.disabled = true;
+                importBackupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Restauration...';
+
+                const success = await this.backupService.importFromFile(file);
+                
+                importBackupBtn.disabled = false;
+                importBackupBtn.innerHTML = '<i class="fas fa-upload"></i> Restaurer les données';
+                
+                if (success) {
+                    this.showNotification('Données restaurées avec succès!', 'success');
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    this.showNotification('Erreur lors de la restauration', 'error');
+                }
+            });
+        }
+
+        // Mettre à jour l'interface au démarrage
+        this.updateBackupUI();
+    }
+
+    formatFrequency(minutes) {
+        if (minutes < 60) {
+            return `${minutes} minutes`;
+        } else if (minutes === 60) {
+            return 'heure';
+        } else if (minutes < 1440) {
+            return `${minutes / 60} heures`;
+        } else {
+            return `${minutes / 1440} jour(s)`;
+        }
+    }
+
+    updateBackupUI() {
+        const status = this.backupService.getStatus();
+        
+        // Statut principal
+        const statusIcon = document.getElementById('backup-status-icon');
+        const statusText = document.getElementById('backup-status-text');
+        const statusDetail = document.getElementById('backup-status-detail');
+        
+        if (statusIcon && statusText && statusDetail) {
+            if (status.folderConfigured && status.enabled) {
+                statusIcon.className = 'fas fa-circle';
+                statusIcon.parentElement.className = 'status-indicator active';
+                statusText.textContent = 'Actif';
+                statusDetail.textContent = 'Les sauvegardes automatiques sont activées';
+            } else if (status.folderConfigured && !status.enabled) {
+                statusIcon.className = 'fas fa-circle';
+                statusIcon.parentElement.className = 'status-indicator warning';
+                statusText.textContent = 'Désactivé';
+                statusDetail.textContent = 'Dossier configuré mais sauvegardes désactivées';
+            } else {
+                statusIcon.className = 'fas fa-circle';
+                statusIcon.parentElement.className = 'status-indicator inactive';
+                statusText.textContent = 'Non configuré';
+                statusDetail.textContent = 'Configurez un dossier de sauvegarde pour protéger vos données';
+            }
+        }
+
+        // Affichage du dossier
+        const folderDisplay = document.getElementById('backup-folder-display');
+        const folderPath = document.getElementById('backup-folder-path');
+        
+        if (folderDisplay && folderPath) {
+            if (status.folderConfigured) {
+                folderDisplay.style.display = 'block';
+                folderPath.textContent = status.folderName || 'Dossier configuré';
+            } else {
+                folderDisplay.style.display = 'none';
+            }
+        }
+
+        // État des contrôles
+        const backupEnabled = document.getElementById('backup-enabled');
+        const manualBackupBtn = document.getElementById('manual-backup-btn');
+        
+        if (backupEnabled) {
+            backupEnabled.checked = status.enabled;
+        }
+        
+        if (manualBackupBtn) {
+            manualBackupBtn.disabled = !status.folderConfigured;
+        }
+
+        // Informations
+        const lastBackupTime = document.getElementById('last-backup-time');
+        const backupFilesCount = document.getElementById('backup-files-count');
+        const backupSize = document.getElementById('backup-size');
+        
+        if (lastBackupTime) {
+            lastBackupTime.textContent = status.lastBackup || 'Jamais';
+        }
+        
+        if (backupFilesCount) {
+            backupFilesCount.textContent = status.filesCount || 0;
+        }
+        
+        if (backupSize) {
+            backupSize.textContent = status.estimatedSize || '0 KB';
+        }
     }
 
     setupFormHandlers() {
@@ -624,7 +939,7 @@ class CategoryPage {
     }
 
     // ================================================
-    // GESTION DES PARAMÈTRES
+    // GESTION DES PARAMÈTRES (identique)
     // ================================================
     
     loadSettings() {
@@ -696,7 +1011,6 @@ class CategoryPage {
     }
 
     autoSave() {
-        // Sauvegarde automatique avec un délai pour éviter trop d'appels
         clearTimeout(this.autoSaveTimeout);
         this.autoSaveTimeout = setTimeout(() => {
             this.saveSettings();
@@ -711,10 +1025,6 @@ class CategoryPage {
         }
     }
 
-    // ================================================
-    // GESTION DES THÈMES
-    // ================================================
-    
     applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         
@@ -727,7 +1037,7 @@ class CategoryPage {
     }
 
     // ================================================
-    // IMPORT/EXPORT
+    // IMPORT/EXPORT (identique)
     // ================================================
     
     exportData() {
@@ -779,12 +1089,10 @@ class CategoryPage {
                 }
 
                 if (confirm('Êtes-vous sûr de vouloir importer ces données ? Cela remplacera vos paramètres actuels.')) {
-                    // Importer les paramètres
                     if (data.settings) {
                         localStorage.setItem('emailsortpro_settings', JSON.stringify(data.settings));
                     }
 
-                    // Importer les autres données si disponibles
                     if (data.categories && window.categoryManager) {
                         this.importCategories(data.categories);
                     }
@@ -793,9 +1101,7 @@ class CategoryPage {
                         this.importTasks(data.tasks);
                     }
 
-                    // Recharger la page pour appliquer les changements
                     this.loadSettings();
-                    
                     this.showNotification('Données importées avec succès!', 'success');
                 }
                 
@@ -809,7 +1115,7 @@ class CategoryPage {
     }
 
     // ================================================
-    // ACTIONS SPÉCIFIQUES
+    // ACTIONS SPÉCIFIQUES (identique)
     // ================================================
     
     resetCategories() {
@@ -818,7 +1124,6 @@ class CategoryPage {
                 window.categoryManager.resetCategories();
                 this.showNotification('Catégories réinitialisées', 'info');
             } else {
-                // Fallback: supprimer des localStorage
                 const keysToRemove = [];
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
@@ -839,7 +1144,6 @@ class CategoryPage {
         );
         
         if (confirmation === 'SUPPRIMER') {
-            // Sauvegarder les clés importantes à ne pas supprimer
             const keepKeys = ['emailsortpro_backup_config'];
             const savedData = {};
             keepKeys.forEach(key => {
@@ -847,17 +1151,14 @@ class CategoryPage {
                 if (value) savedData[key] = value;
             });
 
-            // Tout supprimer
             localStorage.clear();
             
-            // Restaurer les clés importantes
             Object.entries(savedData).forEach(([key, value]) => {
                 localStorage.setItem(key, value);
             });
 
             this.showNotification('Toutes les données ont été supprimées', 'info');
             
-            // Recharger la page après un délai
             setTimeout(() => {
                 window.location.reload();
             }, 2000);
@@ -865,7 +1166,7 @@ class CategoryPage {
     }
 
     // ================================================
-    // UTILITAIRES
+    // UTILITAIRES (identique)
     // ================================================
     
     getFieldValue(id) {
@@ -948,28 +1249,24 @@ class CategoryPage {
         if (window.uiManager && window.uiManager.showToast) {
             window.uiManager.showToast(message, type);
         } else {
-            // Fallback simple
             alert(message);
         }
     }
 
     // ================================================
-    // API PUBLIQUE
+    // API PUBLIQUE (identique)
     // ================================================
     
     show() {
         const settingsPage = document.getElementById('settings-page');
         if (settingsPage) {
-            // Masquer les autres pages
             document.querySelectorAll('.page-content').forEach(page => {
                 page.style.display = 'none';
             });
             
-            // Afficher la page paramètres
             settingsPage.style.display = 'block';
-            
-            // Recharger les paramètres
             this.loadSettings();
+            this.updateBackupUI();
             
             console.log('[Settings] Page paramètres affichée');
         }
@@ -998,7 +1295,6 @@ class CategoryPage {
             
             localStorage.setItem('emailsortpro_settings', JSON.stringify(settings));
             
-            // Déclencher l'événement de changement
             document.dispatchEvent(new CustomEvent('settingsChanged', { 
                 detail: { key, value, settings } 
             }));
@@ -1008,6 +1304,458 @@ class CategoryPage {
             console.error('[Settings] Erreur mise à jour:', error);
             return false;
         }
+    }
+}
+
+// ================================================
+// SERVICE DE SAUVEGARDE SIMPLIFIÉ
+// ================================================
+
+class SimpleBackupService {
+    constructor() {
+        this.folderHandle = null;
+        this.enabled = false;
+        this.frequency = 60; // minutes
+        this.timer = null;
+        this.lastBackup = null;
+        this.filesCount = 0;
+        
+        this.loadConfig();
+    }
+
+    async selectBackupFolder() {
+        try {
+            // Vérifier le support de l'API File System
+            if (!window.showDirectoryPicker) {
+                alert('Votre navigateur ne supporte pas la sélection de dossiers.\nVeuillez utiliser Chrome, Edge ou un navigateur compatible.');
+                return false;
+            }
+
+            // Demander à l'utilisateur de sélectionner un dossier
+            this.folderHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                startIn: 'documents',
+                id: 'emailsortpro-backup-folder'
+            });
+
+            // Tester l'accès en écriture
+            await this.testWriteAccess();
+
+            // Sauvegarder la configuration
+            this.saveConfig();
+
+            console.log('[Backup] Dossier sélectionné avec succès');
+            return true;
+
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('[Backup] Sélection annulée par l\'utilisateur');
+                return false;
+            }
+            
+            console.error('[Backup] Erreur sélection dossier:', error);
+            alert('Erreur lors de la sélection du dossier:\n' + error.message);
+            return false;
+        }
+    }
+
+    async testWriteAccess() {
+        try {
+            const testFileName = '.emailsortpro-test-' + Date.now();
+            const testFileHandle = await this.folderHandle.getFileHandle(testFileName, { create: true });
+            const writable = await testFileHandle.createWritable();
+            await writable.write('Test EmailSortPro');
+            await writable.close();
+            await this.folderHandle.removeEntry(testFileName);
+            return true;
+        } catch (error) {
+            throw new Error('Impossible d\'écrire dans ce dossier. Veuillez choisir un autre dossier.');
+        }
+    }
+
+    enable() {
+        if (!this.folderHandle) {
+            alert('Veuillez d\'abord sélectionner un dossier de sauvegarde.');
+            return false;
+        }
+
+        this.enabled = true;
+        this.startTimer();
+        this.saveConfig();
+        console.log('[Backup] Service activé');
+        return true;
+    }
+
+    disable() {
+        this.enabled = false;
+        this.stopTimer();
+        this.saveConfig();
+        console.log('[Backup] Service désactivé');
+    }
+
+    setFrequency(minutes) {
+        this.frequency = minutes;
+        this.saveConfig();
+        
+        if (this.enabled) {
+            this.stopTimer();
+            this.startTimer();
+        }
+        
+        console.log(`[Backup] Fréquence: ${minutes} minutes`);
+    }
+
+    startTimer() {
+        if (this.timer) {
+            clearInterval(this.timer);
+        }
+
+        const intervalMs = this.frequency * 60 * 1000;
+        this.timer = setInterval(() => {
+            this.performBackup('auto');
+        }, intervalMs);
+
+        console.log(`[Backup] Timer démarré: ${this.frequency} minutes`);
+    }
+
+    stopTimer() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+    }
+
+    async performManualBackup() {
+        return await this.performBackup('manual');
+    }
+
+    async performBackup(type = 'auto') {
+        if (!this.folderHandle) {
+            console.error('[Backup] Aucun dossier configuré');
+            return false;
+        }
+
+        try {
+            // Collecter les données
+            const data = this.collectData(type);
+            
+            // Générer le nom du fichier
+            const timestamp = new Date();
+            const dateStr = timestamp.toISOString().split('T')[0];
+            const timeStr = timestamp.toTimeString().split(' ')[0].replace(/:/g, '-');
+            const fileName = `EmailSortPro-Backup-${dateStr}_${timeStr}.json`;
+
+            // Écrire le fichier de sauvegarde
+            const fileHandle = await this.folderHandle.getFileHandle(fileName, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify(data, null, 2));
+            await writable.close();
+
+            // Mettre à jour le fichier "latest"
+            try {
+                const latestHandle = await this.folderHandle.getFileHandle('EmailSortPro-Latest.json', { create: true });
+                const latestWritable = await latestHandle.createWritable();
+                await latestWritable.write(JSON.stringify(data, null, 2));
+                await latestWritable.close();
+            } catch (error) {
+                // Ignorer l'erreur pour le fichier latest
+            }
+
+            // Nettoyer les anciens fichiers
+            await this.cleanupOldBackups();
+
+            // Mettre à jour les statistiques
+            this.lastBackup = timestamp;
+            this.updateFilesCount();
+            this.saveConfig();
+
+            if (type === 'manual') {
+                console.log(`[Backup] Sauvegarde manuelle: ${fileName}`);
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error('[Backup] Erreur sauvegarde:', error);
+            
+            if (error.name === 'NotAllowedError') {
+                alert('Accès au dossier refusé. Veuillez reconfigurer le dossier de sauvegarde.');
+                this.folderHandle = null;
+                this.enabled = false;
+                this.saveConfig();
+            }
+            
+            return false;
+        }
+    }
+
+    collectData(type) {
+        return {
+            version: '4.0-simple',
+            timestamp: new Date().toISOString(),
+            backupType: type,
+            metadata: {
+                backupId: this.generateId(),
+                userAgent: navigator.userAgent,
+                url: window.location.href
+            },
+            data: {
+                settings: this.collectSettings(),
+                categories: this.collectCategories(),
+                tasks: this.collectTasks(),
+                localStorage: this.collectLocalStorage()
+            }
+        };
+    }
+
+    collectSettings() {
+        try {
+            return JSON.parse(localStorage.getItem('emailsortpro_settings') || '{}');
+        } catch {
+            return {};
+        }
+    }
+
+    collectCategories() {
+        try {
+            if (window.categoryManager && typeof window.categoryManager.getCategories === 'function') {
+                return window.categoryManager.getCategories();
+            }
+            return {};
+        } catch {
+            return {};
+        }
+    }
+
+    collectTasks() {
+        try {
+            if (window.taskManager && typeof window.taskManager.getAllTasks === 'function') {
+                return window.taskManager.getAllTasks();
+            }
+            return [];
+        } catch {
+            return [];
+        }
+    }
+
+    collectLocalStorage() {
+        const data = {};
+        const relevantKeys = [];
+        
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith('emailsortpro_') || key.includes('category') || key.includes('task'))) {
+                relevantKeys.push(key);
+            }
+        }
+        
+        relevantKeys.forEach(key => {
+            try {
+                const value = localStorage.getItem(key);
+                data[key] = JSON.parse(value);
+            } catch {
+                data[key] = localStorage.getItem(key);
+            }
+        });
+        
+        return data;
+    }
+
+    async cleanupOldBackups() {
+        try {
+            const backupFiles = [];
+            
+            // Lister tous les fichiers de sauvegarde
+            for await (const [name, handle] of this.folderHandle.entries()) {
+                if (name.startsWith('EmailSortPro-Backup-') && name.endsWith('.json')) {
+                    backupFiles.push(name);
+                }
+            }
+
+            // Trier par date (plus récents d'abord)
+            backupFiles.sort().reverse();
+
+            // Garder seulement les 20 plus récents
+            if (backupFiles.length > 20) {
+                const toDelete = backupFiles.slice(20);
+                
+                for (const fileName of toDelete) {
+                    try {
+                        await this.folderHandle.removeEntry(fileName);
+                    } catch (error) {
+                        // Ignorer les erreurs de suppression
+                    }
+                }
+            }
+
+        } catch (error) {
+            // Ignorer les erreurs de nettoyage
+        }
+    }
+
+    async updateFilesCount() {
+        try {
+            let count = 0;
+            for await (const [name] of this.folderHandle.entries()) {
+                if (name.startsWith('EmailSortPro-Backup-') && name.endsWith('.json')) {
+                    count++;
+                }
+            }
+            this.filesCount = count;
+        } catch {
+            this.filesCount = 0;
+        }
+    }
+
+    exportToFile() {
+        try {
+            const data = this.collectData('export');
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `EmailSortPro-Export-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            console.log('[Backup] Export vers fichier réussi');
+
+        } catch (error) {
+            console.error('[Backup] Erreur export:', error);
+            alert('Erreur lors de l\'export: ' + error.message);
+        }
+    }
+
+    async importFromFile(file) {
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+
+            if (!data.version || !data.data) {
+                throw new Error('Format de fichier invalide');
+            }
+
+            if (!confirm('Êtes-vous sûr de vouloir restaurer ces données ? Cela remplacera vos données actuelles.')) {
+                return false;
+            }
+
+            // Restaurer les paramètres
+            if (data.data.settings) {
+                localStorage.setItem('emailsortpro_settings', JSON.stringify(data.data.settings));
+            }
+
+            // Restaurer localStorage
+            if (data.data.localStorage) {
+                Object.entries(data.data.localStorage).forEach(([key, value]) => {
+                    try {
+                        localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+                    } catch (error) {
+                        console.warn(`[Backup] Impossible de restaurer ${key}:`, error);
+                    }
+                });
+            }
+
+            // Restaurer catégories et tâches si les managers existent
+            if (data.data.categories && window.categoryManager) {
+                try {
+                    if (typeof window.categoryManager.importCategories === 'function') {
+                        window.categoryManager.importCategories(data.data.categories);
+                    }
+                } catch (error) {
+                    console.warn('[Backup] Erreur restauration catégories:', error);
+                }
+            }
+
+            if (data.data.tasks && window.taskManager) {
+                try {
+                    if (typeof window.taskManager.importTasks === 'function') {
+                        window.taskManager.importTasks(data.data.tasks);
+                    }
+                } catch (error) {
+                    console.warn('[Backup] Erreur restauration tâches:', error);
+                }
+            }
+
+            console.log('[Backup] Import réussi');
+            return true;
+
+        } catch (error) {
+            console.error('[Backup] Erreur import:', error);
+            alert('Erreur lors de l\'import: ' + error.message);
+            return false;
+        }
+    }
+
+    saveConfig() {
+        try {
+            const config = {
+                enabled: this.enabled,
+                frequency: this.frequency,
+                lastBackup: this.lastBackup ? this.lastBackup.toISOString() : null,
+                filesCount: this.filesCount,
+                folderConfigured: !!this.folderHandle
+            };
+            
+            localStorage.setItem('emailsortpro_simple_backup_config', JSON.stringify(config));
+        } catch (error) {
+            console.warn('[Backup] Erreur sauvegarde config:', error);
+        }
+    }
+
+    loadConfig() {
+        try {
+            const config = JSON.parse(localStorage.getItem('emailsortpro_simple_backup_config') || '{}');
+            
+            this.enabled = config.enabled || false;
+            this.frequency = config.frequency || 60;
+            this.filesCount = config.filesCount || 0;
+            
+            if (config.lastBackup) {
+                this.lastBackup = new Date(config.lastBackup);
+            }
+
+            // Note: folderHandle ne peut pas être restauré - l'utilisateur doit le reconfigurer
+            
+        } catch (error) {
+            console.warn('[Backup] Erreur chargement config:', error);
+        }
+    }
+
+    getStatus() {
+        return {
+            enabled: this.enabled,
+            folderConfigured: !!this.folderHandle,
+            folderName: this.folderHandle ? 'Dossier configuré' : null,
+            frequency: this.frequency,
+            lastBackup: this.lastBackup ? this.lastBackup.toLocaleString('fr-FR') : null,
+            filesCount: this.filesCount,
+            estimatedSize: this.calculateEstimatedSize()
+        };
+    }
+
+    calculateEstimatedSize() {
+        try {
+            const data = this.collectData('estimate');
+            const sizeBytes = JSON.stringify(data).length;
+            
+            if (sizeBytes < 1024) {
+                return sizeBytes + ' B';
+            } else if (sizeBytes < 1024 * 1024) {
+                return Math.round(sizeBytes / 1024) + ' KB';
+            } else {
+                return Math.round(sizeBytes / (1024 * 1024)) + ' MB';
+            }
+            
+        } catch (error) {
+            return 'N/A';
+        }
+    }
+
+    generateId() {
+        return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 }
 
@@ -1031,6 +1779,11 @@ document.addEventListener('showPage', (e) => {
     }
 });
 
-console.log('✅ Page paramètres chargée avec intégration backup');
+// API de sauvegarde globale
+window.backupService = window.categoryPage?.backupService;
+window.triggerBackup = () => window.categoryPage?.backupService?.performManualBackup();
+window.getBackupStatus = () => window.categoryPage?.backupService?.getStatus();
+
+console.log('✅ Page paramètres chargée avec système de backup simplifié');
 console.log('⚙️ Fonctions disponibles: showSettings(), hideSettings(), getAppSettings()');
-console.log('🔧 La section backup sera automatiquement ajoutée par backup.js');
+console.log('💾 Backup fonctionnel: sélection dossier + fréquence + import/export');
