@@ -1279,8 +1279,260 @@ class SettingsPageSimple {
                 display: block;
             }
             
-            /* Toast */
-            .toast {
+            /* Notification de backup */
+            .backup-notification {
+                position: fixed;
+                top: 24px;
+                right: 24px;
+                background: white;
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                box-shadow: var(--shadow-lg);
+                z-index: 1500;
+                max-width: 400px;
+                animation: slideInRight 0.3s ease;
+            }
+            
+            @keyframes slideInRight {
+                from { transform: translateX(100%); }
+                to { transform: translateX(0); }
+            }
+            
+            .notification-content {
+                padding: 16px;
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .notification-content i {
+                color: var(--primary);
+                font-size: 20px;
+                margin-top: 2px;
+            }
+            
+            .notification-content > div {
+                flex: 1;
+            }
+            
+            .notification-content strong {
+                display: block;
+                margin-bottom: 4px;
+                color: var(--text);
+            }
+            
+            .notification-content p {
+                margin: 0;
+                font-size: 13px;
+                color: var(--text-light);
+                word-break: break-all;
+            }
+            
+            .notification-content button {
+                background: none;
+                border: none;
+                color: var(--text-light);
+                cursor: pointer;
+                padding: 4px;
+                border-radius: 4px;
+                transition: all 0.2s;
+            }
+            
+            .notification-content button:hover {
+                background: var(--bg);
+                color: var(--text);
+            }
+            
+            /* Modal de permissions */
+            .permission-modal .modal-simple {
+                max-width: 600px;
+            }
+            
+            .permission-info {
+                display: flex;
+                gap: 20px;
+                align-items: flex-start;
+            }
+            
+            .permission-icon {
+                background: var(--primary)10;
+                border-radius: 12px;
+                padding: 20px;
+                color: var(--primary);
+                font-size: 32px;
+                flex-shrink: 0;
+            }
+            
+            .permission-content h3 {
+                margin: 0 0 12px 0;
+                color: var(--text);
+                font-size: 18px;
+            }
+            
+            .permission-content > p {
+                margin: 0 0 20px 0;
+                color: var(--text-light);
+                line-height: 1.5;
+            }
+            
+            .permission-details,
+            .permission-benefits,
+            .permission-security {
+                margin-bottom: 20px;
+                padding: 16px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+            }
+            
+            .permission-details {
+                background: var(--bg);
+            }
+            
+            .permission-benefits {
+                background: var(--success)05;
+                border-color: var(--success)20;
+            }
+            
+            .permission-security {
+                background: var(--primary)05;
+                border-color: var(--primary)20;
+            }
+            
+            .permission-details h4,
+            .permission-benefits h4 {
+                margin: 0 0 8px 0;
+                font-size: 14px;
+                font-weight: 600;
+            }
+            
+            .permission-details ul,
+            .permission-benefits ul {
+                margin: 0;
+                padding-left: 20px;
+            }
+            
+            .permission-details li {
+                margin-bottom: 4px;
+                font-size: 13px;
+                color: var(--text-light);
+            }
+            
+            .permission-benefits li {
+                margin-bottom: 4px;
+                font-size: 13px;
+                color: var(--success);
+            }
+            
+            .permission-details code {
+                background: white;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 12px;
+                border: 1px solid var(--border);
+                word-break: break-all;
+            }
+            
+            .permission-security p {
+                margin: 0;
+                font-size: 13px;
+                color: var(--primary);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            /* Modal d'informations de dossier */
+            .folder-info {
+                display: flex;
+                gap: 20px;
+                align-items: flex-start;
+            }
+            
+            .folder-icon {
+                background: var(--warning)10;
+                border-radius: 12px;
+                padding: 20px;
+                color: var(--warning);
+                font-size: 32px;
+                flex-shrink: 0;
+            }
+            
+            .folder-details h3 {
+                margin: 0 0 12px 0;
+                color: var(--text);
+            }
+            
+            .folder-path {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                margin-bottom: 20px;
+                padding: 12px;
+                background: var(--bg);
+                border-radius: 6px;
+                border: 1px solid var(--border);
+            }
+            
+            .folder-path code {
+                flex: 1;
+                background: none;
+                border: none;
+                padding: 0;
+                font-size: 13px;
+                word-break: break-all;
+                color: var(--text);
+            }
+            
+            .btn-copy {
+                background: var(--primary);
+                color: white;
+                border: none;
+                padding: 6px 10px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                transition: all 0.2s;
+                flex-shrink: 0;
+            }
+            
+            .btn-copy:hover {
+                background: #2563EB;
+            }
+            
+            .folder-instructions,
+            .folder-alternatives {
+                margin-bottom: 20px;
+            }
+            
+            .folder-instructions h4,
+            .folder-alternatives h4 {
+                margin: 0 0 8px 0;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text);
+            }
+            
+            .folder-instructions ol,
+            .folder-alternatives ul {
+                margin: 0;
+                padding-left: 20px;
+            }
+            
+            .folder-instructions li,
+            .folder-alternatives li {
+                margin-bottom: 4px;
+                font-size: 13px;
+                color: var(--text-light);
+            }
+            
+            kbd {
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 3px;
+                padding: 2px 6px;
+                font-size: 11px;
+                font-family: monospace;
+            }
                 position: fixed;
                 bottom: 24px;
                 right: 24px;
@@ -1355,41 +1607,272 @@ class SettingsPageSimple {
 }
 
 // ================================================
-// GESTIONNAIRE DE BACKUP LOCAL
+// GESTIONNAIRE DE BACKUP LOCAL INTELLIGENT
 // ================================================
 class BackupManager {
     constructor() {
         this.backupPath = null;
+        this.backupHandle = null;
         this.isInitialized = false;
+        this.hasPermission = false;
+        this.detectedPaths = [];
     }
 
     async initialize() {
         try {
-            // Vérifier si nous sommes dans un environnement compatible
-            if (!window.electronAPI && !window.showDirectoryPicker) {
-                throw new Error('API de système de fichiers non disponible');
+            console.log('[BackupManager] 🔍 Détection intelligente des dossiers...');
+            
+            // Vérifier les permissions déjà accordées
+            const savedPath = localStorage.getItem('mailsort-backup-path');
+            const hasPermission = localStorage.getItem('mailsort-backup-permission') === 'granted';
+            
+            if (savedPath && hasPermission) {
+                this.backupPath = savedPath;
+                this.hasPermission = true;
+                this.isInitialized = true;
+                console.log('[BackupManager] ✅ Utilisation du chemin sauvegardé:', this.backupPath);
+                return;
             }
 
-            // Tenter d'utiliser l'API Electron si disponible
+            // Détecter les chemins disponibles selon l'environnement
+            await this.detectAvailablePaths();
+            
+            // Initialiser selon l'environnement
             if (window.electronAPI) {
-                this.backupPath = await window.electronAPI.getBackupPath();
+                await this.initializeElectron();
+            } else if (window.showDirectoryPicker) {
+                await this.initializeFileSystemAPI();
             } else {
-                // Utiliser l'API File System Access si disponible
-                this.backupPath = await this.setupWebBackupPath();
+                await this.initializeFallback();
             }
 
             this.isInitialized = true;
-            console.log('[BackupManager] Initialisé avec le chemin:', this.backupPath);
+            console.log('[BackupManager] ✅ Initialisé avec le chemin:', this.backupPath);
         } catch (error) {
-            console.error('[BackupManager] Erreur d\'initialisation:', error);
+            console.error('[BackupManager] ❌ Erreur d\'initialisation:', error);
             throw error;
         }
     }
 
+    async detectAvailablePaths() {
+        this.detectedPaths = [];
+        
+        // Chemins communs selon l'OS
+        const commonPaths = {
+            windows: [
+                '%USERPROFILE%\\Documents\\MailSort Pro',
+                '%USERPROFILE%\\Desktop\\MailSort Pro',
+                '%USERPROFILE%\\Downloads\\MailSort Pro',
+                'C:\\MailSort Pro',
+                '%APPDATA%\\MailSort Pro'
+            ],
+            mac: [
+                '~/Documents/MailSort Pro',
+                '~/Desktop/MailSort Pro',
+                '~/Downloads/MailSort Pro',
+                '/Applications/MailSort Pro'
+            ],
+            linux: [
+                '~/Documents/MailSort Pro',
+                '~/Desktop/MailSort Pro',
+                '~/Downloads/MailSort Pro',
+                '/opt/MailSort Pro'
+            ]
+        };
+
+        // Détecter l'OS
+        const platform = this.detectPlatform();
+        const paths = commonPaths[platform] || commonPaths.windows;
+        
+        // Résoudre les variables d'environnement pour Windows
+        this.detectedPaths = paths.map(path => this.resolvePath(path));
+        
+        console.log('[BackupManager] 🗂️ Chemins détectés pour', platform, ':', this.detectedPaths);
+    }
+
+    detectPlatform() {
+        const userAgent = navigator.userAgent.toLowerCase();
+        if (userAgent.includes('win')) return 'windows';
+        if (userAgent.includes('mac')) return 'mac';
+        if (userAgent.includes('linux')) return 'linux';
+        return 'windows'; // Défaut
+    }
+
+    resolvePath(path) {
+        if (typeof window !== 'undefined') {
+            // En environnement web, approximation des variables
+            if (path.includes('%USERPROFILE%')) {
+                // Approximation du profil utilisateur
+                const username = 'User'; // Ou récupérer depuis une autre source
+                return path.replace('%USERPROFILE%', `C:\\Users\\${username}`);
+            }
+            if (path.includes('%APPDATA%')) {
+                const username = 'User';
+                return path.replace('%APPDATA%', `C:\\Users\\${username}\\AppData\\Roaming`);
+            }
+            if (path.includes('~')) {
+                return path.replace('~', '/Users/User'); // Approximation macOS/Linux
+            }
+        }
+        return path;
+    }
+
+    async initializeElectron() {
+        try {
+            // Dans un vrai environnement Electron
+            this.backupPath = await window.electronAPI.setupBackupFolder();
+            this.hasPermission = true;
+            this.savePermissions();
+        } catch (error) {
+            console.error('[BackupManager] Erreur Electron:', error);
+            throw error;
+        }
+    }
+
+    async initializeFileSystemAPI() {
+        try {
+            // Demander l'autorisation à l'utilisateur pour choisir/créer le dossier
+            const needsPermission = !localStorage.getItem('mailsort-backup-permission');
+            
+            if (needsPermission) {
+                const userChoice = await this.requestUserPermission();
+                if (!userChoice) {
+                    throw new Error('Permission refusée par l\'utilisateur');
+                }
+            }
+
+            // Utiliser l'API File System Access pour sélectionner/créer le dossier
+            this.backupHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                startIn: 'documents'
+            });
+
+            this.backupPath = this.backupHandle.name;
+            this.hasPermission = true;
+            this.savePermissions();
+
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                throw new Error('Sélection du dossier annulée');
+            }
+            console.error('[BackupManager] Erreur File System API:', error);
+            await this.initializeFallback();
+        }
+    }
+
+    async initializeFallback() {
+        // Mode de fallback : utiliser les téléchargements du navigateur
+        console.log('[BackupManager] 🔄 Mode de fallback activé');
+        
+        this.backupPath = this.detectedPaths[0]; // Premier chemin détecté
+        this.hasPermission = true; // Pas de vraie permission nécessaire en fallback
+        
+        // Informer l'utilisateur
+        this.showPermissionDialog();
+        this.savePermissions();
+    }
+
+    async requestUserPermission() {
+        return new Promise((resolve) => {
+            const modal = this.createPermissionModal(resolve);
+            document.body.appendChild(modal);
+        });
+    }
+
+    createPermissionModal(callback) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop permission-modal';
+        modal.innerHTML = `
+            <div class="modal-simple permission-dialog">
+                <div class="modal-header">
+                    <h2><i class="fas fa-shield-alt"></i> Autorisation de sauvegarde</h2>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="permission-info">
+                        <div class="permission-icon">
+                            <i class="fas fa-folder-plus"></i>
+                        </div>
+                        <div class="permission-content">
+                            <h3>MailSort Pro souhaite créer un dossier de sauvegarde</h3>
+                            <p>Pour sauvegarder vos catégories et paramètres de manière sécurisée, nous avons besoin de créer un dossier dédié.</p>
+                            
+                            <div class="permission-details">
+                                <h4>📍 Emplacements suggérés :</h4>
+                                <ul>
+                                    ${this.detectedPaths.slice(0, 3).map(path => 
+                                        `<li><code>${path}</code></li>`
+                                    ).join('')}
+                                </ul>
+                            </div>
+                            
+                            <div class="permission-benefits">
+                                <h4>✅ Avantages :</h4>
+                                <ul>
+                                    <li>Sauvegarde automatique de vos données</li>
+                                    <li>Restauration facile en cas de problème</li>
+                                    <li>Export/import entre appareils</li>
+                                    <li>Historique des versions</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="permission-security">
+                                <p><i class="fas fa-lock"></i> <strong>Sécurité :</strong> Toutes les données restent locales sur votre appareil. Aucune information n'est envoyée vers des serveurs externes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="this.closest('.permission-modal').remove(); window.settingsPage.backupManager.handlePermissionResponse(false);">
+                        <i class="fas fa-times"></i> Refuser
+                    </button>
+                    <button class="btn-primary" onclick="this.closest('.permission-modal').remove(); window.settingsPage.backupManager.handlePermissionResponse(true);">
+                        <i class="fas fa-check"></i> Autoriser la création
+                    </button>
+                </div>
+            </div>
+        `;
+
+        return modal;
+    }
+
+    handlePermissionResponse(granted) {
+        this.permissionCallback?.(granted);
+    }
+
+    showPermissionDialog() {
+        // Afficher une notification discrète sur l'état du backup
+        const notification = document.createElement('div');
+        notification.className = 'backup-notification';
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>Système de sauvegarde activé</strong>
+                    <p>Dossier de sauvegarde : ${this.backupPath}</p>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+        
+        // Auto-suppression après 5 secondes
+        setTimeout(() => notification.remove(), 5000);
+    }
+
+    savePermissions() {
+        localStorage.setItem('mailsort-backup-path', this.backupPath);
+        localStorage.setItem('mailsort-backup-permission', 'granted');
+        localStorage.setItem('mailsort-backup-timestamp', new Date().toISOString());
+    }
+
     async setupWebBackupPath() {
-        // Pour l'environnement web, utiliser un chemin simulé
-        // Dans un vrai environnement, on demanderait l'autorisation d'accès au dossier
-        return 'C:\\Users\\Documents\\MailSort Pro';
+        // Cette méthode n'est plus utilisée, remplacée par la détection intelligente
+        return this.detectedPaths[0];
     }
 
     async getStatus() {
@@ -1404,6 +1887,10 @@ class BackupManager {
     }
 
     async createBackup() {
+        if (!this.hasPermission) {
+            throw new Error('Permissions de sauvegarde non accordées');
+        }
+
         const backupData = {
             timestamp: new Date().toISOString(),
             version: '1.0',
@@ -1413,28 +1900,64 @@ class BackupManager {
             metadata: {
                 totalEmails: window.emailScanner?.getAllEmails()?.length || 0,
                 createdAt: new Date().toISOString(),
-                userAgent: navigator.userAgent
+                userAgent: navigator.userAgent,
+                platform: this.detectPlatform(),
+                backupPath: this.backupPath
             }
         };
 
         const filename = `mailsort-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
         
-        // Dans un environnement réel, on sauvegarderait dans le dossier système
-        // Ici, on simule avec un téléchargement
+        try {
+            // Tenter d'utiliser l'API File System Access si disponible
+            if (this.backupHandle && window.showDirectoryPicker) {
+                await this.saveToFileSystem(filename, backupData);
+            } else {
+                // Fallback : téléchargement classique
+                await this.saveAsDownload(filename, backupData);
+            }
+
+            // Enregistrer dans l'historique
+            this.saveBackupRecord(filename, JSON.stringify(backupData).length);
+
+            return { filename, size: JSON.stringify(backupData).length };
+        } catch (error) {
+            console.error('[BackupManager] Erreur lors de la sauvegarde:', error);
+            throw error;
+        }
+    }
+
+    async saveToFileSystem(filename, backupData) {
+        try {
+            // Créer le fichier dans le dossier sélectionné
+            const fileHandle = await this.backupHandle.getFileHandle(filename, { create: true });
+            const writable = await fileHandle.createWritable();
+            
+            await writable.write(JSON.stringify(backupData, null, 2));
+            await writable.close();
+            
+            console.log('[BackupManager] ✅ Sauvegarde créée dans le dossier système:', filename);
+        } catch (error) {
+            console.warn('[BackupManager] ⚠️ Échec sauvegarde système, utilisation du téléchargement');
+            await this.saveAsDownload(filename, backupData);
+        }
+    }
+
+    async saveAsDownload(filename, backupData) {
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         
         URL.revokeObjectURL(url);
-
-        // Simuler la sauvegarde locale
-        this.saveBackupRecord(filename, blob.size);
-
-        return { filename, size: blob.size };
+        
+        console.log('[BackupManager] ✅ Sauvegarde téléchargée:', filename);
     }
 
     saveBackupRecord(filename, size) {
@@ -1513,12 +2036,115 @@ class BackupManager {
     }
 
     async openBackupFolder() {
-        if (window.electronAPI) {
-            await window.electronAPI.openBackupFolder();
-        } else {
-            // Dans l'environnement web, ouvrir un lien vers le dossier Documents
-            alert(`Dossier de sauvegarde: ${this.backupPath}\n\nVeuillez naviguer manuellement vers ce dossier.`);
+        if (!this.hasPermission) {
+            throw new Error('Aucun dossier de sauvegarde configuré');
         }
+
+        if (window.electronAPI) {
+            // Environnement Electron
+            await window.electronAPI.openBackupFolder();
+        } else if (this.backupHandle) {
+            // File System Access API - Ouvrir le dossier
+            try {
+                // Malheureusement, l'API File System Access ne permet pas d'ouvrir directement le dossier
+                // On affiche une information à l'utilisateur
+                this.showFolderInfo();
+            } catch (error) {
+                this.showFolderInfo();
+            }
+        } else {
+            // Fallback - Afficher les informations du dossier
+            this.showFolderInfo();
+        }
+    }
+
+    showFolderInfo() {
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.innerHTML = `
+            <div class="modal-simple">
+                <div class="modal-header">
+                    <h2><i class="fas fa-folder-open"></i> Dossier de sauvegarde</h2>
+                    <button class="btn-close" onclick="this.closest('.modal-backdrop').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="folder-info">
+                        <div class="folder-icon">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                        <div class="folder-details">
+                            <h3>Emplacement de sauvegarde</h3>
+                            <div class="folder-path">
+                                <code>${this.backupPath}</code>
+                                <button class="btn-copy" onclick="navigator.clipboard.writeText('${this.backupPath}'); this.innerHTML='<i class=\"fas fa-check\"></i> Copié!';">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="folder-instructions">
+                                <h4>📁 Pour accéder manuellement :</h4>
+                                <ol>
+                                    <li>Ouvrez l'Explorateur de fichiers</li>
+                                    <li>Collez le chemin ci-dessus dans la barre d'adresse</li>
+                                    <li>Appuyez sur Entrée</li>
+                                </ol>
+                            </div>
+                            
+                            <div class="folder-alternatives">
+                                <h4>🔧 Alternatives :</h4>
+                                <ul>
+                                    <li>Utilisez <kbd>Win + R</kbd> puis collez le chemin</li>
+                                    <li>Recherchez "MailSort Pro" dans l'explorateur</li>
+                                    <li>Vérifiez votre dossier Documents ou Téléchargements</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn-primary" onclick="this.closest('.modal-backdrop').remove()">
+                        <i class="fas fa-check"></i> Compris
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    // Méthode pour réinitialiser les permissions (utile pour les tests)
+    async resetPermissions() {
+        localStorage.removeItem('mailsort-backup-path');
+        localStorage.removeItem('mailsort-backup-permission');
+        localStorage.removeItem('mailsort-backup-timestamp');
+        
+        this.backupPath = null;
+        this.backupHandle = null;
+        this.hasPermission = false;
+        this.isInitialized = false;
+        
+        console.log('[BackupManager] 🔄 Permissions réinitialisées');
+    }
+
+    // Méthode pour obtenir les informations détaillées
+    getDetailedStatus() {
+        return {
+            isInitialized: this.isInitialized,
+            hasPermission: this.hasPermission,
+            backupPath: this.backupPath,
+            detectedPaths: this.detectedPaths,
+            platform: this.detectPlatform(),
+            apiSupport: {
+                electron: !!window.electronAPI,
+                fileSystemAccess: !!window.showDirectoryPicker,
+                fallback: !window.electronAPI && !window.showDirectoryPicker
+            },
+            lastPermissionDate: localStorage.getItem('mailsort-backup-timestamp')
+        };
     }
 }
 
