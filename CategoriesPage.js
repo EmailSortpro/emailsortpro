@@ -1,40 +1,40 @@
-// categoryPage.js - Version FORCÉE qui s'affiche immédiatement
+// categoryPage.js - Page paramètres qui s'intègre parfaitement au système existant
 
 class CategoryPage {
     constructor() {
-        console.log('[CategoryPage] 🚀 FORÇAGE IMMÉDIAT - Initialisation...');
+        console.log('[CategoryPage] 🚀 Initialisation intégrée...');
         
         this.categories = {};
         this.isVisible = false;
         this.isInitialized = false;
         
-        // FORCER l'initialisation immédiate
-        this.forceInitialization();
+        // Initialisation qui s'intègre au système existant
+        this.initializeIntegrated();
     }
 
-    forceInitialization() {
-        console.log('[CategoryPage] 💥 FORÇAGE de l\'initialisation complète...');
+    initializeIntegrated() {
+        console.log('[CategoryPage] 🔧 Intégration au système existant...');
         
-        // 1. Charger les données immédiatement
-        this.loadCategoriesImmediate();
+        // 1. Charger les données
+        this.loadCategoriesIntegrated();
         
-        // 2. Créer la page immédiatement
-        this.createPageForced();
+        // 2. Créer la page qui s'intègre
+        this.createIntegratedPage();
         
         // 3. Configurer les événements
-        this.setupEventsForced();
+        this.setupIntegratedEvents();
         
         // 4. Initialiser le backup
-        this.initBackupForced();
+        this.initBackupIntegrated();
         
-        // 5. FORCER l'affichage si on est sur settings
-        this.checkAndForceDisplay();
+        // 5. S'intégrer avec PageManager
+        this.integrateWithPageManager();
         
         this.isInitialized = true;
-        console.log('[CategoryPage] ✅ FORCÉ - Prêt avec', Object.keys(this.categories).length, 'catégories');
+        console.log('[CategoryPage] ✅ Intégration réussie avec', Object.keys(this.categories).length, 'catégories');
     }
 
-    loadCategoriesImmediate() {
+    loadCategoriesIntegrated() {
         // Catégories par défaut avec données réalistes
         this.categories = {
             'work': { 
@@ -87,7 +87,7 @@ class CategoryPage {
             }
         };
 
-        // Essayer de charger depuis localStorage
+        // Charger depuis localStorage
         try {
             const saved = localStorage.getItem('emailsortpro_categories');
             if (saved) {
@@ -98,7 +98,7 @@ class CategoryPage {
             console.warn('[CategoryPage] ⚠️ Utilisation catégories par défaut');
         }
 
-        // Synchroniser avec CategoryManager
+        // Synchroniser avec CategoryManager existant
         this.syncWithCategoryManager();
         
         console.log('[CategoryPage] 📂 Catégories chargées:', Object.keys(this.categories).length);
@@ -127,239 +127,202 @@ class CategoryPage {
         }
     }
 
-    createPageForced() {
-        console.log('[CategoryPage] 💥 FORÇAGE création page...');
+    createIntegratedPage() {
+        console.log('[CategoryPage] 🎨 Création page intégrée...');
         
         // Supprimer toute page existante
-        const existingPages = document.querySelectorAll('#settings-page, .category-page-container');
-        existingPages.forEach(page => page.remove());
+        const existingPage = document.getElementById('settings-page');
+        if (existingPage) {
+            existingPage.remove();
+        }
         
-        // Injecter les styles d'abord
-        this.injectStylesForced();
+        // Injecter les styles intégrés
+        this.injectIntegratedStyles();
         
-        // Créer la page HTML
-        const pageHTML = this.generatePageHTML();
+        // Créer la page qui s'intègre dans le système existant
+        const pageHTML = this.generateIntegratedPageHTML();
         document.body.insertAdjacentHTML('beforeend', pageHTML);
         
-        console.log('[CategoryPage] ✅ Page HTML injectée dans le DOM');
+        console.log('[CategoryPage] ✅ Page intégrée créée');
         
-        // Forcer le rendu immédiat
+        // Rendre immédiatement
         setTimeout(() => {
-            this.renderCategoriesForced();
-            this.updateBackupUIForced();
-        }, 50);
+            this.renderCategoriesIntegrated();
+            this.updateBackupUIIntegrated();
+        }, 100);
     }
 
-    generatePageHTML() {
+    generateIntegratedPageHTML() {
         return `
-            <div id="settings-page" class="page-content forced-display" data-page="settings" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: rgba(0,0,0,0.8); overflow-y: auto;">
-                <div class="category-page-wrapper" style="background: #f8fafc; min-height: 100vh; padding: 20px;">
-                    <div class="category-page-container">
-                        <!-- Header avec bouton fermer -->
-                        <div class="category-page-header">
-                            <div class="header-top">
-                                <h1><i class="fas fa-cog"></i> Paramètres EmailSortPro</h1>
-                                <button id="force-close-settings" class="close-btn">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            <p>Gérez vos catégories et configurez vos sauvegardes</p>
-                        </div>
+            <div id="settings-page" class="page-content" data-page="settings" style="display: none;">
+                <div class="integrated-settings-container">
+                    <!-- Header intégré -->
+                    <div class="integrated-header">
+                        <h1><i class="fas fa-cog"></i> Paramètres</h1>
+                        <p class="header-subtitle">Gérez vos catégories et configurez vos sauvegardes</p>
+                    </div>
 
-                        <!-- Navigation par onglets -->
-                        <div class="category-tabs">
-                            <button class="tab-button active" data-tab="categories">
-                                <i class="fas fa-tags"></i> Catégories (<span id="categories-counter">0</span>)
-                            </button>
-                            <button class="tab-button" data-tab="backup">
-                                <i class="fas fa-save"></i> Sauvegarde
-                            </button>
-                            <button class="tab-button" data-tab="general">
-                                <i class="fas fa-cog"></i> Général
-                            </button>
-                        </div>
+                    <!-- Navigation par onglets intégrée -->
+                    <div class="integrated-tabs">
+                        <button class="tab-btn active" data-tab="categories">
+                            <i class="fas fa-tags"></i> 
+                            <span>Catégories</span>
+                            <span class="count-badge" id="categories-count-badge">0</span>
+                        </button>
+                        <button class="tab-btn" data-tab="backup">
+                            <i class="fas fa-save"></i> 
+                            <span>Sauvegarde</span>
+                        </button>
+                    </div>
 
-                        <!-- Contenu des onglets -->
-                        <div class="tab-panels">
-                            <!-- Onglet Catégories -->
-                            <div id="categories-panel" class="tab-panel active">
-                                <div class="panel-section">
-                                    <h2><i class="fas fa-plus-circle"></i> Ajouter une catégorie</h2>
-                                    <div class="add-category-form">
+                    <!-- Contenu des onglets -->
+                    <div class="tab-content-container">
+                        <!-- Onglet Catégories -->
+                        <div id="categories-tab" class="tab-content active">
+                            <!-- Section Ajouter -->
+                            <div class="integrated-section">
+                                <h2><i class="fas fa-plus-circle"></i> Ajouter une catégorie</h2>
+                                <div class="add-form">
+                                    <div class="form-row">
                                         <input type="text" id="new-category-name" placeholder="Nom de la catégorie" class="form-input">
-                                        <input type="color" id="new-category-color" value="#3b82f6" class="color-picker">
+                                        <input type="color" id="new-category-color" value="#3b82f6" class="color-input">
+                                    </div>
+                                    <div class="form-row">
                                         <input type="text" id="new-category-keywords" placeholder="Mots-clés (séparés par virgules)" class="form-input">
                                         <button id="add-category-btn" class="btn btn-primary">
                                             <i class="fas fa-plus"></i> Ajouter
                                         </button>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div class="panel-section">
-                                    <h2><i class="fas fa-list"></i> Catégories existantes</h2>
-                                    <div id="categories-grid" class="categories-grid">
-                                        <!-- Les catégories seront affichées ici -->
-                                    </div>
-                                </div>
-
-                                <div class="panel-section">
-                                    <div class="action-buttons">
-                                        <button id="save-categories-btn" class="btn btn-success">
-                                            <i class="fas fa-save"></i> Sauvegarder
-                                        </button>
-                                        <button id="reset-categories-btn" class="btn btn-warning">
-                                            <i class="fas fa-undo"></i> Réinitialiser
-                                        </button>
-                                        <button id="export-categories-btn" class="btn btn-secondary">
-                                            <i class="fas fa-download"></i> Exporter
-                                        </button>
-                                        <button id="test-categories-btn" class="btn btn-info">
-                                            <i class="fas fa-flask"></i> Ajouter catégories de test
-                                        </button>
-                                    </div>
+                            <!-- Section Liste -->
+                            <div class="integrated-section">
+                                <h2><i class="fas fa-list"></i> Catégories existantes</h2>
+                                <div id="categories-list" class="categories-grid">
+                                    <!-- Les catégories seront affichées ici -->
                                 </div>
                             </div>
 
-                            <!-- Onglet Sauvegarde -->
-                            <div id="backup-panel" class="tab-panel">
-                                <div class="panel-section">
-                                    <h2><i class="fas fa-info-circle"></i> Statut de la sauvegarde</h2>
-                                    <div class="backup-status-card">
-                                        <div class="status-indicator" id="backup-status">
-                                            <i class="fas fa-circle"></i>
-                                            <span>Prêt à configurer</span>
-                                        </div>
-                                        <p id="backup-detail">Sélectionnez un dossier pour commencer</p>
-                                    </div>
-                                </div>
-
-                                <div class="panel-section">
-                                    <h2><i class="fas fa-folder"></i> Configuration rapide</h2>
-                                    <div class="backup-quick-setup">
-                                        <button id="quick-setup-backup" class="btn btn-primary btn-large">
-                                            <i class="fas fa-magic"></i> Configuration automatique
-                                        </button>
-                                        <p class="help-text">Créera automatiquement un dossier EmailSortPro-Backup dans vos Documents</p>
-                                    </div>
-                                </div>
-
-                                <div class="panel-section">
-                                    <h2><i class="fas fa-cog"></i> Configuration manuelle</h2>
-                                    <div class="backup-manual-setup">
-                                        <button id="manual-setup-backup" class="btn btn-secondary">
-                                            <i class="fas fa-folder-open"></i> Choisir un dossier
-                                        </button>
-                                        <div id="folder-display" class="folder-info" style="display: none;">
-                                            <p><strong>Dossier sélectionné :</strong> <span id="folder-path">Aucun</span></p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="panel-section">
-                                    <h2><i class="fas fa-tools"></i> Actions de test</h2>
-                                    <div class="test-actions">
-                                        <button id="create-test-backup" class="btn btn-info">
-                                            <i class="fas fa-file-alt"></i> Créer sauvegarde de test
-                                        </button>
-                                        <button id="export-all-data" class="btn btn-success">
-                                            <i class="fas fa-download"></i> Exporter toutes les données
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="panel-section">
-                                    <h2><i class="fas fa-upload"></i> Import de données</h2>
-                                    <div class="import-section">
-                                        <input type="file" id="import-file" accept=".json" class="form-input">
-                                        <button id="import-data" class="btn btn-warning" disabled>
-                                            <i class="fas fa-upload"></i> Importer
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="panel-section">
-                                    <h2><i class="fas fa-chart-bar"></i> Informations</h2>
-                                    <div class="backup-info-grid">
-                                        <div class="info-card">
-                                            <div class="info-label">Statut service</div>
-                                            <div class="info-value" id="service-status">Prêt</div>
-                                        </div>
-                                        <div class="info-card">
-                                            <div class="info-label">Dernière sauvegarde</div>
-                                            <div class="info-value" id="last-backup">Jamais</div>
-                                        </div>
-                                        <div class="info-card">
-                                            <div class="info-label">Fichiers créés</div>
-                                            <div class="info-value" id="files-count">0</div>
-                                        </div>
-                                        <div class="info-card">
-                                            <div class="info-label">Taille estimée</div>
-                                            <div class="info-value" id="data-size">0 KB</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Onglet Général -->
-                            <div id="general-panel" class="tab-panel">
-                                <div class="panel-section">
-                                    <h2><i class="fas fa-user"></i> Informations utilisateur</h2>
-                                    <div class="form-group">
-                                        <label>Nom d'utilisateur :</label>
-                                        <input type="text" id="user-name" class="form-input" placeholder="Votre nom">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Email :</label>
-                                        <input type="email" id="user-email" class="form-input" placeholder="votre.email@exemple.com">
-                                    </div>
-                                </div>
-
-                                <div class="panel-section">
-                                    <h2><i class="fas fa-palette"></i> Apparence</h2>
-                                    <div class="form-group">
-                                        <label>Thème :</label>
-                                        <select id="theme-select" class="form-select">
-                                            <option value="light">Clair</option>
-                                            <option value="dark">Sombre</option>
-                                            <option value="auto">Automatique</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="panel-section">
-                                    <h2><i class="fas fa-cog"></i> Préférences</h2>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="auto-sort" checked>
-                                        <span>Tri automatique des emails</span>
-                                    </label>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="notifications" checked>
-                                        <span>Activer les notifications</span>
-                                    </label>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="advanced-features">
-                                        <span>Fonctionnalités avancées</span>
-                                    </label>
-                                </div>
-
-                                <div class="panel-section danger-zone">
-                                    <h2><i class="fas fa-exclamation-triangle"></i> Zone dangereuse</h2>
-                                    <button id="clear-all-data" class="btn btn-danger">
-                                        <i class="fas fa-trash"></i> Effacer toutes les données
+                            <!-- Section Actions -->
+                            <div class="integrated-section">
+                                <div class="actions-row">
+                                    <button id="save-categories-btn" class="btn btn-success">
+                                        <i class="fas fa-save"></i> Sauvegarder
                                     </button>
-                                    <p class="warning-text">⚠️ Cette action supprimera toutes vos données de manière irréversible</p>
+                                    <button id="reset-categories-btn" class="btn btn-warning">
+                                        <i class="fas fa-undo"></i> Réinitialiser
+                                    </button>
+                                    <button id="export-categories-btn" class="btn btn-secondary">
+                                        <i class="fas fa-download"></i> Exporter
+                                    </button>
+                                    <button id="test-categories-btn" class="btn btn-info">
+                                        <i class="fas fa-flask"></i> Ajouter test
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Footer avec actions globales -->
-                        <div class="page-footer">
-                            <button id="save-all-settings" class="btn btn-success btn-large">
-                                <i class="fas fa-save"></i> Sauvegarder tous les paramètres
-                            </button>
-                            <button id="close-settings" class="btn btn-outline btn-large">
-                                <i class="fas fa-times"></i> Fermer
-                            </button>
+                        <!-- Onglet Sauvegarde -->
+                        <div id="backup-tab" class="tab-content">
+                            <!-- Section Statut -->
+                            <div class="integrated-section">
+                                <h2><i class="fas fa-info-circle"></i> Statut de la sauvegarde</h2>
+                                <div class="status-card">
+                                    <div class="status-indicator" id="backup-status">
+                                        <i class="fas fa-circle"></i>
+                                        <span>Prêt à configurer</span>
+                                    </div>
+                                    <p id="backup-detail">Sélectionnez un dossier pour commencer les sauvegardes automatiques</p>
+                                </div>
+                            </div>
+
+                            <!-- Section Configuration -->
+                            <div class="integrated-section">
+                                <h2><i class="fas fa-folder"></i> Configuration</h2>
+                                <div class="config-options">
+                                    <button id="quick-setup-backup" class="btn btn-primary btn-large">
+                                        <i class="fas fa-magic"></i> Configuration automatique
+                                    </button>
+                                    <button id="manual-setup-backup" class="btn btn-secondary">
+                                        <i class="fas fa-folder-open"></i> Choisir dossier manuellement
+                                    </button>
+                                </div>
+                                <div id="folder-display" class="folder-info" style="display: none;">
+                                    <p><strong>Dossier configuré :</strong> <span id="folder-path">Aucun</span></p>
+                                </div>
+                            </div>
+
+                            <!-- Section Paramètres -->
+                            <div class="integrated-section">
+                                <h2><i class="fas fa-cog"></i> Paramètres de sauvegarde</h2>
+                                <div class="settings-grid">
+                                    <label class="checkbox-setting">
+                                        <input type="checkbox" id="backup-enabled">
+                                        <span>Sauvegardes automatiques</span>
+                                    </label>
+                                    <div class="select-setting">
+                                        <label>Fréquence :</label>
+                                        <select id="backup-frequency" class="form-select">
+                                            <option value="15">15 minutes</option>
+                                            <option value="30">30 minutes</option>
+                                            <option value="60" selected>1 heure</option>
+                                            <option value="360">6 heures</option>
+                                            <option value="1440">Quotidienne</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section Actions -->
+                            <div class="integrated-section">
+                                <h2><i class="fas fa-tools"></i> Actions</h2>
+                                <div class="actions-row">
+                                    <button id="manual-backup" class="btn btn-success">
+                                        <i class="fas fa-save"></i> Sauvegarder maintenant
+                                    </button>
+                                    <button id="create-test-backup" class="btn btn-info">
+                                        <i class="fas fa-file-alt"></i> Créer fichiers test
+                                    </button>
+                                    <button id="export-all-data" class="btn btn-primary">
+                                        <i class="fas fa-download"></i> Exporter données
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Section Import -->
+                            <div class="integrated-section">
+                                <h2><i class="fas fa-upload"></i> Import de données</h2>
+                                <div class="import-row">
+                                    <input type="file" id="import-file" accept=".json" class="form-input">
+                                    <button id="import-data" class="btn btn-warning" disabled>
+                                        <i class="fas fa-upload"></i> Importer
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Section Informations -->
+                            <div class="integrated-section">
+                                <h2><i class="fas fa-chart-bar"></i> Informations</h2>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">Statut</span>
+                                        <span class="info-value" id="service-status">Prêt</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Dernière sauvegarde</span>
+                                        <span class="info-value" id="last-backup">Jamais</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Fichiers créés</span>
+                                        <span class="info-value" id="files-count">0</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Taille données</span>
+                                        <span class="info-value" id="data-size">0 KB</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -367,306 +330,220 @@ class CategoryPage {
         `;
     }
 
-    injectStylesForced() {
+    injectIntegratedStyles() {
         // Supprimer les anciens styles
-        const existingStyles = document.querySelectorAll('#category-page-styles, #forced-category-styles');
+        const existingStyles = document.querySelectorAll('#integrated-settings-styles');
         existingStyles.forEach(style => style.remove());
 
         const styles = `
-            <style id="forced-category-styles">
-                /* STYLES FORCÉS pour affichage immédiat */
-                .forced-display {
-                    display: block !important;
-                    visibility: visible !important;
-                    opacity: 1 !important;
-                }
-
-                .category-page-wrapper {
-                    animation: fadeIn 0.3s ease-out;
-                }
-
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-
-                .category-page-container {
+            <style id="integrated-settings-styles">
+                /* Styles intégrés qui respectent le système existant */
+                .integrated-settings-container {
                     max-width: 1000px;
                     margin: 0 auto;
                     padding: 20px;
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    font-family: inherit;
+                    background: transparent;
                 }
 
-                .category-page-header {
+                .integrated-header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    padding: 25px;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     color: white;
-                    padding: 30px;
-                    border-radius: 20px;
-                    margin-bottom: 30px;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                    position: relative;
+                    border-radius: 16px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
                 }
 
-                .header-top {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 15px;
-                }
-
-                .category-page-header h1 {
-                    margin: 0;
-                    font-size: 2.5rem;
+                .integrated-header h1 {
+                    margin: 0 0 10px 0;
+                    font-size: 2.2rem;
                     font-weight: 700;
                     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
                 }
 
-                .close-btn {
-                    background: rgba(255,255,255,0.2);
-                    border: none;
-                    color: white;
-                    width: 50px;
-                    height: 50px;
-                    border-radius: 50%;
-                    cursor: pointer;
-                    font-size: 20px;
-                    transition: all 0.3s ease;
-                    backdrop-filter: blur(10px);
-                }
-
-                .close-btn:hover {
-                    background: rgba(255,255,255,0.3);
-                    transform: rotate(90deg);
-                }
-
-                .category-page-header p {
+                .header-subtitle {
                     margin: 0;
-                    font-size: 1.2rem;
-                    opacity: 0.9;
+                    font-size: 1.1rem;
+                    opacity: 0.95;
                 }
 
-                /* Onglets améliorés */
-                .category-tabs {
+                /* Navigation onglets intégrée */
+                .integrated-tabs {
                     display: flex;
                     background: white;
-                    border-radius: 20px;
-                    padding: 10px;
-                    margin-bottom: 30px;
-                    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-                    gap: 8px;
+                    border-radius: 16px;
+                    padding: 8px;
+                    margin-bottom: 25px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+                    gap: 6px;
                 }
 
-                .tab-button {
+                .tab-btn {
                     flex: 1;
-                    padding: 18px 24px;
+                    padding: 16px 24px;
                     border: none;
                     background: transparent;
-                    border-radius: 16px;
+                    border-radius: 12px;
                     cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    transition: all 0.3s ease;
                     font-weight: 600;
-                    font-size: 15px;
+                    font-size: 14px;
                     color: #64748b;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     gap: 10px;
                     position: relative;
-                    overflow: hidden;
                 }
 
-                .tab-button::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: -100%;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-                    transition: left 0.5s;
-                }
-
-                .tab-button:hover::before {
-                    left: 100%;
-                }
-
-                .tab-button:hover {
+                .tab-btn:hover {
                     background: #f1f5f9;
                     color: #475569;
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                    transform: translateY(-1px);
                 }
 
-                .tab-button.active {
+                .tab-btn.active {
                     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
                     color: white;
-                    transform: translateY(-3px);
-                    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
                 }
 
-                /* Panneaux */
-                .tab-panels {
+                .count-badge {
+                    background: rgba(255,255,255,0.2);
+                    color: white;
+                    padding: 4px 8px;
+                    border-radius: 12px;
+                    font-size: 12px;
+                    font-weight: 700;
+                    min-width: 24px;
+                    text-align: center;
+                }
+
+                .tab-btn.active .count-badge {
+                    background: rgba(255,255,255,0.3);
+                }
+
+                /* Contenu des onglets */
+                .tab-content-container {
                     position: relative;
                 }
 
-                .tab-panel {
+                .tab-content {
                     display: none;
                 }
 
-                .tab-panel.active {
+                .tab-content.active {
                     display: block;
-                    animation: slideInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                    animation: slideInUp 0.3s ease;
                 }
 
                 @keyframes slideInUp {
-                    from { 
-                        opacity: 0; 
-                        transform: translateY(30px); 
-                    }
-                    to { 
-                        opacity: 1; 
-                        transform: translateY(0); 
-                    }
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
 
-                .panel-section {
+                /* Sections intégrées */
+                .integrated-section {
                     background: white;
-                    border-radius: 20px;
-                    padding: 35px;
-                    margin-bottom: 25px;
-                    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+                    border-radius: 16px;
+                    padding: 25px;
+                    margin-bottom: 20px;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
                     border: 1px solid #f1f5f9;
-                    position: relative;
-                    overflow: hidden;
                 }
 
-                .panel-section::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    height: 4px;
-                    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ef4444, #10b981);
-                }
-
-                .panel-section h2 {
+                .integrated-section h2 {
                     color: #1e293b;
-                    font-size: 1.5rem;
-                    font-weight: 700;
-                    margin: 0 0 25px 0;
-                    padding-bottom: 15px;
+                    font-size: 1.3rem;
+                    font-weight: 600;
+                    margin: 0 0 20px 0;
+                    padding-bottom: 12px;
                     border-bottom: 2px solid #f1f5f9;
                     display: flex;
                     align-items: center;
-                    gap: 12px;
+                    gap: 10px;
                 }
 
-                .panel-section h2 i {
+                .integrated-section h2 i {
                     color: #3b82f6;
-                    font-size: 1.3rem;
+                    font-size: 1.2rem;
                 }
 
-                /* Formulaires élégants */
-                .add-category-form {
+                /* Formulaires */
+                .add-form {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 15px;
+                }
+
+                .form-row {
                     display: grid;
-                    grid-template-columns: 2fr auto 2fr auto;
-                    gap: 20px;
-                    align-items: end;
+                    grid-template-columns: 2fr auto;
+                    gap: 15px;
+                    align-items: center;
+                }
+
+                .form-row:last-child {
+                    grid-template-columns: 1fr auto;
                 }
 
                 .form-input, .form-select {
-                    padding: 16px 20px;
+                    padding: 12px 16px;
                     border: 2px solid #e2e8f0;
-                    border-radius: 16px;
-                    font-size: 15px;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    background: #fafbfc;
+                    border-radius: 12px;
+                    font-size: 14px;
+                    transition: all 0.3s ease;
+                    background: white;
                     width: 100%;
-                    position: relative;
                 }
 
                 .form-input:focus, .form-select:focus {
                     outline: none;
                     border-color: #3b82f6;
-                    background: white;
-                    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-                    transform: translateY(-2px);
-                }
-
-                .color-picker {
-                    width: 70px;
-                    height: 54px;
-                    border: 3px solid #e2e8f0;
-                    border-radius: 16px;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    background: none;
-                }
-
-                .color-picker:hover {
-                    transform: scale(1.1);
-                    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-                }
-
-                .form-group {
-                    margin-bottom: 25px;
-                }
-
-                .form-group label {
-                    display: block;
-                    font-weight: 600;
-                    color: #374151;
-                    margin-bottom: 10px;
-                    font-size: 15px;
-                }
-
-                /* Boutons super stylés */
-                .btn {
-                    padding: 16px 32px;
-                    border: none;
-                    border-radius: 16px;
-                    font-weight: 700;
-                    font-size: 15px;
-                    cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 10px;
-                    text-decoration: none;
-                    position: relative;
-                    overflow: hidden;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }
-
-                .btn::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: -100%;
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-                    transition: left 0.5s;
-                }
-
-                .btn:hover::before {
-                    left: 100%;
-                }
-
-                .btn:hover {
-                    transform: translateY(-3px);
-                    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
-                }
-
-                .btn:active {
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
                     transform: translateY(-1px);
                 }
 
+                .color-input {
+                    width: 60px;
+                    height: 46px;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 12px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+
+                .color-input:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                }
+
+                /* Boutons */
+                .btn {
+                    padding: 12px 20px;
+                    border: none;
+                    border-radius: 12px;
+                    font-weight: 600;
+                    font-size: 14px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    text-decoration: none;
+                }
+
+                .btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+                }
+
                 .btn-large {
-                    padding: 20px 40px;
-                    font-size: 16px;
+                    padding: 16px 28px;
+                    font-size: 15px;
                 }
 
                 .btn-primary {
@@ -684,11 +561,6 @@ class CategoryPage {
                     color: white;
                 }
 
-                .btn-danger {
-                    background: linear-gradient(135deg, #ef4444, #dc2626);
-                    color: white;
-                }
-
                 .btn-secondary {
                     background: linear-gradient(135deg, #6b7280, #4b5563);
                     color: white;
@@ -699,17 +571,6 @@ class CategoryPage {
                     color: white;
                 }
 
-                .btn-outline {
-                    background: transparent;
-                    color: #6b7280;
-                    border: 3px solid #6b7280;
-                }
-
-                .btn-outline:hover {
-                    background: #6b7280;
-                    color: white;
-                }
-
                 .btn:disabled {
                     opacity: 0.6;
                     cursor: not-allowed;
@@ -717,82 +578,65 @@ class CategoryPage {
                     box-shadow: none !important;
                 }
 
-                .action-buttons {
+                /* Actions */
+                .actions-row {
                     display: flex;
-                    gap: 20px;
+                    gap: 12px;
                     flex-wrap: wrap;
                     justify-content: center;
                 }
 
-                /* Grille des catégories avec animations */
+                .config-options {
+                    display: flex;
+                    gap: 15px;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    margin-bottom: 20px;
+                }
+
+                .import-row {
+                    display: grid;
+                    grid-template-columns: 1fr auto;
+                    gap: 15px;
+                    align-items: end;
+                }
+
+                /* Grille des catégories */
                 .categories-grid {
                     display: grid;
-                    gap: 25px;
-                    margin-top: 25px;
+                    gap: 20px;
+                    margin-top: 15px;
                 }
 
                 .category-card {
-                    background: linear-gradient(145deg, #ffffff, #f8fafc);
+                    background: #fafbfc;
                     border: 2px solid #e2e8f0;
-                    border-radius: 20px;
-                    padding: 25px;
-                    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                    border-radius: 16px;
+                    padding: 20px;
+                    transition: all 0.3s ease;
                     position: relative;
-                    overflow: hidden;
-                    cursor: pointer;
-                }
-
-                .category-card::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    height: 6px;
-                    background: var(--category-color, #3b82f6);
-                    transform: scaleX(0);
-                    transition: transform 0.3s ease;
-                }
-
-                .category-card:hover::before {
-                    transform: scaleX(1);
                 }
 
                 .category-card:hover {
                     border-color: var(--category-color, #3b82f6);
-                    transform: translateY(-5px);
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
                 }
 
-                .category-card-header {
+                .category-header {
                     display: flex;
                     align-items: center;
-                    gap: 20px;
-                    margin-bottom: 20px;
+                    gap: 15px;
+                    margin-bottom: 15px;
                 }
 
-                .category-color-circle {
-                    width: 40px;
-                    height: 40px;
+                .category-color {
+                    width: 32px;
+                    height: 32px;
                     border-radius: 50%;
-                    border: 4px solid white;
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+                    border: 3px solid white;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
                     flex-shrink: 0;
-                    position: relative;
-                }
-
-                .category-color-circle::after {
-                    content: '';
-                    position: absolute;
-                    inset: -2px;
-                    border-radius: 50%;
-                    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.5), transparent);
-                    animation: rotate 3s linear infinite;
-                }
-
-                @keyframes rotate {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
                 }
 
                 .category-info {
@@ -800,77 +644,46 @@ class CategoryPage {
                 }
 
                 .category-name {
-                    font-weight: 800;
-                    font-size: 20px;
+                    font-weight: 700;
+                    font-size: 16px;
                     color: #1e293b;
-                    margin: 0 0 8px 0;
+                    margin: 0 0 5px 0;
                 }
 
-                .category-count-badge {
+                .category-count {
                     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
                     color: white;
-                    padding: 8px 16px;
-                    border-radius: 25px;
-                    font-size: 13px;
+                    padding: 4px 10px;
+                    border-radius: 12px;
+                    font-size: 12px;
                     font-weight: 700;
                     display: inline-block;
-                    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
                 }
 
                 .category-keywords {
                     color: #64748b;
-                    font-size: 14px;
-                    margin-bottom: 20px;
+                    font-size: 13px;
+                    margin-bottom: 15px;
                     font-style: italic;
-                    line-height: 1.5;
                 }
 
                 .category-actions {
                     display: flex;
-                    gap: 12px;
+                    gap: 8px;
                     justify-content: flex-end;
                 }
 
                 .btn-sm {
-                    padding: 10px 16px;
-                    font-size: 13px;
-                    border-radius: 12px;
+                    padding: 8px 12px;
+                    font-size: 12px;
                 }
 
-                /* Checkbox élégants */
-                .checkbox-label {
-                    display: flex;
-                    align-items: center;
-                    gap: 15px;
-                    cursor: pointer;
-                    margin-bottom: 20px;
-                    padding: 16px 20px;
-                    background: #f8fafc;
-                    border-radius: 16px;
-                    transition: all 0.3s ease;
-                    font-weight: 500;
-                    color: #374151;
-                }
-
-                .checkbox-label:hover {
-                    background: #f1f5f9;
-                    transform: translateX(5px);
-                }
-
-                .checkbox-label input[type="checkbox"] {
-                    width: 24px;
-                    height: 24px;
-                    accent-color: #3b82f6;
-                    cursor: pointer;
-                    border-radius: 6px;
-                }
-
-                /* Sauvegarde */
-                .backup-status-card {
+                /* Statut et paramètres */
+                .status-card {
                     background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-                    border: 3px solid #bae6fd;
-                    border-radius: 20px;
-                    padding: 30px;
+                    border: 2px solid #bae6fd;
+                    border-radius: 16px;
+                    padding: 20px;
                     text-align: center;
                 }
 
@@ -878,174 +691,156 @@ class CategoryPage {
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 15px;
-                    font-weight: 800;
-                    font-size: 18px;
-                    margin-bottom: 15px;
+                    gap: 10px;
+                    font-weight: 700;
+                    font-size: 16px;
+                    margin-bottom: 10px;
                 }
 
                 .status-indicator.active { 
                     color: #059669; 
-                    animation: pulse 2s infinite;
                 }
 
-                .status-indicator.inactive { color: #dc2626; }
-                .status-indicator.warning { color: #d97706; }
-
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.7; }
-                }
-
-                .backup-quick-setup,
-                .backup-manual-setup,
-                .test-actions {
-                    text-align: center;
-                }
-
-                .help-text {
-                    color: #64748b;
-                    font-size: 14px;
-                    margin-top: 10px;
-                    font-style: italic;
+                .status-indicator.inactive { 
+                    color: #dc2626; 
                 }
 
                 .folder-info {
                     background: #e0f2fe;
-                    padding: 20px;
-                    border-radius: 16px;
-                    border-left: 6px solid #0891b2;
-                    margin-top: 20px;
+                    padding: 15px;
+                    border-radius: 12px;
+                    border-left: 4px solid #0891b2;
+                    margin-top: 15px;
                     font-weight: 500;
                 }
 
-                .import-section {
-                    display: grid;
-                    grid-template-columns: 1fr auto;
-                    gap: 20px;
-                    align-items: end;
-                }
-
-                .backup-info-grid {
+                .settings-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                     gap: 20px;
+                    align-items: center;
                 }
 
-                .info-card {
-                    background: linear-gradient(145deg, #ffffff, #f8fafc);
-                    padding: 25px;
-                    border-radius: 20px;
+                .checkbox-setting {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    cursor: pointer;
+                    font-weight: 500;
+                    color: #374151;
+                }
+
+                .checkbox-setting input[type="checkbox"] {
+                    width: 20px;
+                    height: 20px;
+                    accent-color: #3b82f6;
+                }
+
+                .select-setting {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
+                .select-setting label {
+                    font-weight: 600;
+                    color: #374151;
+                    font-size: 14px;
+                }
+
+                .info-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                    gap: 15px;
+                }
+
+                .info-item {
+                    background: #f8fafc;
+                    padding: 15px;
+                    border-radius: 12px;
                     border: 2px solid #f1f5f9;
                     text-align: center;
                     transition: all 0.3s ease;
                 }
 
-                .info-card:hover {
-                    transform: translateY(-5px);
-                    box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+                .info-item:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
                 }
 
                 .info-label {
+                    display: block;
                     font-weight: 600;
                     color: #64748b;
-                    font-size: 14px;
-                    margin-bottom: 8px;
+                    font-size: 12px;
+                    margin-bottom: 5px;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
                 }
 
                 .info-value {
-                    font-weight: 800;
+                    font-weight: 700;
                     color: #3b82f6;
-                    font-size: 18px;
-                }
-
-                .danger-zone {
-                    border: 3px solid #fee2e2 !important;
-                    background: linear-gradient(145deg, #fef2f2, #ffffff) !important;
-                }
-
-                .danger-zone::before {
-                    background: #ef4444 !important;
-                }
-
-                .warning-text {
-                    color: #dc2626;
-                    font-size: 14px;
-                    margin-top: 15px;
-                    font-weight: 600;
-                    text-align: center;
-                }
-
-                /* Footer */
-                .page-footer {
-                    background: linear-gradient(135deg, #667eea, #764ba2);
-                    padding: 30px;
-                    border-radius: 20px;
-                    display: flex;
-                    gap: 20px;
-                    justify-content: center;
-                    flex-wrap: wrap;
-                    margin-top: 40px;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    font-size: 16px;
                 }
 
                 /* Responsive */
                 @media (max-width: 768px) {
-                    .category-page-container { padding: 15px; }
-                    .panel-section { padding: 25px; }
-                    .add-category-form { grid-template-columns: 1fr; }
-                    .category-tabs { flex-direction: column; }
-                    .import-section { grid-template-columns: 1fr; }
-                    .action-buttons { flex-direction: column; }
-                    .header-top { flex-direction: column; text-align: center; gap: 15px; }
+                    .integrated-settings-container { 
+                        padding: 15px; 
+                    }
+                    .integrated-section { 
+                        padding: 20px; 
+                    }
+                    .form-row { 
+                        grid-template-columns: 1fr; 
+                    }
+                    .integrated-tabs { 
+                        flex-direction: column; 
+                    }
+                    .actions-row { 
+                        flex-direction: column; 
+                    }
+                    .config-options { 
+                        flex-direction: column; 
+                    }
+                    .import-row { 
+                        grid-template-columns: 1fr; 
+                    }
+                    .settings-grid { 
+                        grid-template-columns: 1fr; 
+                    }
                 }
 
-                /* Notifications superbes */
+                /* Notifications */
                 .notification {
                     position: fixed;
-                    top: 30px;
-                    right: 30px;
-                    padding: 20px 30px;
-                    border-radius: 16px;
+                    top: 20px;
+                    right: 20px;
+                    padding: 15px 25px;
+                    border-radius: 12px;
                     color: white;
-                    font-weight: 700;
-                    z-index: 10001;
-                    box-shadow: 0 15px 50px rgba(0,0,0,0.3);
-                    animation: slideInNotif 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-                    max-width: 400px;
-                    backdrop-filter: blur(10px);
+                    font-weight: 600;
+                    z-index: 10000;
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+                    animation: slideIn 0.3s ease-out;
+                    max-width: 350px;
                     display: flex;
                     align-items: center;
-                    gap: 12px;
+                    gap: 10px;
                 }
 
-                @keyframes slideInNotif {
-                    from { 
-                        transform: translateX(100%) rotateY(90deg); 
-                        opacity: 0; 
-                    }
-                    to { 
-                        transform: translateX(0) rotateY(0deg); 
-                        opacity: 1; 
-                    }
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
                 }
 
-                .notification.success { 
-                    background: linear-gradient(135deg, #10b981, #047857); 
-                }
-                .notification.error { 
-                    background: linear-gradient(135deg, #ef4444, #dc2626); 
-                }
-                .notification.warning { 
-                    background: linear-gradient(135deg, #f59e0b, #d97706); 
-                }
-                .notification.info { 
-                    background: linear-gradient(135deg, #3b82f6, #1d4ed8); 
-                }
+                .notification.success { background: linear-gradient(135deg, #10b981, #047857); }
+                .notification.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+                .notification.warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+                .notification.info { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
 
-                /* Animations de chargement */
+                /* Animation de chargement */
                 .loading {
                     animation: spin 1s linear infinite;
                 }
@@ -1054,42 +849,26 @@ class CategoryPage {
                     from { transform: rotate(0deg); }
                     to { transform: rotate(360deg); }
                 }
-
-                /* Masquer scrollbar dans overlay */
-                .category-page-wrapper::-webkit-scrollbar {
-                    width: 8px;
-                }
-
-                .category-page-wrapper::-webkit-scrollbar-track {
-                    background: rgba(0,0,0,0.1);
-                }
-
-                .category-page-wrapper::-webkit-scrollbar-thumb {
-                    background: rgba(255,255,255,0.3);
-                    border-radius: 4px;
-                }
             </style>
         `;
 
         document.head.insertAdjacentHTML('beforeend', styles);
-        console.log('[CategoryPage] ✅ Styles forcés injectés');
+        console.log('[CategoryPage] ✅ Styles intégrés injectés');
     }
 
-    setupEventsForced() {
-        console.log('[CategoryPage] ⚡ FORÇAGE configuration événements...');
+    setupIntegratedEvents() {
+        console.log('[CategoryPage] ⚡ Configuration événements intégrés...');
         
         setTimeout(() => {
-            this.setupTabNavigationForced();
-            this.setupCategoryEventsForced();
-            this.setupBackupEventsForced();
-            this.setupGeneralEventsForced();
-            this.loadGeneralSettingsForced();
+            this.setupTabNavigationIntegrated();
+            this.setupCategoryEventsIntegrated();
+            this.setupBackupEventsIntegrated();
         }, 100);
     }
 
-    setupTabNavigationForced() {
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const tabPanels = document.querySelectorAll('.tab-panel');
+    setupTabNavigationIntegrated() {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
 
         tabButtons.forEach(button => {
             button.addEventListener('click', (e) => {
@@ -1098,86 +877,106 @@ class CategoryPage {
                 
                 // Désactiver tous les onglets
                 tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabPanels.forEach(panel => panel.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
                 
                 // Activer l'onglet sélectionné
                 button.classList.add('active');
-                const targetPanel = document.getElementById(`${targetTab}-panel`);
-                if (targetPanel) {
-                    targetPanel.classList.add('active');
+                const targetContent = document.getElementById(`${targetTab}-tab`);
+                if (targetContent) {
+                    targetContent.classList.add('active');
                 }
                 
                 // Actions spécifiques
                 if (targetTab === 'categories') {
-                    this.renderCategoriesForced();
+                    this.renderCategoriesIntegrated();
                 } else if (targetTab === 'backup') {
-                    this.updateBackupUIForced();
+                    this.updateBackupUIIntegrated();
                 }
                 
                 console.log('[CategoryPage] 📂 Onglet activé:', targetTab);
             });
         });
 
-        console.log('[CategoryPage] ✅ Navigation onglets configurée');
+        console.log('[CategoryPage] ✅ Navigation onglets intégrée configurée');
     }
 
-    setupCategoryEventsForced() {
+    setupCategoryEventsIntegrated() {
         // Ajouter catégorie
         const addBtn = document.getElementById('add-category-btn');
         if (addBtn) {
-            addBtn.addEventListener('click', () => this.addCategoryForced());
+            addBtn.addEventListener('click', () => this.addCategoryIntegrated());
         }
 
         // Sauvegarder
         const saveBtn = document.getElementById('save-categories-btn');
         if (saveBtn) {
-            saveBtn.addEventListener('click', () => this.saveCategoriesForced());
+            saveBtn.addEventListener('click', () => this.saveCategoriesIntegrated());
         }
 
         // Réinitialiser
         const resetBtn = document.getElementById('reset-categories-btn');
         if (resetBtn) {
-            resetBtn.addEventListener('click', () => this.resetCategoriesForced());
+            resetBtn.addEventListener('click', () => this.resetCategoriesIntegrated());
         }
 
         // Exporter
         const exportBtn = document.getElementById('export-categories-btn');
         if (exportBtn) {
-            exportBtn.addEventListener('click', () => this.exportCategoriesForced());
+            exportBtn.addEventListener('click', () => this.exportCategoriesIntegrated());
         }
 
         // Ajouter catégories de test
         const testBtn = document.getElementById('test-categories-btn');
         if (testBtn) {
-            testBtn.addEventListener('click', () => this.addTestCategoriesForced());
+            testBtn.addEventListener('click', () => this.addTestCategoriesIntegrated());
         }
 
-        console.log('[CategoryPage] ✅ Événements catégories configurés');
+        console.log('[CategoryPage] ✅ Événements catégories intégrés configurés');
     }
 
-    setupBackupEventsForced() {
+    setupBackupEventsIntegrated() {
         // Configuration rapide
         const quickSetupBtn = document.getElementById('quick-setup-backup');
         if (quickSetupBtn) {
-            quickSetupBtn.addEventListener('click', () => this.quickSetupBackupForced());
+            quickSetupBtn.addEventListener('click', () => this.quickSetupBackupIntegrated());
         }
 
         // Configuration manuelle
         const manualSetupBtn = document.getElementById('manual-setup-backup');
         if (manualSetupBtn) {
-            manualSetupBtn.addEventListener('click', () => this.manualSetupBackupForced());
+            manualSetupBtn.addEventListener('click', () => this.manualSetupBackupIntegrated());
         }
 
-        // Créer sauvegarde de test
+        // Activer/désactiver backup
+        const backupEnabledCheckbox = document.getElementById('backup-enabled');
+        if (backupEnabledCheckbox) {
+            backupEnabledCheckbox.addEventListener('change', (e) => {
+                this.toggleBackupIntegrated(e.target.checked);
+            });
+        }
+
+        // Fréquence backup
+        const frequencySelect = document.getElementById('backup-frequency');
+        if (frequencySelect) {
+            frequencySelect.addEventListener('change', (e) => {
+                this.setBackupFrequencyIntegrated(parseInt(e.target.value));
+            });
+        }
+
+        // Actions manuelles
+        const manualBackupBtn = document.getElementById('manual-backup');
+        if (manualBackupBtn) {
+            manualBackupBtn.addEventListener('click', () => this.performManualBackupIntegrated());
+        }
+
         const createTestBtn = document.getElementById('create-test-backup');
         if (createTestBtn) {
-            createTestBtn.addEventListener('click', () => this.createTestBackupForced());
+            createTestBtn.addEventListener('click', () => this.createTestBackupIntegrated());
         }
 
-        // Exporter toutes les données
         const exportAllBtn = document.getElementById('export-all-data');
         if (exportAllBtn) {
-            exportAllBtn.addEventListener('click', () => this.exportAllDataForced());
+            exportAllBtn.addEventListener('click', () => this.exportAllDataIntegrated());
         }
 
         // Import
@@ -1193,118 +992,119 @@ class CategoryPage {
         }
 
         if (importBtn) {
-            importBtn.addEventListener('click', () => this.importDataForced());
+            importBtn.addEventListener('click', () => this.importDataIntegrated());
         }
 
-        console.log('[CategoryPage] ✅ Événements backup configurés');
+        console.log('[CategoryPage] ✅ Événements backup intégrés configurés');
     }
 
-    setupGeneralEventsForced() {
-        // Boutons de fermeture
-        const closeBtns = document.querySelectorAll('#close-settings, #force-close-settings');
-        closeBtns.forEach(btn => {
-            if (btn) {
-                btn.addEventListener('click', () => this.forceHide());
+    integrateWithPageManager() {
+        // S'intégrer avec le PageManager existant
+        if (window.pageManager && typeof window.pageManager.registerPage === 'function') {
+            window.pageManager.registerPage('settings', () => this.show());
+            console.log('[CategoryPage] 🔗 Intégré avec PageManager');
+        }
+
+        // Écouter les événements de navigation existants
+        document.addEventListener('showPage', (e) => {
+            if (e.detail === 'settings') {
+                console.log('[CategoryPage] 📄 Événement showPage settings reçu');
+                this.show();
             }
         });
 
-        // Sauvegarder tout
-        const saveAllBtn = document.getElementById('save-all-settings');
-        if (saveAllBtn) {
-            saveAllBtn.addEventListener('click', () => this.saveAllSettingsForced());
-        }
-
-        // Effacer toutes les données
-        const clearAllBtn = document.getElementById('clear-all-data');
-        if (clearAllBtn) {
-            clearAllBtn.addEventListener('click', () => this.clearAllDataForced());
-        }
-
-        // Changement de thème
-        const themeSelect = document.getElementById('theme-select');
-        if (themeSelect) {
-            themeSelect.addEventListener('change', (e) => {
-                this.applyThemeForced(e.target.value);
-            });
-        }
-
-        // Fermer avec Échap
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isVisible) {
-                this.forceHide();
+        // Observer les changements de navigation
+        const navObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    const target = mutation.target;
+                    if (target.classList?.contains('active') && 
+                        (target.dataset?.page === 'settings' || target.textContent?.toLowerCase().includes('paramètre'))) {
+                        console.log('[CategoryPage] 👁️ Navigation settings détectée');
+                        setTimeout(() => this.show(), 100);
+                    }
+                }
             }
         });
-
-        console.log('[CategoryPage] ✅ Événements généraux configurés');
-    }
-
-    renderCategoriesForced() {
-        const categoriesGrid = document.getElementById('categories-grid');
-        const categoriesCounter = document.getElementById('categories-counter');
         
-        if (!categoriesGrid) {
-            console.warn('[CategoryPage] ⚠️ Grid non trouvé');
+        navObserver.observe(document.body, {
+            attributes: true,
+            subtree: true,
+            attributeFilter: ['class', 'data-page']
+        });
+
+        console.log('[CategoryPage] ✅ Intégration avec le système de navigation');
+    }
+
+    renderCategoriesIntegrated() {
+        const categoriesList = document.getElementById('categories-list');
+        const categoriesCountBadge = document.getElementById('categories-count-badge');
+        
+        if (!categoriesList) {
+            console.warn('[CategoryPage] ⚠️ Element categories-list non trouvé');
             return;
         }
 
-        // Mettre à jour le compteur
-        if (categoriesCounter) {
-            categoriesCounter.textContent = Object.keys(this.categories).length;
+        // Mettre à jour le compteur dans l'onglet
+        if (categoriesCountBadge) {
+            categoriesCountBadge.textContent = Object.keys(this.categories).length;
         }
 
-        // Vider et remplir la grille
-        categoriesGrid.innerHTML = '';
+        // Vider et remplir la liste
+        categoriesList.innerHTML = '';
 
         Object.entries(this.categories).forEach(([id, category], index) => {
             const categoryCard = document.createElement('div');
             categoryCard.className = 'category-card';
-            categoryCard.style.cssText = `--category-color: ${category.color}; animation-delay: ${index * 0.1}s;`;
+            categoryCard.style.cssText = `--category-color: ${category.color}; animation-delay: ${index * 0.05}s;`;
             
             categoryCard.innerHTML = `
-                <div class="category-card-header">
-                    <div class="category-color-circle" style="background-color: ${category.color}"></div>
+                <div class="category-header">
+                    <div class="category-color" style="background-color: ${category.color}"></div>
                     <div class="category-info">
                         <h3 class="category-name">${category.name}</h3>
-                        <span class="category-count-badge">${category.count} emails</span>
+                        <span class="category-count">${category.count} emails</span>
                     </div>
                 </div>
                 <div class="category-keywords">
                     Mots-clés: ${category.keywords.join(', ')}
                 </div>
                 <div class="category-actions">
-                    <button class="btn btn-primary btn-sm" onclick="window.categoryPage.editCategoryForced('${id}')">
+                    <button class="btn btn-primary btn-sm" onclick="window.categoryPage.editCategoryIntegrated('${id}')">
                         <i class="fas fa-edit"></i> Modifier
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="window.categoryPage.deleteCategoryForced('${id}')">
+                    <button class="btn btn-warning btn-sm" onclick="window.categoryPage.deleteCategoryIntegrated('${id}')">
                         <i class="fas fa-trash"></i> Supprimer
                     </button>
                 </div>
             `;
             
-            categoriesGrid.appendChild(categoryCard);
+            categoriesList.appendChild(categoryCard);
         });
 
-        console.log('[CategoryPage] 🎨 Catégories forcées rendues:', Object.keys(this.categories).length);
+        console.log('[CategoryPage] 🎨 Catégories intégrées rendues:', Object.keys(this.categories).length);
     }
 
-    initBackupForced() {
-        // Service de backup simple et fonctionnel
+    initBackupIntegrated() {
+        // Service de backup simple intégré
         window.backupService = {
             folderHandle: null,
             enabled: false,
+            frequency: 60,
             lastBackup: null,
             filesCount: 0,
+            timer: null,
 
             async selectFolder() {
                 try {
                     if (!window.showDirectoryPicker) {
-                        throw new Error('API File System non supportée');
+                        throw new Error('API File System non supportée par votre navigateur');
                     }
 
                     this.folderHandle = await window.showDirectoryPicker({
                         mode: 'readwrite',
                         startIn: 'documents',
-                        id: 'emailsortpro-backup-forced'
+                        id: 'emailsortpro-backup-integrated'
                     });
 
                     return true;
@@ -1314,12 +1114,44 @@ class CategoryPage {
                 }
             },
 
+            enable() {
+                this.enabled = true;
+                this.startTimer();
+            },
+
+            disable() {
+                this.enabled = false;
+                this.stopTimer();
+            },
+
+            setFrequency(minutes) {
+                this.frequency = minutes;
+                if (this.enabled) {
+                    this.stopTimer();
+                    this.startTimer();
+                }
+            },
+
+            startTimer() {
+                if (this.timer) clearInterval(this.timer);
+                this.timer = setInterval(() => {
+                    this.createBackup();
+                }, this.frequency * 60 * 1000);
+            },
+
+            stopTimer() {
+                if (this.timer) {
+                    clearInterval(this.timer);
+                    this.timer = null;
+                }
+            },
+
             async createBackup() {
                 if (!this.folderHandle) return false;
 
                 try {
                     const data = {
-                        version: '4.0-forced',
+                        version: '4.0-integrated',
                         timestamp: new Date().toISOString(),
                         categories: window.categoryPage?.categories || {},
                         settings: this.getSettings(),
@@ -1364,118 +1196,29 @@ class CategoryPage {
 
             getStatus() {
                 return {
+                    enabled: this.enabled,
                     folderConfigured: !!this.folderHandle,
                     lastBackup: this.lastBackup ? this.lastBackup.toLocaleString('fr-FR') : null,
-                    filesCount: this.filesCount
+                    filesCount: this.filesCount,
+                    frequency: this.frequency
                 };
             }
         };
 
-        console.log('[CategoryPage] 💾 Backup service forcé initialisé');
-    }
-
-    checkAndForceDisplay() {
-        // Vérifier si on doit afficher immédiatement
-        const shouldShow = (
-            window.location.hash === '#settings' ||
-            window.location.search.includes('page=settings') ||
-            document.querySelector('.nav-item.active[data-page="settings"]')
-        );
-
-        if (shouldShow) {
-            setTimeout(() => {
-                console.log('[CategoryPage] 🎯 Auto-affichage détecté');
-                this.forceShow();
-            }, 500);
-        }
-
-        // Écouter les clics sur "Paramètres"
-        this.listenForSettingsClicks();
-    }
-
-    listenForSettingsClicks() {
-        // Écouter tous les clics sur les éléments liés aux paramètres
-        document.addEventListener('click', (e) => {
-            const target = e.target.closest('[data-page="settings"], .settings-btn, .nav-settings, [href="#settings"]');
-            if (target) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('[CategoryPage] 🖱️ Clic paramètres détecté');
-                this.forceShow();
-            }
-        });
-
-        // Écouter les événements de navigation
-        document.addEventListener('showPage', (e) => {
-            if (e.detail === 'settings') {
-                console.log('[CategoryPage] 📄 Événement showPage settings');
-                this.forceShow();
-            }
-        });
-
-        console.log('[CategoryPage] 👂 Écoute des clics paramètres active');
+        console.log('[CategoryPage] 💾 Service backup intégré initialisé');
     }
 
     // ================================================
-    // MÉTHODES FORCÉES
+    // MÉTHODES INTÉGRÉES
     // ================================================
 
-    forceShow() {
-        console.log('[CategoryPage] 💥 FORÇAGE AFFICHAGE...');
-        
-        const settingsPage = document.getElementById('settings-page');
-        if (settingsPage) {
-            // Masquer toutes les autres pages
-            document.querySelectorAll('.page-content:not(#settings-page)').forEach(page => {
-                page.style.display = 'none';
-            });
-            
-            // FORCER l'affichage
-            settingsPage.style.display = 'block';
-            settingsPage.classList.add('forced-display');
-            this.isVisible = true;
-            
-            // Recharger les données
-            this.loadCategoriesImmediate();
-            this.loadGeneralSettingsForced();
-            this.renderCategoriesForced();
-            this.updateBackupUIForced();
-            
-            // Ajouter classe au body pour empêcher le scroll
-            document.body.style.overflow = 'hidden';
-            
-            console.log('[CategoryPage] ✅ AFFICHAGE FORCÉ réussi');
-        } else {
-            console.error('[CategoryPage] ❌ Page settings-page non trouvée!');
-            // Recréer la page si nécessaire
-            this.createPageForced();
-            setTimeout(() => this.forceShow(), 100);
-        }
-    }
-
-    forceHide() {
-        console.log('[CategoryPage] 🙈 FORÇAGE MASQUAGE...');
-        
-        const settingsPage = document.getElementById('settings-page');
-        if (settingsPage) {
-            settingsPage.style.display = 'none';
-            settingsPage.classList.remove('forced-display');
-            this.isVisible = false;
-            
-            // Restaurer le scroll
-            document.body.style.overflow = '';
-            
-            console.log('[CategoryPage] ✅ MASQUAGE FORCÉ réussi');
-        }
-    }
-
-    addCategoryForced() {
+    addCategoryIntegrated() {
         const nameInput = document.getElementById('new-category-name');
         const colorInput = document.getElementById('new-category-color');
         const keywordsInput = document.getElementById('new-category-keywords');
 
         if (!nameInput || !nameInput.value.trim()) {
-            this.showNotificationForced('Veuillez entrer un nom de catégorie', 'warning');
+            this.showNotificationIntegrated('Veuillez entrer un nom de catégorie', 'warning');
             return;
         }
 
@@ -1486,7 +1229,7 @@ class CategoryPage {
         const id = name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, '');
         
         if (this.categories[id]) {
-            this.showNotificationForced('Cette catégorie existe déjà', 'warning');
+            this.showNotificationIntegrated('Cette catégorie existe déjà', 'warning');
             return;
         }
 
@@ -1502,37 +1245,37 @@ class CategoryPage {
         if (colorInput) colorInput.value = '#3b82f6';
         if (keywordsInput) keywordsInput.value = '';
 
-        this.renderCategoriesForced();
-        this.saveCategoriesForced();
-        this.showNotificationForced('Catégorie ajoutée avec succès!', 'success');
+        this.renderCategoriesIntegrated();
+        this.saveCategoriesIntegrated();
+        this.showNotificationIntegrated('Catégorie ajoutée avec succès!', 'success');
     }
 
-    editCategoryForced(id) {
+    editCategoryIntegrated(id) {
         const category = this.categories[id];
         if (!category) return;
 
         const newName = prompt('Nouveau nom de la catégorie:', category.name);
         if (newName && newName.trim() && newName.trim() !== category.name) {
             category.name = newName.trim();
-            this.renderCategoriesForced();
-            this.saveCategoriesForced();
-            this.showNotificationForced('Catégorie modifiée!', 'success');
+            this.renderCategoriesIntegrated();
+            this.saveCategoriesIntegrated();
+            this.showNotificationIntegrated('Catégorie modifiée!', 'success');
         }
     }
 
-    deleteCategoryForced(id) {
+    deleteCategoryIntegrated(id) {
         const category = this.categories[id];
         if (!category) return;
 
         if (confirm(`Supprimer la catégorie "${category.name}" ?`)) {
             delete this.categories[id];
-            this.renderCategoriesForced();
-            this.saveCategoriesForced();
-            this.showNotificationForced('Catégorie supprimée!', 'info');
+            this.renderCategoriesIntegrated();
+            this.saveCategoriesIntegrated();
+            this.showNotificationIntegrated('Catégorie supprimée!', 'info');
         }
     }
 
-    addTestCategoriesForced() {
+    addTestCategoriesIntegrated() {
         const testCategories = {
             'education': {
                 name: 'Éducation',
@@ -1545,31 +1288,25 @@ class CategoryPage {
                 color: '#f59e0b',
                 keywords: ['movie', 'music', 'game', 'entertainment', 'fun'],
                 count: 28
-            },
-            'technology': {
-                name: 'Technologie',
-                color: '#06b6d4',
-                keywords: ['tech', 'software', 'hardware', 'programming', 'computer'],
-                count: 45
             }
         };
 
         Object.assign(this.categories, testCategories);
-        this.renderCategoriesForced();
-        this.saveCategoriesForced();
-        this.showNotificationForced('Catégories de test ajoutées!', 'success');
+        this.renderCategoriesIntegrated();
+        this.saveCategoriesIntegrated();
+        this.showNotificationIntegrated('Catégories de test ajoutées!', 'success');
     }
 
-    resetCategoriesForced() {
+    resetCategoriesIntegrated() {
         if (confirm('Réinitialiser toutes les catégories ?')) {
-            this.loadCategoriesImmediate();
-            this.renderCategoriesForced();
-            this.saveCategoriesForced();
-            this.showNotificationForced('Catégories réinitialisées!', 'info');
+            this.loadCategoriesIntegrated();
+            this.renderCategoriesIntegrated();
+            this.saveCategoriesIntegrated();
+            this.showNotificationIntegrated('Catégories réinitialisées!', 'info');
         }
     }
 
-    saveCategoriesForced() {
+    saveCategoriesIntegrated() {
         try {
             localStorage.setItem('emailsortpro_categories', JSON.stringify(this.categories));
             
@@ -1578,28 +1315,30 @@ class CategoryPage {
                 window.categoryManager.updateCategories(this.categories);
             }
             
+            this.showNotificationIntegrated('Catégories sauvegardées!', 'success');
             console.log('[CategoryPage] 💾 Catégories sauvegardées:', Object.keys(this.categories).length);
         } catch (error) {
             console.error('[CategoryPage] ❌ Erreur sauvegarde:', error);
+            this.showNotificationIntegrated('Erreur lors de la sauvegarde', 'error');
         }
     }
 
-    exportCategoriesForced() {
+    exportCategoriesIntegrated() {
         try {
             const data = {
-                version: '4.0-forced',
+                version: '4.0-integrated',
                 timestamp: new Date().toISOString(),
                 categories: this.categories
             };
 
-            this.downloadJSONForced(data, `EmailSortPro-Categories-${new Date().toISOString().split('T')[0]}.json`);
-            this.showNotificationForced('Catégories exportées!', 'success');
+            this.downloadJSONIntegrated(data, `EmailSortPro-Categories-${new Date().toISOString().split('T')[0]}.json`);
+            this.showNotificationIntegrated('Catégories exportées!', 'success');
         } catch (error) {
-            this.showNotificationForced('Erreur export: ' + error.message, 'error');
+            this.showNotificationIntegrated('Erreur export: ' + error.message, 'error');
         }
     }
 
-    async quickSetupBackupForced() {
+    async quickSetupBackupIntegrated() {
         const btn = document.getElementById('quick-setup-backup');
         if (btn) {
             btn.disabled = true;
@@ -1610,13 +1349,13 @@ class CategoryPage {
             const success = await window.backupService.selectFolder();
             if (success) {
                 await window.backupService.createBackup();
-                this.showNotificationForced('Configuration automatique réussie!', 'success');
-                this.updateBackupUIForced();
+                this.showNotificationIntegrated('Configuration automatique réussie!', 'success');
+                this.updateBackupUIIntegrated();
             } else {
-                this.showNotificationForced('Erreur de configuration', 'error');
+                this.showNotificationIntegrated('Erreur de configuration', 'error');
             }
         } catch (error) {
-            this.showNotificationForced('Erreur: ' + error.message, 'error');
+            this.showNotificationIntegrated('Erreur: ' + error.message, 'error');
         }
 
         if (btn) {
@@ -1625,17 +1364,68 @@ class CategoryPage {
         }
     }
 
-    async manualSetupBackupForced() {
+    async manualSetupBackupIntegrated() {
         const success = await window.backupService.selectFolder();
         if (success) {
-            this.showNotificationForced('Dossier sélectionné!', 'success');
-            this.updateBackupUIForced();
+            this.showNotificationIntegrated('Dossier sélectionné!', 'success');
+            this.updateBackupUIIntegrated();
         } else {
-            this.showNotificationForced('Sélection annulée', 'info');
+            this.showNotificationIntegrated('Sélection annulée', 'info');
         }
     }
 
-    async createTestBackupForced() {
+    toggleBackupIntegrated(enabled) {
+        if (enabled) {
+            if (window.backupService.folderHandle) {
+                window.backupService.enable();
+                this.showNotificationIntegrated('Sauvegardes automatiques activées', 'success');
+            } else {
+                document.getElementById('backup-enabled').checked = false;
+                this.showNotificationIntegrated('Configurez d\'abord un dossier', 'warning');
+            }
+        } else {
+            window.backupService.disable();
+            this.showNotificationIntegrated('Sauvegardes automatiques désactivées', 'info');
+        }
+        this.updateBackupUIIntegrated();
+    }
+
+    setBackupFrequencyIntegrated(minutes) {
+        window.backupService.setFrequency(minutes);
+        this.showNotificationIntegrated(`Fréquence mise à jour: ${this.formatFrequency(minutes)}`, 'info');
+    }
+
+    formatFrequency(minutes) {
+        if (minutes < 60) return `${minutes} minutes`;
+        if (minutes === 60) return '1 heure';
+        if (minutes < 1440) return `${minutes / 60} heures`;
+        return `${minutes / 1440} jour(s)`;
+    }
+
+    async performManualBackupIntegrated() {
+        const btn = document.getElementById('manual-backup');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner loading"></i> Sauvegarde...';
+        }
+
+        const success = await window.backupService.createBackup();
+        
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder maintenant';
+        }
+
+        if (success) {
+            this.showNotificationIntegrated('Sauvegarde effectuée!', 'success');
+        } else {
+            this.showNotificationIntegrated('Erreur lors de la sauvegarde', 'error');
+        }
+
+        this.updateBackupUIIntegrated();
+    }
+
+    async createTestBackupIntegrated() {
         const btn = document.getElementById('create-test-backup');
         if (btn) {
             btn.disabled = true;
@@ -1644,51 +1434,50 @@ class CategoryPage {
 
         try {
             if (!window.backupService.folderHandle) {
-                this.showNotificationForced('Configurez d\'abord un dossier', 'warning');
+                this.showNotificationIntegrated('Configurez d\'abord un dossier', 'warning');
                 return;
             }
 
-            // Créer plusieurs sauvegardes de test
             for (let i = 0; i < 3; i++) {
                 await window.backupService.createBackup();
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
 
-            this.showNotificationForced('Sauvegardes de test créées!', 'success');
-            this.updateBackupUIForced();
+            this.showNotificationIntegrated('Fichiers de test créés!', 'success');
+            this.updateBackupUIIntegrated();
         } catch (error) {
-            this.showNotificationForced('Erreur: ' + error.message, 'error');
+            this.showNotificationIntegrated('Erreur: ' + error.message, 'error');
         }
 
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-file-alt"></i> Créer sauvegarde de test';
+            btn.innerHTML = '<i class="fas fa-file-alt"></i> Créer fichiers test';
         }
     }
 
-    exportAllDataForced() {
+    exportAllDataIntegrated() {
         try {
             const data = {
-                version: '4.0-forced',
+                version: '4.0-integrated',
                 timestamp: new Date().toISOString(),
                 categories: this.categories,
-                settings: this.getGeneralSettingsForced(),
-                localStorage: this.getLocalStorageDataForced()
+                settings: this.getSettingsIntegrated(),
+                localStorage: this.getLocalStorageDataIntegrated()
             };
 
-            this.downloadJSONForced(data, `EmailSortPro-Export-${new Date().toISOString().split('T')[0]}.json`);
-            this.showNotificationForced('Toutes les données exportées!', 'success');
+            this.downloadJSONIntegrated(data, `EmailSortPro-Export-${new Date().toISOString().split('T')[0]}.json`);
+            this.showNotificationIntegrated('Toutes les données exportées!', 'success');
         } catch (error) {
-            this.showNotificationForced('Erreur export: ' + error.message, 'error');
+            this.showNotificationIntegrated('Erreur export: ' + error.message, 'error');
         }
     }
 
-    importDataForced() {
+    importDataIntegrated() {
         const fileInput = document.getElementById('import-file');
         const file = fileInput?.files[0];
         
         if (!file) {
-            this.showNotificationForced('Sélectionnez un fichier', 'warning');
+            this.showNotificationIntegrated('Sélectionnez un fichier', 'warning');
             return;
         }
 
@@ -1702,37 +1491,33 @@ class CategoryPage {
                 }
 
                 if (confirm('Importer ces données ? Cela remplacera vos données actuelles.')) {
-                    // Importer les catégories
                     if (data.categories) {
                         this.categories = data.categories;
-                        this.saveCategoriesForced();
-                        this.renderCategoriesForced();
+                        this.saveCategoriesIntegrated();
+                        this.renderCategoriesIntegrated();
                     }
 
-                    // Importer les paramètres
                     if (data.settings) {
                         localStorage.setItem('emailsortpro_settings', JSON.stringify(data.settings));
-                        this.loadGeneralSettingsForced();
                     }
 
-                    // Importer localStorage
                     if (data.localStorage) {
                         Object.entries(data.localStorage).forEach(([key, value]) => {
                             localStorage.setItem(key, value);
                         });
                     }
 
-                    this.showNotificationForced('Données importées avec succès!', 'success');
+                    this.showNotificationIntegrated('Données importées avec succès!', 'success');
                 }
             } catch (error) {
-                this.showNotificationForced('Erreur import: ' + error.message, 'error');
+                this.showNotificationIntegrated('Erreur import: ' + error.message, 'error');
             }
         };
         
         reader.readAsText(file);
     }
 
-    updateBackupUIForced() {
+    updateBackupUIIntegrated() {
         if (!window.backupService) return;
 
         const status = window.backupService.getStatus();
@@ -1745,7 +1530,7 @@ class CategoryPage {
             if (status.folderConfigured) {
                 statusElement.className = 'status-indicator active';
                 statusElement.innerHTML = '<i class="fas fa-check-circle"></i><span>Configuré</span>';
-                detailElement.textContent = 'Dossier de sauvegarde prêt à utiliser';
+                detailElement.textContent = 'Dossier de sauvegarde configuré et prêt';
             } else {
                 statusElement.className = 'status-indicator inactive';
                 statusElement.innerHTML = '<i class="fas fa-times-circle"></i><span>Non configuré</span>';
@@ -1758,7 +1543,7 @@ class CategoryPage {
             'service-status': status.folderConfigured ? 'Configuré' : 'En attente',
             'last-backup': status.lastBackup || 'Jamais',
             'files-count': status.filesCount || 0,
-            'data-size': this.calculateDataSizeForced()
+            'data-size': this.calculateDataSizeIntegrated()
         };
 
         Object.entries(elements).forEach(([id, value]) => {
@@ -1767,6 +1552,17 @@ class CategoryPage {
                 element.textContent = value;
             }
         });
+
+        // Mettre à jour les contrôles
+        const backupEnabledCheckbox = document.getElementById('backup-enabled');
+        if (backupEnabledCheckbox) {
+            backupEnabledCheckbox.checked = status.enabled;
+        }
+
+        const manualBackupBtn = document.getElementById('manual-backup');
+        if (manualBackupBtn) {
+            manualBackupBtn.disabled = !status.folderConfigured;
+        }
 
         // Afficher le dossier si configuré
         const folderDisplay = document.getElementById('folder-display');
@@ -1777,106 +1573,11 @@ class CategoryPage {
         }
     }
 
-    loadGeneralSettingsForced() {
-        try {
-            const settings = JSON.parse(localStorage.getItem('emailsortpro_settings') || '{}');
-            
-            this.setFieldValueForced('user-name', settings.userName || '');
-            this.setFieldValueForced('user-email', settings.userEmail || '');
-            this.setFieldValueForced('theme-select', settings.theme || 'light');
-            this.setFieldValueForced('auto-sort', settings.autoSort !== false);
-            this.setFieldValueForced('notifications', settings.notifications !== false);
-            this.setFieldValueForced('advanced-features', settings.advancedFeatures || false);
-
-            this.applyThemeForced(settings.theme || 'light');
-        } catch (error) {
-            console.error('[CategoryPage] Erreur chargement paramètres:', error);
-        }
-    }
-
-    saveAllSettingsForced() {
-        try {
-            const settings = {
-                userName: this.getFieldValueForced('user-name'),
-                userEmail: this.getFieldValueForced('user-email'),
-                theme: this.getFieldValueForced('theme-select'),
-                autoSort: this.getFieldValueForced('auto-sort'),
-                notifications: this.getFieldValueForced('notifications'),
-                advancedFeatures: this.getFieldValueForced('advanced-features'),
-                lastSaved: new Date().toISOString()
-            };
-
-            localStorage.setItem('emailsortpro_settings', JSON.stringify(settings));
-            this.saveCategoriesForced();
-            
-            this.showNotificationForced('Tous les paramètres sauvegardés!', 'success');
-            console.log('[CategoryPage] 💾 Paramètres sauvegardés');
-        } catch (error) {
-            this.showNotificationForced('Erreur sauvegarde: ' + error.message, 'error');
-        }
-    }
-
-    applyThemeForced(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        
-        if (theme === 'auto') {
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-        }
-        
-        console.log('[CategoryPage] 🎨 Thème appliqué:', theme);
-    }
-
-    clearAllDataForced() {
-        const confirmation = prompt('Tapez "SUPPRIMER" pour confirmer la suppression de toutes les données:');
-        
-        if (confirmation === 'SUPPRIMER') {
-            // Sauvegarder la config de backup
-            const backupConfig = localStorage.getItem('emailsortpro_backup_config');
-            
-            // Tout supprimer
-            localStorage.clear();
-            
-            // Restaurer la config de backup
-            if (backupConfig) {
-                localStorage.setItem('emailsortpro_backup_config', backupConfig);
-            }
-            
-            // Réinitialiser les catégories
-            this.loadCategoriesImmediate();
-            this.renderCategoriesForced();
-            
-            this.showNotificationForced('Toutes les données supprimées!', 'info');
-            
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        }
-    }
-
     // ================================================
-    // UTILITAIRES FORCÉS
+    // UTILITAIRES INTÉGRÉS
     // ================================================
 
-    getFieldValueForced(id) {
-        const field = document.getElementById(id);
-        if (!field) return null;
-        
-        return field.type === 'checkbox' ? field.checked : field.value;
-    }
-
-    setFieldValueForced(id, value) {
-        const field = document.getElementById(id);
-        if (!field) return;
-        
-        if (field.type === 'checkbox') {
-            field.checked = Boolean(value);
-        } else {
-            field.value = value;
-        }
-    }
-
-    getGeneralSettingsForced() {
+    getSettingsIntegrated() {
         try {
             return JSON.parse(localStorage.getItem('emailsortpro_settings') || '{}');
         } catch {
@@ -1884,7 +1585,7 @@ class CategoryPage {
         }
     }
 
-    getLocalStorageDataForced() {
+    getLocalStorageDataIntegrated() {
         const data = {};
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -1895,11 +1596,11 @@ class CategoryPage {
         return data;
     }
 
-    calculateDataSizeForced() {
+    calculateDataSizeIntegrated() {
         try {
             const data = {
                 categories: this.categories,
-                settings: this.getGeneralSettingsForced(),
+                settings: this.getSettingsIntegrated(),
                 localStorage: Object.keys(localStorage).length
             };
             const sizeBytes = JSON.stringify(data).length;
@@ -1912,7 +1613,7 @@ class CategoryPage {
         }
     }
 
-    downloadJSONForced(data, filename) {
+    downloadJSONIntegrated(data, filename) {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         
@@ -1926,7 +1627,7 @@ class CategoryPage {
         URL.revokeObjectURL(url);
     }
 
-    showNotificationForced(message, type = 'info') {
+    showNotificationIntegrated(message, type = 'info') {
         console.log(`[CategoryPage] ${type.toUpperCase()}: ${message}`);
         
         // Créer la notification
@@ -1949,25 +1650,68 @@ class CategoryPage {
         
         // Supprimer après 4 secondes
         setTimeout(() => {
-            notification.style.animation = 'slideInNotif 0.5s ease-out reverse';
+            notification.style.animation = 'slideIn 0.3s ease-out reverse';
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.parentNode.removeChild(notification);
                 }
-            }, 500);
+            }, 300);
         }, 4000);
     }
 
     // ================================================
-    // API PUBLIQUE FORCÉE
+    // API PUBLIQUE INTÉGRÉE
     // ================================================
 
     show() {
-        this.forceShow();
+        const settingsPage = document.getElementById('settings-page');
+        if (settingsPage) {
+            // Masquer les autres pages du système existant
+            document.querySelectorAll('.page-content:not(#settings-page)').forEach(page => {
+                page.style.display = 'none';
+            });
+            
+            // Afficher la page des paramètres
+            settingsPage.style.display = 'block';
+            this.isVisible = true;
+            
+            // Recharger les données actuelles
+            this.syncWithCategoryManager();
+            this.renderCategoriesIntegrated();
+            this.updateBackupUIIntegrated();
+            
+            // Mettre à jour la navigation existante si présente
+            this.updateExistingNavigation();
+            
+            console.log('[CategoryPage] 👁️ Page intégrée affichée avec', Object.keys(this.categories).length, 'catégories');
+        } else {
+            console.warn('[CategoryPage] ⚠️ Page settings-page non trouvée - recréation');
+            this.createIntegratedPage();
+            setTimeout(() => this.show(), 100);
+        }
     }
 
     hide() {
-        this.forceHide();
+        const settingsPage = document.getElementById('settings-page');
+        if (settingsPage) {
+            settingsPage.style.display = 'none';
+            this.isVisible = false;
+            console.log('[CategoryPage] 👁️ Page intégrée masquée');
+        }
+    }
+
+    updateExistingNavigation() {
+        // Mettre à jour les éléments de navigation existants pour indiquer que settings est actif
+        const navItems = document.querySelectorAll('.nav-item[data-page="settings"], [data-page="settings"]');
+        navItems.forEach(item => {
+            item.classList.add('active');
+        });
+
+        // Désactiver les autres éléments de navigation
+        const otherNavItems = document.querySelectorAll('.nav-item:not([data-page="settings"])');
+        otherNavItems.forEach(item => {
+            item.classList.remove('active');
+        });
     }
 
     getCategories() {
@@ -1987,10 +1731,10 @@ class CategoryPage {
         };
         
         if (this.isVisible) {
-            this.renderCategoriesForced();
+            this.renderCategoriesIntegrated();
         }
         
-        this.saveCategoriesForced();
+        this.saveCategoriesIntegrated();
         return true;
     }
 
@@ -1998,9 +1742,9 @@ class CategoryPage {
         if (this.categories[id]) {
             this.categories[id] = { ...this.categories[id], ...data };
             if (this.isVisible) {
-                this.renderCategoriesForced();
+                this.renderCategoriesIntegrated();
             }
-            this.saveCategoriesForced();
+            this.saveCategoriesIntegrated();
             return true;
         }
         return false;
@@ -2008,10 +1752,10 @@ class CategoryPage {
 
     refresh() {
         if (this.isVisible) {
-            this.loadCategoriesImmediate();
-            this.renderCategoriesForced();
-            this.updateBackupUIForced();
-            console.log('[CategoryPage] 🔄 Interface rafraîchie');
+            this.syncWithCategoryManager();
+            this.renderCategoriesIntegrated();
+            this.updateBackupUIIntegrated();
+            console.log('[CategoryPage] 🔄 Interface intégrée rafraîchie');
         }
     }
 
@@ -2020,29 +1764,30 @@ class CategoryPage {
             initialized: this.isInitialized,
             visible: this.isVisible,
             categoriesCount: Object.keys(this.categories).length,
-            backupConfigured: window.backupService?.getStatus()?.folderConfigured || false
+            backupConfigured: window.backupService?.getStatus()?.folderConfigured || false,
+            integrated: true
         };
     }
 }
 
 // ================================================
-// INITIALISATION GLOBALE FORCÉE
+// INITIALISATION GLOBALE INTÉGRÉE
 // ================================================
 
-function initializeCategoryPageForced() {
-    console.log('[CategoryPage] 🚀 INITIALISATION GLOBALE FORCÉE...');
+function initializeCategoryPageIntegrated() {
+    console.log('[CategoryPage] 🚀 INITIALISATION INTÉGRÉE au système existant...');
     
-    // Créer l'instance globale immédiatement
+    // Créer l'instance globale
     window.categoryPage = new CategoryPage();
     
-    // Fonctions globales pour accès immédiat
+    // Fonctions globales pour l'intégration
     window.showSettings = () => {
-        console.log('[Global] 💥 FORÇAGE affichage paramètres');
-        window.categoryPage?.forceShow();
+        console.log('[Global] 🔧 Affichage paramètres intégrés');
+        window.categoryPage?.show();
     };
     
     window.hideSettings = () => {
-        window.categoryPage?.forceHide();
+        window.categoryPage?.hide();
     };
     
     window.getCategories = () => {
@@ -2050,12 +1795,12 @@ function initializeCategoryPageForced() {
     };
     
     window.getAppSettings = () => {
-        return window.categoryPage?.getGeneralSettingsForced() || {};
+        return window.categoryPage?.getSettingsIntegrated() || {};
     };
     
     window.updateAppSetting = (key, value) => {
         try {
-            const settings = window.categoryPage?.getGeneralSettingsForced() || {};
+            const settings = window.categoryPage?.getSettingsIntegrated() || {};
             settings[key] = value;
             settings.lastModified = new Date().toISOString();
             localStorage.setItem('emailsortpro_settings', JSON.stringify(settings));
@@ -2066,78 +1811,18 @@ function initializeCategoryPageForced() {
         }
     };
 
-    // Forcer l'écoute des événements immédiatement
-    window.addEventListener('load', () => {
-        console.log('[Global] 🔥 Window loaded - FORÇAGE écoute événements');
-        
-        // Écouter TOUS les clics sur des éléments liés aux paramètres
-        document.addEventListener('click', (e) => {
-            const target = e.target.closest([
-                '[data-page="settings"]',
-                '.settings-btn',
-                '.nav-settings',
-                '[href="#settings"]',
-                '.settings-link',
-                '.nav-item[data-page="settings"]',
-                'a[href*="settings"]'
-            ].join(', '));
-            
-            if (target) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('[Global] 🎯 CLIC PARAMÈTRES INTERCEPTÉ');
-                window.categoryPage?.forceShow();
-                return false;
-            }
-        }, true); // Capture phase pour intercepter plus tôt
-        
-        // Écouter les événements de hash
-        window.addEventListener('hashchange', () => {
-            if (window.location.hash === '#settings') {
-                console.log('[Global] 📍 Hash #settings détecté');
-                window.categoryPage?.forceShow();
-            }
-        });
-        
-        // Écouter les événements personnalisés
-        document.addEventListener('showPage', (e) => {
-            if (e.detail === 'settings') {
-                console.log('[Global] 📢 Événement showPage settings');
-                window.categoryPage?.forceShow();
-            }
-        });
-    });
+    // Intégration avec le système de navigation existant
+    setupNavigationIntegration();
 
-    // FORCER l'affichage si hash présent
-    if (window.location.hash === '#settings') {
-        setTimeout(() => {
-            console.log('[Global] 🎯 Hash settings détecté au chargement');
-            window.categoryPage?.forceShow();
-        }, 1000);
-    }
+    // Synchronisation périodique avec le système
+    setInterval(() => {
+        if (window.categoryPage) {
+            window.categoryPage.syncWithCategoryManager();
+        }
+    }, 30000);
 
-    // Observer les changements dans la navigation
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                const target = mutation.target;
-                if (target.classList?.contains('active') && 
-                    (target.dataset?.page === 'settings' || target.textContent?.toLowerCase().includes('paramètre'))) {
-                    console.log('[Global] 👁️ Élément settings activé détecté');
-                    setTimeout(() => window.categoryPage?.forceShow(), 100);
-                }
-            }
-        });
-    });
-    
-    observer.observe(document.body, {
-        attributes: true,
-        subtree: true,
-        attributeFilter: ['class', 'data-page']
-    });
-
-    console.log('✅ CategoryPage FORCÉE initialisée et prête');
-    console.log('💥 Mode FORÇAGE actif - Affichage garanti');
+    console.log('✅ CategoryPage INTÉGRÉE initialisée et prête');
+    console.log('🔗 Intégration parfaite avec le système existant');
     console.log('📂 Fonctions: showSettings(), getCategories(), window.categoryPage');
     console.log('🎯 Catégories:', window.categoryPage?.getCategoryCount() || 0);
     console.log('💾 Backup:', window.backupService ? 'Disponible' : 'Créé');
@@ -2145,12 +1830,128 @@ function initializeCategoryPageForced() {
     return window.categoryPage;
 }
 
-// Initialisation immédiate selon l'état du DOM
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeCategoryPageForced);
-} else {
-    initializeCategoryPageForced();
+function setupNavigationIntegration() {
+    console.log('[Navigation] 🔗 Configuration intégration navigation...');
+
+    // Écouter TOUS les clics sur la navigation
+    document.addEventListener('click', (e) => {
+        const target = e.target.closest([
+            '[data-page="settings"]',
+            '.nav-item[data-page="settings"]',
+            '.settings-btn',
+            '.nav-settings',
+            '[href="#settings"]',
+            '.settings-link',
+            'a[href*="settings"]',
+            '.nav-link[data-page="settings"]'
+        ].join(', '));
+        
+        if (target) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[Navigation] 🎯 Clic paramètres intercepté:', target);
+            
+            // Masquer toutes les autres pages
+            document.querySelectorAll('.page-content:not(#settings-page)').forEach(page => {
+                page.style.display = 'none';
+            });
+            
+            // Afficher les paramètres
+            window.categoryPage?.show();
+            
+            return false;
+        }
+    }, true);
+
+    // Écouter les événements de navigation du système
+    document.addEventListener('DOMContentLoaded', () => {
+        // Intégration avec PageManager si disponible
+        if (window.pageManager) {
+            console.log('[Navigation] 🔗 Intégration avec PageManager détectée');
+            
+            // Override de la méthode showPage pour settings
+            const originalShowPage = window.pageManager.showPage;
+            if (originalShowPage) {
+                window.pageManager.showPage = function(pageId) {
+                    if (pageId === 'settings') {
+                        console.log('[PageManager] 📄 Redirection vers CategoryPage intégrée');
+                        window.categoryPage?.show();
+                        return;
+                    }
+                    originalShowPage.call(this, pageId);
+                };
+            }
+        }
+
+        // Observer les changements de navigation
+        const navObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    const target = mutation.target;
+                    if (target.classList?.contains('active') && 
+                        (target.dataset?.page === 'settings' || 
+                         target.textContent?.toLowerCase().includes('paramètre') ||
+                         target.textContent?.toLowerCase().includes('settings'))) {
+                        console.log('[Navigation] 👁️ Navigation settings activée détectée');
+                        setTimeout(() => window.categoryPage?.show(), 50);
+                    }
+                }
+            });
+        });
+        
+        navObserver.observe(document.body, {
+            attributes: true,
+            subtree: true,
+            attributeFilter: ['class', 'data-page']
+        });
+    });
+
+    // Écouter les événements personnalisés
+    document.addEventListener('showPage', (e) => {
+        if (e.detail === 'settings') {
+            console.log('[Navigation] 📢 Événement showPage settings');
+            window.categoryPage?.show();
+        }
+    });
+
+    // Écouter les changements de hash
+    window.addEventListener('hashchange', () => {
+        if (window.location.hash === '#settings') {
+            console.log('[Navigation] 📍 Hash #settings détecté');
+            window.categoryPage?.show();
+        }
+    });
+
+    // Auto-affichage si hash présent au chargement
+    if (window.location.hash === '#settings') {
+        setTimeout(() => {
+            console.log('[Navigation] 🎯 Hash settings détecté au chargement');
+            window.categoryPage?.show();
+        }, 1000);
+    }
+
+    console.log('[Navigation] ✅ Intégration navigation configurée');
 }
 
-// Backup au cas où
-setTimeout(initializeCategoryPageForced, 500);
+// Initialisation immédiate ou différée selon l'état du DOM
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeCategoryPageIntegrated);
+} else {
+    initializeCategoryPageIntegrated();
+}
+
+// Double sécurité
+setTimeout(() => {
+    if (!window.categoryPage) {
+        console.log('[CategoryPage] 🔄 Initialisation de secours...');
+        initializeCategoryPageIntegrated();
+    }
+}, 1000);
+
+// Triple sécurité avec surveillance continue
+setInterval(() => {
+    if (!window.categoryPage || !window.categoryPage.isInitialized) {
+        console.log('[CategoryPage] 🚨 Réinitialisation détectée comme nécessaire...');
+        initializeCategoryPageIntegrated();
+    }
+}, 5000);
