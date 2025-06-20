@@ -183,57 +183,144 @@ class SettingsPageSimple {
     // ================================================
     // ONGLET BACKUP
     // ================================================
+    // ================================================
+    // ONGLET BACKUP RESTRUCTURÉ
+    // ================================================
     renderBackupTab() {
         return `
             <div class="backup-section">
                 <!-- Statut du backup -->
-                <div class="backup-status" id="backup-status">
-                    <div class="status-loading">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        Initialisation du système de sauvegarde...
+                <div class="backup-status-card">
+                    <div class="status-header">
+                        <h3><i class="fas fa-shield-alt"></i> Statut du système de sauvegarde</h3>
+                        <div class="status-indicator" id="backup-status-indicator">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Initialisation...</span>
+                        </div>
+                    </div>
+                    <div class="status-details" id="backup-status-details">
+                        <!-- Sera rempli par JavaScript -->
                     </div>
                 </div>
                 
-                <!-- Chemin de sauvegarde -->
-                <div id="backup-path-info" class="backup-path-info">
-                    <!-- Sera rempli par JavaScript -->
-                </div>
-                
-                <!-- Actions de backup -->
-                <div class="backup-actions">
-                    <div class="backup-group">
-                        <h3><i class="fas fa-save"></i> Sauvegarde manuelle</h3>
-                        <p>Créer une sauvegarde complète de vos données</p>
-                        <button class="btn-primary" onclick="window.settingsPage.createBackup()" id="backup-btn">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            Créer une sauvegarde
-                        </button>
-                    </div>
-                    
-                    <div class="backup-group">
-                        <h3><i class="fas fa-history"></i> Restauration</h3>
-                        <p>Restaurer vos données depuis une sauvegarde</p>
-                        <button class="btn-secondary" onclick="window.settingsPage.restoreBackup()" id="restore-btn">
-                            <i class="fas fa-upload"></i>
-                            Restaurer une sauvegarde
-                        </button>
-                    </div>
-                    
-                    <div class="backup-group">
-                        <h3><i class="fas fa-folder-open"></i> Dossier de sauvegarde</h3>
-                        <p>Accéder au dossier de sauvegarde local</p>
-                        <button class="btn-secondary" onclick="window.settingsPage.openBackupFolder()">
-                            <i class="fas fa-external-link-alt"></i>
-                            Ouvrir le dossier
-                        </button>
+                <!-- Actions principales -->
+                <div class="backup-main-actions">
+                    <div class="action-grid">
+                        <!-- Sauvegarde -->
+                        <div class="action-card">
+                            <div class="action-icon backup">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Créer une sauvegarde</h4>
+                                <p>Sauvegarder toutes vos données (catégories, paramètres, configuration)</p>
+                                <button class="btn-action primary" onclick="window.settingsPage.createBackup()" id="backup-btn">
+                                    <i class="fas fa-save"></i>
+                                    Créer maintenant
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Import -->
+                        <div class="action-card">
+                            <div class="action-icon import">
+                                <i class="fas fa-file-upload"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Importer des données</h4>
+                                <p>Restaurer depuis un fichier de sauvegarde (.json)</p>
+                                <button class="btn-action secondary" onclick="window.settingsPage.importBackup()">
+                                    <i class="fas fa-upload"></i>
+                                    Choisir un fichier
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Export -->
+                        <div class="action-card">
+                            <div class="action-icon export">
+                                <i class="fas fa-file-download"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Exporter les catégories</h4>
+                                <p>Télécharger uniquement vos catégories personnalisées</p>
+                                <button class="btn-action secondary" onclick="window.settingsPage.exportCategories()">
+                                    <i class="fas fa-download"></i>
+                                    Exporter (.json)
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Dossier -->
+                        <div class="action-card">
+                            <div class="action-icon folder">
+                                <i class="fas fa-folder-open"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Dossier de sauvegarde</h4>
+                                <p>Accéder à l'emplacement des sauvegardes</p>
+                                <button class="btn-action secondary" onclick="window.settingsPage.openBackupFolder()">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    Ouvrir le dossier
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
                 <!-- Historique des sauvegardes -->
-                <div class="backup-history">
-                    <h3><i class="fas fa-list"></i> Historique des sauvegardes</h3>
-                    <div id="backup-list">
-                        <div class="loading">Chargement...</div>
+                <div class="backup-history-section">
+                    <div class="history-header">
+                        <h3><i class="fas fa-history"></i> Historique des sauvegardes</h3>
+                        <button class="btn-refresh" onclick="window.settingsPage.loadBackupHistory()" title="Actualiser">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="history-content" id="backup-history-list">
+                        <div class="loading-placeholder">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Chargement de l'historique...
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Paramètres avancés -->
+                <div class="backup-advanced-section">
+                    <div class="advanced-header" onclick="window.settingsPage.toggleAdvancedSettings()">
+                        <h3><i class="fas fa-cogs"></i> Paramètres avancés</h3>
+                        <i class="fas fa-chevron-down toggle-icon" id="advanced-toggle"></i>
+                    </div>
+                    <div class="advanced-content" id="advanced-content" style="display: none;">
+                        <div class="advanced-options">
+                            <div class="option-item">
+                                <label>
+                                    <input type="checkbox" id="backup-include-emails" checked>
+                                    <span>Inclure un échantillon d'emails (1000 max)</span>
+                                </label>
+                                <small>Les emails aident à tester les catégories après restauration</small>
+                            </div>
+                            <div class="option-item">
+                                <label>
+                                    <input type="checkbox" id="backup-include-tasks" checked>
+                                    <span>Inclure les tâches créées</span>
+                                </label>
+                                <small>Sauvegarder vos tâches et leur statut</small>
+                            </div>
+                            <div class="option-item">
+                                <label>
+                                    <input type="checkbox" id="backup-compress" disabled>
+                                    <span>Compression avancée (bientôt)</span>
+                                </label>
+                                <small>Réduire la taille des fichiers de sauvegarde</small>
+                            </div>
+                        </div>
+                        
+                        <div class="advanced-actions">
+                            <button class="btn-action danger" onclick="window.settingsPage.resetAllSettings()">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Réinitialiser tous les paramètres
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -868,28 +955,375 @@ class SettingsPageSimple {
         if (this.currentTab !== 'backup') return;
         
         try {
-            const status = await this.backupManager.getStatus();
-            this.updateBackupStatus('ready', `Système de sauvegarde prêt`);
+            const realUsername = await this.backupManager.detectRealUsername();
+            let statusHtml, detailsHtml;
             
-            // Afficher le chemin de sauvegarde
-            const pathInfo = this.backupManager.backupPath || 'Dossier Téléchargements';
-            document.getElementById('backup-path-info').innerHTML = `
-                <div class="backup-path-display">
-                    <i class="fas fa-folder"></i>
-                    <span>Emplacement : ${pathInfo}</span>
-                </div>
-            `;
+            if (this.backupManager.isInitialized && this.backupManager.hasPermission) {
+                statusHtml = `
+                    <i class="fas fa-check-circle text-success"></i>
+                    <span>Système opérationnel</span>
+                `;
+                
+                detailsHtml = `
+                    <div class="status-detail-item">
+                        <strong>👤 Utilisateur détecté :</strong> ${realUsername}
+                    </div>
+                    <div class="status-detail-item">
+                        <strong>📁 Dossier de sauvegarde :</strong> 
+                        <code>C:\\Users\\${realUsername}\\Documents\\MailSort Pro</code>
+                        <button class="btn-copy-small" onclick="navigator.clipboard.writeText('C:\\\\Users\\\\${realUsername}\\\\Documents\\\\MailSort Pro'); this.innerHTML='<i class=\\"fas fa-check\\"></i>';" title="Copier le chemin">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <div class="status-detail-item">
+                        <strong>💾 Mode de sauvegarde :</strong> Téléchargement automatique
+                    </div>
+                    <div class="status-detail-item">
+                        <strong>🔒 Sécurité :</strong> Toutes les données restent locales
+                    </div>
+                `;
+            } else {
+                statusHtml = `
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                    <span>Mode dégradé</span>
+                `;
+                
+                detailsHtml = `
+                    <div class="status-detail-item">
+                        <strong>⚠️ Statut :</strong> Sauvegarde par téléchargement uniquement
+                    </div>
+                    <div class="status-detail-item">
+                        <strong>📁 Emplacement :</strong> Dossier Téléchargements du navigateur
+                    </div>
+                    <div class="status-detail-item">
+                        <button class="btn-action secondary" onclick="window.settingsPage.backupManager.resetPermissions(); window.settingsPage.initializeBackupManager();">
+                            <i class="fas fa-redo"></i> Reconfigurer
+                        </button>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('backup-status-indicator').innerHTML = statusHtml;
+            document.getElementById('backup-status-details').innerHTML = detailsHtml;
             
             this.loadBackupHistory();
         } catch (error) {
-            this.updateBackupStatus('ready', 'Mode téléchargement disponible');
-            document.getElementById('backup-path-info').innerHTML = `
-                <div class="backup-path-display">
-                    <i class="fas fa-download"></i>
-                    <span>Mode : Téléchargements du navigateur</span>
+            console.error('[SettingsPage] Erreur refresh status:', error);
+            document.getElementById('backup-status-indicator').innerHTML = `
+                <i class="fas fa-times-circle text-danger"></i>
+                <span>Erreur de configuration</span>
+            `;
+            document.getElementById('backup-status-details').innerHTML = `
+                <div class="status-detail-item">
+                    <strong>❌ Erreur :</strong> ${error.message}
                 </div>
             `;
-            this.loadBackupHistory();
+        }
+    }
+
+    // ================================================
+    // NOUVELLES FONCTIONS IMPORT/EXPORT
+    // ================================================
+    async importBackup() {
+        console.log('[SettingsPage] 📥 Import de sauvegarde...');
+        
+        return new Promise((resolve, reject) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.style.display = 'none';
+            
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    resolve(false);
+                    return;
+                }
+                
+                try {
+                    const text = await file.text();
+                    const backupData = JSON.parse(text);
+                    
+                    // Validation du fichier
+                    if (!this.validateBackupFile(backupData)) {
+                        this.showToast('Fichier de sauvegarde invalide ou corrompu', 'error');
+                        resolve(false);
+                        return;
+                    }
+                    
+                    // Confirmation avant import
+                    const confirmed = await this.showImportConfirmation(backupData);
+                    if (!confirmed) {
+                        resolve(false);
+                        return;
+                    }
+                    
+                    // Restaurer les données
+                    await this.restoreFromData(backupData);
+                    this.showToast('Import réussi ! Rechargement de la page...', 'success');
+                    
+                    // Recharger la page après 2 secondes
+                    setTimeout(() => location.reload(), 2000);
+                    resolve(true);
+                    
+                } catch (error) {
+                    console.error('[SettingsPage] Erreur import:', error);
+                    this.showToast('Erreur lors de l\'import : ' + error.message, 'error');
+                    reject(error);
+                }
+            };
+            
+            document.body.appendChild(input);
+            input.click();
+            document.body.removeChild(input);
+        });
+    }
+
+    validateBackupFile(data) {
+        // Vérifier la structure minimale du fichier
+        if (!data || typeof data !== 'object') return false;
+        if (!data.timestamp || !data.version) return false;
+        
+        // Vérifier qu'il y a au moins des catégories ou des paramètres
+        if (!data.categories && !data.settings) return false;
+        
+        return true;
+    }
+
+    async showImportConfirmation(backupData) {
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'modal-backdrop';
+            modal.innerHTML = `
+                <div class="modal-simple">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-file-import"></i> Confirmer l'import</h2>
+                        <button class="btn-close" onclick="this.closest('.modal-backdrop').remove(); window.settingsPage.importConfirmationCallback(false);">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="import-preview">
+                            <h3>📋 Aperçu du fichier de sauvegarde</h3>
+                            
+                            <div class="preview-grid">
+                                <div class="preview-item">
+                                    <strong>📅 Date de création :</strong>
+                                    ${new Date(backupData.timestamp).toLocaleString('fr-FR')}
+                                </div>
+                                <div class="preview-item">
+                                    <strong>📂 Catégories :</strong>
+                                    ${Object.keys(backupData.categories || {}).length} catégorie(s)
+                                </div>
+                                <div class="preview-item">
+                                    <strong>📧 Emails :</strong>
+                                    ${backupData.emails?.length || 0} email(s) d'exemple
+                                </div>
+                                <div class="preview-item">
+                                    <strong>⚙️ Paramètres :</strong>
+                                    ${backupData.settings ? 'Inclus' : 'Non inclus'}
+                                </div>
+                                <div class="preview-item">
+                                    <strong>📝 Tâches :</strong>
+                                    ${backupData.tasks?.length || 0} tâche(s)
+                                </div>
+                            </div>
+                            
+                            <div class="import-warning">
+                                <h4>⚠️ Attention</h4>
+                                <p>L'import va <strong>remplacer</strong> vos données actuelles. Assurez-vous d'avoir créé une sauvegarde de vos données actuelles si nécessaire.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="this.closest('.modal-backdrop').remove(); window.settingsPage.importConfirmationCallback(false);">
+                            <i class="fas fa-times"></i> Annuler
+                        </button>
+                        <button class="btn-primary" onclick="this.closest('.modal-backdrop').remove(); window.settingsPage.importConfirmationCallback(true);">
+                            <i class="fas fa-check"></i> Confirmer l'import
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            this.importConfirmationCallback = resolve;
+            document.body.appendChild(modal);
+        });
+    }
+
+    async restoreFromData(backupData) {
+        try {
+            console.log('[SettingsPage] 🔄 Restauration des données...');
+            
+            // Restaurer les catégories personnalisées
+            if (backupData.categories) {
+                Object.entries(backupData.categories).forEach(([id, category]) => {
+                    if (category.isCustom && window.categoryManager) {
+                        try {
+                            // Supprimer l'ancienne catégorie si elle existe
+                            window.categoryManager.deleteCustomCategory(id);
+                            // Créer la nouvelle catégorie
+                            window.categoryManager.createCustomCategory(category);
+                            console.log('[SettingsPage] ✅ Catégorie restaurée:', category.name);
+                        } catch (error) {
+                            console.warn('[SettingsPage] Erreur restauration catégorie:', category.name, error);
+                        }
+                    }
+                });
+            }
+
+            // Restaurer les paramètres
+            if (backupData.settings) {
+                localStorage.setItem('categorySettings', JSON.stringify(backupData.settings));
+                console.log('[SettingsPage] ✅ Paramètres restaurés');
+            }
+
+            // Restaurer les tâches si présentes
+            if (backupData.tasks && window.taskManager) {
+                try {
+                    // Sauvegarder les tâches existantes
+                    const existingTasks = window.taskManager.getAllTasks();
+                    
+                    // Restaurer les nouvelles tâches
+                    backupData.tasks.forEach(task => {
+                        // Éviter les doublons en vérifiant l'ID ou le contenu
+                        const exists = existingTasks.some(existing => 
+                            existing.id === task.id || 
+                            (existing.title === task.title && existing.content === task.content)
+                        );
+                        
+                        if (!exists) {
+                            window.taskManager.addTask(task.title, task.content, task.category);
+                        }
+                    });
+                    
+                    console.log('[SettingsPage] ✅ Tâches restaurées');
+                } catch (error) {
+                    console.warn('[SettingsPage] Erreur restauration tâches:', error);
+                }
+            }
+
+            console.log('[SettingsPage] ✅ Restauration terminée avec succès');
+        } catch (error) {
+            console.error('[SettingsPage] ❌ Erreur lors de la restauration:', error);
+            throw error;
+        }
+    }
+
+    exportCategories() {
+        console.log('[SettingsPage] 📤 Export des catégories...');
+        
+        try {
+            const categories = window.categoryManager?.getCategories() || {};
+            
+            // Filtrer uniquement les catégories personnalisées
+            const customCategories = {};
+            Object.entries(categories).forEach(([id, category]) => {
+                if (category.isCustom) {
+                    customCategories[id] = category;
+                }
+            });
+            
+            if (Object.keys(customCategories).length === 0) {
+                this.showToast('Aucune catégorie personnalisée à exporter', 'warning');
+                return;
+            }
+            
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                version: '1.0',
+                type: 'categories_only',
+                categories: customCategories,
+                metadata: {
+                    exportedAt: new Date().toISOString(),
+                    totalCategories: Object.keys(customCategories).length,
+                    application: 'MailSort Pro'
+                }
+            };
+            
+            const filename = `mailsort-categories-${new Date().toISOString().split('T')[0]}.json`;
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            
+            this.downloadFile(blob, filename);
+            this.showToast(`${Object.keys(customCategories).length} catégorie(s) exportée(s)`);
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur export:', error);
+            this.showToast('Erreur lors de l\'export', 'error');
+        }
+    }
+
+    downloadFile(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // ================================================
+    // FONCTIONS UTILITAIRES
+    // ================================================
+    toggleAdvancedSettings() {
+        const content = document.getElementById('advanced-content');
+        const toggle = document.getElementById('advanced-toggle');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            toggle.style.transform = 'rotate(180deg)';
+        } else {
+            content.style.display = 'none';
+            toggle.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    async resetAllSettings() {
+        const confirmation = confirm(`⚠️ ATTENTION ⚠️
+
+Cette action va SUPPRIMER DÉFINITIVEMENT :
+• Toutes vos catégories personnalisées
+• Tous vos paramètres de configuration
+• Toutes vos sauvegardes locales
+• Tous vos mots-clés personnalisés
+
+Cette action est IRRÉVERSIBLE !
+
+Tapez "RESET" pour confirmer :`);
+        
+        if (confirmation) {
+            const finalConfirm = prompt('Tapez "RESET" en majuscules pour confirmer la suppression complète :');
+            if (finalConfirm === 'RESET') {
+                try {
+                    // Supprimer toutes les données locales
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    
+                    // Supprimer les catégories personnalisées
+                    if (window.categoryManager) {
+                        const categories = window.categoryManager.getCategories();
+                        Object.entries(categories).forEach(([id, category]) => {
+                            if (category.isCustom) {
+                                window.categoryManager.deleteCustomCategory(id);
+                            }
+                        });
+                    }
+                    
+                    this.showToast('Réinitialisation terminée. Rechargement...', 'success');
+                    setTimeout(() => location.reload(), 2000);
+                    
+                } catch (error) {
+                    console.error('[SettingsPage] Erreur réinitialisation:', error);
+                    this.showToast('Erreur lors de la réinitialisation', 'error');
+                }
+            } else {
+                this.showToast('Réinitialisation annulée', 'info');
+            }
         }
     }
 
@@ -926,9 +1360,60 @@ class SettingsPageSimple {
         btn.disabled = true;
         
         try {
-            const result = await this.backupManager.createBackup();
+            // Obtenir les options de sauvegarde
+            const includeEmails = document.getElementById('backup-include-emails')?.checked ?? true;
+            const includeTasks = document.getElementById('backup-include-tasks')?.checked ?? true;
+            
+            const realUsername = await this.backupManager.detectRealUsername();
+            
+            // Créer les données de sauvegarde
+            const backupData = {
+                timestamp: new Date().toISOString(),
+                version: '1.0',
+                categories: window.categoryManager?.getCategories() || {},
+                settings: JSON.parse(localStorage.getItem('categorySettings') || '{}'),
+                metadata: {
+                    totalEmails: window.emailScanner?.getAllEmails()?.length || 0,
+                    createdAt: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    platform: this.backupManager.detectPlatform(),
+                    detectedUsername: realUsername,
+                    backupPath: `C:\\Users\\${realUsername}\\Documents\\MailSort Pro`,
+                    application: 'MailSort Pro',
+                    backupType: 'complete'
+                }
+            };
+            
+            // Ajouter les emails si demandé
+            if (includeEmails) {
+                const allEmails = window.emailScanner?.getAllEmails() || [];
+                backupData.emails = allEmails.slice(0, 1000); // Limiter à 1000 emails
+                backupData.metadata.includedEmails = Math.min(allEmails.length, 1000);
+            }
+            
+            // Ajouter les tâches si demandé
+            if (includeTasks && window.taskManager) {
+                try {
+                    backupData.tasks = window.taskManager.getAllTasks();
+                    backupData.metadata.includedTasks = backupData.tasks.length;
+                } catch (error) {
+                    console.warn('[SettingsPage] Erreur récupération tâches:', error);
+                }
+            }
+            
+            // Créer le nom de fichier
+            const filename = `mailsort-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+            
+            // Télécharger le fichier
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            this.downloadFile(blob, filename);
+            
+            // Enregistrer dans l'historique
+            this.saveBackupRecord(filename, blob.size, backupData.metadata);
+            
             this.showToast('Sauvegarde créée avec succès!');
             this.loadBackupHistory();
+            
         } catch (error) {
             console.error('[SettingsPage] Erreur backup:', error);
             this.showToast('Erreur lors de la création de la sauvegarde', 'error');
@@ -938,74 +1423,112 @@ class SettingsPageSimple {
         }
     }
 
-    async restoreBackup() {
-        try {
-            const result = await this.backupManager.selectAndRestoreBackup();
-            if (result) {
-                this.showToast('Sauvegarde restaurée avec succès!');
-                // Recharger la page pour appliquer les changements
-                setTimeout(() => location.reload(), 1500);
-            }
-        } catch (error) {
-            console.error('[SettingsPage] Erreur restauration:', error);
-            this.showToast('Erreur lors de la restauration', 'error');
-        }
-    }
-
-    async openBackupFolder() {
-        try {
-            await this.backupManager.openBackupFolder();
-        } catch (error) {
-            this.showToast('Impossible d\'ouvrir le dossier de sauvegarde', 'error');
-        }
+    saveBackupRecord(filename, size, metadata = {}) {
+        const backups = JSON.parse(localStorage.getItem('mailsort-backups') || '[]');
+        
+        const record = {
+            name: filename,
+            date: new Date().toISOString(),
+            size: size,
+            type: metadata.backupType || 'complete',
+            categories: metadata.totalCategories || Object.keys(window.categoryManager?.getCategories() || {}).length,
+            emails: metadata.includedEmails || 0,
+            tasks: metadata.includedTasks || 0,
+            id: Date.now().toString()
+        };
+        
+        backups.unshift(record);
+        
+        // Garder seulement les 20 dernières sauvegardes
+        backups.splice(20);
+        
+        localStorage.setItem('mailsort-backups', JSON.stringify(backups));
     }
 
     async loadBackupHistory() {
-        const listEl = document.getElementById('backup-list');
+        const listEl = document.getElementById('backup-history-list');
         if (!listEl) return;
         
         try {
-            const backups = await this.backupManager.getBackupHistory();
+            const backups = JSON.parse(localStorage.getItem('mailsort-backups') || '[]');
             
             if (backups.length === 0) {
                 listEl.innerHTML = `
-                    <div class="empty-state">
+                    <div class="empty-state-small">
                         <i class="fas fa-history"></i>
                         <p>Aucune sauvegarde trouvée</p>
+                        <small>Créez votre première sauvegarde pour commencer</small>
                     </div>
                 `;
                 return;
             }
             
             listEl.innerHTML = backups.map(backup => `
-                <div class="backup-item">
-                    <div class="backup-info">
-                        <div class="backup-name">${backup.name}</div>
-                        <div class="backup-date">${new Date(backup.date).toLocaleString('fr-FR')}</div>
-                        <div class="backup-size">${this.formatFileSize(backup.size)}</div>
+                <div class="backup-history-item">
+                    <div class="backup-item-header">
+                        <div class="backup-item-icon">
+                            <i class="fas fa-file-archive"></i>
+                        </div>
+                        <div class="backup-item-info">
+                            <div class="backup-item-name">${backup.name}</div>
+                            <div class="backup-item-meta">
+                                ${new Date(backup.date).toLocaleString('fr-FR')} • ${this.formatFileSize(backup.size)}
+                            </div>
+                        </div>
+                        <div class="backup-item-type">
+                            <span class="type-badge ${backup.type}">${backup.type === 'complete' ? 'Complète' : 'Partielle'}</span>
+                        </div>
                     </div>
-                    <div class="backup-actions">
-                        <button class="btn-small" onclick="window.settingsPage.restoreSpecificBackup('${backup.path}')">
-                            <i class="fas fa-undo"></i> Restaurer
+                    
+                    <div class="backup-item-details">
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <i class="fas fa-tags"></i>
+                                <span>${backup.categories || 0} catégories</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-envelope"></i>
+                                <span>${backup.emails || 0} emails</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-tasks"></i>
+                                <span>${backup.tasks || 0} tâches</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="backup-item-actions">
+                        <button class="btn-small danger" onclick="window.settingsPage.deleteBackupRecord('${backup.id}')" title="Supprimer de l'historique">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </div>
                 </div>
             `).join('');
             
         } catch (error) {
-            listEl.innerHTML = '<div class="error">Erreur lors du chargement de l\'historique</div>';
+            console.error('[SettingsPage] Erreur chargement historique:', error);
+            listEl.innerHTML = `
+                <div class="error-state-small">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Erreur lors du chargement de l'historique</p>
+                </div>
+            `;
         }
     }
 
-    async restoreSpecificBackup(backupPath) {
-        if (!confirm('Êtes-vous sûr de vouloir restaurer cette sauvegarde ?')) return;
+    deleteBackupRecord(backupId) {
+        if (!confirm('Supprimer cette entrée de l\'historique ?')) return;
         
         try {
-            await this.backupManager.restoreFromPath(backupPath);
-            this.showToast('Sauvegarde restaurée avec succès!');
-            setTimeout(() => location.reload(), 1500);
+            const backups = JSON.parse(localStorage.getItem('mailsort-backups') || '[]');
+            const filtered = backups.filter(backup => backup.id !== backupId);
+            
+            localStorage.setItem('mailsort-backups', JSON.stringify(filtered));
+            this.loadBackupHistory();
+            
+            this.showToast('Entrée supprimée de l\'historique');
         } catch (error) {
-            this.showToast('Erreur lors de la restauration', 'error');
+            this.showToast('Erreur lors de la suppression', 'error');
         }
     }
 
@@ -2372,48 +2895,81 @@ class BackupManager {
 
     async detectRealUsername() {
         try {
-            // Méthode 1: Tenter de détecter via les APIs disponibles
-            if (window.electronAPI && window.electronAPI.getUsername) {
-                const username = await window.electronAPI.getUsername();
-                if (username) return username;
-            }
-
-            // Méthode 2: Utiliser l'API utilisateur Microsoft si connecté
-            if (window.authService && window.authService.isAuthenticated()) {
+            console.log('[BackupManager] 🔍 Détection du nom d\'utilisateur...');
+            
+            // Méthode 1: Utiliser l'utilisateur Microsoft connecté
+            if (window.authService && window.authService.isAuthenticated && window.authService.isAuthenticated()) {
                 try {
                     const userInfo = await window.authService.getUserInfo();
+                    console.log('[BackupManager] 👤 Info utilisateur Microsoft:', userInfo);
+                    
                     if (userInfo && userInfo.userPrincipalName) {
-                        // Extraire le nom d'utilisateur de l'email
+                        // Extraire le nom d'utilisateur de l'email : "vianney.hastings@hotmail.fr" → "vianney"
                         const emailPart = userInfo.userPrincipalName.split('@')[0];
-                        const cleanUsername = emailPart.replace(/[^a-zA-Z0-9]/g, '');
-                        if (cleanUsername) return cleanUsername;
+                        let username = emailPart.split('.')[0]; // Prendre la première partie avant le point
+                        username = username.replace(/[^a-zA-Z0-9]/g, ''); // Nettoyer
+                        
+                        if (username && username.length > 2) {
+                            console.log('[BackupManager] ✅ Nom d\'utilisateur extrait de l\'email:', username);
+                            return username;
+                        }
                     }
+                    
                     if (userInfo && userInfo.displayName) {
-                        // Utiliser le nom d'affichage comme fallback
-                        const cleanName = userInfo.displayName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '');
-                        if (cleanName) return cleanName;
+                        // Utiliser le prénom du nom d'affichage : "vianney hastings" → "vianney"
+                        const firstName = userInfo.displayName.split(' ')[0];
+                        const cleanName = firstName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                        
+                        if (cleanName && cleanName.length > 2) {
+                            console.log('[BackupManager] ✅ Nom d\'utilisateur extrait du nom d\'affichage:', cleanName);
+                            return cleanName;
+                        }
                     }
                 } catch (error) {
-                    console.log('[BackupManager] Info utilisateur non disponible');
+                    console.log('[BackupManager] ⚠️ Erreur récupération info utilisateur:', error);
                 }
             }
 
-            // Méthode 3: Tenter via les variables d'environnement simulées
-            const platform = this.detectPlatform();
-            if (platform === 'windows') {
-                // Approximations courantes Windows
-                const commonUsernames = ['User', 'Admin', 'Administrator', process.env?.USERNAME || 'User'];
-                return commonUsernames[0];
-            } else if (platform === 'mac' || platform === 'linux') {
-                return process.env?.USER || 'user';
+            // Méthode 2: Tenter via l'API Electron (si disponible)
+            if (window.electronAPI && window.electronAPI.getUsername) {
+                const username = await window.electronAPI.getUsername();
+                if (username && username !== 'User') {
+                    console.log('[BackupManager] ✅ Nom d\'utilisateur Electron:', username);
+                    return username;
+                }
             }
 
-            // Fallback par défaut
-            return 'User';
+            // Méthode 3: Tenter les variables d'environnement
+            if (typeof process !== 'undefined' && process.env) {
+                const envUsername = process.env.USERNAME || process.env.USER;
+                if (envUsername && envUsername !== 'User') {
+                    console.log('[BackupManager] ✅ Nom d\'utilisateur environnement:', envUsername);
+                    return envUsername;
+                }
+            }
+
+            // Méthode 4: Détecter via les API Web modernes
+            try {
+                if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+                    const entropy = await navigator.userAgentData.getHighEntropyValues(['platformVersion']);
+                    // Cette API ne donne pas le nom d'utilisateur, mais on peut essayer d'autres méthodes
+                }
+            } catch (error) {
+                // API non supportée
+            }
+
+            // Fallback intelligent basé sur des noms courants
+            const commonUsernames = [
+                'utilisateur', 'user', 'admin', 'pc', 'desktop',
+                navigator.language?.includes('fr') ? 'utilisateur' : 'user'
+            ];
+            
+            console.log('[BackupManager] ⚠️ Utilisation du fallback, nom par défaut');
+            return commonUsernames[0];
             
         } catch (error) {
-            console.error('[BackupManager] Erreur détection nom utilisateur:', error);
-            return 'User';
+            console.error('[BackupManager] ❌ Erreur détection nom utilisateur:', error);
+            return 'utilisateur'; // Fallback français
         }
     }
 
