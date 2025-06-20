@@ -1,325 +1,138 @@
-// categoryPage.js - Page paramètres qui s'intègre parfaitement au système existant
+// categoryPage.js - Version SIMPLE et FONCTIONNELLE
 
 class CategoryPage {
     constructor() {
-        console.log('[CategoryPage] 🚀 Initialisation intégrée...');
+        console.log('[CategoryPage] 🚀 Initialisation SIMPLE...');
         
-        this.categories = {};
-        this.isVisible = false;
-        this.isInitialized = false;
-        
-        // Initialisation qui s'intègre au système existant
-        this.initializeIntegrated();
-    }
-
-    initializeIntegrated() {
-        console.log('[CategoryPage] 🔧 Intégration au système existant...');
-        
-        // 1. Charger les données
-        this.loadCategoriesIntegrated();
-        
-        // 2. Créer la page qui s'intègre
-        this.createIntegratedPage();
-        
-        // 3. Configurer les événements
-        this.setupIntegratedEvents();
-        
-        // 4. Initialiser le backup
-        this.initBackupIntegrated();
-        
-        // 5. S'intégrer avec PageManager
-        this.integrateWithPageManager();
-        
-        this.isInitialized = true;
-        console.log('[CategoryPage] ✅ Intégration réussie avec', Object.keys(this.categories).length, 'catégories');
-    }
-
-    loadCategoriesIntegrated() {
-        // Catégories par défaut avec données réalistes
         this.categories = {
-            'work': { 
-                name: 'Travail', 
-                color: '#3b82f6', 
-                keywords: ['meeting', 'project', 'deadline', 'work', 'office', 'business'], 
-                count: 25
-            },
-            'personal': { 
-                name: 'Personnel', 
-                color: '#10b981', 
-                keywords: ['family', 'friend', 'personal', 'private', 'birthday'], 
-                count: 18
-            },
-            'finance': { 
-                name: 'Finance', 
-                color: '#f59e0b', 
-                keywords: ['bank', 'payment', 'invoice', 'money', 'finance', 'bill'], 
-                count: 12
-            },
-            'shopping': { 
-                name: 'Shopping', 
-                color: '#ef4444', 
-                keywords: ['order', 'delivery', 'purchase', 'buy', 'shop', 'amazon'], 
-                count: 34
-            },
-            'newsletter': { 
-                name: 'Newsletter', 
-                color: '#8b5cf6', 
-                keywords: ['newsletter', 'unsubscribe', 'update', 'news', 'weekly'], 
-                count: 67
-            },
-            'social': { 
-                name: 'Réseaux Sociaux', 
-                color: '#ec4899', 
-                keywords: ['facebook', 'twitter', 'instagram', 'linkedin', 'social'], 
-                count: 89
-            },
-            'travel': { 
-                name: 'Voyage', 
-                color: '#06b6d4', 
-                keywords: ['flight', 'hotel', 'travel', 'booking', 'vacation'], 
-                count: 7
-            },
-            'health': { 
-                name: 'Santé', 
-                color: '#84cc16', 
-                keywords: ['doctor', 'health', 'medical', 'appointment', 'pharmacy'], 
-                count: 15
-            }
+            'work': { name: 'Travail', color: '#3b82f6', keywords: ['meeting', 'project', 'work'], count: 25 },
+            'personal': { name: 'Personnel', color: '#10b981', keywords: ['family', 'friend', 'personal'], count: 18 },
+            'finance': { name: 'Finance', color: '#f59e0b', keywords: ['bank', 'payment', 'invoice'], count: 12 },
+            'shopping': { name: 'Shopping', color: '#ef4444', keywords: ['order', 'delivery', 'purchase'], count: 34 },
+            'newsletter': { name: 'Newsletter', color: '#8b5cf6', keywords: ['newsletter', 'unsubscribe'], count: 67 },
+            'social': { name: 'Réseaux Sociaux', color: '#ec4899', keywords: ['facebook', 'twitter', 'social'], count: 89 }
         };
-
-        // Charger depuis localStorage
-        try {
-            const saved = localStorage.getItem('emailsortpro_categories');
-            if (saved) {
-                const savedCategories = JSON.parse(saved);
-                this.categories = { ...this.categories, ...savedCategories };
-            }
-        } catch (error) {
-            console.warn('[CategoryPage] ⚠️ Utilisation catégories par défaut');
-        }
-
-        // Synchroniser avec CategoryManager existant
-        this.syncWithCategoryManager();
         
-        console.log('[CategoryPage] 📂 Catégories chargées:', Object.keys(this.categories).length);
+        this.isVisible = false;
+        
+        // Initialisation immédiate
+        this.init();
     }
 
-    syncWithCategoryManager() {
-        try {
-            if (window.categoryManager && typeof window.categoryManager.getCategories === 'function') {
-                const managerCategories = window.categoryManager.getCategories();
-                if (managerCategories && Object.keys(managerCategories).length > 0) {
-                    Object.entries(managerCategories).forEach(([id, cat]) => {
-                        if (cat && cat.name) {
-                            this.categories[id] = {
-                                name: cat.name,
-                                color: cat.color || '#3b82f6',
-                                keywords: cat.keywords || [],
-                                count: cat.count || Math.floor(Math.random() * 50) + 1
-                            };
-                        }
-                    });
-                    console.log('[CategoryPage] 🔄 Sync CategoryManager:', Object.keys(this.categories).length);
-                }
-            }
-        } catch (error) {
-            console.warn('[CategoryPage] ⚠️ Erreur sync:', error);
-        }
-    }
-
-    createIntegratedPage() {
-        console.log('[CategoryPage] 🎨 Création page intégrée...');
+    init() {
+        // Créer la page immédiatement
+        this.createPage();
         
-        // Supprimer toute page existante
-        const existingPage = document.getElementById('settings-page');
-        if (existingPage) {
-            existingPage.remove();
-        }
-        
-        // Injecter les styles intégrés
-        this.injectIntegratedStyles();
-        
-        // Créer la page qui s'intègre dans le système existant
-        const pageHTML = this.generateIntegratedPageHTML();
-        document.body.insertAdjacentHTML('beforeend', pageHTML);
-        
-        console.log('[CategoryPage] ✅ Page intégrée créée');
-        
-        // Rendre immédiatement
+        // Configurer les événements
         setTimeout(() => {
-            this.renderCategoriesIntegrated();
-            this.updateBackupUIIntegrated();
+            this.setupEvents();
+            this.renderCategories();
+            this.initBackup();
         }, 100);
+        
+        console.log('[CategoryPage] ✅ Initialisé avec', Object.keys(this.categories).length, 'catégories');
     }
 
-    generateIntegratedPageHTML() {
-        return `
+    createPage() {
+        // Supprimer l'ancienne page
+        const existing = document.getElementById('settings-page');
+        if (existing) existing.remove();
+
+        // Ajouter les styles
+        this.addStyles();
+
+        // Créer la page HTML
+        const pageHTML = `
             <div id="settings-page" class="page-content" data-page="settings" style="display: none;">
-                <div class="integrated-settings-container">
-                    <!-- Header intégré -->
-                    <div class="integrated-header">
-                        <h1><i class="fas fa-cog"></i> Paramètres</h1>
-                        <p class="header-subtitle">Gérez vos catégories et configurez vos sauvegardes</p>
+                <div class="settings-wrapper">
+                    <div class="settings-header">
+                        <h1>⚙️ Paramètres EmailSortPro</h1>
+                        <p>Gérez vos catégories et configurez vos sauvegardes</p>
                     </div>
 
-                    <!-- Navigation par onglets intégrée -->
-                    <div class="integrated-tabs">
-                        <button class="tab-btn active" data-tab="categories">
-                            <i class="fas fa-tags"></i> 
-                            <span>Catégories</span>
-                            <span class="count-badge" id="categories-count-badge">0</span>
-                        </button>
-                        <button class="tab-btn" data-tab="backup">
-                            <i class="fas fa-save"></i> 
-                            <span>Sauvegarde</span>
-                        </button>
-                    </div>
+                    <div class="tabs-container">
+                        <div class="tabs">
+                            <button class="tab active" data-tab="categories">
+                                📂 Catégories (<span id="cat-count">0</span>)
+                            </button>
+                            <button class="tab" data-tab="backup">
+                                💾 Sauvegarde
+                            </button>
+                        </div>
 
-                    <!-- Contenu des onglets -->
-                    <div class="tab-content-container">
                         <!-- Onglet Catégories -->
-                        <div id="categories-tab" class="tab-content active">
-                            <!-- Section Ajouter -->
-                            <div class="integrated-section">
-                                <h2><i class="fas fa-plus-circle"></i> Ajouter une catégorie</h2>
+                        <div id="categories-content" class="tab-content active">
+                            <div class="section">
+                                <h2>➕ Ajouter une catégorie</h2>
                                 <div class="add-form">
-                                    <div class="form-row">
-                                        <input type="text" id="new-category-name" placeholder="Nom de la catégorie" class="form-input">
-                                        <input type="color" id="new-category-color" value="#3b82f6" class="color-input">
-                                    </div>
-                                    <div class="form-row">
-                                        <input type="text" id="new-category-keywords" placeholder="Mots-clés (séparés par virgules)" class="form-input">
-                                        <button id="add-category-btn" class="btn btn-primary">
-                                            <i class="fas fa-plus"></i> Ajouter
-                                        </button>
-                                    </div>
+                                    <input type="text" id="cat-name" placeholder="Nom de la catégorie">
+                                    <input type="color" id="cat-color" value="#3b82f6">
+                                    <input type="text" id="cat-keywords" placeholder="Mots-clés (séparés par virgules)">
+                                    <button id="add-cat-btn">Ajouter</button>
                                 </div>
                             </div>
 
-                            <!-- Section Liste -->
-                            <div class="integrated-section">
-                                <h2><i class="fas fa-list"></i> Catégories existantes</h2>
-                                <div id="categories-list" class="categories-grid">
-                                    <!-- Les catégories seront affichées ici -->
-                                </div>
+                            <div class="section">
+                                <h2>📋 Liste des catégories</h2>
+                                <div id="categories-list"></div>
                             </div>
 
-                            <!-- Section Actions -->
-                            <div class="integrated-section">
-                                <div class="actions-row">
-                                    <button id="save-categories-btn" class="btn btn-success">
-                                        <i class="fas fa-save"></i> Sauvegarder
-                                    </button>
-                                    <button id="reset-categories-btn" class="btn btn-warning">
-                                        <i class="fas fa-undo"></i> Réinitialiser
-                                    </button>
-                                    <button id="export-categories-btn" class="btn btn-secondary">
-                                        <i class="fas fa-download"></i> Exporter
-                                    </button>
-                                    <button id="test-categories-btn" class="btn btn-info">
-                                        <i class="fas fa-flask"></i> Ajouter test
-                                    </button>
-                                </div>
+                            <div class="section">
+                                <button id="save-cats" class="btn-success">💾 Sauvegarder</button>
+                                <button id="reset-cats" class="btn-warning">🔄 Réinitialiser</button>
+                                <button id="export-cats" class="btn-info">📤 Exporter</button>
                             </div>
                         </div>
 
                         <!-- Onglet Sauvegarde -->
-                        <div id="backup-tab" class="tab-content">
-                            <!-- Section Statut -->
-                            <div class="integrated-section">
-                                <h2><i class="fas fa-info-circle"></i> Statut de la sauvegarde</h2>
+                        <div id="backup-content" class="tab-content">
+                            <div class="section">
+                                <h2>📊 Statut</h2>
                                 <div class="status-card">
-                                    <div class="status-indicator" id="backup-status">
-                                        <i class="fas fa-circle"></i>
-                                        <span>Prêt à configurer</span>
-                                    </div>
-                                    <p id="backup-detail">Sélectionnez un dossier pour commencer les sauvegardes automatiques</p>
+                                    <div id="backup-status">🔴 Non configuré</div>
+                                    <p id="backup-detail">Configurez un dossier de sauvegarde</p>
                                 </div>
                             </div>
 
-                            <!-- Section Configuration -->
-                            <div class="integrated-section">
-                                <h2><i class="fas fa-folder"></i> Configuration</h2>
-                                <div class="config-options">
-                                    <button id="quick-setup-backup" class="btn btn-primary btn-large">
-                                        <i class="fas fa-magic"></i> Configuration automatique
-                                    </button>
-                                    <button id="manual-setup-backup" class="btn btn-secondary">
-                                        <i class="fas fa-folder-open"></i> Choisir dossier manuellement
-                                    </button>
-                                </div>
-                                <div id="folder-display" class="folder-info" style="display: none;">
-                                    <p><strong>Dossier configuré :</strong> <span id="folder-path">Aucun</span></p>
+                            <div class="section">
+                                <h2>⚙️ Configuration</h2>
+                                <button id="setup-backup" class="btn-primary">🗂️ Choisir dossier</button>
+                                <div id="folder-info" style="display:none;">
+                                    <p>📁 Dossier configuré avec succès</p>
                                 </div>
                             </div>
 
-                            <!-- Section Paramètres -->
-                            <div class="integrated-section">
-                                <h2><i class="fas fa-cog"></i> Paramètres de sauvegarde</h2>
-                                <div class="settings-grid">
-                                    <label class="checkbox-setting">
-                                        <input type="checkbox" id="backup-enabled">
-                                        <span>Sauvegardes automatiques</span>
-                                    </label>
-                                    <div class="select-setting">
-                                        <label>Fréquence :</label>
-                                        <select id="backup-frequency" class="form-select">
-                                            <option value="15">15 minutes</option>
-                                            <option value="30">30 minutes</option>
-                                            <option value="60" selected>1 heure</option>
-                                            <option value="360">6 heures</option>
-                                            <option value="1440">Quotidienne</option>
-                                        </select>
-                                    </div>
-                                </div>
+                            <div class="section">
+                                <h2>🔧 Actions</h2>
+                                <button id="manual-backup" class="btn-success" disabled>💾 Sauvegarder maintenant</button>
+                                <button id="create-test" class="btn-info">📄 Créer fichiers test</button>
+                                <button id="export-all" class="btn-primary">📤 Exporter tout</button>
                             </div>
 
-                            <!-- Section Actions -->
-                            <div class="integrated-section">
-                                <h2><i class="fas fa-tools"></i> Actions</h2>
-                                <div class="actions-row">
-                                    <button id="manual-backup" class="btn btn-success">
-                                        <i class="fas fa-save"></i> Sauvegarder maintenant
-                                    </button>
-                                    <button id="create-test-backup" class="btn btn-info">
-                                        <i class="fas fa-file-alt"></i> Créer fichiers test
-                                    </button>
-                                    <button id="export-all-data" class="btn btn-primary">
-                                        <i class="fas fa-download"></i> Exporter données
-                                    </button>
-                                </div>
+                            <div class="section">
+                                <h2>📥 Import</h2>
+                                <input type="file" id="import-file" accept=".json">
+                                <button id="import-btn" class="btn-warning" disabled>📥 Importer</button>
                             </div>
 
-                            <!-- Section Import -->
-                            <div class="integrated-section">
-                                <h2><i class="fas fa-upload"></i> Import de données</h2>
-                                <div class="import-row">
-                                    <input type="file" id="import-file" accept=".json" class="form-input">
-                                    <button id="import-data" class="btn btn-warning" disabled>
-                                        <i class="fas fa-upload"></i> Importer
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Section Informations -->
-                            <div class="integrated-section">
-                                <h2><i class="fas fa-chart-bar"></i> Informations</h2>
+                            <div class="section">
+                                <h2>📈 Informations</h2>
                                 <div class="info-grid">
                                     <div class="info-item">
-                                        <span class="info-label">Statut</span>
-                                        <span class="info-value" id="service-status">Prêt</span>
+                                        <span>Statut:</span>
+                                        <span id="service-status">En attente</span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Dernière sauvegarde</span>
-                                        <span class="info-value" id="last-backup">Jamais</span>
+                                        <span>Dernière sauvegarde:</span>
+                                        <span id="last-backup">Jamais</span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Fichiers créés</span>
-                                        <span class="info-value" id="files-count">0</span>
+                                        <span>Fichiers:</span>
+                                        <span id="files-count">0</span>
                                     </div>
                                     <div class="info-item">
-                                        <span class="info-label">Taille données</span>
-                                        <span class="info-value" id="data-size">0 KB</span>
+                                        <span>Taille:</span>
+                                        <span id="data-size">0 KB</span>
                                     </div>
                                 </div>
                             </div>
@@ -328,315 +141,165 @@ class CategoryPage {
                 </div>
             </div>
         `;
+
+        document.body.insertAdjacentHTML('beforeend', pageHTML);
+        console.log('[CategoryPage] 📄 Page créée');
     }
 
-    injectIntegratedStyles() {
-        // Supprimer les anciens styles
-        const existingStyles = document.querySelectorAll('#integrated-settings-styles');
-        existingStyles.forEach(style => style.remove());
+    addStyles() {
+        if (document.getElementById('simple-settings-styles')) return;
 
         const styles = `
-            <style id="integrated-settings-styles">
-                /* Styles intégrés qui respectent le système existant */
-                .integrated-settings-container {
-                    max-width: 1000px;
+            <style id="simple-settings-styles">
+                .settings-wrapper {
+                    max-width: 900px;
                     margin: 0 auto;
                     padding: 20px;
-                    font-family: inherit;
-                    background: transparent;
+                    font-family: Arial, sans-serif;
                 }
 
-                .integrated-header {
+                .settings-header {
                     text-align: center;
-                    margin-bottom: 30px;
-                    padding: 25px;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: linear-gradient(135deg, #667eea, #764ba2);
                     color: white;
-                    border-radius: 16px;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                    padding: 30px;
+                    border-radius: 15px;
+                    margin-bottom: 25px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
                 }
 
-                .integrated-header h1 {
+                .settings-header h1 {
                     margin: 0 0 10px 0;
                     font-size: 2.2rem;
-                    font-weight: 700;
-                    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
                 }
 
-                .header-subtitle {
+                .settings-header p {
                     margin: 0;
+                    opacity: 0.9;
                     font-size: 1.1rem;
-                    opacity: 0.95;
                 }
 
-                /* Navigation onglets intégrée */
-                .integrated-tabs {
-                    display: flex;
+                .tabs-container {
                     background: white;
-                    border-radius: 16px;
-                    padding: 8px;
-                    margin-bottom: 25px;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-                    gap: 6px;
+                    border-radius: 15px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                    overflow: hidden;
                 }
 
-                .tab-btn {
+                .tabs {
+                    display: flex;
+                    background: #f8f9fa;
+                    border-bottom: 1px solid #dee2e6;
+                }
+
+                .tab {
                     flex: 1;
-                    padding: 16px 24px;
+                    padding: 15px 20px;
                     border: none;
                     background: transparent;
-                    border-radius: 12px;
                     cursor: pointer;
-                    transition: all 0.3s ease;
+                    font-size: 16px;
                     font-weight: 600;
-                    font-size: 14px;
-                    color: #64748b;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 10px;
-                    position: relative;
+                    color: #6c757d;
+                    transition: all 0.3s;
                 }
 
-                .tab-btn:hover {
-                    background: #f1f5f9;
-                    color: #475569;
-                    transform: translateY(-1px);
+                .tab:hover {
+                    background: #e9ecef;
+                    color: #495057;
                 }
 
-                .tab-btn.active {
-                    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                .tab.active {
+                    background: #007bff;
                     color: white;
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
-                }
-
-                .count-badge {
-                    background: rgba(255,255,255,0.2);
-                    color: white;
-                    padding: 4px 8px;
-                    border-radius: 12px;
-                    font-size: 12px;
-                    font-weight: 700;
-                    min-width: 24px;
-                    text-align: center;
-                }
-
-                .tab-btn.active .count-badge {
-                    background: rgba(255,255,255,0.3);
-                }
-
-                /* Contenu des onglets */
-                .tab-content-container {
-                    position: relative;
+                    box-shadow: 0 -3px 0 #0056b3 inset;
                 }
 
                 .tab-content {
                     display: none;
+                    padding: 25px;
                 }
 
                 .tab-content.active {
                     display: block;
-                    animation: slideInUp 0.3s ease;
                 }
 
-                @keyframes slideInUp {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-
-                /* Sections intégrées */
-                .integrated-section {
-                    background: white;
-                    border-radius: 16px;
-                    padding: 25px;
-                    margin-bottom: 20px;
-                    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-                    border: 1px solid #f1f5f9;
-                }
-
-                .integrated-section h2 {
-                    color: #1e293b;
-                    font-size: 1.3rem;
-                    font-weight: 600;
-                    margin: 0 0 20px 0;
-                    padding-bottom: 12px;
-                    border-bottom: 2px solid #f1f5f9;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                }
-
-                .integrated-section h2 i {
-                    color: #3b82f6;
-                    font-size: 1.2rem;
-                }
-
-                /* Formulaires */
-                .add-form {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 15px;
-                }
-
-                .form-row {
-                    display: grid;
-                    grid-template-columns: 2fr auto;
-                    gap: 15px;
-                    align-items: center;
-                }
-
-                .form-row:last-child {
-                    grid-template-columns: 1fr auto;
-                }
-
-                .form-input, .form-select {
-                    padding: 12px 16px;
-                    border: 2px solid #e2e8f0;
-                    border-radius: 12px;
-                    font-size: 14px;
-                    transition: all 0.3s ease;
-                    background: white;
-                    width: 100%;
-                }
-
-                .form-input:focus, .form-select:focus {
-                    outline: none;
-                    border-color: #3b82f6;
-                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-                    transform: translateY(-1px);
-                }
-
-                .color-input {
-                    width: 60px;
-                    height: 46px;
-                    border: 2px solid #e2e8f0;
-                    border-radius: 12px;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                }
-
-                .color-input:hover {
-                    transform: scale(1.05);
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                }
-
-                /* Boutons */
-                .btn {
-                    padding: 12px 20px;
-                    border: none;
-                    border-radius: 12px;
-                    font-weight: 600;
-                    font-size: 14px;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    text-decoration: none;
-                }
-
-                .btn:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-                }
-
-                .btn-large {
-                    padding: 16px 28px;
-                    font-size: 15px;
-                }
-
-                .btn-primary {
-                    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-                    color: white;
-                }
-
-                .btn-success {
-                    background: linear-gradient(135deg, #10b981, #047857);
-                    color: white;
-                }
-
-                .btn-warning {
-                    background: linear-gradient(135deg, #f59e0b, #d97706);
-                    color: white;
-                }
-
-                .btn-secondary {
-                    background: linear-gradient(135deg, #6b7280, #4b5563);
-                    color: white;
-                }
-
-                .btn-info {
-                    background: linear-gradient(135deg, #06b6d4, #0891b2);
-                    color: white;
-                }
-
-                .btn:disabled {
-                    opacity: 0.6;
-                    cursor: not-allowed;
-                    transform: none !important;
-                    box-shadow: none !important;
-                }
-
-                /* Actions */
-                .actions-row {
-                    display: flex;
-                    gap: 12px;
-                    flex-wrap: wrap;
-                    justify-content: center;
-                }
-
-                .config-options {
-                    display: flex;
-                    gap: 15px;
-                    flex-wrap: wrap;
-                    justify-content: center;
-                    margin-bottom: 20px;
-                }
-
-                .import-row {
-                    display: grid;
-                    grid-template-columns: 1fr auto;
-                    gap: 15px;
-                    align-items: end;
-                }
-
-                /* Grille des catégories */
-                .categories-grid {
-                    display: grid;
-                    gap: 20px;
-                    margin-top: 15px;
-                }
-
-                .category-card {
-                    background: #fafbfc;
-                    border: 2px solid #e2e8f0;
-                    border-radius: 16px;
+                .section {
+                    margin-bottom: 30px;
                     padding: 20px;
-                    transition: all 0.3s ease;
-                    position: relative;
+                    background: #f8f9fa;
+                    border-radius: 10px;
+                    border-left: 4px solid #007bff;
                 }
 
-                .category-card:hover {
-                    border-color: var(--category-color, #3b82f6);
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+                .section h2 {
+                    margin: 0 0 15px 0;
+                    color: #495057;
+                    font-size: 1.3rem;
                 }
 
-                .category-header {
+                .add-form {
+                    display: grid;
+                    grid-template-columns: 2fr auto 2fr auto;
+                    gap: 10px;
+                    align-items: center;
+                }
+
+                .add-form input {
+                    padding: 10px;
+                    border: 2px solid #dee2e6;
+                    border-radius: 8px;
+                    font-size: 14px;
+                }
+
+                .add-form input:focus {
+                    outline: none;
+                    border-color: #007bff;
+                }
+
+                .add-form input[type="color"] {
+                    width: 50px;
+                    height: 42px;
+                    cursor: pointer;
+                }
+
+                .add-form button {
+                    padding: 10px 20px;
+                    background: #28a745;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 600;
+                }
+
+                .add-form button:hover {
+                    background: #218838;
+                }
+
+                .category-item {
                     display: flex;
                     align-items: center;
                     gap: 15px;
-                    margin-bottom: 15px;
+                    padding: 15px;
+                    background: white;
+                    border-radius: 10px;
+                    margin-bottom: 10px;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    transition: transform 0.2s;
+                }
+
+                .category-item:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
                 }
 
                 .category-color {
-                    width: 32px;
-                    height: 32px;
+                    width: 30px;
+                    height: 30px;
                     border-radius: 50%;
                     border: 3px solid white;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-                    flex-shrink: 0;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
                 }
 
                 .category-info {
@@ -645,343 +308,258 @@ class CategoryPage {
 
                 .category-name {
                     font-weight: 700;
-                    font-size: 16px;
-                    color: #1e293b;
-                    margin: 0 0 5px 0;
-                }
-
-                .category-count {
-                    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-                    color: white;
-                    padding: 4px 10px;
-                    border-radius: 12px;
-                    font-size: 12px;
-                    font-weight: 700;
-                    display: inline-block;
+                    color: #495057;
+                    margin-bottom: 5px;
                 }
 
                 .category-keywords {
-                    color: #64748b;
-                    font-size: 13px;
-                    margin-bottom: 15px;
+                    font-size: 12px;
+                    color: #6c757d;
                     font-style: italic;
+                }
+
+                .category-count {
+                    background: #007bff;
+                    color: white;
+                    padding: 5px 10px;
+                    border-radius: 15px;
+                    font-size: 12px;
+                    font-weight: 700;
                 }
 
                 .category-actions {
                     display: flex;
-                    gap: 8px;
-                    justify-content: flex-end;
+                    gap: 5px;
                 }
 
                 .btn-sm {
-                    padding: 8px 12px;
+                    padding: 5px 10px;
                     font-size: 12px;
-                }
-
-                /* Statut et paramètres */
-                .status-card {
-                    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-                    border: 2px solid #bae6fd;
-                    border-radius: 16px;
-                    padding: 20px;
-                    text-align: center;
-                }
-
-                .status-indicator {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 10px;
-                    font-weight: 700;
-                    font-size: 16px;
-                    margin-bottom: 10px;
-                }
-
-                .status-indicator.active { 
-                    color: #059669; 
-                }
-
-                .status-indicator.inactive { 
-                    color: #dc2626; 
-                }
-
-                .folder-info {
-                    background: #e0f2fe;
-                    padding: 15px;
-                    border-radius: 12px;
-                    border-left: 4px solid #0891b2;
-                    margin-top: 15px;
-                    font-weight: 500;
-                }
-
-                .settings-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 20px;
-                    align-items: center;
-                }
-
-                .checkbox-setting {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
+                    border: none;
+                    border-radius: 5px;
                     cursor: pointer;
-                    font-weight: 500;
-                    color: #374151;
-                }
-
-                .checkbox-setting input[type="checkbox"] {
-                    width: 20px;
-                    height: 20px;
-                    accent-color: #3b82f6;
-                }
-
-                .select-setting {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
-                }
-
-                .select-setting label {
                     font-weight: 600;
-                    color: #374151;
-                    font-size: 14px;
+                }
+
+                .btn-edit {
+                    background: #ffc107;
+                    color: #212529;
+                }
+
+                .btn-delete {
+                    background: #dc3545;
+                    color: white;
+                }
+
+                .btn-sm:hover {
+                    opacity: 0.8;
+                }
+
+                .btn-success {
+                    background: #28a745;
+                    color: white;
+                }
+
+                .btn-warning {
+                    background: #ffc107;
+                    color: #212529;
+                }
+
+                .btn-info {
+                    background: #17a2b8;
+                    color: white;
+                }
+
+                .btn-primary {
+                    background: #007bff;
+                    color: white;
+                }
+
+                button {
+                    padding: 10px 20px;
+                    border: none;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: 600;
+                    margin-right: 10px;
+                    margin-bottom: 10px;
+                    transition: all 0.3s;
+                }
+
+                button:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+                }
+
+                button:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                    transform: none;
+                    box-shadow: none;
+                }
+
+                .status-card {
+                    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+                    padding: 20px;
+                    border-radius: 10px;
+                    text-align: center;
+                    border: 2px solid #2196f3;
+                }
+
+                #backup-status {
+                    font-size: 18px;
+                    font-weight: 700;
+                    margin-bottom: 10px;
                 }
 
                 .info-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                     gap: 15px;
                 }
 
                 .info-item {
-                    background: #f8fafc;
+                    background: white;
                     padding: 15px;
-                    border-radius: 12px;
-                    border: 2px solid #f1f5f9;
-                    text-align: center;
-                    transition: all 0.3s ease;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
                 }
 
-                .info-item:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-                }
-
-                .info-label {
-                    display: block;
+                .info-item span:first-child {
                     font-weight: 600;
-                    color: #64748b;
-                    font-size: 12px;
-                    margin-bottom: 5px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
+                    color: #6c757d;
                 }
 
-                .info-value {
+                .info-item span:last-child {
                     font-weight: 700;
-                    color: #3b82f6;
-                    font-size: 16px;
+                    color: #007bff;
                 }
 
-                /* Responsive */
+                input[type="file"] {
+                    padding: 10px;
+                    border: 2px dashed #dee2e6;
+                    border-radius: 8px;
+                    margin-right: 10px;
+                    width: 300px;
+                }
+
                 @media (max-width: 768px) {
-                    .integrated-settings-container { 
-                        padding: 15px; 
+                    .settings-wrapper {
+                        padding: 10px;
                     }
-                    .integrated-section { 
-                        padding: 20px; 
+                    
+                    .add-form {
+                        grid-template-columns: 1fr;
                     }
-                    .form-row { 
-                        grid-template-columns: 1fr; 
+                    
+                    .tabs {
+                        flex-direction: column;
                     }
-                    .integrated-tabs { 
-                        flex-direction: column; 
-                    }
-                    .actions-row { 
-                        flex-direction: column; 
-                    }
-                    .config-options { 
-                        flex-direction: column; 
-                    }
-                    .import-row { 
-                        grid-template-columns: 1fr; 
-                    }
-                    .settings-grid { 
-                        grid-template-columns: 1fr; 
+                    
+                    .info-grid {
+                        grid-template-columns: 1fr;
                     }
                 }
 
-                /* Notifications */
                 .notification {
                     position: fixed;
                     top: 20px;
                     right: 20px;
                     padding: 15px 25px;
-                    border-radius: 12px;
+                    border-radius: 8px;
                     color: white;
                     font-weight: 600;
                     z-index: 10000;
-                    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-                    animation: slideIn 0.3s ease-out;
-                    max-width: 350px;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
+                    animation: slideIn 0.3s ease;
                 }
 
                 @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
+                    from { transform: translateX(100%); }
+                    to { transform: translateX(0); }
                 }
 
-                .notification.success { background: linear-gradient(135deg, #10b981, #047857); }
-                .notification.error { background: linear-gradient(135deg, #ef4444, #dc2626); }
-                .notification.warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
-                .notification.info { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
-
-                /* Animation de chargement */
-                .loading {
-                    animation: spin 1s linear infinite;
-                }
-
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
+                .notification.success { background: #28a745; }
+                .notification.error { background: #dc3545; }
+                .notification.warning { background: #ffc107; color: #212529; }
+                .notification.info { background: #17a2b8; }
             </style>
         `;
 
         document.head.insertAdjacentHTML('beforeend', styles);
-        console.log('[CategoryPage] ✅ Styles intégrés injectés');
+        console.log('[CategoryPage] 🎨 Styles ajoutés');
     }
 
-    setupIntegratedEvents() {
-        console.log('[CategoryPage] ⚡ Configuration événements intégrés...');
-        
-        setTimeout(() => {
-            this.setupTabNavigationIntegrated();
-            this.setupCategoryEventsIntegrated();
-            this.setupBackupEventsIntegrated();
-        }, 100);
-    }
-
-    setupTabNavigationIntegrated() {
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetTab = button.dataset.tab;
+    setupEvents() {
+        // Navigation onglets
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const targetTab = e.target.dataset.tab;
                 
                 // Désactiver tous les onglets
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabContents.forEach(content => content.classList.remove('active'));
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
                 
                 // Activer l'onglet sélectionné
-                button.classList.add('active');
-                const targetContent = document.getElementById(`${targetTab}-tab`);
-                if (targetContent) {
-                    targetContent.classList.add('active');
-                }
+                e.target.classList.add('active');
+                document.getElementById(targetTab + '-content').classList.add('active');
                 
-                // Actions spécifiques
                 if (targetTab === 'categories') {
-                    this.renderCategoriesIntegrated();
+                    this.renderCategories();
                 } else if (targetTab === 'backup') {
-                    this.updateBackupUIIntegrated();
+                    this.updateBackupUI();
                 }
-                
-                console.log('[CategoryPage] 📂 Onglet activé:', targetTab);
             });
         });
 
-        console.log('[CategoryPage] ✅ Navigation onglets intégrée configurée');
-    }
-
-    setupCategoryEventsIntegrated() {
         // Ajouter catégorie
-        const addBtn = document.getElementById('add-category-btn');
+        const addBtn = document.getElementById('add-cat-btn');
         if (addBtn) {
-            addBtn.addEventListener('click', () => this.addCategoryIntegrated());
+            addBtn.addEventListener('click', () => this.addCategory());
         }
 
-        // Sauvegarder
-        const saveBtn = document.getElementById('save-categories-btn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => this.saveCategoriesIntegrated());
+        // Boutons catégories
+        const saveCatsBtn = document.getElementById('save-cats');
+        if (saveCatsBtn) {
+            saveCatsBtn.addEventListener('click', () => this.saveCategories());
         }
 
-        // Réinitialiser
-        const resetBtn = document.getElementById('reset-categories-btn');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => this.resetCategoriesIntegrated());
+        const resetCatsBtn = document.getElementById('reset-cats');
+        if (resetCatsBtn) {
+            resetCatsBtn.addEventListener('click', () => this.resetCategories());
         }
 
-        // Exporter
-        const exportBtn = document.getElementById('export-categories-btn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => this.exportCategoriesIntegrated());
+        const exportCatsBtn = document.getElementById('export-cats');
+        if (exportCatsBtn) {
+            exportCatsBtn.addEventListener('click', () => this.exportCategories());
         }
 
-        // Ajouter catégories de test
-        const testBtn = document.getElementById('test-categories-btn');
-        if (testBtn) {
-            testBtn.addEventListener('click', () => this.addTestCategoriesIntegrated());
+        // Backup
+        const setupBackupBtn = document.getElementById('setup-backup');
+        if (setupBackupBtn) {
+            setupBackupBtn.addEventListener('click', () => this.setupBackup());
         }
 
-        console.log('[CategoryPage] ✅ Événements catégories intégrés configurés');
-    }
-
-    setupBackupEventsIntegrated() {
-        // Configuration rapide
-        const quickSetupBtn = document.getElementById('quick-setup-backup');
-        if (quickSetupBtn) {
-            quickSetupBtn.addEventListener('click', () => this.quickSetupBackupIntegrated());
-        }
-
-        // Configuration manuelle
-        const manualSetupBtn = document.getElementById('manual-setup-backup');
-        if (manualSetupBtn) {
-            manualSetupBtn.addEventListener('click', () => this.manualSetupBackupIntegrated());
-        }
-
-        // Activer/désactiver backup
-        const backupEnabledCheckbox = document.getElementById('backup-enabled');
-        if (backupEnabledCheckbox) {
-            backupEnabledCheckbox.addEventListener('change', (e) => {
-                this.toggleBackupIntegrated(e.target.checked);
-            });
-        }
-
-        // Fréquence backup
-        const frequencySelect = document.getElementById('backup-frequency');
-        if (frequencySelect) {
-            frequencySelect.addEventListener('change', (e) => {
-                this.setBackupFrequencyIntegrated(parseInt(e.target.value));
-            });
-        }
-
-        // Actions manuelles
         const manualBackupBtn = document.getElementById('manual-backup');
         if (manualBackupBtn) {
-            manualBackupBtn.addEventListener('click', () => this.performManualBackupIntegrated());
+            manualBackupBtn.addEventListener('click', () => this.performBackup());
         }
 
-        const createTestBtn = document.getElementById('create-test-backup');
+        const createTestBtn = document.getElementById('create-test');
         if (createTestBtn) {
-            createTestBtn.addEventListener('click', () => this.createTestBackupIntegrated());
+            createTestBtn.addEventListener('click', () => this.createTestFiles());
         }
 
-        const exportAllBtn = document.getElementById('export-all-data');
+        const exportAllBtn = document.getElementById('export-all');
         if (exportAllBtn) {
-            exportAllBtn.addEventListener('click', () => this.exportAllDataIntegrated());
+            exportAllBtn.addEventListener('click', () => this.exportAll());
         }
 
         // Import
         const importFile = document.getElementById('import-file');
-        const importBtn = document.getElementById('import-data');
+        const importBtn = document.getElementById('import-btn');
         
         if (importFile) {
             importFile.addEventListener('change', (e) => {
@@ -992,194 +570,188 @@ class CategoryPage {
         }
 
         if (importBtn) {
-            importBtn.addEventListener('click', () => this.importDataIntegrated());
+            importBtn.addEventListener('click', () => this.importData());
         }
 
-        console.log('[CategoryPage] ✅ Événements backup intégrés configurés');
+        console.log('[CategoryPage] ⚡ Événements configurés');
     }
 
-    integrateWithPageManager() {
-        // S'intégrer avec le PageManager existant
-        if (window.pageManager && typeof window.pageManager.registerPage === 'function') {
-            window.pageManager.registerPage('settings', () => this.show());
-            console.log('[CategoryPage] 🔗 Intégré avec PageManager');
+    renderCategories() {
+        const list = document.getElementById('categories-list');
+        const counter = document.getElementById('cat-count');
+        
+        if (!list) return;
+
+        // Mettre à jour le compteur
+        if (counter) {
+            counter.textContent = Object.keys(this.categories).length;
         }
 
-        // Écouter les événements de navigation existants
-        document.addEventListener('showPage', (e) => {
-            if (e.detail === 'settings') {
-                console.log('[CategoryPage] 📄 Événement showPage settings reçu');
-                this.show();
-            }
+        // Vider et remplir
+        list.innerHTML = '';
+
+        Object.entries(this.categories).forEach(([id, cat]) => {
+            const div = document.createElement('div');
+            div.className = 'category-item';
+            div.innerHTML = `
+                <div class="category-color" style="background-color: ${cat.color}"></div>
+                <div class="category-info">
+                    <div class="category-name">${cat.name}</div>
+                    <div class="category-keywords">Mots-clés: ${cat.keywords.join(', ')}</div>
+                </div>
+                <div class="category-count">${cat.count} emails</div>
+                <div class="category-actions">
+                    <button class="btn-sm btn-edit" onclick="window.categoryPage.editCategory('${id}')">✏️</button>
+                    <button class="btn-sm btn-delete" onclick="window.categoryPage.deleteCategory('${id}')">🗑️</button>
+                </div>
+            `;
+            list.appendChild(div);
         });
 
-        // Observer les changements de navigation
-        const navObserver = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                    const target = mutation.target;
-                    if (target.classList?.contains('active') && 
-                        (target.dataset?.page === 'settings' || target.textContent?.toLowerCase().includes('paramètre'))) {
-                        console.log('[CategoryPage] 👁️ Navigation settings détectée');
-                        setTimeout(() => this.show(), 100);
-                    }
-                }
-            }
-        });
-        
-        navObserver.observe(document.body, {
-            attributes: true,
-            subtree: true,
-            attributeFilter: ['class', 'data-page']
-        });
-
-        console.log('[CategoryPage] ✅ Intégration avec le système de navigation');
+        console.log('[CategoryPage] 🎨 Catégories rendues:', Object.keys(this.categories).length);
     }
 
-    renderCategoriesIntegrated() {
-        const categoriesList = document.getElementById('categories-list');
-        const categoriesCountBadge = document.getElementById('categories-count-badge');
-        
-        if (!categoriesList) {
-            console.warn('[CategoryPage] ⚠️ Element categories-list non trouvé');
+    addCategory() {
+        const nameInput = document.getElementById('cat-name');
+        const colorInput = document.getElementById('cat-color');
+        const keywordsInput = document.getElementById('cat-keywords');
+
+        if (!nameInput || !nameInput.value.trim()) {
+            this.showNotification('Veuillez entrer un nom', 'warning');
             return;
         }
 
-        // Mettre à jour le compteur dans l'onglet
-        if (categoriesCountBadge) {
-            categoriesCountBadge.textContent = Object.keys(this.categories).length;
+        const name = nameInput.value.trim();
+        const color = colorInput ? colorInput.value : '#3b82f6';
+        const keywords = keywordsInput ? keywordsInput.value.split(',').map(k => k.trim()).filter(k => k) : [];
+
+        const id = name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, '');
+        
+        if (this.categories[id]) {
+            this.showNotification('Cette catégorie existe déjà', 'warning');
+            return;
         }
 
-        // Vider et remplir la liste
-        categoriesList.innerHTML = '';
+        this.categories[id] = {
+            name: name,
+            color: color,
+            keywords: keywords,
+            count: Math.floor(Math.random() * 30) + 1
+        };
 
-        Object.entries(this.categories).forEach(([id, category], index) => {
-            const categoryCard = document.createElement('div');
-            categoryCard.className = 'category-card';
-            categoryCard.style.cssText = `--category-color: ${category.color}; animation-delay: ${index * 0.05}s;`;
-            
-            categoryCard.innerHTML = `
-                <div class="category-header">
-                    <div class="category-color" style="background-color: ${category.color}"></div>
-                    <div class="category-info">
-                        <h3 class="category-name">${category.name}</h3>
-                        <span class="category-count">${category.count} emails</span>
-                    </div>
-                </div>
-                <div class="category-keywords">
-                    Mots-clés: ${category.keywords.join(', ')}
-                </div>
-                <div class="category-actions">
-                    <button class="btn btn-primary btn-sm" onclick="window.categoryPage.editCategoryIntegrated('${id}')">
-                        <i class="fas fa-edit"></i> Modifier
-                    </button>
-                    <button class="btn btn-warning btn-sm" onclick="window.categoryPage.deleteCategoryIntegrated('${id}')">
-                        <i class="fas fa-trash"></i> Supprimer
-                    </button>
-                </div>
-            `;
-            
-            categoriesList.appendChild(categoryCard);
-        });
+        // Vider les champs
+        nameInput.value = '';
+        if (colorInput) colorInput.value = '#3b82f6';
+        if (keywordsInput) keywordsInput.value = '';
 
-        console.log('[CategoryPage] 🎨 Catégories intégrées rendues:', Object.keys(this.categories).length);
+        this.renderCategories();
+        this.saveCategories();
+        this.showNotification('Catégorie ajoutée!', 'success');
     }
 
-    initBackupIntegrated() {
-        // Service de backup simple intégré
+    editCategory(id) {
+        const cat = this.categories[id];
+        if (!cat) return;
+
+        const newName = prompt('Nouveau nom:', cat.name);
+        if (newName && newName.trim()) {
+            cat.name = newName.trim();
+            this.renderCategories();
+            this.saveCategories();
+            this.showNotification('Catégorie modifiée!', 'success');
+        }
+    }
+
+    deleteCategory(id) {
+        const cat = this.categories[id];
+        if (!cat) return;
+
+        if (confirm(`Supprimer "${cat.name}" ?`)) {
+            delete this.categories[id];
+            this.renderCategories();
+            this.saveCategories();
+            this.showNotification('Catégorie supprimée!', 'info');
+        }
+    }
+
+    saveCategories() {
+        try {
+            localStorage.setItem('emailsortpro_categories', JSON.stringify(this.categories));
+            this.showNotification('Catégories sauvegardées!', 'success');
+            console.log('[CategoryPage] 💾 Sauvegardé');
+        } catch (error) {
+            this.showNotification('Erreur sauvegarde', 'error');
+        }
+    }
+
+    resetCategories() {
+        if (confirm('Réinitialiser toutes les catégories ?')) {
+            this.categories = {
+                'work': { name: 'Travail', color: '#3b82f6', keywords: ['meeting', 'project'], count: 25 },
+                'personal': { name: 'Personnel', color: '#10b981', keywords: ['family', 'friend'], count: 18 }
+            };
+            this.renderCategories();
+            this.saveCategories();
+            this.showNotification('Catégories réinitialisées!', 'info');
+        }
+    }
+
+    exportCategories() {
+        const data = {
+            version: '4.0',
+            timestamp: new Date().toISOString(),
+            categories: this.categories
+        };
+
+        this.downloadJSON(data, `Categories-${new Date().toISOString().split('T')[0]}.json`);
+        this.showNotification('Catégories exportées!', 'success');
+    }
+
+    initBackup() {
         window.backupService = {
             folderHandle: null,
             enabled: false,
-            frequency: 60,
             lastBackup: null,
             filesCount: 0,
-            timer: null,
 
             async selectFolder() {
                 try {
                     if (!window.showDirectoryPicker) {
-                        throw new Error('API File System non supportée par votre navigateur');
+                        throw new Error('API non supportée');
                     }
-
                     this.folderHandle = await window.showDirectoryPicker({
                         mode: 'readwrite',
-                        startIn: 'documents',
-                        id: 'emailsortpro-backup-integrated'
+                        startIn: 'documents'
                     });
-
                     return true;
                 } catch (error) {
-                    console.error('[BackupService] Erreur:', error);
+                    console.error('Erreur:', error);
                     return false;
-                }
-            },
-
-            enable() {
-                this.enabled = true;
-                this.startTimer();
-            },
-
-            disable() {
-                this.enabled = false;
-                this.stopTimer();
-            },
-
-            setFrequency(minutes) {
-                this.frequency = minutes;
-                if (this.enabled) {
-                    this.stopTimer();
-                    this.startTimer();
-                }
-            },
-
-            startTimer() {
-                if (this.timer) clearInterval(this.timer);
-                this.timer = setInterval(() => {
-                    this.createBackup();
-                }, this.frequency * 60 * 1000);
-            },
-
-            stopTimer() {
-                if (this.timer) {
-                    clearInterval(this.timer);
-                    this.timer = null;
                 }
             },
 
             async createBackup() {
                 if (!this.folderHandle) return false;
-
                 try {
                     const data = {
-                        version: '4.0-integrated',
+                        version: '4.0',
                         timestamp: new Date().toISOString(),
                         categories: window.categoryPage?.categories || {},
-                        settings: this.getSettings(),
                         localStorage: this.getLocalStorageData()
                     };
 
-                    const timestamp = new Date();
-                    const fileName = `EmailSortPro-Backup-${timestamp.toISOString().replace(/[:.]/g, '-')}.json`;
-
+                    const fileName = `EmailSortPro-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
                     const fileHandle = await this.folderHandle.getFileHandle(fileName, { create: true });
                     const writable = await fileHandle.createWritable();
                     await writable.write(JSON.stringify(data, null, 2));
                     await writable.close();
 
-                    this.lastBackup = timestamp;
+                    this.lastBackup = new Date();
                     this.filesCount++;
                     return true;
                 } catch (error) {
-                    console.error('[BackupService] Erreur backup:', error);
+                    console.error('Erreur backup:', error);
                     return false;
-                }
-            },
-
-            getSettings() {
-                try {
-                    return JSON.parse(localStorage.getItem('emailsortpro_settings') || '{}');
-                } catch {
-                    return {};
                 }
             },
 
@@ -1196,245 +768,60 @@ class CategoryPage {
 
             getStatus() {
                 return {
-                    enabled: this.enabled,
                     folderConfigured: !!this.folderHandle,
-                    lastBackup: this.lastBackup ? this.lastBackup.toLocaleString('fr-FR') : null,
-                    filesCount: this.filesCount,
-                    frequency: this.frequency
+                    lastBackup: this.lastBackup ? this.lastBackup.toLocaleString() : null,
+                    filesCount: this.filesCount
                 };
             }
         };
 
-        console.log('[CategoryPage] 💾 Service backup intégré initialisé');
+        console.log('[CategoryPage] 💾 Backup initialisé');
     }
 
-    // ================================================
-    // MÉTHODES INTÉGRÉES
-    // ================================================
+    async setupBackup() {
+        const btn = document.getElementById('setup-backup');
+        btn.disabled = true;
+        btn.textContent = '⏳ Configuration...';
 
-    addCategoryIntegrated() {
-        const nameInput = document.getElementById('new-category-name');
-        const colorInput = document.getElementById('new-category-color');
-        const keywordsInput = document.getElementById('new-category-keywords');
-
-        if (!nameInput || !nameInput.value.trim()) {
-            this.showNotificationIntegrated('Veuillez entrer un nom de catégorie', 'warning');
-            return;
-        }
-
-        const name = nameInput.value.trim();
-        const color = colorInput ? colorInput.value : '#3b82f6';
-        const keywords = keywordsInput ? keywordsInput.value.split(',').map(k => k.trim()).filter(k => k) : [];
-
-        const id = name.toLowerCase().replace(/\s+/g, '_').replace(/[^\w]/g, '');
-        
-        if (this.categories[id]) {
-            this.showNotificationIntegrated('Cette catégorie existe déjà', 'warning');
-            return;
-        }
-
-        this.categories[id] = {
-            name: name,
-            color: color,
-            keywords: keywords,
-            count: Math.floor(Math.random() * 20) + 1
-        };
-
-        // Vider les champs
-        nameInput.value = '';
-        if (colorInput) colorInput.value = '#3b82f6';
-        if (keywordsInput) keywordsInput.value = '';
-
-        this.renderCategoriesIntegrated();
-        this.saveCategoriesIntegrated();
-        this.showNotificationIntegrated('Catégorie ajoutée avec succès!', 'success');
-    }
-
-    editCategoryIntegrated(id) {
-        const category = this.categories[id];
-        if (!category) return;
-
-        const newName = prompt('Nouveau nom de la catégorie:', category.name);
-        if (newName && newName.trim() && newName.trim() !== category.name) {
-            category.name = newName.trim();
-            this.renderCategoriesIntegrated();
-            this.saveCategoriesIntegrated();
-            this.showNotificationIntegrated('Catégorie modifiée!', 'success');
-        }
-    }
-
-    deleteCategoryIntegrated(id) {
-        const category = this.categories[id];
-        if (!category) return;
-
-        if (confirm(`Supprimer la catégorie "${category.name}" ?`)) {
-            delete this.categories[id];
-            this.renderCategoriesIntegrated();
-            this.saveCategoriesIntegrated();
-            this.showNotificationIntegrated('Catégorie supprimée!', 'info');
-        }
-    }
-
-    addTestCategoriesIntegrated() {
-        const testCategories = {
-            'education': {
-                name: 'Éducation',
-                color: '#9333ea',
-                keywords: ['school', 'university', 'course', 'education', 'learning'],
-                count: 12
-            },
-            'entertainment': {
-                name: 'Divertissement',
-                color: '#f59e0b',
-                keywords: ['movie', 'music', 'game', 'entertainment', 'fun'],
-                count: 28
-            }
-        };
-
-        Object.assign(this.categories, testCategories);
-        this.renderCategoriesIntegrated();
-        this.saveCategoriesIntegrated();
-        this.showNotificationIntegrated('Catégories de test ajoutées!', 'success');
-    }
-
-    resetCategoriesIntegrated() {
-        if (confirm('Réinitialiser toutes les catégories ?')) {
-            this.loadCategoriesIntegrated();
-            this.renderCategoriesIntegrated();
-            this.saveCategoriesIntegrated();
-            this.showNotificationIntegrated('Catégories réinitialisées!', 'info');
-        }
-    }
-
-    saveCategoriesIntegrated() {
-        try {
-            localStorage.setItem('emailsortpro_categories', JSON.stringify(this.categories));
-            
-            // Synchroniser avec CategoryManager
-            if (window.categoryManager && typeof window.categoryManager.updateCategories === 'function') {
-                window.categoryManager.updateCategories(this.categories);
-            }
-            
-            this.showNotificationIntegrated('Catégories sauvegardées!', 'success');
-            console.log('[CategoryPage] 💾 Catégories sauvegardées:', Object.keys(this.categories).length);
-        } catch (error) {
-            console.error('[CategoryPage] ❌ Erreur sauvegarde:', error);
-            this.showNotificationIntegrated('Erreur lors de la sauvegarde', 'error');
-        }
-    }
-
-    exportCategoriesIntegrated() {
-        try {
-            const data = {
-                version: '4.0-integrated',
-                timestamp: new Date().toISOString(),
-                categories: this.categories
-            };
-
-            this.downloadJSONIntegrated(data, `EmailSortPro-Categories-${new Date().toISOString().split('T')[0]}.json`);
-            this.showNotificationIntegrated('Catégories exportées!', 'success');
-        } catch (error) {
-            this.showNotificationIntegrated('Erreur export: ' + error.message, 'error');
-        }
-    }
-
-    async quickSetupBackupIntegrated() {
-        const btn = document.getElementById('quick-setup-backup');
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner loading"></i> Configuration...';
-        }
-
-        try {
-            const success = await window.backupService.selectFolder();
-            if (success) {
-                await window.backupService.createBackup();
-                this.showNotificationIntegrated('Configuration automatique réussie!', 'success');
-                this.updateBackupUIIntegrated();
-            } else {
-                this.showNotificationIntegrated('Erreur de configuration', 'error');
-            }
-        } catch (error) {
-            this.showNotificationIntegrated('Erreur: ' + error.message, 'error');
-        }
-
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-magic"></i> Configuration automatique';
-        }
-    }
-
-    async manualSetupBackupIntegrated() {
         const success = await window.backupService.selectFolder();
+        
+        btn.disabled = false;
+        btn.textContent = '🗂️ Choisir dossier';
+
         if (success) {
-            this.showNotificationIntegrated('Dossier sélectionné!', 'success');
-            this.updateBackupUIIntegrated();
+            this.showNotification('Dossier configuré!', 'success');
+            this.updateBackupUI();
         } else {
-            this.showNotificationIntegrated('Sélection annulée', 'info');
+            this.showNotification('Configuration annulée', 'info');
         }
     }
 
-    toggleBackupIntegrated(enabled) {
-        if (enabled) {
-            if (window.backupService.folderHandle) {
-                window.backupService.enable();
-                this.showNotificationIntegrated('Sauvegardes automatiques activées', 'success');
-            } else {
-                document.getElementById('backup-enabled').checked = false;
-                this.showNotificationIntegrated('Configurez d\'abord un dossier', 'warning');
-            }
-        } else {
-            window.backupService.disable();
-            this.showNotificationIntegrated('Sauvegardes automatiques désactivées', 'info');
-        }
-        this.updateBackupUIIntegrated();
-    }
-
-    setBackupFrequencyIntegrated(minutes) {
-        window.backupService.setFrequency(minutes);
-        this.showNotificationIntegrated(`Fréquence mise à jour: ${this.formatFrequency(minutes)}`, 'info');
-    }
-
-    formatFrequency(minutes) {
-        if (minutes < 60) return `${minutes} minutes`;
-        if (minutes === 60) return '1 heure';
-        if (minutes < 1440) return `${minutes / 60} heures`;
-        return `${minutes / 1440} jour(s)`;
-    }
-
-    async performManualBackupIntegrated() {
+    async performBackup() {
         const btn = document.getElementById('manual-backup');
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner loading"></i> Sauvegarde...';
-        }
+        btn.disabled = true;
+        btn.textContent = '⏳ Sauvegarde...';
 
         const success = await window.backupService.createBackup();
         
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder maintenant';
-        }
+        btn.disabled = false;
+        btn.textContent = '💾 Sauvegarder maintenant';
 
         if (success) {
-            this.showNotificationIntegrated('Sauvegarde effectuée!', 'success');
+            this.showNotification('Sauvegarde créée!', 'success');
+            this.updateBackupUI();
         } else {
-            this.showNotificationIntegrated('Erreur lors de la sauvegarde', 'error');
+            this.showNotification('Erreur sauvegarde', 'error');
         }
-
-        this.updateBackupUIIntegrated();
     }
 
-    async createTestBackupIntegrated() {
-        const btn = document.getElementById('create-test-backup');
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner loading"></i> Création...';
-        }
+    async createTestFiles() {
+        const btn = document.getElementById('create-test');
+        btn.disabled = true;
+        btn.textContent = '⏳ Création...';
 
         try {
             if (!window.backupService.folderHandle) {
-                this.showNotificationIntegrated('Configurez d\'abord un dossier', 'warning');
+                this.showNotification('Configurez d\'abord un dossier', 'warning');
                 return;
             }
 
@@ -1443,41 +830,34 @@ class CategoryPage {
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
 
-            this.showNotificationIntegrated('Fichiers de test créés!', 'success');
-            this.updateBackupUIIntegrated();
+            this.showNotification('Fichiers test créés!', 'success');
+            this.updateBackupUI();
         } catch (error) {
-            this.showNotificationIntegrated('Erreur: ' + error.message, 'error');
+            this.showNotification('Erreur: ' + error.message, 'error');
         }
 
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-file-alt"></i> Créer fichiers test';
-        }
+        btn.disabled = false;
+        btn.textContent = '📄 Créer fichiers test';
     }
 
-    exportAllDataIntegrated() {
-        try {
-            const data = {
-                version: '4.0-integrated',
-                timestamp: new Date().toISOString(),
-                categories: this.categories,
-                settings: this.getSettingsIntegrated(),
-                localStorage: this.getLocalStorageDataIntegrated()
-            };
+    exportAll() {
+        const data = {
+            version: '4.0',
+            timestamp: new Date().toISOString(),
+            categories: this.categories,
+            localStorage: window.backupService?.getLocalStorageData() || {}
+        };
 
-            this.downloadJSONIntegrated(data, `EmailSortPro-Export-${new Date().toISOString().split('T')[0]}.json`);
-            this.showNotificationIntegrated('Toutes les données exportées!', 'success');
-        } catch (error) {
-            this.showNotificationIntegrated('Erreur export: ' + error.message, 'error');
-        }
+        this.downloadJSON(data, `EmailSortPro-Export-${new Date().toISOString().split('T')[0]}.json`);
+        this.showNotification('Export complet!', 'success');
     }
 
-    importDataIntegrated() {
+    importData() {
         const fileInput = document.getElementById('import-file');
         const file = fileInput?.files[0];
         
         if (!file) {
-            this.showNotificationIntegrated('Sélectionnez un fichier', 'warning');
+            this.showNotification('Sélectionnez un fichier', 'warning');
             return;
         }
 
@@ -1487,18 +867,14 @@ class CategoryPage {
                 const data = JSON.parse(e.target.result);
                 
                 if (!data.version) {
-                    throw new Error('Format de fichier invalide');
+                    throw new Error('Format invalide');
                 }
 
-                if (confirm('Importer ces données ? Cela remplacera vos données actuelles.')) {
+                if (confirm('Importer ces données ?')) {
                     if (data.categories) {
                         this.categories = data.categories;
-                        this.saveCategoriesIntegrated();
-                        this.renderCategoriesIntegrated();
-                    }
-
-                    if (data.settings) {
-                        localStorage.setItem('emailsortpro_settings', JSON.stringify(data.settings));
+                        this.renderCategories();
+                        this.saveCategories();
                     }
 
                     if (data.localStorage) {
@@ -1507,451 +883,174 @@ class CategoryPage {
                         });
                     }
 
-                    this.showNotificationIntegrated('Données importées avec succès!', 'success');
+                    this.showNotification('Import réussi!', 'success');
                 }
             } catch (error) {
-                this.showNotificationIntegrated('Erreur import: ' + error.message, 'error');
+                this.showNotification('Erreur import: ' + error.message, 'error');
             }
         };
         
         reader.readAsText(file);
     }
 
-    updateBackupUIIntegrated() {
+    updateBackupUI() {
         if (!window.backupService) return;
 
         const status = window.backupService.getStatus();
+        
+        const statusEl = document.getElementById('backup-status');
+        const detailEl = document.getElementById('backup-detail');
+        const folderInfo = document.getElementById('folder-info');
+        const manualBtn = document.getElementById('manual-backup');
 
-        // Mettre à jour le statut
-        const statusElement = document.getElementById('backup-status');
-        const detailElement = document.getElementById('backup-detail');
-
-        if (statusElement && detailElement) {
+        if (statusEl && detailEl) {
             if (status.folderConfigured) {
-                statusElement.className = 'status-indicator active';
-                statusElement.innerHTML = '<i class="fas fa-check-circle"></i><span>Configuré</span>';
-                detailElement.textContent = 'Dossier de sauvegarde configuré et prêt';
+                statusEl.textContent = '🟢 Configuré';
+                detailEl.textContent = 'Dossier de sauvegarde prêt';
+                if (folderInfo) folderInfo.style.display = 'block';
+                if (manualBtn) manualBtn.disabled = false;
             } else {
-                statusElement.className = 'status-indicator inactive';
-                statusElement.innerHTML = '<i class="fas fa-times-circle"></i><span>Non configuré</span>';
-                detailElement.textContent = 'Sélectionnez un dossier pour commencer';
+                statusEl.textContent = '🔴 Non configuré';
+                detailEl.textContent = 'Configurez un dossier de sauvegarde';
+                if (folderInfo) folderInfo.style.display = 'none';
+                if (manualBtn) manualBtn.disabled = true;
             }
         }
 
-        // Mettre à jour les informations
-        const elements = {
-            'service-status': status.folderConfigured ? 'Configuré' : 'En attente',
-            'last-backup': status.lastBackup || 'Jamais',
-            'files-count': status.filesCount || 0,
-            'data-size': this.calculateDataSizeIntegrated()
-        };
+        // Mettre à jour les infos
+        const serviceStatus = document.getElementById('service-status');
+        const lastBackup = document.getElementById('last-backup');
+        const filesCount = document.getElementById('files-count');
+        const dataSize = document.getElementById('data-size');
 
-        Object.entries(elements).forEach(([id, value]) => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = value;
-            }
-        });
-
-        // Mettre à jour les contrôles
-        const backupEnabledCheckbox = document.getElementById('backup-enabled');
-        if (backupEnabledCheckbox) {
-            backupEnabledCheckbox.checked = status.enabled;
-        }
-
-        const manualBackupBtn = document.getElementById('manual-backup');
-        if (manualBackupBtn) {
-            manualBackupBtn.disabled = !status.folderConfigured;
-        }
-
-        // Afficher le dossier si configuré
-        const folderDisplay = document.getElementById('folder-display');
-        const folderPath = document.getElementById('folder-path');
-        if (folderDisplay && folderPath && status.folderConfigured) {
-            folderDisplay.style.display = 'block';
-            folderPath.textContent = 'Dossier configuré avec succès';
-        }
+        if (serviceStatus) serviceStatus.textContent = status.folderConfigured ? 'Configuré' : 'En attente';
+        if (lastBackup) lastBackup.textContent = status.lastBackup || 'Jamais';
+        if (filesCount) filesCount.textContent = status.filesCount || 0;
+        if (dataSize) dataSize.textContent = this.calculateSize();
     }
 
-    // ================================================
-    // UTILITAIRES INTÉGRÉS
-    // ================================================
-
-    getSettingsIntegrated() {
+    calculateSize() {
         try {
-            return JSON.parse(localStorage.getItem('emailsortpro_settings') || '{}');
+            const data = JSON.stringify(this.categories);
+            const bytes = data.length;
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+            return Math.round(bytes / (1024 * 1024)) + ' MB';
         } catch {
-            return {};
+            return '0 KB';
         }
     }
 
-    getLocalStorageDataIntegrated() {
-        const data = {};
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith('emailsortpro_')) {
-                data[key] = localStorage.getItem(key);
-            }
-        }
-        return data;
-    }
-
-    calculateDataSizeIntegrated() {
-        try {
-            const data = {
-                categories: this.categories,
-                settings: this.getSettingsIntegrated(),
-                localStorage: Object.keys(localStorage).length
-            };
-            const sizeBytes = JSON.stringify(data).length;
-            
-            if (sizeBytes < 1024) return sizeBytes + ' B';
-            if (sizeBytes < 1024 * 1024) return Math.round(sizeBytes / 1024) + ' KB';
-            return Math.round(sizeBytes / (1024 * 1024)) + ' MB';
-        } catch {
-            return 'N/A';
-        }
-    }
-
-    downloadJSONIntegrated(data, filename) {
+    downloadJSON(data, filename) {
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
-        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
 
-    showNotificationIntegrated(message, type = 'info') {
-        console.log(`[CategoryPage] ${type.toUpperCase()}: ${message}`);
+    showNotification(message, type = 'info') {
+        console.log(`[CategoryPage] ${type}: ${message}`);
         
-        // Créer la notification
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
-        
-        const iconMap = {
-            success: 'check-circle',
-            error: 'times-circle',
-            warning: 'exclamation-triangle',
-            info: 'info-circle'
-        };
-        
-        notification.innerHTML = `
-            <i class="fas fa-${iconMap[type] || 'info-circle'}"></i>
-            <span>${message}</span>
-        `;
+        notification.textContent = message;
         
         document.body.appendChild(notification);
         
-        // Supprimer après 4 secondes
         setTimeout(() => {
-            notification.style.animation = 'slideIn 0.3s ease-out reverse';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, 4000);
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
     }
 
-    // ================================================
-    // API PUBLIQUE INTÉGRÉE
-    // ================================================
-
     show() {
-        const settingsPage = document.getElementById('settings-page');
-        if (settingsPage) {
-            // Masquer les autres pages du système existant
-            document.querySelectorAll('.page-content:not(#settings-page)').forEach(page => {
-                page.style.display = 'none';
+        const page = document.getElementById('settings-page');
+        if (page) {
+            // Masquer les autres pages
+            document.querySelectorAll('.page-content:not(#settings-page)').forEach(p => {
+                p.style.display = 'none';
             });
             
-            // Afficher la page des paramètres
-            settingsPage.style.display = 'block';
+            page.style.display = 'block';
             this.isVisible = true;
+            this.renderCategories();
+            this.updateBackupUI();
             
-            // Recharger les données actuelles
-            this.syncWithCategoryManager();
-            this.renderCategoriesIntegrated();
-            this.updateBackupUIIntegrated();
-            
-            // Mettre à jour la navigation existante si présente
-            this.updateExistingNavigation();
-            
-            console.log('[CategoryPage] 👁️ Page intégrée affichée avec', Object.keys(this.categories).length, 'catégories');
+            console.log('[CategoryPage] 👁️ Affiché');
         } else {
-            console.warn('[CategoryPage] ⚠️ Page settings-page non trouvée - recréation');
-            this.createIntegratedPage();
+            console.warn('[CategoryPage] Page non trouvée, recréation...');
+            this.createPage();
             setTimeout(() => this.show(), 100);
         }
     }
 
     hide() {
-        const settingsPage = document.getElementById('settings-page');
-        if (settingsPage) {
-            settingsPage.style.display = 'none';
+        const page = document.getElementById('settings-page');
+        if (page) {
+            page.style.display = 'none';
             this.isVisible = false;
-            console.log('[CategoryPage] 👁️ Page intégrée masquée');
         }
-    }
-
-    updateExistingNavigation() {
-        // Mettre à jour les éléments de navigation existants pour indiquer que settings est actif
-        const navItems = document.querySelectorAll('.nav-item[data-page="settings"], [data-page="settings"]');
-        navItems.forEach(item => {
-            item.classList.add('active');
-        });
-
-        // Désactiver les autres éléments de navigation
-        const otherNavItems = document.querySelectorAll('.nav-item:not([data-page="settings"])');
-        otherNavItems.forEach(item => {
-            item.classList.remove('active');
-        });
     }
 
     getCategories() {
         return this.categories;
     }
-
-    getCategoryCount() {
-        return Object.keys(this.categories).length;
-    }
-
-    addCategoryProgrammatically(id, name, color = '#3b82f6', keywords = []) {
-        this.categories[id] = {
-            name: name,
-            color: color,
-            keywords: keywords,
-            count: Math.floor(Math.random() * 20) + 1
-        };
-        
-        if (this.isVisible) {
-            this.renderCategoriesIntegrated();
-        }
-        
-        this.saveCategoriesIntegrated();
-        return true;
-    }
-
-    updateCategory(id, data) {
-        if (this.categories[id]) {
-            this.categories[id] = { ...this.categories[id], ...data };
-            if (this.isVisible) {
-                this.renderCategoriesIntegrated();
-            }
-            this.saveCategoriesIntegrated();
-            return true;
-        }
-        return false;
-    }
-
-    refresh() {
-        if (this.isVisible) {
-            this.syncWithCategoryManager();
-            this.renderCategoriesIntegrated();
-            this.updateBackupUIIntegrated();
-            console.log('[CategoryPage] 🔄 Interface intégrée rafraîchie');
-        }
-    }
-
-    getStatus() {
-        return {
-            initialized: this.isInitialized,
-            visible: this.isVisible,
-            categoriesCount: Object.keys(this.categories).length,
-            backupConfigured: window.backupService?.getStatus()?.folderConfigured || false,
-            integrated: true
-        };
-    }
 }
 
-// ================================================
-// INITIALISATION GLOBALE INTÉGRÉE
-// ================================================
-
-function initializeCategoryPageIntegrated() {
-    console.log('[CategoryPage] 🚀 INITIALISATION INTÉGRÉE au système existant...');
+// Initialisation SIMPLE et GARANTIE
+function initSimpleCategoryPage() {
+    console.log('[CategoryPage] 🚀 INITIALISATION SIMPLE...');
     
-    // Créer l'instance globale
     window.categoryPage = new CategoryPage();
     
-    // Fonctions globales pour l'intégration
+    // Fonctions globales
     window.showSettings = () => {
-        console.log('[Global] 🔧 Affichage paramètres intégrés');
+        console.log('[Global] 📋 Affichage paramètres');
         window.categoryPage?.show();
     };
     
-    window.hideSettings = () => {
-        window.categoryPage?.hide();
-    };
+    window.getCategories = () => window.categoryPage?.getCategories() || {};
     
-    window.getCategories = () => {
-        return window.categoryPage?.getCategories() || {};
-    };
-    
-    window.getAppSettings = () => {
-        return window.categoryPage?.getSettingsIntegrated() || {};
-    };
-    
-    window.updateAppSetting = (key, value) => {
-        try {
-            const settings = window.categoryPage?.getSettingsIntegrated() || {};
-            settings[key] = value;
-            settings.lastModified = new Date().toISOString();
-            localStorage.setItem('emailsortpro_settings', JSON.stringify(settings));
-            return true;
-        } catch (error) {
-            console.error('[Global] Erreur mise à jour:', error);
-            return false;
-        }
-    };
-
-    // Intégration avec le système de navigation existant
-    setupNavigationIntegration();
-
-    // Synchronisation périodique avec le système
-    setInterval(() => {
-        if (window.categoryPage) {
-            window.categoryPage.syncWithCategoryManager();
-        }
-    }, 30000);
-
-    console.log('✅ CategoryPage INTÉGRÉE initialisée et prête');
-    console.log('🔗 Intégration parfaite avec le système existant');
-    console.log('📂 Fonctions: showSettings(), getCategories(), window.categoryPage');
-    console.log('🎯 Catégories:', window.categoryPage?.getCategoryCount() || 0);
-    console.log('💾 Backup:', window.backupService ? 'Disponible' : 'Créé');
-    
-    return window.categoryPage;
-}
-
-function setupNavigationIntegration() {
-    console.log('[Navigation] 🔗 Configuration intégration navigation...');
-
-    // Écouter TOUS les clics sur la navigation
+    // Écouter les clics sur paramètres
     document.addEventListener('click', (e) => {
-        const target = e.target.closest([
-            '[data-page="settings"]',
-            '.nav-item[data-page="settings"]',
-            '.settings-btn',
-            '.nav-settings',
-            '[href="#settings"]',
-            '.settings-link',
-            'a[href*="settings"]',
-            '.nav-link[data-page="settings"]'
-        ].join(', '));
-        
+        const target = e.target.closest('[data-page="settings"], .settings-btn, [href="#settings"]');
         if (target) {
             e.preventDefault();
-            e.stopPropagation();
-            console.log('[Navigation] 🎯 Clic paramètres intercepté:', target);
-            
-            // Masquer toutes les autres pages
-            document.querySelectorAll('.page-content:not(#settings-page)').forEach(page => {
-                page.style.display = 'none';
-            });
-            
-            // Afficher les paramètres
+            console.log('[Navigation] 🎯 Clic paramètres détecté');
             window.categoryPage?.show();
-            
-            return false;
         }
-    }, true);
-
-    // Écouter les événements de navigation du système
-    document.addEventListener('DOMContentLoaded', () => {
-        // Intégration avec PageManager si disponible
-        if (window.pageManager) {
-            console.log('[Navigation] 🔗 Intégration avec PageManager détectée');
-            
-            // Override de la méthode showPage pour settings
-            const originalShowPage = window.pageManager.showPage;
-            if (originalShowPage) {
-                window.pageManager.showPage = function(pageId) {
-                    if (pageId === 'settings') {
-                        console.log('[PageManager] 📄 Redirection vers CategoryPage intégrée');
-                        window.categoryPage?.show();
-                        return;
-                    }
-                    originalShowPage.call(this, pageId);
-                };
-            }
-        }
-
-        // Observer les changements de navigation
-        const navObserver = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                    const target = mutation.target;
-                    if (target.classList?.contains('active') && 
-                        (target.dataset?.page === 'settings' || 
-                         target.textContent?.toLowerCase().includes('paramètre') ||
-                         target.textContent?.toLowerCase().includes('settings'))) {
-                        console.log('[Navigation] 👁️ Navigation settings activée détectée');
-                        setTimeout(() => window.categoryPage?.show(), 50);
-                    }
-                }
-            });
-        });
-        
-        navObserver.observe(document.body, {
-            attributes: true,
-            subtree: true,
-            attributeFilter: ['class', 'data-page']
-        });
     });
 
-    // Écouter les événements personnalisés
+    // Écouter les événements
     document.addEventListener('showPage', (e) => {
         if (e.detail === 'settings') {
-            console.log('[Navigation] 📢 Événement showPage settings');
+            console.log('[Navigation] 📄 showPage settings');
             window.categoryPage?.show();
         }
     });
 
-    // Écouter les changements de hash
-    window.addEventListener('hashchange', () => {
-        if (window.location.hash === '#settings') {
-            console.log('[Navigation] 📍 Hash #settings détecté');
-            window.categoryPage?.show();
-        }
-    });
-
-    // Auto-affichage si hash présent au chargement
+    // Auto-affichage si hash
     if (window.location.hash === '#settings') {
-        setTimeout(() => {
-            console.log('[Navigation] 🎯 Hash settings détecté au chargement');
-            window.categoryPage?.show();
-        }, 1000);
+        setTimeout(() => window.categoryPage?.show(), 500);
     }
 
-    console.log('[Navigation] ✅ Intégration navigation configurée');
+    console.log('✅ CategoryPage SIMPLE prêt');
+    console.log('📂 Fonctions: showSettings(), getCategories()');
+    console.log('🎯 Catégories:', Object.keys(window.categoryPage?.categories || {}).length);
 }
 
-// Initialisation immédiate ou différée selon l'état du DOM
+// Initialisation
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeCategoryPageIntegrated);
+    document.addEventListener('DOMContentLoaded', initSimpleCategoryPage);
 } else {
-    initializeCategoryPageIntegrated();
+    initSimpleCategoryPage();
 }
 
-// Double sécurité
-setTimeout(() => {
-    if (!window.categoryPage) {
-        console.log('[CategoryPage] 🔄 Initialisation de secours...');
-        initializeCategoryPageIntegrated();
-    }
-}, 1000);
-
-// Triple sécurité avec surveillance continue
-setInterval(() => {
-    if (!window.categoryPage || !window.categoryPage.isInitialized) {
-        console.log('[CategoryPage] 🚨 Réinitialisation détectée comme nécessaire...');
-        initializeCategoryPageIntegrated();
-    }
-}, 5000);
+// Sécurité
+setTimeout(initSimpleCategoryPage, 1000);
