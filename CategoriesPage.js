@@ -274,7 +274,7 @@ class SettingsPageSimple {
     // ONGLET BACKUP
     // ================================================
     // ================================================
-    // ONGLET BACKUP RESTRUCTURÉ
+    // ONGLET BACKUP SIMPLIFIÉ ET PROFESSIONNEL
     // ================================================
     renderBackupTab() {
         return `
@@ -293,65 +293,45 @@ class SettingsPageSimple {
                     </div>
                 </div>
                 
-                <!-- Actions principales -->
+                <!-- Actions principales simplifiées -->
                 <div class="backup-main-actions">
-                    <div class="action-grid">
+                    <div class="action-row">
                         <!-- Sauvegarde -->
-                        <div class="action-card">
-                            <div class="action-icon backup">
-                                <i class="fas fa-cloud-upload-alt"></i>
+                        <div class="action-card-simple primary">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <div class="card-title">
+                                    <h4>Sauvegarde complète</h4>
+                                    <p>Catégories, paramètres et configuration</p>
+                                </div>
                             </div>
-                            <div class="action-content">
-                                <h4>Créer une sauvegarde</h4>
-                                <p>Sauvegarder toutes vos données (catégories, paramètres, configuration)</p>
-                                <button class="btn-action primary" onclick="window.settingsPage.createBackup()" id="backup-btn">
-                                    <i class="fas fa-save"></i>
-                                    Créer maintenant
-                                </button>
-                            </div>
+                            <button class="btn-card-action" onclick="window.settingsPage.createBackup()" id="backup-btn">
+                                <i class="fas fa-save"></i>
+                                Créer maintenant
+                            </button>
                         </div>
                         
-                        <!-- Import -->
-                        <div class="action-card">
-                            <div class="action-icon import">
-                                <i class="fas fa-file-upload"></i>
+                        <!-- Import/Export -->
+                        <div class="action-card-simple secondary">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </div>
+                                <div class="card-title">
+                                    <h4>Import / Export</h4>
+                                    <p>Restaurer ou exporter vos données</p>
+                                </div>
                             </div>
-                            <div class="action-content">
-                                <h4>Importer des données</h4>
-                                <p>Restaurer depuis un fichier de sauvegarde (.json)</p>
-                                <button class="btn-action secondary" onclick="window.settingsPage.importBackup()">
-                                    <i class="fas fa-upload"></i>
-                                    Choisir un fichier
+                            <div class="card-actions-group">
+                                <button class="btn-card-action secondary" onclick="window.settingsPage.importBackup()">
+                                    <i class="fas fa-file-import"></i>
+                                    Importer
                                 </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Export -->
-                        <div class="action-card">
-                            <div class="action-icon export">
-                                <i class="fas fa-file-download"></i>
-                            </div>
-                            <div class="action-content">
-                                <h4>Exporter les catégories</h4>
-                                <p>Télécharger uniquement vos catégories personnalisées</p>
-                                <button class="btn-action secondary" onclick="window.settingsPage.exportCategories()">
-                                    <i class="fas fa-download"></i>
-                                    Exporter (.json)
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Dossier -->
-                        <div class="action-card">
-                            <div class="action-icon folder">
-                                <i class="fas fa-folder-open"></i>
-                            </div>
-                            <div class="action-content">
-                                <h4>Dossier de sauvegarde</h4>
-                                <p>Accéder à l'emplacement des sauvegardes</p>
-                                <button class="btn-action secondary" onclick="window.settingsPage.openBackupFolder()">
-                                    <i class="fas fa-external-link-alt"></i>
-                                    Ouvrir le dossier
+                                <button class="btn-card-action secondary" onclick="window.settingsPage.exportCategories()">
+                                    <i class="fas fa-file-export"></i>
+                                    Exporter
                                 </button>
                             </div>
                         </div>
@@ -381,35 +361,54 @@ class SettingsPageSimple {
                         <i class="fas fa-chevron-down toggle-icon" id="advanced-toggle"></i>
                     </div>
                     <div class="advanced-content" id="advanced-content" style="display: none;">
-                        <div class="advanced-options">
-                            <div class="option-item">
-                                <label>
-                                    <input type="checkbox" id="backup-include-emails" checked>
-                                    <span>Inclure un échantillon d'emails (1000 max)</span>
-                                </label>
-                                <small>Les emails aident à tester les catégories après restauration</small>
+                        <div class="advanced-grid">
+                            <div class="option-card">
+                                <div class="option-header">
+                                    <i class="fas fa-envelope"></i>
+                                    <h4>Échantillon d'emails</h4>
+                                </div>
+                                <div class="option-content">
+                                    <label class="switch">
+                                        <input type="checkbox" id="backup-include-emails" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <div class="option-text">
+                                        <span>Inclure 1000 emails maximum</span>
+                                        <small>Aide à tester les catégories après restauration</small>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="option-item">
-                                <label>
-                                    <input type="checkbox" id="backup-include-tasks" checked>
-                                    <span>Inclure les tâches créées</span>
-                                </label>
-                                <small>Sauvegarder vos tâches et leur statut</small>
-                            </div>
-                            <div class="option-item">
-                                <label>
-                                    <input type="checkbox" id="backup-compress" disabled>
-                                    <span>Compression avancée (bientôt)</span>
-                                </label>
-                                <small>Réduire la taille des fichiers de sauvegarde</small>
+                            
+                            <div class="option-card">
+                                <div class="option-header">
+                                    <i class="fas fa-tasks"></i>
+                                    <h4>Tâches créées</h4>
+                                </div>
+                                <div class="option-content">
+                                    <label class="switch">
+                                        <input type="checkbox" id="backup-include-tasks" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <div class="option-text">
+                                        <span>Sauvegarder les tâches</span>
+                                        <small>Inclut vos tâches et leur statut</small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="advanced-actions">
-                            <button class="btn-action danger" onclick="window.settingsPage.resetAllSettings()">
+                        <div class="danger-zone-card">
+                            <div class="danger-header">
                                 <i class="fas fa-exclamation-triangle"></i>
-                                Réinitialiser tous les paramètres
-                            </button>
+                                <h4>Réinitialisation complète</h4>
+                            </div>
+                            <div class="danger-content">
+                                <p>Supprimer définitivement toutes les données et paramètres</p>
+                                <button class="btn-danger" onclick="window.settingsPage.resetAllSettings()">
+                                    <i class="fas fa-trash-alt"></i>
+                                    Réinitialiser tout
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1055,49 +1054,47 @@ class SettingsPageSimple {
                 `;
                 
                 detailsHtml = `
-                    <div class="status-grid">
-                        <div class="status-item">
-                            <div class="status-icon user">
+                    <div class="status-details-grid">
+                        <div class="detail-row">
+                            <div class="detail-label">
                                 <i class="fas fa-user"></i>
+                                <span>Utilisateur détecté</span>
                             </div>
-                            <div class="status-content">
-                                <div class="status-label">Utilisateur détecté</div>
-                                <div class="status-value">${realUsername}</div>
+                            <div class="detail-value">
+                                <strong>${realUsername}</strong>
                             </div>
                         </div>
                         
-                        <div class="status-item">
-                            <div class="status-icon folder">
+                        <div class="detail-row">
+                            <div class="detail-label">
                                 <i class="fas fa-folder"></i>
+                                <span>Dossier de sauvegarde</span>
                             </div>
-                            <div class="status-content">
-                                <div class="status-label">Dossier de sauvegarde</div>
-                                <div class="status-value">
-                                    <code class="path-display">C:\\Users\\${realUsername}\\Documents\\MailSort Pro</code>
-                                    <button class="btn-copy-path" onclick="navigator.clipboard.writeText('C:\\\\Users\\\\${realUsername}\\\\Documents\\\\MailSort Pro'); this.innerHTML='<i class=\\"fas fa-check\\"></i> Copié'; setTimeout(() => this.innerHTML='<i class=\\"fas fa-copy\\"></i>', 2000);" title="Copier le chemin">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                </div>
+                            <div class="detail-value">
+                                <code class="path-code">C:\\Users\\${realUsername}\\Documents\\MailSort Pro</code>
+                                <button class="btn-copy-inline" onclick="navigator.clipboard.writeText('C:\\\\Users\\\\${realUsername}\\\\Documents\\\\MailSort Pro'); this.innerHTML='<i class=\\"fas fa-check\\"></i>'; setTimeout(() => this.innerHTML='<i class=\\"fas fa-copy\\"></i>', 2000);" title="Copier le chemin">
+                                    <i class="fas fa-copy"></i>
+                                </button>
                             </div>
                         </div>
                         
-                        <div class="status-item">
-                            <div class="status-icon mode">
+                        <div class="detail-row">
+                            <div class="detail-label">
                                 <i class="fas fa-download"></i>
+                                <span>Mode de sauvegarde</span>
                             </div>
-                            <div class="status-content">
-                                <div class="status-label">Mode de sauvegarde</div>
-                                <div class="status-value">Téléchargement automatique</div>
+                            <div class="detail-value">
+                                <span class="badge success">Téléchargement automatique</span>
                             </div>
                         </div>
                         
-                        <div class="status-item">
-                            <div class="status-icon security">
+                        <div class="detail-row">
+                            <div class="detail-label">
                                 <i class="fas fa-shield-alt"></i>
+                                <span>Sécurité</span>
                             </div>
-                            <div class="status-content">
-                                <div class="status-label">Sécurité</div>
-                                <div class="status-value">Données 100% locales</div>
+                            <div class="detail-value">
+                                <span class="badge secure">Données 100% locales</span>
                             </div>
                         </div>
                     </div>
@@ -1109,32 +1106,34 @@ class SettingsPageSimple {
                 `;
                 
                 detailsHtml = `
-                    <div class="status-grid degraded">
-                        <div class="status-item warning">
-                            <div class="status-icon warning">
+                    <div class="status-details-grid degraded">
+                        <div class="detail-row warning">
+                            <div class="detail-label">
                                 <i class="fas fa-exclamation-triangle"></i>
+                                <span>Statut</span>
                             </div>
-                            <div class="status-content">
-                                <div class="status-label">Statut</div>
-                                <div class="status-value">Sauvegarde par téléchargement uniquement</div>
-                            </div>
-                        </div>
-                        
-                        <div class="status-item">
-                            <div class="status-icon folder">
-                                <i class="fas fa-download"></i>
-                            </div>
-                            <div class="status-content">
-                                <div class="status-label">Emplacement</div>
-                                <div class="status-value">Dossier Téléchargements du navigateur</div>
+                            <div class="detail-value">
+                                <span class="badge warning">Mode téléchargement uniquement</span>
                             </div>
                         </div>
                         
-                        <div class="status-item action">
-                            <button class="btn-reconfigure" onclick="window.settingsPage.backupManager.resetPermissions(); window.settingsPage.initializeBackupManager();">
-                                <i class="fas fa-redo"></i>
-                                <span>Reconfigurer le système</span>
-                            </button>
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-folder"></i>
+                                <span>Emplacement</span>
+                            </div>
+                            <div class="detail-value">
+                                <span>Dossier Téléchargements du navigateur</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row action">
+                            <div class="detail-action">
+                                <button class="btn-reconfigure-inline" onclick="window.settingsPage.backupManager.resetPermissions(); window.settingsPage.initializeBackupManager();">
+                                    <i class="fas fa-redo"></i>
+                                    <span>Reconfigurer le système</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1151,14 +1150,14 @@ class SettingsPageSimple {
                 <span>Erreur de configuration</span>
             `;
             document.getElementById('backup-status-details').innerHTML = `
-                <div class="status-grid error">
-                    <div class="status-item error">
-                        <div class="status-icon error">
+                <div class="status-details-grid error">
+                    <div class="detail-row error">
+                        <div class="detail-label">
                             <i class="fas fa-times-circle"></i>
+                            <span>Erreur détectée</span>
                         </div>
-                        <div class="status-content">
-                            <div class="status-label">Erreur détectée</div>
-                            <div class="status-value">${error.message}</div>
+                        <div class="detail-value">
+                            <span class="badge error">${error.message}</span>
                         </div>
                     </div>
                 </div>
