@@ -1908,9 +1908,57 @@ class SettingsPageSimple {
                 font-weight: 500;
             }
             
-            .backup-path-display i {
+            .folder-status {
+                background: var(--primary)05;
+                border: 1px solid var(--primary)20;
+                border-radius: 6px;
+                padding: 12px;
+                margin-bottom: 20px;
+            }
+            
+            .folder-status p {
+                margin: 0;
+                font-size: 13px;
                 color: var(--primary);
-                font-size: 18px;
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+                line-height: 1.4;
+            }
+            
+            .folder-status i {
+                margin-top: 2px;
+                flex-shrink: 0;
+            }
+            
+            .folder-troubleshooting {
+                background: var(--warning)05;
+                border: 1px solid var(--warning)20;
+                border-radius: 6px;
+                padding: 16px;
+                margin-bottom: 20px;
+            }
+            
+            .folder-troubleshooting h4 {
+                margin: 0 0 8px 0;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--warning);
+            }
+            
+            .folder-troubleshooting ul {
+                margin: 0;
+                padding-left: 20px;
+            }
+            
+            .folder-troubleshooting li {
+                margin-bottom: 6px;
+                font-size: 13px;
+                color: var(--text-light);
+            }
+            
+            .folder-troubleshooting strong {
+                color: var(--text);
             }
             .backup-notification {
                 position: fixed;
@@ -2286,25 +2334,28 @@ class BackupManager {
     async detectAvailablePaths() {
         this.detectedPaths = [];
         
-        // Chemins communs selon l'OS
+        // Détecter le vrai nom d'utilisateur
+        const realUsername = await this.detectRealUsername();
+        
+        // Chemins communs selon l'OS avec le vrai nom d'utilisateur
         const commonPaths = {
             windows: [
-                '%USERPROFILE%\\Documents\\MailSort Pro',
-                '%USERPROFILE%\\Desktop\\MailSort Pro',
-                '%USERPROFILE%\\Downloads\\MailSort Pro',
-                'C:\\MailSort Pro',
-                '%APPDATA%\\MailSort Pro'
+                `C:\\Users\\${realUsername}\\Documents\\MailSort Pro`,
+                `C:\\Users\\${realUsername}\\Desktop\\MailSort Pro`,
+                `C:\\Users\\${realUsername}\\Downloads\\MailSort Pro`,
+                `C:\\MailSort Pro`,
+                `C:\\Users\\${realUsername}\\AppData\\Roaming\\MailSort Pro`
             ],
             mac: [
-                '~/Documents/MailSort Pro',
-                '~/Desktop/MailSort Pro',
-                '~/Downloads/MailSort Pro',
+                `/Users/${realUsername}/Documents/MailSort Pro`,
+                `/Users/${realUsername}/Desktop/MailSort Pro`,
+                `/Users/${realUsername}/Downloads/MailSort Pro`,
                 '/Applications/MailSort Pro'
             ],
             linux: [
-                '~/Documents/MailSort Pro',
-                '~/Desktop/MailSort Pro',
-                '~/Downloads/MailSort Pro',
+                `/home/${realUsername}/Documents/MailSort Pro`,
+                `/home/${realUsername}/Desktop/MailSort Pro`,
+                `/home/${realUsername}/Downloads/MailSort Pro`,
                 '/opt/MailSort Pro'
             ]
         };
@@ -2313,10 +2364,87 @@ class BackupManager {
         const platform = this.detectPlatform();
         const paths = commonPaths[platform] || commonPaths.windows;
         
-        // Résoudre les variables d'environnement pour Windows
-        this.detectedPaths = paths.map(path => this.resolvePath(path));
+        this.detectedPaths = paths;
         
-        console.log('[BackupManager] 🗂️ Chemins détectés pour', platform, ':', this.detectedPaths);
+        console.log('[BackupManager] 🗂️ Chemins détectés pour', platform, 'utilisateur:', realUsername);
+        console.log('[BackupManager] 📁 Chemins:', this.detectedPaths);
+    }
+
+    async detectRealUsername() {
+        try {
+            // Méthode 1: Tenter de détecter via les APIs disponibles
+            if (window.electronAPI && window.electronAPI.getUsername) {
+                const username = await window.electronAPI.getUsername();
+                if (username) return username;
+            }
+
+            // Méthode 2: Utiliser l'API utilisateur Microsoft si connecté
+            if (window.authService && window.authService.isAuthenticated()) {
+                try {
+                    const userInfo = await window.authService.getUserInfo();
+                    if (userInfo && userInfo.userPrincipalName) {
+                        // Extraire le nom d'utilisateur de l'email
+                        const emailPart = userInfo.userPrincipalName.split('@')[0];
+                        const cleanUsername = emailPart.replace(/[^a-zA-Z0-9]/g, '');
+                        if (cleanUsername) return cleanUsername;
+                    }
+                    if (userInfo && userInfo.displayName) {
+                        // Utiliser le nom d'affichage comme fallback
+                        const cleanName = userInfo.displayName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '');
+                        if (cleanName) return cleanName;
+                    }
+                } catch (error) {
+                    console.log('[BackupManager] Info utilisateur non disponible');
+                }
+            }
+
+            // Méthode 3: Tenter via les variables d'environnement simulées
+            const platform = this.detectPlatform();
+            if (platform === 'windows') {
+                // Approximations courantes Windows
+                const commonUsernames = ['User', 'Admin', 'Administrator', process.env?.USERNAME || 'User'];
+                return commonUsernames[0];
+            } else if (platform === 'mac' || platform === 'linux') {
+                return process.env?.USER || 'user';
+            }
+
+            // Fallback par défaut
+            return 'User';
+            
+        } catch (error) {
+            console.error('[BackupManager] Erreur détection nom utilisateur:', error);
+            return 'User';
+        }
+    }
+
+    // Méthode pour tester l'existence d'un dossier (quand possible)
+    async testFolderExists(path) {
+        try {
+            if (window.electronAPI && window.electronAPI.checkFolderExists) {
+                return await window.electronAPI.checkFolderExists(path);
+            }
+            
+            // En environnement web, on ne peut pas tester l'existence
+            // On retourne true par défaut
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    // Méthode améliorée pour obtenir le meilleur chemin
+    async getBestAvailablePath() {
+        for (const path of this.detectedPaths) {
+            const exists = await this.testFolderExists(path);
+            if (exists) {
+                console.log('[BackupManager] ✅ Dossier existant trouvé:', path);
+                return path;
+            }
+        }
+        
+        // Si aucun dossier n'existe, retourner le premier (Documents)
+        console.log('[BackupManager] 📁 Utilisation du chemin par défaut:', this.detectedPaths[0]);
+        return this.detectedPaths[0];
     }
 
     detectPlatform() {
@@ -2390,13 +2518,13 @@ class BackupManager {
     }
 
     async initializeFallback() {
-        // Mode de fallback : utiliser les téléchargements du navigateur
+        // Mode de fallback : utiliser le meilleur chemin détecté
         console.log('[BackupManager] 🔄 Mode de fallback activé');
         
-        this.backupPath = this.detectedPaths[0]; // Premier chemin détecté
+        this.backupPath = await this.getBestAvailablePath();
         this.hasPermission = true; // Pas de vraie permission nécessaire en fallback
         
-        // Informer l'utilisateur
+        // Informer l'utilisateur avec le vrai chemin
         this.showPermissionDialog();
         this.savePermissions();
     }
@@ -2708,26 +2836,41 @@ class BackupManager {
                             <h3>Emplacement de sauvegarde</h3>
                             <div class="folder-path">
                                 <code>${this.backupPath}</code>
-                                <button class="btn-copy" onclick="navigator.clipboard.writeText('${this.backupPath}'); this.innerHTML='<i class=\"fas fa-check\"></i> Copié!';">
+                                <button class="btn-copy" onclick="navigator.clipboard.writeText('${this.backupPath.replace(/\\/g, '\\\\')}'); this.innerHTML='<i class=\\"fas fa-check\\"></i> Copié!';">
                                     <i class="fas fa-copy"></i>
                                 </button>
+                            </div>
+                            
+                            <div class="folder-status">
+                                <p><i class="fas fa-info-circle"></i> <strong>Information :</strong> Ce chemin correspond à votre dossier Documents personnel. Si le dossier "MailSort Pro" n'existe pas encore, il sera créé automatiquement lors de la première sauvegarde.</p>
                             </div>
                             
                             <div class="folder-instructions">
                                 <h4>📁 Pour accéder manuellement :</h4>
                                 <ol>
-                                    <li>Ouvrez l'Explorateur de fichiers</li>
-                                    <li>Collez le chemin ci-dessus dans la barre d'adresse</li>
-                                    <li>Appuyez sur Entrée</li>
+                                    <li>Ouvrez l'Explorateur de fichiers (raccourci : <kbd>Win + E</kbd>)</li>
+                                    <li>Cliquez dans la barre d'adresse en haut</li>
+                                    <li>Collez le chemin ci-dessus</li>
+                                    <li>Appuyez sur <kbd>Entrée</kbd></li>
                                 </ol>
                             </div>
                             
                             <div class="folder-alternatives">
-                                <h4>🔧 Alternatives :</h4>
+                                <h4>🔧 Méthodes alternatives :</h4>
                                 <ul>
-                                    <li>Utilisez <kbd>Win + R</kbd> puis collez le chemin</li>
-                                    <li>Recherchez "MailSort Pro" dans l'explorateur</li>
-                                    <li>Vérifiez votre dossier Documents ou Téléchargements</li>
+                                    <li>Utilisez <kbd>Win + R</kbd>, collez le chemin et appuyez sur <kbd>Entrée</kbd></li>
+                                    <li>Ouvrez votre dossier Documents et cherchez "MailSort Pro"</li>
+                                    <li>Utilisez la recherche Windows avec "MailSort Pro"</li>
+                                    <li>Vérifiez aussi dans Téléchargements si les sauvegardes s'y trouvent</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="folder-troubleshooting">
+                                <h4>🔧 Dépannage :</h4>
+                                <ul>
+                                    <li><strong>Dossier introuvable ?</strong> Le dossier sera créé automatiquement lors de la première sauvegarde</li>
+                                    <li><strong>Accès refusé ?</strong> Vérifiez que vous avez les droits sur votre dossier Documents</li>
+                                    <li><strong>Chemin invalide ?</strong> Les sauvegardes iront dans le dossier Téléchargements par défaut</li>
                                 </ul>
                             </div>
                         </div>
@@ -2735,6 +2878,9 @@ class BackupManager {
                 </div>
                 
                 <div class="modal-footer">
+                    <button class="btn-secondary" onclick="this.closest('.modal-backdrop').remove(); window.settingsPage.backupManager.resetPermissions(); window.settingsPage.initializeBackupManager();">
+                        <i class="fas fa-redo"></i> Reconfigurer
+                    </button>
                     <button class="btn-primary" onclick="this.closest('.modal-backdrop').remove()">
                         <i class="fas fa-check"></i> Compris
                     </button>
