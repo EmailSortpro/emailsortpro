@@ -1,4 +1,4 @@
-// TaskManager Pro v10.1 - Interface Harmonisée Corrigée avec Alignement Parfait
+// TaskManager Pro v11.0 - Compatible PageManager avec Filtres Dynamiques et Checklist
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -13,7 +13,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v10.1 - Interface harmonisée corrigée...');
+            console.log('[TaskManager] Initializing v11.0 - Filtres dynamiques et checklist...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -84,6 +84,9 @@ class TaskManager {
             aiRepliesGenerated: task.aiRepliesGenerated || false,
             aiRepliesGeneratedAt: task.aiRepliesGeneratedAt || null,
             
+            // NOUVEAU: Checklist
+            checklist: Array.isArray(task.checklist) ? task.checklist : [],
+            
             // Timestamps
             createdAt: task.createdAt || new Date().toISOString(),
             updatedAt: task.updatedAt || new Date().toISOString(),
@@ -135,8 +138,6 @@ class TaskManager {
                 emailSubject: 'Validation campagne marketing Q2',
                 emailDate: '2025-06-06T09:15:00Z',
                 emailDomain: 'acme-corp.com',
-                emailContent: `Email de: Sarah Martin <sarah.martin@acme-corp.com>\nDate: ${new Date().toLocaleString('fr-FR')}\nSujet: Validation campagne marketing Q2\n\nBonjour,\n\nJ'espère que vous allez bien. Je vous contacte concernant notre campagne marketing Q2 qui nécessite votre validation.\n\nNous avons préparé les éléments suivants :\n- Visuels créatifs pour les réseaux sociaux\n- Budget détaillé de 50k€\n- Calendrier de lancement\n\nPourriez-vous valider ces éléments avant vendredi ? Nous devons coordonner avec l'équipe commerciale pour le lancement.\n\nMerci d'avance,\nSarah Martin`,
-                tags: ['marketing', 'validation', 'q2'],
                 client: 'ACME Corp',
                 dueDate: '2025-06-20',
                 needsReply: true,
@@ -154,6 +155,11 @@ class TaskManager {
                 risks: [
                     'Deadline serrée pour le lancement',
                     'Coordination avec l\'équipe commerciale requise'
+                ],
+                checklist: [
+                    { id: 'cl1', text: 'Analyser les visuels proposés', completed: false },
+                    { id: 'cl2', text: 'Vérifier le budget disponible', completed: true },
+                    { id: 'cl3', text: 'Valider avec la direction', completed: false }
                 ],
                 method: 'ai'
             },
@@ -177,6 +183,11 @@ class TaskManager {
                     'Nouveau client majeur acquis',
                     'Équipe agrandie de 3 personnes'
                 ],
+                checklist: [
+                    { id: 'cl4', text: 'Rassembler données Q1', completed: true },
+                    { id: 'cl5', text: 'Créer slides PowerPoint', completed: false },
+                    { id: 'cl6', text: 'Préparer discours', completed: false }
+                ],
                 method: 'manual'
             },
             {
@@ -184,7 +195,7 @@ class TaskManager {
                 title: 'Répondre à Jean Dupont - Devis urgent',
                 description: 'Jean Dupont demande un devis pour un projet de refonte website',
                 priority: 'urgent',
-                status: 'todo',
+                status: 'relance',
                 category: 'email',
                 hasEmail: true,
                 emailFrom: 'jean.dupont@example.com',
@@ -196,6 +207,11 @@ class TaskManager {
                 dueDate: '2025-06-17',
                 needsReply: true,
                 summary: 'Demande de devis urgent pour refonte complète du site web',
+                checklist: [
+                    { id: 'cl7', text: 'Évaluer complexité du projet', completed: true },
+                    { id: 'cl8', text: 'Chiffrer les coûts', completed: false },
+                    { id: 'cl9', text: 'Envoyer devis détaillé', completed: false }
+                ],
                 method: 'ai'
             }
         ];
@@ -275,6 +291,23 @@ class TaskManager {
         return this.tasks[index];
     }
 
+    updateChecklist(taskId, checklistUpdates) {
+        const task = this.getTask(taskId);
+        if (!task) return null;
+        
+        const updatedChecklist = checklistUpdates.map(item => ({
+            id: item.id || this.generateChecklistId(),
+            text: item.text || '',
+            completed: item.completed || false
+        }));
+        
+        return this.updateTask(taskId, { checklist: updatedChecklist });
+    }
+
+    generateChecklistId() {
+        return 'cl_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    }
+
     deleteTask(id) {
         const index = this.tasks.findIndex(task => task.id === id);
         if (index === -1) {
@@ -299,7 +332,7 @@ class TaskManager {
     }
 
     // ================================================
-    // MÉTHODES DE FILTRAGE ET TRI
+    // MÉTHODES DE FILTRAGE ET TRI AMÉLIORÉES
     // ================================================
     
     filterTasks(filters = {}) {
@@ -347,6 +380,17 @@ class TaskManager {
         return this.sortTasks(filtered, filters.sortBy || 'created');
     }
 
+    // NOUVEAU: Méthode pour obtenir dynamiquement tous les clients
+    getAllClients() {
+        const clients = new Set();
+        this.tasks.forEach(task => {
+            if (task.client && task.client.trim()) {
+                clients.add(task.client.trim());
+            }
+        });
+        return Array.from(clients).sort();
+    }
+
     sortTasks(tasks, sortBy) {
         const sorted = [...tasks];
         
@@ -388,6 +432,9 @@ class TaskManager {
         const byStatus = {
             todo: this.tasks.filter(t => t.status === 'todo').length,
             'in-progress': this.tasks.filter(t => t.status === 'in-progress').length,
+            'relance': this.tasks.filter(t => t.status === 'relance').length,
+            'bloque': this.tasks.filter(t => t.status === 'bloque').length,
+            'reporte': this.tasks.filter(t => t.status === 'reporte').length,
             completed: this.tasks.filter(t => t.status === 'completed').length
         };
 
@@ -396,6 +443,9 @@ class TaskManager {
             byStatus,
             todo: byStatus.todo,
             inProgress: byStatus['in-progress'],
+            relance: byStatus.relance,
+            bloque: byStatus.bloque,
+            reporte: byStatus.reporte,
             completed: byStatus.completed,
             overdue: this.tasks.filter(t => {
                 if (!t.dueDate || t.status === 'completed') return false;
@@ -520,7 +570,7 @@ class TaskManager {
 }
 
 // =====================================
-// TASKS VIEW - INTERFACE HARMONISÉE CORRIGÉE
+// TASKS VIEW - INTERFACE AVEC FILTRES DYNAMIQUES
 // =====================================
 class TasksView {
     constructor() {
@@ -722,7 +772,7 @@ class TasksView {
 
         this.addCorrectedStyles();
         this.setupEventListeners();
-        console.log('[TasksView] Interface harmonisée corrigée rendue');
+        console.log('[TasksView] Interface harmonisée avec filtres dynamiques rendue');
     }
 
     buildStatusPills(stats) {
@@ -730,6 +780,9 @@ class TasksView {
             { id: 'all', name: 'Tous', icon: '📋', count: stats.total },
             { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
             { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
+            { id: 'relance', name: 'Relancé', icon: '🔔', count: stats.relance },
+            { id: 'bloque', name: 'Bloqué', icon: '🚫', count: stats.bloque },
+            { id: 'reporte', name: 'Reporté', icon: '⏰', count: stats.reporte },
             { id: 'overdue', name: 'En retard', icon: '⚠️', count: stats.overdue },
             { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply },
             { id: 'completed', name: 'Terminées', icon: '✅', count: stats.completed }
@@ -745,6 +798,20 @@ class TasksView {
                 <span class="pill-count">${pill.count}</span>
             </button>
         `).join('');
+    }
+
+    // NOUVEAU: Construction dynamique des options de filtrage client
+    buildClientFilterOptions() {
+        const clients = window.taskManager?.getAllClients() || [];
+        
+        let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
+        
+        clients.forEach(client => {
+            const count = window.taskManager.tasks.filter(t => t.client === client).length;
+            options += `<option value="${this.escapeHtml(client)}" ${this.currentFilters.client === client ? 'selected' : ''}>${this.escapeHtml(client)} (${count})</option>`;
+        });
+        
+        return options;
     }
 
     renderTasksList() {
@@ -797,6 +864,9 @@ class TasksView {
                     </div>
                     
                     <div class="task-meta">
+                        <span class="task-status-badge status-${task.status}">
+                            ${this.getStatusIcon(task.status)} ${this.getStatusLabel(task.status)}
+                        </span>
                         <span class="task-deadline ${dueDateInfo.className}">
                             ${dueDateInfo.text || 'Pas d\'échéance'}
                         </span>
@@ -824,6 +894,7 @@ class TasksView {
         const priorityIcon = this.getPriorityIcon(task.priority);
         const statusIcon = this.getStatusIcon(task.status);
         const dueDateInfo = this.formatDueDate(task.dueDate);
+        const checklistProgress = this.getChecklistProgress(task.checklist);
         
         return `
             <div class="task-normal ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
@@ -842,7 +913,15 @@ class TasksView {
                         <div class="task-header">
                             <h3 class="task-title">${this.escapeHtml(task.title)}</h3>
                             <div class="task-badges">
-                                <!-- Badges supprimés - affichage épuré -->
+                                <span class="status-badge status-${task.status}">
+                                    ${statusIcon} ${this.getStatusLabel(task.status)}
+                                </span>
+                                ${checklistProgress.total > 0 ? `
+                                    <span class="checklist-badge">
+                                        <i class="fas fa-check-square"></i>
+                                        ${checklistProgress.completed}/${checklistProgress.total}
+                                    </span>
+                                ` : ''}
                             </div>
                         </div>
                         
@@ -876,6 +955,7 @@ class TasksView {
         const isSelected = this.selectedTasks.has(task.id);
         const isCompleted = task.status === 'completed';
         const dueDateInfo = this.formatDueDate(task.dueDate);
+        const checklistProgress = this.getChecklistProgress(task.checklist);
         
         return `
             <div class="task-detailed ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
@@ -888,13 +968,29 @@ class TasksView {
                            onclick="window.tasksView.toggleTaskSelection('${task.id}')">
                     
                     <div class="task-badges-group">
-                        <!-- Badges supprimés - affichage épuré -->
+                        <span class="priority-badge priority-${task.priority}">
+                            ${this.getPriorityIcon(task.priority)} ${this.getPriorityLabel(task.priority)}
+                        </span>
+                        <span class="status-badge status-${task.status}">
+                            ${this.getStatusIcon(task.status)} ${this.getStatusLabel(task.status)}
+                        </span>
                     </div>
                 </div>
                 
                 <div class="task-detailed-content">
                     <h3 class="task-title" onclick="window.tasksView.showTaskDetails('${task.id}')">${this.escapeHtml(task.title)}</h3>
                     <p class="task-description">${this.escapeHtml(task.description.substring(0, 150))}${task.description.length > 150 ? '...' : ''}</p>
+                    
+                    ${checklistProgress.total > 0 ? `
+                        <div class="checklist-summary">
+                            <div class="checklist-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: ${(checklistProgress.completed / checklistProgress.total) * 100}%"></div>
+                                </div>
+                                <span class="progress-text">${checklistProgress.completed}/${checklistProgress.total} tâches</span>
+                            </div>
+                        </div>
+                    ` : ''}
                     
                     <div class="task-meta-grid">
                         <div class="meta-item">
@@ -911,6 +1007,16 @@ class TasksView {
                 </div>
             </div>
         `;
+    }
+
+    // NOUVEAU: Calcul du progrès de la checklist
+    getChecklistProgress(checklist) {
+        if (!Array.isArray(checklist)) return { completed: 0, total: 0 };
+        
+        const total = checklist.length;
+        const completed = checklist.filter(item => item.completed).length;
+        
+        return { completed, total };
     }
 
     renderTaskActions(task) {
@@ -1029,113 +1135,6 @@ class TasksView {
         this.refreshView();
     }
 
-    bulkActions() {
-        if (this.selectedTasks.size === 0) return;
-        
-        const actions = [
-            'Marquer comme terminé',
-            'Changer la priorité',
-            'Changer le statut',
-            'Supprimer',
-            'Exporter'
-        ];
-        
-        const action = prompt(`Actions disponibles pour ${this.selectedTasks.size} tâche(s):\n\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEntrez le numéro de l'action:`);
-        
-        if (!action) return;
-        
-        const actionIndex = parseInt(action) - 1;
-        
-        switch (actionIndex) {
-            case 0: // Marquer comme terminé
-                this.selectedTasks.forEach(taskId => {
-                    window.taskManager.updateTask(taskId, { 
-                        status: 'completed',
-                        completedAt: new Date().toISOString()
-                    });
-                });
-                this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
-                this.clearSelection();
-                break;
-                
-            case 1: // Changer la priorité
-                const priority = prompt('Nouvelle priorité:\n1. Basse\n2. Normale\n3. Haute\n4. Urgente\n\nEntrez le numéro:');
-                const priorities = ['', 'low', 'medium', 'high', 'urgent'];
-                if (priority && priorities[parseInt(priority)]) {
-                    this.selectedTasks.forEach(taskId => {
-                        window.taskManager.updateTask(taskId, { priority: priorities[parseInt(priority)] });
-                    });
-                    this.showToast(`Priorité mise à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 2: // Changer le statut
-                const status = prompt('Nouveau statut:\n1. À faire\n2. En cours\n3. Terminé\n\nEntrez le numéro:');
-                const statuses = ['', 'todo', 'in-progress', 'completed'];
-                if (status && statuses[parseInt(status)]) {
-                    this.selectedTasks.forEach(taskId => {
-                        const updates = { status: statuses[parseInt(status)] };
-                        if (updates.status === 'completed') {
-                            updates.completedAt = new Date().toISOString();
-                        }
-                        window.taskManager.updateTask(taskId, updates);
-                    });
-                    this.showToast(`Statut mis à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 3: // Supprimer
-                if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?\n\nCette action est irréversible.`)) {
-                    this.selectedTasks.forEach(taskId => {
-                        window.taskManager.deleteTask(taskId);
-                    });
-                    this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 4: // Exporter
-                this.exportSelectedTasks();
-                break;
-        }
-    }
-
-    exportSelectedTasks() {
-        const tasks = Array.from(this.selectedTasks).map(id => window.taskManager.getTask(id)).filter(Boolean);
-        
-        const csvContent = [
-            ['Titre', 'Description', 'Priorité', 'Statut', 'Échéance', 'Client', 'Créé le'].join(','),
-            ...tasks.map(task => [
-                `"${task.title}"`,
-                `"${task.description || ''}"`,
-                task.priority,
-                task.status,
-                task.dueDate || '',
-                task.client || '',
-                new Date(task.createdAt).toLocaleDateString('fr-FR')
-            ].join(','))
-        ].join('\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `taches_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        this.showToast('Export terminé', 'success');
-        this.clearSelection();
-    }
-
-    // ================================================
-    // MÉTHODES UTILITAIRES (inchangées)
-    // ================================================
-
     changeViewMode(mode) {
         this.currentViewMode = mode;
         this.refreshView();
@@ -1167,6 +1166,9 @@ class TasksView {
                 break;
             case 'todo':
             case 'in-progress':
+            case 'relance':
+            case 'bloque':
+            case 'reporte':
             case 'completed':
                 this.currentFilters.status = filterId;
                 break;
@@ -1231,26 +1233,6 @@ class TasksView {
         }
     }
 
-    buildClientFilterOptions() {
-        const tasks = window.taskManager.getAllTasks();
-        const clients = new Set();
-        
-        tasks.forEach(task => {
-            if (task.client) {
-                clients.add(task.client);
-            }
-        });
-        
-        let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
-        
-        Array.from(clients).sort().forEach(client => {
-            const count = tasks.filter(t => t.client === client).length;
-            options += `<option value="${client}" ${this.currentFilters.client === client ? 'selected' : ''}>${client} (${count})</option>`;
-        });
-        
-        return options;
-    }
-
     refreshView() {
         const container = document.getElementById('tasksContainer');
         if (container) {
@@ -1262,6 +1244,12 @@ class TasksView {
         document.querySelectorAll('.status-filters').forEach(container => {
             container.innerHTML = this.buildStatusPills(stats);
         });
+        
+        // Mettre à jour les options de filtrage client dynamiquement
+        const clientFilter = document.getElementById('clientFilter');
+        if (clientFilter) {
+            clientFilter.innerHTML = this.buildClientFilterOptions();
+        }
         
         // Mettre à jour l'affichage des actions de sélection
         this.updateSelectionUI();
@@ -1412,6 +1400,9 @@ class TasksView {
             case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
             case 'todo': return this.currentFilters.status === 'todo';
             case 'in-progress': return this.currentFilters.status === 'in-progress';
+            case 'relance': return this.currentFilters.status === 'relance';
+            case 'bloque': return this.currentFilters.status === 'bloque';
+            case 'reporte': return this.currentFilters.status === 'reporte';
             case 'completed': return this.currentFilters.status === 'completed';
             case 'overdue': return this.currentFilters.overdue;
             case 'needsReply': return this.currentFilters.needsReply;
@@ -1445,12 +1436,26 @@ class TasksView {
     }
 
     getStatusIcon(status) {
-        const icons = { todo: '⏳', 'in-progress': '🔄', completed: '✅' };
+        const icons = { 
+            todo: '⏳', 
+            'in-progress': '🔄', 
+            'relance': '🔔',
+            'bloque': '🚫',
+            'reporte': '⏰',
+            completed: '✅' 
+        };
         return icons[status] || '⏳';
     }
 
     getStatusLabel(status) {
-        const labels = { todo: 'À faire', 'in-progress': 'En cours', completed: 'Terminé' };
+        const labels = { 
+            todo: 'À faire', 
+            'in-progress': 'En cours', 
+            'relance': 'Relancé',
+            'bloque': 'Bloqué',
+            'reporte': 'Reporté',
+            completed: 'Terminé' 
+        };
         return labels[status] || 'À faire';
     }
 
@@ -1509,7 +1514,7 @@ class TasksView {
     }
 
     // ================================================
-    // MODALES COMPLÈTES AVEC INTERFACE GRAPHIQUE
+    // MODALES COMPLÈTES AVEC CHECKLIST
     // ================================================
 
     showCreateModal() {
@@ -1579,8 +1584,14 @@ class TasksView {
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Date d'échéance</label>
-                        <input type="date" id="new-task-duedate" class="form-input" />
+                        <label>Statut</label>
+                        <select id="new-task-status" class="form-select">
+                            <option value="todo" selected>⏳ À faire</option>
+                            <option value="in-progress">🔄 En cours</option>
+                            <option value="relance">🔔 Relancé</option>
+                            <option value="bloque">🚫 Bloqué</option>
+                            <option value="reporte">⏰ Reporté</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -1590,17 +1601,89 @@ class TasksView {
                         <input type="text" id="new-task-client" class="form-input" 
                                placeholder="Nom du client ou projet" value="Interne" />
                     </div>
+                    <div class="form-group">
+                        <label>Date d'échéance</label>
+                        <input type="date" id="new-task-duedate" class="form-input" />
+                    </div>
+                </div>
+                
+                <!-- NOUVEAU: Section Checklist -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-check-square"></i> Liste de contrôle</h3>
+                        <button type="button" class="btn-add-checklist" onclick="window.tasksView.addChecklistItem('new-task-checklist')">
+                            <i class="fas fa-plus"></i> Ajouter
+                        </button>
+                    </div>
+                    <div id="new-task-checklist" class="checklist-container">
+                        <!-- Items de checklist seront ajoutés ici -->
+                    </div>
                 </div>
             </div>
         `;
+    }
+
+    addChecklistItem(containerId, text = '', completed = false) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        const itemId = 'cl_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+        const itemHTML = `
+            <div class="checklist-item" data-item-id="${itemId}">
+                <input type="checkbox" class="checklist-checkbox" ${completed ? 'checked' : ''}>
+                <input type="text" class="checklist-input" placeholder="Élément de la liste..." value="${text}">
+                <button type="button" class="btn-remove-checklist" onclick="window.tasksView.removeChecklistItem('${itemId}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', itemHTML);
+        
+        // Focus sur le nouveau champ
+        const newInput = container.querySelector(`[data-item-id="${itemId}"] .checklist-input`);
+        if (newInput) {
+            newInput.focus();
+        }
+    }
+
+    removeChecklistItem(itemId) {
+        const item = document.querySelector(`[data-item-id="${itemId}"]`);
+        if (item) {
+            item.remove();
+        }
+    }
+
+    getChecklistFromForm(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return [];
+        
+        const items = [];
+        container.querySelectorAll('.checklist-item').forEach(item => {
+            const checkbox = item.querySelector('.checklist-checkbox');
+            const input = item.querySelector('.checklist-input');
+            const text = input.value.trim();
+            
+            if (text) {
+                items.push({
+                    id: item.dataset.itemId,
+                    text: text,
+                    completed: checkbox.checked
+                });
+            }
+        });
+        
+        return items;
     }
 
     createNewTask(modalId) {
         const title = document.getElementById('new-task-title')?.value?.trim();
         const description = document.getElementById('new-task-description')?.value?.trim();
         const priority = document.getElementById('new-task-priority')?.value;
-        const dueDate = document.getElementById('new-task-duedate')?.value;
+        const status = document.getElementById('new-task-status')?.value;
         const client = document.getElementById('new-task-client')?.value?.trim();
+        const dueDate = document.getElementById('new-task-duedate')?.value;
+        const checklist = this.getChecklistFromForm('new-task-checklist');
 
         if (!title) {
             this.showToast('Le titre est requis', 'warning');
@@ -1611,9 +1694,11 @@ class TasksView {
             title,
             description: description || '',
             priority,
+            status,
             dueDate: dueDate || null,
             client: client || 'Interne',
             category: 'work',
+            checklist: checklist,
             method: 'manual'
         };
 
@@ -1663,10 +1748,19 @@ class TasksView {
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
         
+        // Ajouter les éléments de checklist existants
+        if (task.checklist && task.checklist.length > 0) {
+            setTimeout(() => {
+                task.checklist.forEach(item => {
+                    this.addChecklistItem('edit-task-checklist', item.text, item.completed);
+                });
+            }, 100);
+        }
+        
         setTimeout(() => {
             const firstInput = document.querySelector(`#${uniqueId} input, #${uniqueId} textarea`);
             if (firstInput) firstInput.focus();
-        }, 100);
+        }, 200);
     }
 
     buildEditForm(task) {
@@ -1702,6 +1796,9 @@ class TasksView {
                         <select id="edit-status" class="form-select">
                             <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>⏳ À faire</option>
                             <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>🔄 En cours</option>
+                            <option value="relance" ${task.status === 'relance' ? 'selected' : ''}>🔔 Relancé</option>
+                            <option value="bloque" ${task.status === 'bloque' ? 'selected' : ''}>🚫 Bloqué</option>
+                            <option value="reporte" ${task.status === 'reporte' ? 'selected' : ''}>⏰ Reporté</option>
                             <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>✅ Terminé</option>
                         </select>
                     </div>
@@ -1735,6 +1832,19 @@ class TasksView {
                         </div>
                     </div>
                 ` : ''}
+                
+                <!-- NOUVEAU: Section Checklist -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-check-square"></i> Liste de contrôle</h3>
+                        <button type="button" class="btn-add-checklist" onclick="window.tasksView.addChecklistItem('edit-task-checklist')">
+                            <i class="fas fa-plus"></i> Ajouter
+                        </button>
+                    </div>
+                    <div id="edit-task-checklist" class="checklist-container">
+                        <!-- Items de checklist seront ajoutés par JavaScript -->
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -1747,6 +1857,7 @@ class TasksView {
         const client = document.getElementById('edit-client')?.value?.trim();
         const dueDate = document.getElementById('edit-duedate')?.value;
         const needsReply = document.getElementById('edit-needs-reply')?.checked;
+        const checklist = this.getChecklistFromForm('edit-task-checklist');
 
         if (!title) {
             this.showToast('Le titre est requis', 'warning');
@@ -1760,7 +1871,8 @@ class TasksView {
             status,
             client: client || 'Interne',
             dueDate: dueDate || null,
-            needsReply: needsReply || false
+            needsReply: needsReply || false,
+            checklist: checklist
         };
 
         try {
@@ -1823,6 +1935,7 @@ class TasksView {
         const priorityIcon = this.getPriorityIcon(task.priority);
         const statusLabel = this.getStatusLabel(task.status);
         const dueDateInfo = this.formatDueDate(task.dueDate);
+        const checklistProgress = this.getChecklistProgress(task.checklist);
         
         return `
             <div class="task-details-content">
@@ -1839,6 +1952,12 @@ class TasksView {
                             <i class="fas fa-calendar"></i>
                             ${dueDateInfo.text || 'Pas d\'échéance définie'}
                         </span>
+                        ${checklistProgress.total > 0 ? `
+                            <span class="checklist-badge-details">
+                                <i class="fas fa-check-square"></i>
+                                ${checklistProgress.completed}/${checklistProgress.total} tâches
+                            </span>
+                        ` : ''}
                     </div>
                 </div>
 
@@ -1847,6 +1966,28 @@ class TasksView {
                         <h3><i class="fas fa-align-left"></i> Description</h3>
                         <div class="description-content">
                             ${this.formatDescription(task.description)}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.checklist && task.checklist.length > 0 ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-check-square"></i> Liste de contrôle</h3>
+                        <div class="checklist-details">
+                            <div class="checklist-progress-bar">
+                                <div class="progress-track">
+                                    <div class="progress-fill" style="width: ${checklistProgress.total > 0 ? (checklistProgress.completed / checklistProgress.total) * 100 : 0}%"></div>
+                                </div>
+                                <span class="progress-label">${checklistProgress.completed}/${checklistProgress.total} terminées</span>
+                            </div>
+                            <div class="checklist-items-readonly">
+                                ${task.checklist.map(item => `
+                                    <div class="checklist-item-readonly ${item.completed ? 'completed' : ''}">
+                                        <i class="fas ${item.completed ? 'fa-check-circle' : 'fa-circle'}"></i>
+                                        <span class="item-text">${this.escapeHtml(item.text)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
                     </div>
                 ` : ''}
@@ -2142,6 +2283,109 @@ class TasksView {
         return labels[tone] || 'Neutre';
     }
 
+    bulkActions() {
+        if (this.selectedTasks.size === 0) return;
+        
+        const actions = [
+            'Marquer comme terminé',
+            'Changer la priorité',
+            'Changer le statut',
+            'Supprimer',
+            'Exporter'
+        ];
+        
+        const action = prompt(`Actions disponibles pour ${this.selectedTasks.size} tâche(s):\n\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEntrez le numéro de l'action:`);
+        
+        if (!action) return;
+        
+        const actionIndex = parseInt(action) - 1;
+        
+        switch (actionIndex) {
+            case 0: // Marquer comme terminé
+                this.selectedTasks.forEach(taskId => {
+                    window.taskManager.updateTask(taskId, { 
+                        status: 'completed',
+                        completedAt: new Date().toISOString()
+                    });
+                });
+                this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
+                this.clearSelection();
+                break;
+                
+            case 1: // Changer la priorité
+                const priority = prompt('Nouvelle priorité:\n1. Basse\n2. Normale\n3. Haute\n4. Urgente\n\nEntrez le numéro:');
+                const priorities = ['', 'low', 'medium', 'high', 'urgent'];
+                if (priority && priorities[parseInt(priority)]) {
+                    this.selectedTasks.forEach(taskId => {
+                        window.taskManager.updateTask(taskId, { priority: priorities[parseInt(priority)] });
+                    });
+                    this.showToast(`Priorité mise à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 2: // Changer le statut
+                const status = prompt('Nouveau statut:\n1. À faire\n2. En cours\n3. Relancé\n4. Bloqué\n5. Reporté\n6. Terminé\n\nEntrez le numéro:');
+                const statuses = ['', 'todo', 'in-progress', 'relance', 'bloque', 'reporte', 'completed'];
+                if (status && statuses[parseInt(status)]) {
+                    this.selectedTasks.forEach(taskId => {
+                        const updates = { status: statuses[parseInt(status)] };
+                        if (updates.status === 'completed') {
+                            updates.completedAt = new Date().toISOString();
+                        }
+                        window.taskManager.updateTask(taskId, updates);
+                    });
+                    this.showToast(`Statut mis à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 3: // Supprimer
+                if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?\n\nCette action est irréversible.`)) {
+                    this.selectedTasks.forEach(taskId => {
+                        window.taskManager.deleteTask(taskId);
+                    });
+                    this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 4: // Exporter
+                this.exportSelectedTasks();
+                break;
+        }
+    }
+
+    exportSelectedTasks() {
+        const tasks = Array.from(this.selectedTasks).map(id => window.taskManager.getTask(id)).filter(Boolean);
+        
+        const csvContent = [
+            ['Titre', 'Description', 'Priorité', 'Statut', 'Échéance', 'Client', 'Créé le'].join(','),
+            ...tasks.map(task => [
+                `"${task.title}"`,
+                `"${task.description || ''}"`,
+                task.priority,
+                task.status,
+                task.dueDate || '',
+                task.client || '',
+                new Date(task.createdAt).toLocaleDateString('fr-FR')
+            ].join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `taches_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        this.showToast('Export terminé', 'success');
+        this.clearSelection();
+    }
+
     closeModal(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
@@ -2156,7 +2400,7 @@ class TasksView {
         const styles = document.createElement('style');
         styles.id = 'correctedTaskStyles';
         styles.textContent = `
-            /* Variables CSS pour TaskManager v10.1 Corrigé */
+            /* Variables CSS pour TaskManager v11.0 */
             :root {
                 --primary-color: #3b82f6;
                 --primary-hover: #2563eb;
@@ -2607,37 +2851,6 @@ class TasksView {
                 flex-shrink: 0;
             }
 
-            .task-priority {
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                flex-shrink: 0;
-            }
-
-            .task-priority.priority-urgent {
-                background: #fef2f2;
-                color: #dc2626;
-            }
-
-            .task-priority.priority-high {
-                background: #fef3c7;
-                color: #d97706;
-            }
-
-            .task-priority.priority-medium {
-                background: #eff6ff;
-                color: #2563eb;
-            }
-
-            .task-priority.priority-low {
-                background: #f0fdf4;
-                color: #16a34a;
-            }
-
             .task-info {
                 flex: 1;
                 display: flex;
@@ -2669,8 +2882,46 @@ class TasksView {
             .task-meta {
                 display: flex;
                 align-items: center;
-                justify-content: center;
+                gap: 8px;
                 flex-shrink: 0;
+            }
+
+            .task-status-badge {
+                font-size: 11px;
+                font-weight: 600;
+                padding: 3px 6px;
+                border-radius: 4px;
+                white-space: nowrap;
+            }
+
+            .task-status-badge.status-todo {
+                background: #fef3c7;
+                color: #d97706;
+            }
+
+            .task-status-badge.status-in-progress {
+                background: #eff6ff;
+                color: #2563eb;
+            }
+
+            .task-status-badge.status-relance {
+                background: #fef2f2;
+                color: #dc2626;
+            }
+
+            .task-status-badge.status-bloque {
+                background: #f3f4f6;
+                color: #6b7280;
+            }
+
+            .task-status-badge.status-reporte {
+                background: #f0f9ff;
+                color: #0ea5e9;
+            }
+
+            .task-status-badge.status-completed {
+                background: #f0fdf4;
+                color: #16a34a;
             }
 
             .task-deadline {
@@ -2705,15 +2956,6 @@ class TasksView {
             .task-deadline.no-deadline {
                 color: #9ca3af;
                 font-style: italic;
-            }
-
-            .email-badge {
-                background: #eff6ff;
-                color: var(--primary-color);
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 600;
             }
 
             .task-actions {
@@ -2864,38 +3106,16 @@ class TasksView {
                 flex-shrink: 0;
             }
 
-            .priority-badge,
             .status-badge,
-            .reply-badge {
+            .checklist-badge {
                 padding: 3px 6px;
                 border-radius: 4px;
                 font-size: 10px;
                 font-weight: 600;
                 border: 1px solid;
-            }
-
-            .priority-badge.priority-urgent {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
-            }
-
-            .priority-badge.priority-high {
-                background: #fef3c7;
-                color: #d97706;
-                border-color: #fde68a;
-            }
-
-            .priority-badge.priority-medium {
-                background: #eff6ff;
-                color: #2563eb;
-                border-color: #bfdbfe;
-            }
-
-            .priority-badge.priority-low {
-                background: #f0fdf4;
-                color: #16a34a;
-                border-color: #bbf7d0;
+                display: flex;
+                align-items: center;
+                gap: 3px;
             }
 
             .status-badge.status-todo {
@@ -2910,16 +3130,34 @@ class TasksView {
                 border-color: #bfdbfe;
             }
 
+            .status-badge.status-relance {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+
+            .status-badge.status-bloque {
+                background: #f3f4f6;
+                color: #6b7280;
+                border-color: #d1d5db;
+            }
+
+            .status-badge.status-reporte {
+                background: #f0f9ff;
+                color: #0ea5e9;
+                border-color: #7dd3fc;
+            }
+
             .status-badge.status-completed {
                 background: #f0fdf4;
                 color: #16a34a;
                 border-color: #bbf7d0;
             }
 
-            .reply-badge {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
+            .checklist-badge {
+                background: #f3e8ff;
+                color: #8b5cf6;
+                border-color: #c4b5fd;
             }
 
             .task-details {
@@ -2985,6 +3223,41 @@ class TasksView {
                 flex: 1;
             }
 
+            .priority-badge {
+                padding: 3px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 600;
+                border: 1px solid;
+                display: flex;
+                align-items: center;
+                gap: 3px;
+            }
+
+            .priority-badge.priority-urgent {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+
+            .priority-badge.priority-high {
+                background: #fef3c7;
+                color: #d97706;
+                border-color: #fde68a;
+            }
+
+            .priority-badge.priority-medium {
+                background: #eff6ff;
+                color: #2563eb;
+                border-color: #bfdbfe;
+            }
+
+            .priority-badge.priority-low {
+                background: #f0fdf4;
+                color: #16a34a;
+                border-color: #bbf7d0;
+            }
+
             .task-detailed-content {
                 flex: 1;
                 margin-bottom: 12px;
@@ -3011,6 +3284,42 @@ class TasksView {
                 margin: 0 0 12px 0;
             }
 
+            /* NOUVEAU: Checklist dans vue détaillée */
+            .checklist-summary {
+                margin-bottom: 12px;
+                padding: 8px;
+                background: rgba(139, 92, 246, 0.05);
+                border: 1px solid rgba(139, 92, 246, 0.2);
+                border-radius: 6px;
+            }
+
+            .checklist-progress {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .progress-bar {
+                flex: 1;
+                height: 6px;
+                background: #e5e7eb;
+                border-radius: 3px;
+                overflow: hidden;
+            }
+
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+                transition: width 0.3s ease;
+            }
+
+            .progress-text {
+                font-size: 11px;
+                font-weight: 600;
+                color: #8b5cf6;
+                white-space: nowrap;
+            }
+
             .task-meta-grid {
                 display: flex;
                 justify-content: space-between;
@@ -3034,16 +3343,6 @@ class TasksView {
 
             .meta-item.email-meta {
                 color: var(--primary-color);
-            }
-
-            .reply-needed {
-                background: #fef3c7;
-                color: #d97706;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 500;
-                margin-left: 4px;
             }
 
             .task-detailed-actions {
@@ -3348,6 +3647,115 @@ class TasksView {
                 align-items: center;
                 gap: 8px;
             }
+
+            /* NOUVEAU: Checklist dans les formulaires */
+            .section-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+
+            .btn-add-checklist {
+                background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: var(--transition);
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .btn-add-checklist:hover {
+                background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+                transform: translateY(-1px);
+            }
+
+            .checklist-container {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                min-height: 40px;
+                padding: 8px;
+                border: 2px dashed #d1d5db;
+                border-radius: 8px;
+                background: #f9fafb;
+            }
+
+            .checklist-container:empty::before {
+                content: "Aucun élément dans la liste. Cliquez sur 'Ajouter' pour commencer.";
+                color: #9ca3af;
+                font-style: italic;
+                font-size: 13px;
+                text-align: center;
+                padding: 16px;
+                display: block;
+            }
+
+            .checklist-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px;
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                transition: var(--transition);
+            }
+
+            .checklist-item:hover {
+                border-color: var(--primary-color);
+                box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+            }
+
+            .checklist-checkbox {
+                width: 16px;
+                height: 16px;
+                flex-shrink: 0;
+                cursor: pointer;
+            }
+
+            .checklist-input {
+                flex: 1;
+                border: none;
+                outline: none;
+                font-size: 14px;
+                padding: 4px 8px;
+                border-radius: 4px;
+                background: transparent;
+                transition: background-color 0.2s ease;
+            }
+
+            .checklist-input:focus {
+                background: #f8fafc;
+            }
+
+            .btn-remove-checklist {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+                width: 28px;
+                height: 28px;
+                border-radius: 4px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                transition: var(--transition);
+                flex-shrink: 0;
+            }
+
+            .btn-remove-checklist:hover {
+                background: #fee2e2;
+                border-color: #fca5a5;
+                transform: scale(1.05);
+            }
             
             .email-info-readonly {
                 background: var(--bg-secondary);
@@ -3366,7 +3774,7 @@ class TasksView {
                 margin-bottom: 0;
             }
 
-            /* DÉTAILS DES TÂCHES */
+            /* DÉTAILS DES TÂCHES AVEC CHECKLIST */
             .task-details-content {
                 max-width: none;
             }
@@ -3393,7 +3801,8 @@ class TasksView {
             
             .priority-badge-details,
             .status-badge-details,
-            .deadline-badge-details {
+            .deadline-badge-details,
+            .checklist-badge-details {
                 display: inline-flex;
                 align-items: center;
                 gap: 6px;
@@ -3438,11 +3847,35 @@ class TasksView {
                 color: #2563eb;
                 border: 1px solid #bfdbfe;
             }
+
+            .status-badge-details.status-relance {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+
+            .status-badge-details.status-bloque {
+                background: #f3f4f6;
+                color: #6b7280;
+                border: 1px solid #d1d5db;
+            }
+
+            .status-badge-details.status-reporte {
+                background: #f0f9ff;
+                color: #0ea5e9;
+                border: 1px solid #7dd3fc;
+            }
             
             .status-badge-details.status-completed {
                 background: #f0fdf4;
                 color: #16a34a;
                 border: 1px solid #bbf7d0;
+            }
+
+            .checklist-badge-details {
+                background: #f3e8ff;
+                color: #8b5cf6;
+                border: 1px solid #c4b5fd;
             }
             
             .deadline-badge-details.deadline-overdue {
@@ -3501,6 +3934,81 @@ class TasksView {
                 display: flex;
                 align-items: center;
                 gap: 8px;
+            }
+
+            /* NOUVEAU: Styles pour checklist en lecture seule */
+            .checklist-details {
+                padding: 16px 20px;
+            }
+
+            .checklist-progress-bar {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 16px;
+                padding: 12px;
+                background: white;
+                border-radius: 8px;
+                border: 1px solid rgba(139, 92, 246, 0.2);
+            }
+
+            .progress-track {
+                flex: 1;
+                height: 8px;
+                background: #e5e7eb;
+                border-radius: 4px;
+                overflow: hidden;
+            }
+
+            .progress-label {
+                font-size: 12px;
+                font-weight: 600;
+                color: #8b5cf6;
+                white-space: nowrap;
+            }
+
+            .checklist-items-readonly {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .checklist-item-readonly {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 12px;
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                transition: var(--transition);
+            }
+
+            .checklist-item-readonly.completed {
+                background: #f0fdf4;
+                border-color: #bbf7d0;
+            }
+
+            .checklist-item-readonly.completed .item-text {
+                text-decoration: line-through;
+                color: #6b7280;
+            }
+
+            .checklist-item-readonly i {
+                color: #6b7280;
+                font-size: 14px;
+                flex-shrink: 0;
+            }
+
+            .checklist-item-readonly.completed i {
+                color: #16a34a;
+            }
+
+            .item-text {
+                flex: 1;
+                font-size: 14px;
+                color: var(--text-primary);
+                line-height: 1.4;
             }
             
             .description-content {
@@ -3862,6 +4370,7 @@ class TasksView {
                 max-height: 150px;
                 overflow-y: auto;
             }
+
             @media (max-width: 1024px) {
                 .main-controls-line {
                     flex-direction: column;
@@ -3996,8 +4505,8 @@ class TasksView {
 // GLOBAL INITIALIZATION
 // =====================================
 
-function initializeTaskManagerV10Corrected() {
-    console.log('[TaskManager] Initializing v10.1 - Interface harmonisée corrigée...');
+function initializeTaskManagerV11() {
+    console.log('[TaskManager] Initializing v11.0 - Filtres dynamiques et checklist...');
     
     if (!window.taskManager || !window.taskManager.initialized) {
         window.taskManager = new TaskManager();
@@ -4020,15 +4529,15 @@ function initializeTaskManagerV10Corrected() {
         }
     });
     
-    console.log('✅ TaskManager v10.1 loaded - Interface harmonisée avec alignement corrigé');
+    console.log('✅ TaskManager v11.0 loaded - Filtres dynamiques et checklist intégrés');
 }
 
 // Initialisation immédiate ET sur DOMContentLoaded
-initializeTaskManagerV10Corrected();
+initializeTaskManagerV11();
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[TaskManager] DOM ready, ensuring initialization...');
-    initializeTaskManagerV10Corrected();
+    initializeTaskManagerV11();
 });
 
 // Fallback sur window.load
@@ -4036,7 +4545,7 @@ window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.taskManager || !window.taskManager.initialized) {
             console.log('[TaskManager] Fallback initialization...');
-            initializeTaskManagerV10Corrected();
+            initializeTaskManagerV11();
         }
     }, 1000);
-})
+});
