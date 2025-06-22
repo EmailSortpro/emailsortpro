@@ -1619,60 +1619,8 @@ class TasksView {
         }, 500);
     }
 
-    getMockEmails(query, folder) {
-        // Simulation d'emails pour la démo
-        // À remplacer par un appel API réel vers votre serveur mail
-        const allEmails = [
-            {
-                id: 'email1',
-                from: 'sarah.martin@acme-corp.com',
-                fromName: 'Sarah Martin',
-                subject: 'Validation campagne marketing Q2',
-                preview: 'Bonjour, j\'ai besoin de votre validation pour la campagne Q2...',
-                date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-                folder: 'inbox',
-                hasAttachments: true
-            },
-            {
-                id: 'email2',
-                from: 'jean.dupont@example.com',
-                fromName: 'Jean Dupont',
-                subject: 'Demande de devis urgent',
-                preview: 'Pourriez-vous me faire parvenir un devis pour...',
-                date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-                folder: 'inbox',
-                hasAttachments: false
-            },
-            {
-                id: 'email3',
-                from: 'vous@votreentreprise.com',
-                fromName: 'Vous',
-                to: 'client@example.com',
-                subject: 'Re: Proposition commerciale',
-                preview: 'Suite à notre conversation, voici la proposition...',
-                date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-                folder: 'sent',
-                hasAttachments: true
-            }
-        ];
-
-        // Filtrer par dossier
-        let emails = allEmails;
-        if (folder !== 'all') {
-            emails = emails.filter(e => e.folder === folder);
-        }
-
-        // Filtrer par recherche
-        const searchLower = query.toLowerCase();
-        emails = emails.filter(e => 
-            e.from.toLowerCase().includes(searchLower) ||
-            e.fromName.toLowerCase().includes(searchLower) ||
-            e.subject.toLowerCase().includes(searchLower) ||
-            e.preview.toLowerCase().includes(searchLower)
-        );
-
-        return emails;
-    }
+    // SUPPRIMÉ - Plus de données de démonstration
+    // getMockEmails() a été complètement supprimée
 
     displayEmailSearchResults(emails) {
         const resultsDiv = document.getElementById('emailSearchResults');
