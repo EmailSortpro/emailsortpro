@@ -534,13 +534,13 @@ class TasksView {
         container.innerHTML = `
             <div class="tasks-page-v11">
                 <div class="controls-section">
-                    <!-- Ligne 1 : Recherche + Actions -->
+                    <!-- Ligne 1 : Recherche compacte + Modes vue + Actions principales -->
                     <div class="main-controls-line">
-                        <div class="search-section">
-                            <div class="search-box">
+                        <div class="search-section-compact">
+                            <div class="search-box-compact">
                                 <i class="fas fa-search search-icon"></i>
                                 <input type="text" 
-                                       class="search-input" 
+                                       class="search-input-compact" 
                                        id="taskSearchInput"
                                        placeholder="Rechercher..." 
                                        value="${this.filters.search}">
@@ -552,46 +552,6 @@ class TasksView {
                             </div>
                         </div>
 
-                        <div class="main-actions">
-                            ${selCount > 0 ? `
-                                <div class="selection-panel">
-                                    <span class="selection-count">${selCount} sélectionné(s)</span>
-                                    <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                    <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions">
-                                        Actions
-                                        <span class="count-badge">${selCount}</span>
-                                    </button>
-                                </div>
-                            ` : ''}
-                            
-                            <button class="btn-action btn-select-all" onclick="window.tasksView.selectAllVisible()">
-                                <i class="fas fa-check-square"></i>
-                                Tout sélectionner
-                            </button>
-
-                            <button class="btn-action btn-refresh" onclick="window.tasksView.refreshTasks()">
-                                <i class="fas fa-sync-alt"></i>
-                                Actualiser
-                            </button>
-                            
-                            <button class="btn-action btn-new" onclick="window.tasksView.showCreateModal()">
-                                <i class="fas fa-plus"></i>
-                                Nouvelle
-                            </button>
-                            
-                            <button class="btn-action btn-filters ${this.showAdvFilters ? 'active' : ''}" 
-                                    onclick="window.tasksView.toggleAdvFilters()">
-                                <i class="fas fa-filter"></i>
-                                Filtres
-                                <i class="fas fa-chevron-${this.showAdvFilters ? 'up' : 'down'}"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Ligne 2 : Modes + Statuts -->
-                    <div class="views-filters-line">
                         <div class="view-modes">
                             ${['minimal', 'normal', 'detailed'].map(mode => `
                                 <button class="view-mode ${this.viewMode === mode ? 'active' : ''}" 
@@ -600,7 +560,43 @@ class TasksView {
                                 </button>
                             `).join('')}
                         </div>
-                        
+
+                        <div class="main-actions">
+                            ${selCount > 0 ? `
+                                <div class="selection-panel">
+                                    <span class="selection-count">${selCount}</span>
+                                    <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions">
+                                        <i class="fas fa-tasks"></i>
+                                        <span class="count-badge">${selCount}</span>
+                                    </button>
+                                </div>
+                            ` : ''}
+                            
+                            <button class="btn-action btn-select-all" onclick="window.tasksView.selectAllVisible()" title="Tout sélectionner">
+                                <i class="fas fa-check-square"></i>
+                            </button>
+
+                            <button class="btn-action btn-refresh" onclick="window.tasksView.refreshTasks()" title="Actualiser">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            
+                            <button class="btn-action btn-new" onclick="window.tasksView.showCreateModal()" title="Nouvelle tâche">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            
+                            <button class="btn-action btn-filters ${this.showAdvFilters ? 'active' : ''}" 
+                                    onclick="window.tasksView.toggleAdvFilters()" 
+                                    title="Filtres avancés">
+                                <i class="fas fa-filter"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Ligne 2 : Filtres de statuts uniquement -->
+                    <div class="status-filters-line">
                         <div class="status-filters">
                             ${this.buildStatusPills(stats)}
                         </div>
@@ -804,10 +800,32 @@ class TasksView {
                                 ${due.text || 'Pas d\'échéance'}
                             </span>
                         </div>
+                        
+                        ${t.checklist && t.checklist.length > 0 ? `
+                            <div class="task-checklist-inline">
+                                ${t.checklist.slice(0, 3).map(item => `
+                                    <label class="checklist-item-inline ${item.checked ? 'checked' : ''}"
+                                           onclick="event.stopPropagation()">
+                                        <input type="checkbox" 
+                                               ${item.checked ? 'checked' : ''}
+                                               onchange="event.stopPropagation(); window.tasksView.toggleCheckItem('${t.id}', '${item.id}')">
+                                        <span>${this.esc(item.text)}</span>
+                                    </label>
+                                `).join('')}
+                                ${t.checklist.length > 3 ? `
+                                    <span class="checklist-more">+${t.checklist.length - 3} autres...</span>
+                                ` : ''}
+                            </div>
+                        ` : ''}
                     </div>
                     
                     <div class="task-actions">
                         ${this.renderActions(t)}
+                        <button class="action-btn add-check" 
+                                onclick="event.stopPropagation(); window.tasksView.quickAddCheckItem('${t.id}')"
+                                title="Ajouter checklist">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -1249,15 +1267,16 @@ class TasksView {
 
     toggleCheckItem(taskId, itemId) {
         window.taskManager.toggleChecklistItem(taskId, itemId);
-        // Mettre à jour l'affichage de la progression
-        const task = window.taskManager.getTask(taskId);
-        if (task) {
-            const checked = task.checklist.filter(i => i.checked).length;
-            const progress = task.checklist.length > 0 
-                ? Math.round((checked / task.checklist.length) * 100) 
-                : 0;
-            // Afficher la progression quelque part si nécessaire
-        }
+        this.refresh();
+    }
+
+    quickAddCheckItem(taskId) {
+        const text = prompt('Nouvel élément de checklist:');
+        if (!text) return;
+        
+        window.taskManager.addChecklistItem(taskId, text);
+        this.refresh();
+        this.toast('Élément ajouté', 'success');
     }
 
     removeCheckItem(taskId, itemId) {
@@ -2233,94 +2252,120 @@ class TasksView {
                 backdrop-filter: blur(20px);
                 border: 1px solid rgba(255,255,255,0.2);
                 border-radius: 12px;
-                padding: 20px;
+                padding: 16px;
                 margin-bottom: 16px;
                 box-shadow: 0 4px 16px rgba(0,0,0,0.06);
                 display: flex;
                 flex-direction: column;
-                gap: 16px;
+                gap: 12px;
             }
 
             .main-controls-line {
                 display: flex;
                 align-items: center;
-                gap: 20px;
+                gap: 16px;
                 width: 100%;
             }
 
-            .search-section { flex: 1; max-width: 400px; }
-            .search-box { position: relative; display: flex; align-items: center; height: 44px; }
-            .search-input {
+            .search-section-compact { flex: 0 0 200px; }
+            .search-box-compact { position: relative; display: flex; align-items: center; height: 36px; }
+            .search-input-compact {
                 width: 100%;
-                height: 44px;
-                padding: 0 16px 0 44px;
+                height: 36px;
+                padding: 0 12px 0 36px;
                 border: 2px solid var(--border);
-                border-radius: 10px;
-                font-size: 14px;
+                border-radius: 8px;
+                font-size: 13px;
                 background: white;
                 transition: var(--trans);
                 outline: none;
             }
-            .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-            .search-icon { position: absolute; left: 16px; color: var(--text-s); pointer-events: none; z-index: 1; }
+            .search-input-compact:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+            .search-icon { position: absolute; left: 12px; color: var(--text-s); pointer-events: none; z-index: 1; font-size: 12px; }
             .search-clear {
                 position: absolute;
-                right: 12px;
+                right: 8px;
                 background: var(--danger);
                 color: white;
                 border: none;
-                width: 28px;
-                height: 28px;
+                width: 24px;
+                height: 24px;
                 border-radius: 50%;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 12px;
+                font-size: 10px;
                 transition: var(--trans);
             }
             .search-clear:hover { background: #dc2626; transform: scale(1.1); }
 
-            .main-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+            .view-modes {
+                display: flex;
+                background: var(--bg-s);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                padding: 2px;
+                gap: 2px;
+                flex-shrink: 0;
+            }
+            .view-mode {
+                padding: 6px 12px;
+                border: none;
+                background: transparent;
+                color: var(--text-s);
+                border-radius: 4px;
+                cursor: pointer;
+                transition: var(--trans);
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+                height: 32px;
+            }
+            .view-mode:hover { background: rgba(255,255,255,0.8); color: var(--text-p); }
+            .view-mode.active { background: white; color: var(--text-p); box-shadow: var(--shadow-sm); }
+
+            .main-actions { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
             .selection-panel {
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 6px;
                 background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
                 border: 1px solid #93c5fd;
-                border-radius: 8px;
-                padding: 8px 12px;
+                border-radius: 6px;
+                padding: 6px 10px;
                 color: #1e40af;
                 font-weight: 600;
-                font-size: 13px;
+                font-size: 12px;
+                height: 36px;
             }
+            .selection-count { font-size: 12px; }
 
             .btn-action {
-                height: 44px;
-                padding: 0 16px;
+                height: 36px;
+                padding: 0 12px;
                 border: 1px solid var(--border);
-                border-radius: 8px;
+                border-radius: 6px;
                 background: white;
                 color: var(--text-p);
-                font-size: 13px;
-                font-weight: 600;
+                font-size: 20px;
                 cursor: pointer;
                 transition: var(--trans);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 6px;
-                white-space: nowrap;
                 position: relative;
+                min-width: 36px;
             }
-            .btn-action:hover { background: var(--bg-s); border-color: var(--primary); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+            .btn-action:hover { background: var(--bg-s); border-color: var(--primary); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
             .btn-action.btn-new { background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%); color: white; border-color: transparent; }
             .btn-action.btn-new:hover { background: linear-gradient(135deg, var(--primary-h) 0%, #5856eb 100%); }
-            .btn-action.btn-bulk { background: var(--success); color: white; border-color: transparent; }
+            .btn-action.btn-bulk { background: var(--success); color: white; border-color: transparent; padding: 0 10px; }
             .btn-action.btn-bulk:hover { background: #059669; }
-            .btn-action.btn-clear { width: 44px; padding: 0; background: var(--bg-s); color: var(--text-s); }
+            .btn-action.btn-clear { width: 32px; padding: 0; background: var(--bg-s); color: var(--text-s); }
             .btn-action.btn-clear:hover { background: var(--danger); color: white; }
             .btn-action.btn-filters.active { background: #eff6ff; color: var(--primary); border-color: var(--primary); }
+            .btn-action i { font-size: 14px; }
 
             .count-badge {
                 position: absolute;
@@ -2330,61 +2375,38 @@ class TasksView {
                 color: white;
                 font-size: 10px;
                 font-weight: 700;
-                padding: 2px 6px;
+                padding: 2px 5px;
                 border-radius: 10px;
                 min-width: 16px;
                 text-align: center;
                 border: 2px solid white;
             }
 
-            .views-filters-line { display: flex; align-items: center; gap: 20px; width: 100%; }
-            .view-modes {
-                display: flex;
-                background: var(--bg-s);
-                border: 1px solid var(--border);
-                border-radius: 8px;
-                padding: 3px;
-                gap: 2px;
-                flex-shrink: 0;
-            }
-            .view-mode {
-                padding: 8px 16px;
-                border: none;
-                background: transparent;
-                color: var(--text-s);
-                border-radius: 6px;
-                cursor: pointer;
-                transition: var(--trans);
-                font-size: 13px;
-                font-weight: 600;
-                white-space: nowrap;
-            }
-            .view-mode:hover { background: rgba(255,255,255,0.8); color: var(--text-p); }
-            .view-mode.active { background: white; color: var(--text-p); box-shadow: var(--shadow-sm); }
-
-            .status-filters { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; justify-content: center; }
+            .status-filters-line { display: flex; align-items: center; width: 100%; }
+            .status-filters { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; justify-content: center; }
             .status-pill {
                 display: flex;
                 align-items: center;
-                gap: 6px;
-                padding: 8px 12px;
+                gap: 4px;
+                padding: 6px 10px;
                 background: white;
                 border: 1px solid var(--border);
-                border-radius: 8px;
+                border-radius: 6px;
                 cursor: pointer;
                 transition: var(--trans);
-                font-size: 12px;
+                font-size: 11px;
                 font-weight: 600;
                 color: var(--text-p);
-                min-width: 100px;
+                min-width: 85px;
                 justify-content: space-between;
+                height: 32px;
             }
             .status-pill:hover { border-color: var(--primary); background: #f0f9ff; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
             .status-pill.active { background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%); color: white; border-color: var(--primary); box-shadow: var(--shadow-md); }
             .status-pill.active .pill-count { background: rgba(255,255,255,0.3); color: white; }
-            .pill-icon { font-size: 14px; }
-            .pill-text { flex: 1; text-align: center; font-size: 11px; }
-            .pill-count { background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 700; min-width: 20px; text-align: center; }
+            .pill-icon { font-size: 12px; }
+            .pill-text { flex: 1; text-align: center; font-size: 10px; }
+            .pill-count { background: rgba(0,0,0,0.1); padding: 1px 4px; border-radius: 4px; font-size: 10px; font-weight: 700; min-width: 16px; text-align: center; }
 
             .advanced-filters-panel {
                 background: rgba(255,255,255,0.95);
@@ -2463,7 +2485,55 @@ class TasksView {
             .action-btn.details:hover { background: #f3e8ff; border-color: #8b5cf6; color: #8b5cf6; }
             .action-btn.reply:hover { background: #eff6ff; border-color: var(--primary); color: var(--primary); }
 
-            /* Vue normale */
+            /* Vue normale avec checklist inline */
+            .task-checklist-inline {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px dashed var(--border);
+            }
+            .checklist-item-inline {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 12px;
+                color: var(--text-s);
+                cursor: pointer;
+                padding: 2px 0;
+                transition: var(--trans);
+            }
+            .checklist-item-inline:hover { color: var(--text-p); }
+            .checklist-item-inline.checked { color: #16a34a; text-decoration: line-through; }
+            .checklist-item-inline input[type="checkbox"] {
+                width: 14px;
+                height: 14px;
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+            .checklist-item-inline span {
+                flex: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .checklist-more {
+                font-size: 11px;
+                color: var(--primary);
+                font-weight: 500;
+                padding: 2px 0;
+            }
+            .action-btn.add-check {
+                background: #f0f9ff;
+                color: var(--primary);
+                border-color: #bfdbfe;
+            }
+            .action-btn.add-check:hover {
+                background: var(--primary);
+                color: white;
+                border-color: var(--primary);
+            }
             .tasks-normal-list { display: flex; flex-direction: column; gap: 0; }
             .task-normal { background: rgba(255,255,255,0.95); border-bottom: 1px solid var(--border); cursor: pointer; transition: var(--trans); }
             .task-normal:first-child { border-top-left-radius: 12px; border-top-right-radius: 12px; }
