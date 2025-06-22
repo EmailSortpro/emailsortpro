@@ -1,6 +1,8 @@
-// TaskManager v11 - Version Optimisée avec Checklist et Statuts Étendus
-// =====================================================================
+// TaskManager Pro v10.1 - Interface Harmonisée Corrigée avec Alignement Parfait
 
+// =====================================
+// ENHANCED TASK MANAGER CLASS
+// =====================================
 class TaskManager {
     constructor() {
         this.tasks = [];
@@ -11,7 +13,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v11...');
+            console.log('[TaskManager] Initializing v10.1 - Interface harmonisée corrigée...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -26,8 +28,13 @@ class TaskManager {
         try {
             const saved = localStorage.getItem('emailsort_tasks');
             if (saved) {
-                this.tasks = JSON.parse(saved).map(task => this.ensureTaskProperties(task));
+                this.tasks = JSON.parse(saved);
+                console.log(`[TaskManager] Loaded ${this.tasks.length} tasks from storage`);
+                
+                // Assurer que toutes les tâches ont les propriétés requises
+                this.tasks = this.tasks.map(task => this.ensureTaskProperties(task));
             } else {
+                console.log('[TaskManager] No saved tasks found, creating sample tasks');
                 this.generateSampleTasks();
             }
         } catch (error) {
@@ -38,7 +45,7 @@ class TaskManager {
 
     ensureTaskProperties(task) {
         return {
-            // Propriétés de base
+            // Propriétés de base obligatoires
             id: task.id || this.generateId(),
             title: task.title || 'Tâche sans titre',
             description: task.description || '',
@@ -46,15 +53,12 @@ class TaskManager {
             status: task.status || 'todo',
             dueDate: task.dueDate || null,
             category: task.category || 'other',
+            
+            // Métadonnées
             client: task.client || 'Interne',
             tags: Array.isArray(task.tags) ? task.tags : [],
             
-            // Statuts étendus
-            relanceDate: task.relanceDate || null,
-            relanceCount: task.relanceCount || 0,
-            waitingReason: task.waitingReason || '',
-            
-            // Email
+            // Email info
             hasEmail: task.hasEmail || false,
             emailId: task.emailId || null,
             emailFrom: task.emailFrom || null,
@@ -68,27 +72,24 @@ class TaskManager {
             needsReply: task.needsReply || false,
             hasAttachments: task.hasAttachments || false,
             
-            // Checklist
-            checklist: Array.isArray(task.checklist) ? task.checklist : [],
-            checklistComplete: task.checklistComplete || false,
-            
-            // Commentaires
-            comments: Array.isArray(task.comments) ? task.comments : [],
-            
-            // IA
+            // Données structurées IA
             summary: task.summary || '',
             actions: Array.isArray(task.actions) ? task.actions : [],
             keyInfo: Array.isArray(task.keyInfo) ? task.keyInfo : [],
             risks: Array.isArray(task.risks) ? task.risks : [],
             aiAnalysis: task.aiAnalysis || null,
+            
+            // Suggestions de réponse IA (obligatoires)
             suggestedReplies: Array.isArray(task.suggestedReplies) ? task.suggestedReplies : this.generateBasicReplies(task),
+            aiRepliesGenerated: task.aiRepliesGenerated || false,
+            aiRepliesGeneratedAt: task.aiRepliesGeneratedAt || null,
             
             // Timestamps
             createdAt: task.createdAt || new Date().toISOString(),
             updatedAt: task.updatedAt || new Date().toISOString(),
             completedAt: task.completedAt || null,
             
-            // Méthode
+            // Méthode de création
             method: task.method || 'manual'
         };
     }
@@ -104,13 +105,23 @@ class TaskManager {
                 tone: 'professionnel',
                 subject: `Re: ${subject}`,
                 content: `Bonjour ${senderName},\n\nMerci pour votre message concernant "${subject}".\n\nJ'ai bien pris connaissance de votre demande et je m'en occupe rapidement.\n\nCordialement,\n[Votre nom]`,
-                description: 'Réponse professionnelle standard'
+                description: 'Réponse professionnelle standard',
+                generatedBy: 'basic-template',
+                generatedAt: new Date().toISOString()
+            },
+            {
+                tone: 'détaillé',
+                subject: `Re: ${subject} - Réponse détaillée`,
+                content: `Bonjour ${senderName},\n\nJe vous confirme la bonne réception de votre message.\n\nJ'étudie attentivement votre demande et je vous recontacte rapidement avec les éléments nécessaires.\n\nN'hésitez pas à me recontacter si vous avez des questions complémentaires.\n\nCordialement,\n[Votre nom]`,
+                description: 'Réponse complète et détaillée',
+                generatedBy: 'basic-template',
+                generatedAt: new Date().toISOString()
             }
         ];
     }
 
     generateSampleTasks() {
-        this.tasks = [
+        const sampleTasks = [
             {
                 id: 'sample_1',
                 title: 'Répondre à l\'équipe marketing sur la campagne Q2',
@@ -122,26 +133,85 @@ class TaskManager {
                 emailFrom: 'sarah.martin@acme-corp.com',
                 emailFromName: 'Sarah Martin',
                 emailSubject: 'Validation campagne marketing Q2',
-                emailDate: new Date().toISOString(),
+                emailDate: '2025-06-06T09:15:00Z',
                 emailDomain: 'acme-corp.com',
                 emailContent: `Email de: Sarah Martin <sarah.martin@acme-corp.com>\nDate: ${new Date().toLocaleString('fr-FR')}\nSujet: Validation campagne marketing Q2\n\nBonjour,\n\nJ'espère que vous allez bien. Je vous contacte concernant notre campagne marketing Q2 qui nécessite votre validation.\n\nNous avons préparé les éléments suivants :\n- Visuels créatifs pour les réseaux sociaux\n- Budget détaillé de 50k€\n- Calendrier de lancement\n\nPourriez-vous valider ces éléments avant vendredi ? Nous devons coordonner avec l'équipe commerciale pour le lancement.\n\nMerci d'avance,\nSarah Martin`,
+                tags: ['marketing', 'validation', 'q2'],
                 client: 'ACME Corp',
-                dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                dueDate: '2025-06-20',
                 needsReply: true,
-                checklist: [
-                    { id: 1, text: 'Valider les visuels de la campagne', completed: false },
-                    { id: 2, text: 'Confirmer le budget alloué', completed: false },
-                    { id: 3, text: 'Définir les dates de lancement', completed: false }
+                summary: 'Validation urgente de la campagne marketing Q2 avec budget de 50k€',
+                actions: [
+                    { text: 'Valider les visuels de la campagne', deadline: null },
+                    { text: 'Confirmer le budget alloué', deadline: '2025-06-18' },
+                    { text: 'Définir les dates de lancement', deadline: null }
                 ],
-                comments: []
+                keyInfo: [
+                    'Budget proposé : 50k€',
+                    'Cible : 25-45 ans',
+                    'Canaux : LinkedIn, Google Ads'
+                ],
+                risks: [
+                    'Deadline serrée pour le lancement',
+                    'Coordination avec l\'équipe commerciale requise'
+                ],
+                method: 'ai'
+            },
+            {
+                id: 'sample_2',
+                title: 'Préparer présentation trimestrielle',
+                description: 'Préparer la présentation des résultats Q1 pour le comité de direction',
+                priority: 'medium',
+                status: 'in-progress',
+                category: 'work',
+                client: 'Direction',
+                dueDate: '2025-06-25',
+                summary: 'Présentation des résultats trimestriels avec analyse des performances',
+                actions: [
+                    { text: 'Collecter les données financières', deadline: '2025-06-22' },
+                    { text: 'Créer les graphiques', deadline: '2025-06-24' },
+                    { text: 'Répéter la présentation', deadline: '2025-06-25' }
+                ],
+                keyInfo: [
+                    'Résultats Q1 en hausse de 15%',
+                    'Nouveau client majeur acquis',
+                    'Équipe agrandie de 3 personnes'
+                ],
+                method: 'manual'
+            },
+            {
+                id: 'sample_3',
+                title: 'Répondre à Jean Dupont - Devis urgent',
+                description: 'Jean Dupont demande un devis pour un projet de refonte website',
+                priority: 'urgent',
+                status: 'todo',
+                category: 'email',
+                hasEmail: true,
+                emailFrom: 'jean.dupont@example.com',
+                emailFromName: 'Jean Dupont',
+                emailSubject: 'Demande de devis - Refonte site web',
+                emailDate: '2025-06-15T14:30:00Z',
+                emailDomain: 'example.com',
+                client: 'Jean Dupont',
+                dueDate: '2025-06-17',
+                needsReply: true,
+                summary: 'Demande de devis urgent pour refonte complète du site web',
+                method: 'ai'
             }
-        ].map(task => this.ensureTaskProperties(task));
+        ];
         
+        // Assurer les propriétés complètes pour chaque tâche
+        this.tasks = sampleTasks.map(task => this.ensureTaskProperties(task));
         this.saveTasks();
     }
 
-    // CRUD Operations
+    // ================================================
+    // MÉTHODES CRUD COMPLÈTES
+    // ================================================
+    
     createTask(taskData) {
+        console.log('[TaskManager] Creating task:', taskData.title || 'Untitled');
+        
         const task = this.ensureTaskProperties({
             ...taskData,
             id: taskData.id || this.generateId(),
@@ -152,28 +222,40 @@ class TaskManager {
         this.tasks.push(task);
         this.saveTasks();
         this.emitTaskUpdate('create', task);
+        
+        console.log('[TaskManager] Task created successfully:', task.id);
+        return task;
+    }
+
+    createTaskFromEmail(taskData, email = null) {
+        console.log('[TaskManager] Creating task from email:', taskData.title);
+        
+        const fullEmailContent = this.extractFullEmailContent(email, taskData);
+        const htmlEmailContent = this.extractHtmlEmailContent(email, taskData);
+        
+        const task = this.ensureTaskProperties({
+            ...taskData,
+            id: taskData.id || this.generateId(),
+            hasEmail: true,
+            emailContent: fullEmailContent,
+            emailHtmlContent: htmlEmailContent,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        });
+        
+        this.tasks.push(task);
+        this.saveTasks();
+        this.emitTaskUpdate('create', task);
+        
+        console.log('[TaskManager] Email task created successfully:', task.id);
         return task;
     }
 
     updateTask(id, updates) {
         const index = this.tasks.findIndex(task => task.id === id);
-        if (index === -1) return null;
-        
-        // Gestion des statuts spéciaux
-        if (updates.status === 'relanced' && !updates.relanceDate) {
-            updates.relanceDate = new Date().toISOString();
-            updates.relanceCount = (this.tasks[index].relanceCount || 0) + 1;
-        }
-        
-        if (updates.status === 'completed' && !this.tasks[index].completedAt) {
-            updates.completedAt = new Date().toISOString();
-        }
-        
-        // Mise à jour de la checklist
-        if (updates.checklist) {
-            const totalItems = updates.checklist.length;
-            const completedItems = updates.checklist.filter(item => item.completed).length;
-            updates.checklistComplete = totalItems > 0 && totalItems === completedItems;
+        if (index === -1) {
+            console.error('[TaskManager] Task not found for update:', id);
+            return null;
         }
         
         this.tasks[index] = this.ensureTaskProperties({
@@ -182,18 +264,29 @@ class TaskManager {
             updatedAt: new Date().toISOString()
         });
         
+        if (updates.status === 'completed' && !this.tasks[index].completedAt) {
+            this.tasks[index].completedAt = new Date().toISOString();
+        }
+        
         this.saveTasks();
         this.emitTaskUpdate('update', this.tasks[index]);
+        
+        console.log('[TaskManager] Task updated successfully:', id);
         return this.tasks[index];
     }
 
     deleteTask(id) {
         const index = this.tasks.findIndex(task => task.id === id);
-        if (index === -1) return null;
+        if (index === -1) {
+            console.error('[TaskManager] Task not found for deletion:', id);
+            return null;
+        }
         
         const deleted = this.tasks.splice(index, 1)[0];
         this.saveTasks();
         this.emitTaskUpdate('delete', deleted);
+        
+        console.log('[TaskManager] Task deleted successfully:', id);
         return deleted;
     }
 
@@ -205,61 +298,10 @@ class TaskManager {
         return [...this.tasks];
     }
 
-    // Checklist Management
-    addChecklistItem(taskId, text) {
-        const task = this.getTask(taskId);
-        if (!task) return null;
-        
-        const newItem = {
-            id: Date.now(),
-            text: text,
-            completed: false
-        };
-        
-        task.checklist.push(newItem);
-        this.updateTask(taskId, { checklist: task.checklist });
-        return newItem;
-    }
-
-    updateChecklistItem(taskId, itemId, updates) {
-        const task = this.getTask(taskId);
-        if (!task) return null;
-        
-        const item = task.checklist.find(i => i.id === itemId);
-        if (!item) return null;
-        
-        Object.assign(item, updates);
-        this.updateTask(taskId, { checklist: task.checklist });
-        return item;
-    }
-
-    removeChecklistItem(taskId, itemId) {
-        const task = this.getTask(taskId);
-        if (!task) return null;
-        
-        task.checklist = task.checklist.filter(item => item.id !== itemId);
-        this.updateTask(taskId, { checklist: task.checklist });
-        return true;
-    }
-
-    // Comments Management
-    addComment(taskId, text, author = 'Moi') {
-        const task = this.getTask(taskId);
-        if (!task) return null;
-        
-        const newComment = {
-            id: Date.now(),
-            text: text,
-            author: author,
-            date: new Date().toISOString()
-        };
-        
-        task.comments.push(newComment);
-        this.updateTask(taskId, { comments: task.comments });
-        return newComment;
-    }
-
-    // Filtering and Sorting
+    // ================================================
+    // MÉTHODES DE FILTRAGE ET TRI
+    // ================================================
+    
     filterTasks(filters = {}) {
         let filtered = [...this.tasks];
         
@@ -269,6 +311,14 @@ class TaskManager {
         
         if (filters.priority && filters.priority !== 'all') {
             filtered = filtered.filter(task => task.priority === filters.priority);
+        }
+        
+        if (filters.category && filters.category !== 'all') {
+            filtered = filtered.filter(task => task.category === filters.category);
+        }
+        
+        if (filters.client && filters.client !== 'all') {
+            filtered = filtered.filter(task => task.client === filters.client);
         }
         
         if (filters.search) {
@@ -313,6 +363,15 @@ class TaskManager {
                     return new Date(a.dueDate) - new Date(b.dueDate);
                 });
                 break;
+            case 'title':
+                sorted.sort((a, b) => a.title.localeCompare(b.title));
+                break;
+            case 'client':
+                sorted.sort((a, b) => a.client.localeCompare(b.client));
+                break;
+            case 'updated':
+                sorted.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                break;
             case 'created':
             default:
                 sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -321,14 +380,15 @@ class TaskManager {
         return sorted;
     }
 
-    // Statistics
+    // ================================================
+    // STATISTIQUES
+    // ================================================
+    
     getStats() {
         const byStatus = {
             todo: this.tasks.filter(t => t.status === 'todo').length,
             'in-progress': this.tasks.filter(t => t.status === 'in-progress').length,
-            completed: this.tasks.filter(t => t.status === 'completed').length,
-            relanced: this.tasks.filter(t => t.status === 'relanced').length,
-            waiting: this.tasks.filter(t => t.status === 'waiting').length
+            completed: this.tasks.filter(t => t.status === 'completed').length
         };
 
         return {
@@ -347,14 +407,102 @@ class TaskManager {
         };
     }
 
-    // Utility Methods
+    // ================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================
+    
     generateId() {
         return 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    extractFullEmailContent(email, taskData) {
+        if (taskData.emailContent && taskData.emailContent.length > 50) {
+            return taskData.emailContent;
+        }
+        
+        if (email?.body?.content) {
+            return this.cleanEmailContent(email.body.content);
+        }
+        
+        if (email?.bodyPreview) {
+            return email.bodyPreview;
+        }
+        
+        return taskData.emailContent || '';
+    }
+
+    extractHtmlEmailContent(email, taskData) {
+        if (taskData.emailHtmlContent && taskData.emailHtmlContent.length > 50) {
+            return taskData.emailHtmlContent;
+        }
+        
+        if (email?.body?.contentType === 'html' && email?.body?.content) {
+            return this.cleanHtmlEmailContent(email.body.content);
+        }
+        
+        return this.convertTextToHtml(this.extractFullEmailContent(email, taskData), email);
+    }
+
+    cleanEmailContent(content) {
+        if (!content) return '';
+        
+        return content
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    cleanHtmlEmailContent(htmlContent) {
+        if (!htmlContent) return '';
+        
+        let cleanHtml = htmlContent
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+            .replace(/on\w+="[^"]*"/gi, '')
+            .replace(/javascript:/gi, '');
+        
+        return `<div class="email-content-viewer" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">${cleanHtml}</div>`;
+    }
+
+    convertTextToHtml(textContent, email) {
+        if (!textContent) return '';
+        
+        const senderName = email?.from?.emailAddress?.name || 'Expéditeur';
+        const senderEmail = email?.from?.emailAddress?.address || '';
+        const subject = email?.subject || 'Sans sujet';
+        const date = email?.receivedDateTime ? new Date(email.receivedDateTime).toLocaleString('fr-FR') : '';
+        
+        const htmlContent = textContent
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+        
+        return `<div class="email-content-viewer" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <div style="background: #f8fafc; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
+                <div style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
+                    <strong>De:</strong> ${senderName} &lt;${senderEmail}&gt;<br>
+                    <strong>Date:</strong> ${date}<br>
+                    <strong>Sujet:</strong> ${subject}
+                </div>
+            </div>
+            <div style="font-size: 14px; line-height: 1.8;">
+                ${htmlContent}
+            </div>
+        </div>`;
     }
 
     saveTasks() {
         try {
             localStorage.setItem('emailsort_tasks', JSON.stringify(this.tasks));
+            console.log(`[TaskManager] Saved ${this.tasks.length} tasks`);
             return true;
         } catch (error) {
             console.error('[TaskManager] Error saving tasks:', error);
@@ -372,14 +520,13 @@ class TaskManager {
 }
 
 // =====================================
-// TasksView - Interface utilisateur
+// TASKS VIEW - INTERFACE HARMONISÉE CORRIGÉE
 // =====================================
-
 class TasksView {
     constructor() {
         this.currentFilters = {
             status: 'all',
-            priority: 'all',
+            priority: 'all', 
             category: 'all',
             client: 'all',
             search: '',
@@ -387,7 +534,7 @@ class TasksView {
         };
         
         this.selectedTasks = new Set();
-        this.currentViewMode = 'normal';
+        this.currentViewMode = 'normal'; // normal, minimal, detailed
         this.showCompleted = false;
         this.showAdvancedFilters = false;
         
@@ -397,7 +544,12 @@ class TasksView {
     }
 
     render(container) {
-        if (!container || !window.taskManager?.initialized) {
+        if (!container) {
+            console.error('[TasksView] No container provided');
+            return;
+        }
+
+        if (!window.taskManager || !window.taskManager.initialized) {
             container.innerHTML = `
                 <div class="loading-state">
                     <div class="loading-icon">
@@ -406,17 +558,25 @@ class TasksView {
                     <p>Chargement des tâches...</p>
                 </div>
             `;
+            
+            setTimeout(() => {
+                if (window.taskManager && window.taskManager.initialized) {
+                    this.render(container);
+                }
+            }, 500);
             return;
         }
 
         const stats = window.taskManager.getStats();
+        const selectedCount = this.selectedTasks.size;
         
         container.innerHTML = `
             <div class="tasks-page-corrected">
-                <!-- RECTANGLE BLANC HARMONISÉ - DEUX LIGNES -->
+                <!-- RECTANGLE BLANC HARMONISÉ - DEUX LIGNES SEULEMENT -->
                 <div class="controls-section-corrected">
-                    <!-- Ligne 1 : Recherche + Actions principales -->
+                    <!-- Ligne 1 : Recherche + Actions principales sur une seule ligne -->
                     <div class="main-controls-line">
+                        <!-- Recherche -->
                         <div class="search-section">
                             <div class="search-box-corrected">
                                 <i class="fas fa-search search-icon"></i>
@@ -433,37 +593,42 @@ class TasksView {
                             </div>
                         </div>
 
+                        <!-- Actions principales centrées -->
                         <div class="main-actions">
-                            ${this.selectedTasks.size > 0 ? `
+                            <!-- Sélection info et actions -->
+                            ${selectedCount > 0 ? `
                                 <div class="selection-panel">
-                                    <span class="selection-count">${this.selectedTasks.size} sélectionné(s)</span>
-                                    <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()">
+                                    <span class="selection-count">${selectedCount} sélectionné(s)</span>
+                                    <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer sélection">
                                         <i class="fas fa-times"></i>
                                     </button>
-                                    <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()">
+                                    <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions groupées">
                                         Actions
-                                        <span class="count-badge">${this.selectedTasks.size}</span>
+                                        <span class="count-badge">${selectedCount}</span>
                                     </button>
                                 </div>
                             ` : ''}
                             
-                            <button class="btn-action btn-select-all" onclick="window.tasksView.selectAllVisible()">
+                            <!-- Bouton Sélectionner tout -->
+                            <button class="btn-action btn-select-all" onclick="window.tasksView.selectAllVisible()" title="Sélectionner toutes les tâches visibles">
                                 <i class="fas fa-check-square"></i>
                                 Tout sélectionner
                             </button>
 
-                            <button class="btn-action btn-refresh" onclick="window.tasksView.refreshTasks()">
+                            <!-- Actions standard -->
+                            <button class="btn-action btn-refresh" onclick="window.tasksView.refreshTasks()" title="Actualiser">
                                 <i class="fas fa-sync-alt"></i>
                                 Actualiser
                             </button>
                             
-                            <button class="btn-action btn-new" onclick="window.tasksView.showCreateModal()">
+                            <button class="btn-action btn-new" onclick="window.tasksView.showCreateModal()" title="Nouvelle tâche">
                                 <i class="fas fa-plus"></i>
                                 Nouvelle
                             </button>
                             
                             <button class="btn-action btn-filters ${this.showAdvancedFilters ? 'active' : ''}" 
-                                    onclick="window.tasksView.toggleAdvancedFilters()">
+                                    onclick="window.tasksView.toggleAdvancedFilters()" 
+                                    title="Afficher/Masquer les filtres avancés">
                                 <i class="fas fa-filter"></i>
                                 Filtres
                                 <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
@@ -473,40 +638,46 @@ class TasksView {
                     
                     <!-- Ligne 2 : Modes de vue + Filtres de statut -->
                     <div class="views-filters-line">
+                        <!-- Modes de vue -->
                         <div class="view-modes">
                             <button class="view-mode ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('minimal')">
+                                    onclick="window.tasksView.changeViewMode('minimal')"
+                                    title="Vue minimaliste">
                                 Minimal
                             </button>
                             <button class="view-mode ${this.currentViewMode === 'normal' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('normal')">
+                                    onclick="window.tasksView.changeViewMode('normal')"
+                                    title="Vue normale">
                                 Normal
                             </button>
                             <button class="view-mode ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('detailed')">
+                                    onclick="window.tasksView.changeViewMode('detailed')"
+                                    title="Vue détaillée">
                                 Détaillé
                             </button>
                         </div>
                         
+                        <!-- Filtres de statut -->
                         <div class="status-filters">
                             ${this.buildStatusPills(stats)}
                         </div>
                     </div>
                 </div>
 
-                <!-- Filtres avancés -->
+                <!-- Filtres avancés (masqués par défaut) -->
                 <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
                     <div class="advanced-filters-grid">
                         <div class="filter-group">
                             <label class="filter-label">
                                 <i class="fas fa-flag"></i> Priorité
                             </label>
-                            <select class="filter-select" onchange="window.tasksView.updateFilter('priority', this.value)">
-                                <option value="all">Toutes</option>
-                                <option value="urgent">🚨 Urgente</option>
-                                <option value="high">⚡ Haute</option>
-                                <option value="medium">📌 Normale</option>
-                                <option value="low">📄 Basse</option>
+                            <select class="filter-select" id="priorityFilter" 
+                                    onchange="window.tasksView.updateFilter('priority', this.value)">
+                                <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
+                                <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                                <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                                <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                                <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
                             </select>
                         </div>
 
@@ -514,7 +685,8 @@ class TasksView {
                             <label class="filter-label">
                                 <i class="fas fa-building"></i> Client
                             </label>
-                            <select class="filter-select" id="clientFilter" onchange="window.tasksView.updateFilter('client', this.value)">
+                            <select class="filter-select" id="clientFilter" 
+                                    onchange="window.tasksView.updateFilter('client', this.value)">
                                 ${this.buildClientFilterOptions()}
                             </select>
                         </div>
@@ -523,10 +695,13 @@ class TasksView {
                             <label class="filter-label">
                                 <i class="fas fa-sort"></i> Trier par
                             </label>
-                            <select class="filter-select" onchange="window.tasksView.updateFilter('sortBy', this.value)">
-                                <option value="created">Date création</option>
-                                <option value="priority">Priorité</option>
-                                <option value="dueDate">Date échéance</option>
+                            <select class="filter-select" id="sortByFilter" 
+                                    onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                                <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
+                                <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                                <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
+                                <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
+                                <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
                             </select>
                         </div>
 
@@ -545,8 +720,9 @@ class TasksView {
             </div>
         `;
 
-        this.addStyles();
+        this.addCorrectedStyles();
         this.setupEventListeners();
+        console.log('[TasksView] Interface harmonisée corrigée rendue');
     }
 
     buildStatusPills(stats) {
@@ -554,8 +730,6 @@ class TasksView {
             { id: 'all', name: 'Tous', icon: '📋', count: stats.total },
             { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
             { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
-            { id: 'relanced', name: 'Relancé', icon: '📨', count: stats.byStatus?.relanced || 0 },
-            { id: 'waiting', name: 'En attente', icon: '⌛', count: stats.byStatus?.waiting || 0 },
             { id: 'overdue', name: 'En retard', icon: '⚠️', count: stats.overdue },
             { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply },
             { id: 'completed', name: 'Terminées', icon: '✅', count: stats.completed }
@@ -563,7 +737,9 @@ class TasksView {
 
         return pills.map(pill => `
             <button class="status-pill ${this.isFilterActive(pill.id) ? 'active' : ''}" 
-                    onclick="window.tasksView.quickFilter('${pill.id}')">
+                    data-filter="${pill.id}"
+                    onclick="window.tasksView.quickFilter('${pill.id}')"
+                    title="${pill.name}: ${pill.count} tâche(s)">
                 <span class="pill-icon">${pill.icon}</span>
                 <span class="pill-text">${pill.name}</span>
                 <span class="pill-count">${pill.count}</span>
@@ -601,8 +777,8 @@ class TasksView {
     renderMinimalTaskItem(task) {
         const isSelected = this.selectedTasks.has(task.id);
         const isCompleted = task.status === 'completed';
+        const priorityIcon = this.getPriorityIcon(task.priority);
         const dueDateInfo = this.formatDueDate(task.dueDate);
-        const checklistProgress = this.getChecklistProgress(task);
         
         return `
             <div class="task-minimal ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
@@ -615,16 +791,20 @@ class TasksView {
                            ${isSelected ? 'checked' : ''}
                            onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
                     
+                    <div class="task-priority priority-${task.priority}" title="Priorité ${task.priority}">
+                        ${priorityIcon}
+                    </div>
+                    
                     <div class="task-info">
                         <span class="task-title">${this.escapeHtml(task.title)}</span>
-                        <span class="task-client">${this.escapeHtml(task.client)}</span>
+                        <span class="task-client">${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
                     </div>
                     
                     <div class="task-meta">
-                        ${checklistProgress ? `<span class="checklist-progress">📋 ${checklistProgress}</span>` : ''}
                         <span class="task-deadline ${dueDateInfo.className}">
                             ${dueDateInfo.text || 'Pas d\'échéance'}
                         </span>
+                        ${task.hasEmail ? '<span class="email-badge">📧</span>' : ''}
                     </div>
                     
                     <div class="task-actions">
@@ -649,7 +829,6 @@ class TasksView {
         const priorityIcon = this.getPriorityIcon(task.priority);
         const statusIcon = this.getStatusIcon(task.status);
         const dueDateInfo = this.formatDueDate(task.dueDate);
-        const checklistProgress = this.getChecklistProgress(task);
         
         return `
             <div class="task-normal ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
@@ -668,16 +847,21 @@ class TasksView {
                         <div class="task-header">
                             <h3 class="task-title">${this.escapeHtml(task.title)}</h3>
                             <div class="task-badges">
-                                <span class="status-badge ${task.status}">${this.getStatusLabel(task.status)}</span>
-                                ${task.relanceCount > 0 ? `<span class="relance-badge">Relancé ${task.relanceCount}x</span>` : ''}
+                                <span class="priority-badge priority-${task.priority}" title="Priorité ${task.priority}">
+                                    ${priorityIcon}
+                                </span>
+                                <span class="status-badge status-${task.status}" title="Statut: ${this.getStatusLabel(task.status)}">
+                                    ${statusIcon}
+                                </span>
+                                ${task.hasEmail ? '<span class="email-badge" title="Email">📧</span>' : ''}
+                                ${task.needsReply ? '<span class="reply-badge" title="Réponse requise">↩️</span>' : ''}
                             </div>
                         </div>
                         
                         <div class="task-details">
                             <span class="task-client">
-                                ${this.escapeHtml(task.client)}
+                                ${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}
                             </span>
-                            ${checklistProgress ? `<span class="checklist-info">📋 ${checklistProgress}</span>` : ''}
                             <span class="task-deadline ${dueDateInfo.className}">
                                 ${dueDateInfo.text || 'Pas d\'échéance'}
                             </span>
@@ -704,7 +888,6 @@ class TasksView {
         const isSelected = this.selectedTasks.has(task.id);
         const isCompleted = task.status === 'completed';
         const dueDateInfo = this.formatDueDate(task.dueDate);
-        const checklistProgress = this.getChecklistProgress(task);
         
         return `
             <div class="task-detailed ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
@@ -717,8 +900,12 @@ class TasksView {
                            onclick="window.tasksView.toggleTaskSelection('${task.id}')">
                     
                     <div class="task-badges-group">
-                        <span class="status-badge ${task.status}">${this.getStatusLabel(task.status)}</span>
-                        <span class="priority-badge ${task.priority}">${this.getPriorityLabel(task.priority)}</span>
+                        <span class="priority-badge priority-${task.priority}">
+                            ${this.getPriorityIcon(task.priority)} ${this.getPriorityLabel(task.priority)}
+                        </span>
+                        <span class="status-badge status-${task.status}">
+                            ${this.getStatusIcon(task.status)} ${this.getStatusLabel(task.status)}
+                        </span>
                     </div>
                 </div>
                 
@@ -728,16 +915,18 @@ class TasksView {
                     
                     <div class="task-meta-grid">
                         <div class="meta-item">
-                            <span>${this.escapeHtml(task.client)}</span>
+                            <span>${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
                         </div>
-                        ${checklistProgress ? `
-                            <div class="meta-item">
-                                <span>📋 ${checklistProgress}</span>
-                            </div>
-                        ` : ''}
-                        <div class="meta-item deadline-centered ${dueDateInfo.className}">
+                        <div class="meta-item ${dueDateInfo.className}">
                             <span>${dueDateInfo.text || 'Pas d\'échéance'}</span>
                         </div>
+                        ${task.hasEmail ? `
+                            <div class="meta-item email-meta">
+                                <i class="fas fa-envelope"></i>
+                                <span>${task.emailFromName || 'Email'}</span>
+                                ${task.needsReply ? '<span class="reply-needed">Réponse requise</span>' : ''}
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
                 
@@ -757,16 +946,6 @@ class TasksView {
                         onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
                         title="Marquer comme terminé">
                     <i class="fas fa-check"></i>
-                </button>
-            `);
-        }
-        
-        if (task.status === 'todo' || task.status === 'in-progress') {
-            actions.push(`
-                <button class="action-btn relance" 
-                        onclick="event.stopPropagation(); window.tasksView.markRelanced('${task.id}')"
-                        title="Relancer">
-                    <i class="fas fa-redo"></i>
                 </button>
             `);
         }
@@ -832,7 +1011,531 @@ class TasksView {
         return actions.join('');
     }
 
-    // Modal Methods
+    // ================================================
+    // MÉTHODES D'INTERACTION
+    // ================================================
+
+    selectAllVisible() {
+        const tasks = window.taskManager.filterTasks(this.currentFilters);
+        const filteredTasks = this.showCompleted ? tasks : tasks.filter(task => task.status !== 'completed');
+        
+        if (filteredTasks.length === 0) {
+            this.showToast('Aucune tâche à sélectionner', 'info');
+            return;
+        }
+
+        // Si toutes les tâches visibles sont déjà sélectionnées, on les désélectionne
+        const allSelected = filteredTasks.every(task => this.selectedTasks.has(task.id));
+        
+        if (allSelected) {
+            filteredTasks.forEach(task => this.selectedTasks.delete(task.id));
+            this.showToast('Toutes les tâches désélectionnées', 'info');
+        } else {
+            filteredTasks.forEach(task => this.selectedTasks.add(task.id));
+            this.showToast(`${filteredTasks.length} tâche(s) sélectionnée(s)`, 'success');
+        }
+        
+        this.refreshView();
+    }
+
+    clearSelection() {
+        this.selectedTasks.clear();
+        this.refreshView();
+        this.showToast('Sélection effacée', 'info');
+    }
+
+    toggleTaskSelection(taskId) {
+        if (this.selectedTasks.has(taskId)) {
+            this.selectedTasks.delete(taskId);
+        } else {
+            this.selectedTasks.add(taskId);
+        }
+        this.refreshView();
+    }
+
+    bulkActions() {
+        if (this.selectedTasks.size === 0) return;
+        
+        const actions = [
+            'Marquer comme terminé',
+            'Changer la priorité',
+            'Changer le statut',
+            'Supprimer',
+            'Exporter'
+        ];
+        
+        const action = prompt(`Actions disponibles pour ${this.selectedTasks.size} tâche(s):\n\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEntrez le numéro de l'action:`);
+        
+        if (!action) return;
+        
+        const actionIndex = parseInt(action) - 1;
+        
+        switch (actionIndex) {
+            case 0: // Marquer comme terminé
+                this.selectedTasks.forEach(taskId => {
+                    window.taskManager.updateTask(taskId, { 
+                        status: 'completed',
+                        completedAt: new Date().toISOString()
+                    });
+                });
+                this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
+                this.clearSelection();
+                break;
+                
+            case 1: // Changer la priorité
+                const priority = prompt('Nouvelle priorité:\n1. Basse\n2. Normale\n3. Haute\n4. Urgente\n\nEntrez le numéro:');
+                const priorities = ['', 'low', 'medium', 'high', 'urgent'];
+                if (priority && priorities[parseInt(priority)]) {
+                    this.selectedTasks.forEach(taskId => {
+                        window.taskManager.updateTask(taskId, { priority: priorities[parseInt(priority)] });
+                    });
+                    this.showToast(`Priorité mise à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 2: // Changer le statut
+                const status = prompt('Nouveau statut:\n1. À faire\n2. En cours\n3. Terminé\n\nEntrez le numéro:');
+                const statuses = ['', 'todo', 'in-progress', 'completed'];
+                if (status && statuses[parseInt(status)]) {
+                    this.selectedTasks.forEach(taskId => {
+                        const updates = { status: statuses[parseInt(status)] };
+                        if (updates.status === 'completed') {
+                            updates.completedAt = new Date().toISOString();
+                        }
+                        window.taskManager.updateTask(taskId, updates);
+                    });
+                    this.showToast(`Statut mis à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 3: // Supprimer
+                if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?\n\nCette action est irréversible.`)) {
+                    this.selectedTasks.forEach(taskId => {
+                        window.taskManager.deleteTask(taskId);
+                    });
+                    this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 4: // Exporter
+                this.exportSelectedTasks();
+                break;
+        }
+    }
+
+    exportSelectedTasks() {
+        const tasks = Array.from(this.selectedTasks).map(id => window.taskManager.getTask(id)).filter(Boolean);
+        
+        const csvContent = [
+            ['Titre', 'Description', 'Priorité', 'Statut', 'Échéance', 'Client', 'Créé le'].join(','),
+            ...tasks.map(task => [
+                `"${task.title}"`,
+                `"${task.description || ''}"`,
+                task.priority,
+                task.status,
+                task.dueDate || '',
+                task.client || '',
+                new Date(task.createdAt).toLocaleDateString('fr-FR')
+            ].join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `taches_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        this.showToast('Export terminé', 'success');
+        this.clearSelection();
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES (inchangées)
+    // ================================================
+
+    changeViewMode(mode) {
+        this.currentViewMode = mode;
+        this.refreshView();
+    }
+
+    clearSearch() {
+        this.currentFilters.search = '';
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) searchInput.value = '';
+        this.refreshView();
+    }
+
+    quickFilter(filterId) {
+        // Reset filters
+        this.currentFilters = {
+            status: 'all',
+            priority: 'all',
+            category: 'all',
+            client: 'all',
+            search: this.currentFilters.search,
+            sortBy: this.currentFilters.sortBy,
+            overdue: false,
+            needsReply: false
+        };
+
+        // Apply specific filter
+        switch (filterId) {
+            case 'all':
+                break;
+            case 'todo':
+            case 'in-progress':
+            case 'completed':
+                this.currentFilters.status = filterId;
+                break;
+            case 'overdue':
+                this.currentFilters.overdue = true;
+                break;
+            case 'needsReply':
+                this.currentFilters.needsReply = true;
+                break;
+        }
+
+        this.refreshView();
+    }
+
+    updateFilter(filterType, value) {
+        this.currentFilters[filterType] = value;
+        this.refreshView();
+    }
+
+    resetAllFilters() {
+        this.currentFilters = {
+            status: 'all',
+            priority: 'all',
+            category: 'all',
+            client: 'all',
+            search: '',
+            sortBy: 'created'
+        };
+        
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) searchInput.value = '';
+        
+        document.querySelectorAll('.filter-select').forEach(select => {
+            if (select.querySelector('option[value="all"]')) {
+                select.value = 'all';
+            } else if (select.id === 'sortByFilter') {
+                select.value = 'created';
+            }
+        });
+        
+        this.refreshView();
+        this.showToast('Filtres réinitialisés', 'info');
+    }
+
+    toggleAdvancedFilters() {
+        this.showAdvancedFilters = !this.showAdvancedFilters;
+        
+        const panel = document.getElementById('advancedFiltersPanel');
+        const toggle = document.querySelector('.btn-filters');
+        
+        if (panel) {
+            panel.classList.toggle('show', this.showAdvancedFilters);
+        }
+        
+        if (toggle) {
+            toggle.classList.toggle('active', this.showAdvancedFilters);
+            const chevron = toggle.querySelector('.fa-chevron-down, .fa-chevron-up');
+            if (chevron) {
+                chevron.classList.toggle('fa-chevron-down', !this.showAdvancedFilters);
+                chevron.classList.toggle('fa-chevron-up', this.showAdvancedFilters);
+            }
+        }
+    }
+
+    buildClientFilterOptions() {
+        const tasks = window.taskManager.getAllTasks();
+        const clients = new Set();
+        
+        tasks.forEach(task => {
+            if (task.client) {
+                clients.add(task.client);
+            }
+        });
+        
+        let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
+        
+        Array.from(clients).sort().forEach(client => {
+            const count = tasks.filter(t => t.client === client).length;
+            options += `<option value="${client}" ${this.currentFilters.client === client ? 'selected' : ''}>${client} (${count})</option>`;
+        });
+        
+        return options;
+    }
+
+    refreshView() {
+        const container = document.getElementById('tasksContainer');
+        if (container) {
+            container.innerHTML = this.renderTasksList();
+        }
+        
+        // Mettre à jour les stats dans les pills
+        const stats = window.taskManager.getStats();
+        document.querySelectorAll('.status-filters').forEach(container => {
+            container.innerHTML = this.buildStatusPills(stats);
+        });
+        
+        // Mettre à jour l'affichage des actions de sélection
+        this.updateSelectionUI();
+    }
+
+    updateSelectionUI() {
+        const selectedCount = this.selectedTasks.size;
+        const mainActionsDiv = document.querySelector('.main-actions');
+        
+        if (mainActionsDiv) {
+            // Rechercher le panneau de sélection existant
+            const existingPanel = mainActionsDiv.querySelector('.selection-panel');
+            
+            if (selectedCount > 0) {
+                const selectionHTML = `
+                    <div class="selection-panel">
+                        <span class="selection-count">${selectedCount} sélectionné(s)</span>
+                        <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer sélection">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions groupées">
+                            Actions
+                            <span class="count-badge">${selectedCount}</span>
+                        </button>
+                    </div>
+                `;
+                
+                if (existingPanel) {
+                    existingPanel.outerHTML = selectionHTML;
+                } else {
+                    mainActionsDiv.insertAdjacentHTML('afterbegin', selectionHTML);
+                }
+            } else {
+                if (existingPanel) {
+                    existingPanel.remove();
+                }
+            }
+        }
+    }
+
+    setupEventListeners() {
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.handleSearch(e.target.value);
+                }, 300);
+            });
+        }
+    }
+
+    handleSearch(value) {
+        this.currentFilters.search = value.trim();
+        this.refreshView();
+    }
+
+    handleTaskClick(event, taskId) {
+        if (event.target.type === 'checkbox') {
+            return;
+        }
+        
+        if (event.target.closest('.task-actions')) {
+            return;
+        }
+        
+        const now = Date.now();
+        const lastClick = this.lastTaskClick || 0;
+        
+        if (now - lastClick < 300) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.toggleTaskSelection(taskId);
+            this.lastTaskClick = 0;
+            return;
+        }
+        
+        this.lastTaskClick = now;
+        
+        setTimeout(() => {
+            if (Date.now() - this.lastTaskClick >= 250) {
+                this.showTaskDetails(taskId);
+            }
+        }, 250);
+    }
+
+    markComplete(taskId) {
+        window.taskManager.updateTask(taskId, { 
+            status: 'completed',
+            completedAt: new Date().toISOString()
+        });
+        this.showToast('Tâche marquée comme terminée', 'success');
+        this.refreshView();
+    }
+
+    refreshTasks() {
+        this.refreshView();
+        this.showToast('Tâches actualisées', 'success');
+    }
+
+    renderEmptyState() {
+        let title, text, action = '';
+        
+        if (this.currentFilters.search) {
+            title = 'Aucun résultat trouvé';
+            text = `Aucune tâche ne correspond à votre recherche "${this.currentFilters.search}"`;
+            action = `
+                <button class="btn-action btn-primary" onclick="window.tasksView.clearSearch()">
+                    <i class="fas fa-undo"></i>
+                    Effacer la recherche
+                </button>
+            `;
+        } else if (this.hasActiveFilters()) {
+            title = 'Aucune tâche trouvée';
+            text = 'Aucune tâche ne correspond à vos critères de filtrage.';
+            action = `
+                <button class="btn-action btn-primary" onclick="window.tasksView.resetAllFilters()">
+                    <i class="fas fa-undo"></i>
+                    Réinitialiser les filtres
+                </button>
+            `;
+        } else {
+            title = 'Aucune tâche';
+            text = 'Vous n\'avez aucune tâche pour le moment.';
+            action = `
+                <button class="btn-action btn-primary" onclick="window.tasksView.showCreateModal()">
+                    <i class="fas fa-plus"></i>
+                    Créer votre première tâche
+                </button>
+            `;
+        }
+        
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h3 class="empty-state-title">${title}</h3>
+                <p class="empty-state-text">${text}</p>
+                ${action}
+            </div>
+        `;
+    }
+
+    isFilterActive(filterId) {
+        switch (filterId) {
+            case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
+            case 'todo': return this.currentFilters.status === 'todo';
+            case 'in-progress': return this.currentFilters.status === 'in-progress';
+            case 'completed': return this.currentFilters.status === 'completed';
+            case 'overdue': return this.currentFilters.overdue;
+            case 'needsReply': return this.currentFilters.needsReply;
+            default: return false;
+        }
+    }
+
+    hasActiveFilters() {
+        return this.currentFilters.status !== 'all' ||
+               this.currentFilters.priority !== 'all' ||
+               this.currentFilters.category !== 'all' ||
+               this.currentFilters.client !== 'all' ||
+               this.currentFilters.search !== '' ||
+               this.currentFilters.overdue ||
+               this.currentFilters.needsReply;
+    }
+
+    getPriorityIcon(priority) {
+        const icons = { urgent: '🚨', high: '⚡', medium: '📌', low: '📄' };
+        return icons[priority] || '📌';
+    }
+
+    getPriorityColor(priority) {
+        const colors = { urgent: '#ef4444', high: '#f97316', medium: '#3b82f6', low: '#10b981' };
+        return colors[priority] || '#3b82f6';
+    }
+
+    getPriorityLabel(priority) {
+        const labels = { urgent: 'Urgente', high: 'Haute', medium: 'Normale', low: 'Basse' };
+        return labels[priority] || 'Normale';
+    }
+
+    getStatusIcon(status) {
+        const icons = { todo: '⏳', 'in-progress': '🔄', completed: '✅' };
+        return icons[status] || '⏳';
+    }
+
+    getStatusLabel(status) {
+        const labels = { todo: 'À faire', 'in-progress': 'En cours', completed: 'Terminé' };
+        return labels[status] || 'À faire';
+    }
+
+    formatDueDate(dateString) {
+        if (!dateString) {
+            return { 
+                html: '', 
+                text: '', 
+                className: 'no-deadline' 
+            };
+        }
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+        
+        let className = 'deadline-normal';
+        let text = '';
+        
+        if (diffDays < 0) {
+            className = 'deadline-overdue';
+            text = `En retard de ${Math.abs(diffDays)}j`;
+        } else if (diffDays === 0) {
+            className = 'deadline-today';
+            text = 'Aujourd\'hui';
+        } else if (diffDays === 1) {
+            className = 'deadline-tomorrow';
+            text = 'Demain';
+        } else if (diffDays <= 7) {
+            className = 'deadline-week';
+            text = `${diffDays}j`;
+        } else {
+            text = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        }
+        
+        return {
+            html: `<span class="deadline-badge ${className}">📅 ${text}</span>`,
+            text: text,
+            className: className
+        };
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    showToast(message, type = 'info') {
+        if (window.uiManager && window.uiManager.showToast) {
+            window.uiManager.showToast(message, type);
+        } else {
+            console.log(`[Toast] ${type}: ${message}`);
+        }
+    }
+
+    // ================================================
+    // MODALES COMPLÈTES AVEC INTERFACE GRAPHIQUE
+    // ================================================
+
     showCreateModal() {
         document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
         
@@ -863,6 +1566,11 @@ class TasksView {
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
+        
+        setTimeout(() => {
+            const titleInput = document.getElementById('new-task-title');
+            if (titleInput) titleInput.focus();
+        }, 100);
     }
 
     buildCreateForm() {
@@ -886,15 +1594,6 @@ class TasksView {
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Statut</label>
-                        <select id="new-task-status" class="form-select">
-                            <option value="todo" selected>⏳ À faire</option>
-                            <option value="in-progress">🔄 En cours</option>
-                            <option value="relanced">📨 Relancé</option>
-                            <option value="waiting">⌛ En attente</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
                         <label>Priorité</label>
                         <select id="new-task-priority" class="form-select">
                             <option value="low">📄 Basse</option>
@@ -902,6 +1601,10 @@ class TasksView {
                             <option value="high">⚡ Haute</option>
                             <option value="urgent">🚨 Urgente</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date d'échéance</label>
+                        <input type="date" id="new-task-duedate" class="form-input" />
                     </div>
                 </div>
                 
@@ -911,48 +1614,43 @@ class TasksView {
                         <input type="text" id="new-task-client" class="form-input" 
                                placeholder="Nom du client ou projet" value="Interne" />
                     </div>
-                    <div class="form-group">
-                        <label>Date d'échéance</label>
-                        <input type="date" id="new-task-duedate" class="form-input" />
-                    </div>
-                </div>
-                
-                <!-- Section Email -->
-                <div class="email-attach-section">
-                    <div class="email-attach-header">
-                        <h3><i class="fas fa-envelope"></i> Email attaché</h3>
-                        <button type="button" class="btn-attach-email" onclick="window.tasksView.showEmailAttachModal()">
-                            <i class="fas fa-paperclip"></i> Attacher un email
-                        </button>
-                    </div>
-                    <div id="attachedEmailInfo" class="attached-email-info" style="display: none;">
-                        <div class="email-preview">
-                            <div class="email-preview-header">
-                                <strong>De:</strong> <span id="emailFromPreview"></span><br>
-                                <strong>Sujet:</strong> <span id="emailSubjectPreview"></span>
-                            </div>
-                            <button type="button" class="btn-remove-email" onclick="window.tasksView.removeAttachedEmail()">
-                                <i class="fas fa-times"></i> Retirer
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="checklist-section">
-                    <div class="checklist-header">
-                        <h3 class="checklist-title">
-                            <i class="fas fa-tasks"></i> Checklist
-                        </h3>
-                        <button type="button" class="btn-add-checklist" onclick="window.tasksView.addChecklistItem()">
-                            <i class="fas fa-plus"></i> Ajouter
-                        </button>
-                    </div>
-                    <div class="checklist-items" id="newTaskChecklist">
-                        <!-- Les items seront ajoutés ici dynamiquement -->
-                    </div>
                 </div>
             </div>
         `;
+    }
+
+    createNewTask(modalId) {
+        const title = document.getElementById('new-task-title')?.value?.trim();
+        const description = document.getElementById('new-task-description')?.value?.trim();
+        const priority = document.getElementById('new-task-priority')?.value;
+        const dueDate = document.getElementById('new-task-duedate')?.value;
+        const client = document.getElementById('new-task-client')?.value?.trim();
+
+        if (!title) {
+            this.showToast('Le titre est requis', 'warning');
+            return;
+        }
+
+        const taskData = {
+            title,
+            description: description || '',
+            priority,
+            dueDate: dueDate || null,
+            client: client || 'Interne',
+            category: 'work',
+            method: 'manual'
+        };
+
+        try {
+            const task = window.taskManager.createTask(taskData);
+            this.closeModal(modalId);
+            
+            this.showToast('Tâche créée avec succès', 'success');
+            this.refreshView();
+        } catch (error) {
+            console.error('[TasksView] Error creating task:', error);
+            this.showToast('Erreur lors de la création', 'error');
+        }
     }
 
     showEditModal(taskId) {
@@ -988,26 +1686,14 @@ class TasksView {
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
+        
+        setTimeout(() => {
+            const firstInput = document.querySelector(`#${uniqueId} input, #${uniqueId} textarea`);
+            if (firstInput) firstInput.focus();
+        }, 100);
     }
 
     buildEditForm(task) {
-        // Préparer l'email attaché si la tâche en a un
-        if (task.hasEmail) {
-            this.tempAttachedEmail = {
-                hasEmail: true,
-                emailId: task.emailId,
-                emailFrom: task.emailFrom,
-                emailFromName: task.emailFromName,
-                emailSubject: task.emailSubject,
-                emailContent: task.emailContent,
-                emailDate: task.emailDate,
-                emailDomain: task.emailDomain,
-                needsReply: task.needsReply,
-                emailReplied: task.emailReplied,
-                hasAttachments: task.hasAttachments
-            };
-        }
-        
         return `
             <div class="edit-form">
                 <div class="form-row">
@@ -1027,22 +1713,20 @@ class TasksView {
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Statut</label>
-                        <select id="edit-status" class="form-select">
-                            <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>⏳ À faire</option>
-                            <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>🔄 En cours</option>
-                            <option value="relanced" ${task.status === 'relanced' ? 'selected' : ''}>📨 Relancé</option>
-                            <option value="waiting" ${task.status === 'waiting' ? 'selected' : ''}>⌛ En attente</option>
-                            <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>✅ Terminé</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
                         <label>Priorité</label>
                         <select id="edit-priority" class="form-select">
                             <option value="low" ${task.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
                             <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
                             <option value="high" ${task.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
                             <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Statut</label>
+                        <select id="edit-status" class="form-select">
+                            <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>⏳ À faire</option>
+                            <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>🔄 En cours</option>
+                            <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>✅ Terminé</option>
                         </select>
                     </div>
                 </div>
@@ -1060,62 +1744,58 @@ class TasksView {
                     </div>
                 </div>
                 
-                <!-- Section Email -->
-                <div class="email-attach-section">
-                    <div class="email-attach-header">
-                        <h3><i class="fas fa-envelope"></i> Email attaché</h3>
-                        ${!task.hasEmail ? `
-                            <button type="button" class="btn-attach-email" onclick="window.tasksView.showEmailAttachModal()">
-                                <i class="fas fa-paperclip"></i> Attacher un email
-                            </button>
-                        ` : ''}
-                    </div>
-                    <div id="attachedEmailInfo" class="attached-email-info" style="${task.hasEmail ? 'display: block;' : 'display: none;'}">
-                        <div class="email-preview">
-                            <div class="email-preview-header">
-                                <strong>De:</strong> <span id="emailFromPreview">${task.hasEmail ? this.escapeHtml(task.emailFromName + ' <' + task.emailFrom + '>') : ''}</span><br>
-                                <strong>Sujet:</strong> <span id="emailSubjectPreview">${task.hasEmail ? this.escapeHtml(task.emailSubject) : ''}</span>
-                                ${task.hasEmail ? `
-                                    <br><label style="margin-top: 8px;">
-                                        <input type="checkbox" id="edit-needs-reply" ${task.needsReply ? 'checked' : ''} />
-                                        Réponse requise
-                                    </label>
-                                ` : ''}
+                ${task.hasEmail ? `
+                    <div class="form-section">
+                        <h3><i class="fas fa-envelope"></i> Informations Email</h3>
+                        <div class="email-info-readonly">
+                            <div><strong>De:</strong> ${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</div>
+                            <div><strong>Sujet:</strong> ${this.escapeHtml(task.emailSubject || 'Sans sujet')}</div>
+                            <div>
+                                <label>
+                                    <input type="checkbox" id="edit-needs-reply" ${task.needsReply ? 'checked' : ''} />
+                                    Réponse requise
+                                </label>
                             </div>
-                            ${!task.hasEmail ? `
-                                <button type="button" class="btn-remove-email" onclick="window.tasksView.removeAttachedEmail()">
-                                    <i class="fas fa-times"></i> Retirer
-                                </button>
-                            ` : ''}
                         </div>
                     </div>
-                </div>
-                
-                <div class="checklist-section">
-                    <div class="checklist-header">
-                        <h3 class="checklist-title">
-                            <i class="fas fa-tasks"></i> Checklist
-                        </h3>
-                        <button type="button" class="btn-add-checklist" onclick="window.tasksView.addChecklistItem()">
-                            <i class="fas fa-plus"></i> Ajouter
-                        </button>
-                    </div>
-                    <div class="checklist-items" id="editTaskChecklist">
-                        ${task.checklist.map(item => `
-                            <div class="checklist-item ${item.completed ? 'completed' : ''}" data-id="${item.id}">
-                                <input type="checkbox" ${item.completed ? 'checked' : ''} 
-                                       onchange="window.tasksView.toggleChecklistItem(this)">
-                                <input type="text" value="${this.escapeHtml(item.text)}" 
-                                       placeholder="Élément de checklist">
-                                <button class="checklist-remove" onclick="window.tasksView.removeChecklistItem(this)">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
+                ` : ''}
             </div>
         `;
+    }
+
+    saveTaskChanges(taskId, modalId) {
+        const title = document.getElementById('edit-title')?.value?.trim();
+        const description = document.getElementById('edit-description')?.value?.trim();
+        const priority = document.getElementById('edit-priority')?.value;
+        const status = document.getElementById('edit-status')?.value;
+        const client = document.getElementById('edit-client')?.value?.trim();
+        const dueDate = document.getElementById('edit-duedate')?.value;
+        const needsReply = document.getElementById('edit-needs-reply')?.checked;
+
+        if (!title) {
+            this.showToast('Le titre est requis', 'warning');
+            return;
+        }
+
+        const updates = {
+            title,
+            description,
+            priority,
+            status,
+            client: client || 'Interne',
+            dueDate: dueDate || null,
+            needsReply: needsReply || false
+        };
+
+        try {
+            window.taskManager.updateTask(taskId, updates);
+            this.closeModal(modalId);
+            this.showToast('Tâche mise à jour avec succès', 'success');
+            this.refreshView();
+        } catch (error) {
+            console.error('Error updating task:', error);
+            this.showToast('Erreur lors de la mise à jour', 'error');
+        }
     }
 
     showTaskDetails(taskId) {
@@ -1167,7 +1847,6 @@ class TasksView {
         const priorityIcon = this.getPriorityIcon(task.priority);
         const statusLabel = this.getStatusLabel(task.status);
         const dueDateInfo = this.formatDueDate(task.dueDate);
-        const checklistProgress = this.getChecklistProgress(task);
         
         return `
             <div class="task-details-content">
@@ -1184,12 +1863,6 @@ class TasksView {
                             <i class="fas fa-calendar"></i>
                             ${dueDateInfo.text || 'Pas d\'échéance définie'}
                         </span>
-                        ${task.relanceCount > 0 ? `
-                            <span class="relance-badge-details">
-                                <i class="fas fa-redo"></i>
-                                Relancé ${task.relanceCount} fois
-                            </span>
-                        ` : ''}
                     </div>
                 </div>
 
@@ -1223,30 +1896,8 @@ class TasksView {
                                 <span>${new Date(task.completedAt).toLocaleString('fr-FR')}</span>
                             </div>
                         ` : ''}
-                        ${task.relanceDate ? `
-                            <div class="info-item">
-                                <strong>Dernière relance:</strong>
-                                <span>${new Date(task.relanceDate).toLocaleString('fr-FR')}</span>
-                            </div>
-                        ` : ''}
                     </div>
                 </div>
-
-                ${task.checklist && task.checklist.length > 0 ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-tasks"></i> Checklist ${checklistProgress ? `(${checklistProgress})` : ''}</h3>
-                        <div class="checklist-detail-items">
-                            ${task.checklist.map(item => `
-                                <div class="checklist-detail-item ${item.completed ? 'completed' : ''}">
-                                    <input type="checkbox" 
-                                           ${item.completed ? 'checked' : ''} 
-                                           onchange="window.tasksView.updateChecklistItemStatus('${task.id}', ${item.id}, this.checked)">
-                                    <span>${this.escapeHtml(item.text)}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
 
                 ${task.hasEmail ? `
                     <div class="details-section">
@@ -1316,30 +1967,70 @@ class TasksView {
                     </div>
                 ` : ''}
 
-                <div class="details-section">
-                    <h3><i class="fas fa-comments"></i> Commentaires</h3>
-                    <div class="comments-list">
-                        ${task.comments && task.comments.length > 0 ? 
-                            task.comments.map(comment => `
-                                <div class="comment-item">
-                                    <div class="comment-header">
-                                        <strong>${this.escapeHtml(comment.author || 'Anonyme')}</strong>
-                                        <span class="comment-date">${new Date(comment.date).toLocaleString('fr-FR')}</span>
-                                    </div>
-                                    <div class="comment-text">${this.escapeHtml(comment.text)}</div>
+                ${task.risks && task.risks.length > 0 ? `
+                    <div class="details-section attention-section">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Points d'Attention</h3>
+                        <div class="attention-list">
+                            ${task.risks.map(risk => `
+                                <div class="attention-item">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span>${this.escapeHtml(risk)}</span>
                                 </div>
-                            `).join('') : '<p class="no-comments">Aucun commentaire</p>'
-                        }
+                            `).join('')}
+                        </div>
                     </div>
-                    <div class="add-comment-form">
-                        <textarea id="newComment" class="form-textarea" rows="3" placeholder="Ajouter un commentaire..."></textarea>
-                        <button class="btn-modal btn-primary" onclick="window.tasksView.addComment('${task.id}')">
-                            <i class="fas fa-paper-plane"></i> Envoyer
-                        </button>
-                    </div>
-                </div>
+                ` : ''}
             </div>
         `;
+    }
+
+    formatDescription(description) {
+        if (!description) return '';
+        
+        if (description.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')) {
+            return `<div class="structured-description">${description.replace(/\n/g, '<br>')}</div>`;
+        } else {
+            return `<div class="simple-description">${this.escapeHtml(description).replace(/\n/g, '<br>')}</div>`;
+        }
+    }
+
+    formatEmailContent(content) {
+        if (!content) return '<p>Contenu non disponible</p>';
+        
+        const formattedContent = content
+            .replace(/\n/g, '<br>')
+            .replace(/Email de:/g, '<strong>Email de:</strong>')
+            .replace(/Date:/g, '<strong>Date:</strong>')
+            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
+            
+        return `<div class="email-original-content">${formattedContent}</div>`;
+    }
+
+    formatDeadline(deadline) {
+        if (!deadline) return '';
+        
+        try {
+            const deadlineDate = new Date(deadline);
+            const now = new Date();
+            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return `Échue il y a ${Math.abs(diffDays)}j`;
+            } else if (diffDays === 0) {
+                return 'Aujourd\'hui';
+            } else if (diffDays === 1) {
+                return 'Demain';
+            } else if (diffDays <= 7) {
+                return `${diffDays}j`;
+            } else {
+                return deadlineDate.toLocaleDateString('fr-FR', { 
+                    day: 'numeric', 
+                    month: 'short' 
+                });
+            }
+        } catch (error) {
+            return deadline;
+        }
     }
 
     showSuggestedReplies(taskId) {
@@ -1406,657 +2097,6 @@ class TasksView {
         document.body.style.overflow = 'hidden';
     }
 
-    // Event Handlers
-    addChecklistItem() {
-        const container = document.getElementById('newTaskChecklist') || document.getElementById('editTaskChecklist');
-        if (!container) return;
-        
-        const itemId = Date.now();
-        const itemHTML = `
-            <div class="checklist-item" data-id="${itemId}">
-                <input type="checkbox" onchange="window.tasksView.toggleChecklistItem(this)">
-                <input type="text" placeholder="Nouvel élément de checklist">
-                <button class="checklist-remove" onclick="window.tasksView.removeChecklistItem(this)">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        `;
-        
-        container.insertAdjacentHTML('beforeend', itemHTML);
-    }
-
-    removeChecklistItem(button) {
-        button.closest('.checklist-item').remove();
-    }
-
-    toggleChecklistItem(checkbox) {
-        const item = checkbox.closest('.checklist-item');
-        item.classList.toggle('completed', checkbox.checked);
-    }
-
-    updateChecklistItemStatus(taskId, itemId, completed) {
-        window.taskManager.updateChecklistItem(taskId, itemId, { completed });
-        this.refreshView();
-    }
-
-    // Email temporaire attaché
-    tempAttachedEmail = null;
-
-    showModal(content, size = 'medium') {
-        // Supprimer les modales existantes
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay';
-        modal.innerHTML = `
-            <div class="modal-container ${size === 'large' ? 'modal-large' : ''}">
-                <button class="modal-close" onclick="window.tasksView.closeModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-                <div class="modal-content">
-                    ${content}
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        document.body.style.overflow = 'hidden';
-    }
-
-    closeModal(modalId) {
-        if (modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) modal.remove();
-        } else {
-            document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        }
-        document.body.style.overflow = 'auto';
-    }
-
-    showEmailAttachModal() {
-        const modalContent = `
-            <h2><i class="fas fa-envelope"></i> Attacher un email</h2>
-            <div class="email-attach-form">
-                <div class="form-group">
-                    <label>Type d'email</label>
-                    <select id="emailType" class="form-select" onchange="window.tasksView.toggleEmailFields()">
-                        <option value="search">Rechercher dans la boîte mail</option>
-                        <option value="manual">Saisie manuelle</option>
-                        <option value="paste">Coller un email</option>
-                    </select>
-                </div>
-                
-                <div id="searchEmailFields">
-                    <div class="form-group">
-                        <label>Rechercher un email</label>
-                        <div class="email-search-box">
-                            <input type="text" id="emailSearchQuery" class="form-input" 
-                                   placeholder="Rechercher par expéditeur, sujet ou contenu..."
-                                   onkeyup="window.tasksView.searchEmails(event)">
-                            <button type="button" class="btn-search-email" onclick="window.tasksView.searchEmails()">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="email-search-filters">
-                        <label>
-                            <input type="radio" name="emailFolder" value="inbox" checked> Boîte de réception
-                        </label>
-                        <label>
-                            <input type="radio" name="emailFolder" value="sent"> Envoyés
-                        </label>
-                        <label>
-                            <input type="radio" name="emailFolder" value="all"> Tous
-                        </label>
-                    </div>
-                    
-                    <div id="emailSearchResults" class="email-search-results">
-                        <div class="search-info">Entrez un terme de recherche pour afficher les emails</div>
-                    </div>
-                </div>
-                
-                <div id="manualEmailFields" style="display: none;">
-                    <div class="form-group">
-                        <label>De (Email) *</label>
-                        <input type="email" id="emailFrom" class="form-input" placeholder="exemple@domaine.com">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Nom de l'expéditeur</label>
-                        <input type="text" id="emailFromName" class="form-input" placeholder="Nom Prénom">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Sujet *</label>
-                        <input type="text" id="emailSubject" class="form-input" placeholder="Sujet de l'email">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Contenu de l'email</label>
-                        <textarea id="emailContent" class="form-textarea" rows="6" placeholder="Contenu du message..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>
-                            <input type="checkbox" id="needsReply"> Réponse requise
-                        </label>
-                    </div>
-                </div>
-                
-                <div id="pasteEmailFields" style="display: none;">
-                    <div class="form-group">
-                        <label>Coller l'email complet (avec en-têtes)</label>
-                        <textarea id="emailPaste" class="form-textarea" rows="10" 
-                                  placeholder="Collez ici l'email complet avec les en-têtes (De:, À:, Sujet:, etc.)"></textarea>
-                    </div>
-                    <button type="button" class="btn btn-secondary" onclick="window.tasksView.parseEmailContent()">
-                        <i class="fas fa-magic"></i> Analyser l'email
-                    </button>
-                </div>
-            </div>
-            
-            <div class="modal-footer">
-                <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal()">
-                    Annuler
-                </button>
-                <button class="btn-modal btn-primary" onclick="window.tasksView.attachEmail()">
-                    <i class="fas fa-paperclip"></i> Attacher
-                </button>
-            </div>
-        `;
-        
-        this.showModal(modalContent);
-    }
-
-    toggleEmailFields() {
-        const emailType = document.getElementById('emailType').value;
-        const searchFields = document.getElementById('searchEmailFields');
-        const manualFields = document.getElementById('manualEmailFields');
-        const pasteFields = document.getElementById('pasteEmailFields');
-        
-        // Cacher tous les champs
-        searchFields.style.display = 'none';
-        manualFields.style.display = 'none';
-        pasteFields.style.display = 'none';
-        
-        // Afficher le bon ensemble de champs
-        switch(emailType) {
-            case 'search':
-                searchFields.style.display = 'block';
-                break;
-            case 'manual':
-                manualFields.style.display = 'block';
-                break;
-            case 'paste':
-                pasteFields.style.display = 'block';
-                break;
-        }
-    }
-
-    searchEmails(event) {
-        // Si c'est un keyup, ne chercher que si c'est Enter
-        if (event && event.type === 'keyup' && event.key !== 'Enter') {
-            return;
-        }
-
-        const query = document.getElementById('emailSearchQuery').value.trim();
-        const folder = document.querySelector('input[name="emailFolder"]:checked').value;
-        
-        if (!query) {
-            document.getElementById('emailSearchResults').innerHTML = 
-                '<div class="search-info">Entrez un terme de recherche pour afficher les emails</div>';
-            return;
-        }
-
-        // Afficher un loader
-        document.getElementById('emailSearchResults').innerHTML = 
-            '<div class="search-loading"><i class="fas fa-spinner fa-spin"></i> Recherche en cours...</div>';
-
-        // Simuler une recherche d'emails (à remplacer par l'API réelle)
-        setTimeout(() => {
-            const mockEmails = this.getMockEmails(query, folder);
-            this.displayEmailSearchResults(mockEmails);
-        }, 500);
-    }
-
-    // SUPPRIMÉ - Plus de données de démonstration
-    // getMockEmails() a été complètement supprimée
-
-    displayEmailSearchResults(emails) {
-        const resultsDiv = document.getElementById('emailSearchResults');
-        
-        if (emails.length === 0) {
-            resultsDiv.innerHTML = '<div class="search-info">Aucun email trouvé</div>';
-            return;
-        }
-
-        const resultsHTML = emails.map(email => `
-            <div class="email-result-item ${this.selectedEmailId === email.id ? 'selected' : ''}" 
-                 data-email-id="${email.id}"
-                 onclick="window.tasksView.selectEmailResult('${email.id}', ${JSON.stringify(email).replace(/"/g, '&quot;')})">
-                <div class="email-result-header">
-                    <div class="email-result-from">
-                        <strong>${this.escapeHtml(email.fromName || email.from)}</strong>
-                        <span class="email-address">&lt;${this.escapeHtml(email.from || email.to)}&gt;</span>
-                    </div>
-                    <div class="email-result-date">
-                        ${this.formatEmailDate(email.date)}
-                        ${email.hasAttachments ? '<i class="fas fa-paperclip"></i>' : ''}
-                    </div>
-                </div>
-                <div class="email-result-subject">${this.escapeHtml(email.subject)}</div>
-                <div class="email-result-preview">${this.escapeHtml(email.preview)}</div>
-            </div>
-        `).join('');
-
-        resultsDiv.innerHTML = `
-            <div class="search-results-header">${emails.length} email(s) trouvé(s)</div>
-            <div class="email-results-list">${resultsHTML}</div>
-        `;
-    }
-
-    selectEmailResult(emailId, emailData) {
-        // Marquer comme sélectionné
-        this.selectedEmailId = emailId;
-        document.querySelectorAll('.email-result-item').forEach(item => {
-            item.classList.toggle('selected', item.dataset.emailId === emailId);
-        });
-
-        // Stocker les données de l'email sélectionné
-        this.selectedEmailData = emailData;
-    }
-
-    attachEmail() {
-        const emailType = document.getElementById('emailType').value;
-        
-        if (emailType === 'search') {
-            if (!this.selectedEmailData) {
-                this.showToast('Veuillez sélectionner un email', 'warning');
-                return;
-            }
-            
-            // Utiliser l'email sélectionné
-            this.tempAttachedEmail = {
-                hasEmail: true,
-                emailId: this.selectedEmailData.id,
-                emailFrom: this.selectedEmailData.from || this.selectedEmailData.to,
-                emailFromName: this.selectedEmailData.fromName || this.selectedEmailData.from.split('@')[0],
-                emailSubject: this.selectedEmailData.subject,
-                emailContent: this.selectedEmailData.preview, // À remplacer par le contenu complet via API
-                emailDate: this.selectedEmailData.date,
-                emailDomain: (this.selectedEmailData.from || this.selectedEmailData.to).split('@')[1] || '',
-                needsReply: this.selectedEmailData.folder === 'inbox',
-                emailReplied: false,
-                hasAttachments: this.selectedEmailData.hasAttachments
-            };
-            
-            // Afficher l'info de l'email attaché
-            this.showAttachedEmailInfo();
-            this.closeModal();
-            this.showToast('Email attaché avec succès', 'success');
-            
-            // Réinitialiser la sélection
-            this.selectedEmailId = null;
-            this.selectedEmailData = null;
-            
-        } else if (emailType === 'manual') {
-            // Code existant pour la saisie manuelle
-            const emailFrom = document.getElementById('emailFrom').value.trim();
-            const emailFromName = document.getElementById('emailFromName').value.trim();
-            const emailSubject = document.getElementById('emailSubject').value.trim();
-            const emailContent = document.getElementById('emailContent').value.trim();
-            const needsReply = document.getElementById('needsReply').checked;
-            
-            if (!emailFrom || !emailSubject) {
-                this.showToast('L\'email et le sujet sont requis', 'warning');
-                return;
-            }
-            
-            this.tempAttachedEmail = {
-                hasEmail: true,
-                emailFrom,
-                emailFromName: emailFromName || emailFrom.split('@')[0],
-                emailSubject,
-                emailContent,
-                emailDate: new Date().toISOString(),
-                emailDomain: emailFrom.split('@')[1] || '',
-                needsReply,
-                emailReplied: false
-            };
-            
-            this.showAttachedEmailInfo();
-            this.closeModal();
-            this.showToast('Email attaché avec succès', 'success');
-        }
-    }
-
-    formatEmailDate(dateString) {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
-        
-        if (diffHours < 24) {
-            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        } else if (diffHours < 48) {
-            return 'Hier';
-        } else if (diffHours < 168) { // 7 jours
-            return date.toLocaleDateString('fr-FR', { weekday: 'long' });
-        } else {
-            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        }
-    }
-
-    showAttachedEmailInfo() {
-        const infoDiv = document.getElementById('attachedEmailInfo');
-        const fromPreview = document.getElementById('emailFromPreview');
-        const subjectPreview = document.getElementById('emailSubjectPreview');
-        
-        if (this.tempAttachedEmail && infoDiv && fromPreview && subjectPreview) {
-            fromPreview.textContent = this.tempAttachedEmail.emailFromName + ' <' + this.tempAttachedEmail.emailFrom + '>';
-            subjectPreview.textContent = this.tempAttachedEmail.emailSubject;
-            infoDiv.style.display = 'block';
-        }
-    }
-
-    removeAttachedEmail() {
-        this.tempAttachedEmail = null;
-        const infoDiv = document.getElementById('attachedEmailInfo');
-        if (infoDiv) {
-            infoDiv.style.display = 'none';
-        }
-        this.showToast('Email retiré', 'info');
-    }
-
-    createNewTask(modalId) {
-        const title = document.getElementById('new-task-title')?.value?.trim();
-        const description = document.getElementById('new-task-description')?.value?.trim();
-        const status = document.getElementById('new-task-status')?.value;
-        const priority = document.getElementById('new-task-priority')?.value;
-        const dueDate = document.getElementById('new-task-duedate')?.value;
-        const client = document.getElementById('new-task-client')?.value?.trim();
-
-        if (!title) {
-            this.showToast('Le titre est requis', 'warning');
-            return;
-        }
-
-        // Récupérer la checklist
-        const checklist = [];
-        document.querySelectorAll('#newTaskChecklist .checklist-item').forEach((item, index) => {
-            const checkbox = item.querySelector('input[type="checkbox"]');
-            const text = item.querySelector('input[type="text"]').value.trim();
-            if (text) {
-                checklist.push({
-                    id: parseInt(item.dataset.id) || index + 1,
-                    text: text,
-                    completed: checkbox.checked
-                });
-            }
-        });
-
-        const taskData = {
-            title,
-            description: description || '',
-            status,
-            priority,
-            dueDate: dueDate || null,
-            client: client || 'Interne',
-            category: 'work',
-            method: 'manual',
-            checklist
-        };
-
-        // Ajouter les infos email si un email est attaché
-        if (this.tempAttachedEmail) {
-            Object.assign(taskData, this.tempAttachedEmail);
-            taskData.category = 'email';
-            // Si le client n'est pas défini, utiliser le domaine de l'email
-            if (taskData.client === 'Interne' && this.tempAttachedEmail.emailDomain) {
-                taskData.client = this.tempAttachedEmail.emailDomain.split('.')[0].toUpperCase();
-            }
-        }
-
-        try {
-            const task = window.taskManager.createTask(taskData);
-            this.tempAttachedEmail = null; // Réinitialiser
-            this.closeModal(modalId);
-            this.showToast('Tâche créée avec succès', 'success');
-            this.refreshView();
-        } catch (error) {
-            console.error('[TasksView] Error creating task:', error);
-            this.showToast('Erreur lors de la création', 'error');
-        }
-    }
-
-    saveTaskChanges(taskId, modalId) {
-        const title = document.getElementById('edit-title')?.value?.trim();
-        const description = document.getElementById('edit-description')?.value?.trim();
-        const status = document.getElementById('edit-status')?.value;
-        const priority = document.getElementById('edit-priority')?.value;
-        const client = document.getElementById('edit-client')?.value?.trim();
-        const dueDate = document.getElementById('edit-duedate')?.value;
-        const needsReply = document.getElementById('edit-needs-reply')?.checked;
-
-        if (!title) {
-            this.showToast('Le titre est requis', 'warning');
-            return;
-        }
-
-        // Récupérer la checklist
-        const checklist = [];
-        document.querySelectorAll('#editTaskChecklist .checklist-item').forEach((item, index) => {
-            const checkbox = item.querySelector('input[type="checkbox"]');
-            const text = item.querySelector('input[type="text"]').value.trim();
-            if (text) {
-                checklist.push({
-                    id: parseInt(item.dataset.id) || Date.now() + index,
-                    text: text,
-                    completed: checkbox.checked
-                });
-            }
-        });
-
-        const updates = {
-            title,
-            description,
-            status,
-            priority,
-            client: client || 'Interne',
-            dueDate: dueDate || null,
-            needsReply: needsReply || false,
-            checklist
-        };
-
-        // Ajouter les infos email si un nouvel email est attaché
-        if (this.tempAttachedEmail) {
-            Object.assign(updates, this.tempAttachedEmail);
-            updates.category = 'email';
-        }
-
-        try {
-            window.taskManager.updateTask(taskId, updates);
-            this.tempAttachedEmail = null; // Réinitialiser
-            this.closeModal(modalId);
-            this.showToast('Tâche mise à jour avec succès', 'success');
-            this.refreshView();
-        } catch (error) {
-            console.error('Error updating task:', error);
-            this.showToast('Erreur lors de la mise à jour', 'error');
-        }
-    }
-
-    addComment(taskId) {
-        const textarea = document.getElementById('newComment');
-        const text = textarea.value.trim();
-        
-        if (!text) {
-            this.showToast('Le commentaire ne peut pas être vide', 'warning');
-            return;
-        }
-        
-        window.taskManager.addComment(taskId, text);
-        textarea.value = '';
-        this.showToast('Commentaire ajouté', 'success');
-        
-        // Rafraîchir la modal des détails
-        this.closeModal();
-        setTimeout(() => this.showTaskDetails(taskId), 100);
-    }
-
-    // Actions
-    handleTaskClick(event, taskId) {
-        if (event.target.type === 'checkbox' || event.target.closest('.task-actions')) {
-            return;
-        }
-        
-        const now = Date.now();
-        const lastClick = this.lastTaskClick || 0;
-        
-        if (now - lastClick < 300) {
-            event.preventDefault();
-            event.stopPropagation();
-            this.toggleTaskSelection(taskId);
-            this.lastTaskClick = 0;
-            return;
-        }
-        
-        this.lastTaskClick = now;
-        
-        setTimeout(() => {
-            if (Date.now() - this.lastTaskClick >= 250) {
-                this.showTaskDetails(taskId);
-            }
-        }, 250);
-    }
-
-    toggleTaskSelection(taskId) {
-        if (this.selectedTasks.has(taskId)) {
-            this.selectedTasks.delete(taskId);
-        } else {
-            this.selectedTasks.add(taskId);
-        }
-        this.refreshView();
-    }
-
-    selectAllVisible() {
-        const tasks = window.taskManager.filterTasks(this.currentFilters);
-        const filteredTasks = this.showCompleted ? tasks : tasks.filter(task => task.status !== 'completed');
-        
-        if (filteredTasks.length === 0) {
-            this.showToast('Aucune tâche à sélectionner', 'info');
-            return;
-        }
-
-        const allSelected = filteredTasks.every(task => this.selectedTasks.has(task.id));
-        
-        if (allSelected) {
-            filteredTasks.forEach(task => this.selectedTasks.delete(task.id));
-            this.showToast('Toutes les tâches désélectionnées', 'info');
-        } else {
-            filteredTasks.forEach(task => this.selectedTasks.add(task.id));
-            this.showToast(`${filteredTasks.length} tâche(s) sélectionnée(s)`, 'success');
-        }
-        
-        this.refreshView();
-    }
-
-    clearSelection() {
-        this.selectedTasks.clear();
-        this.refreshView();
-        this.showToast('Sélection effacée', 'info');
-    }
-
-    bulkActions() {
-        if (this.selectedTasks.size === 0) return;
-        
-        const actions = [
-            'Marquer comme terminé',
-            'Changer la priorité',
-            'Changer le statut',
-            'Supprimer'
-        ];
-        
-        const action = prompt(`Actions disponibles pour ${this.selectedTasks.size} tâche(s):\n\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEntrez le numéro de l'action:`);
-        
-        if (!action) return;
-        
-        const actionIndex = parseInt(action) - 1;
-        
-        switch (actionIndex) {
-            case 0: // Marquer comme terminé
-                this.selectedTasks.forEach(taskId => {
-                    window.taskManager.updateTask(taskId, { 
-                        status: 'completed',
-                        completedAt: new Date().toISOString()
-                    });
-                });
-                this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
-                this.clearSelection();
-                break;
-                
-            case 1: // Changer la priorité
-                const priority = prompt('Nouvelle priorité:\n1. Basse\n2. Normale\n3. Haute\n4. Urgente\n\nEntrez le numéro:');
-                const priorities = ['', 'low', 'medium', 'high', 'urgent'];
-                if (priority && priorities[parseInt(priority)]) {
-                    this.selectedTasks.forEach(taskId => {
-                        window.taskManager.updateTask(taskId, { priority: priorities[parseInt(priority)] });
-                    });
-                    this.showToast(`Priorité mise à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 2: // Changer le statut
-                const status = prompt('Nouveau statut:\n1. À faire\n2. En cours\n3. Relancé\n4. En attente\n5. Terminé\n\nEntrez le numéro:');
-                const statuses = ['', 'todo', 'in-progress', 'relanced', 'waiting', 'completed'];
-                if (status && statuses[parseInt(status)]) {
-                    this.selectedTasks.forEach(taskId => {
-                        const updates = { status: statuses[parseInt(status)] };
-                        if (updates.status === 'completed') {
-                            updates.completedAt = new Date().toISOString();
-                        }
-                        window.taskManager.updateTask(taskId, updates);
-                    });
-                    this.showToast(`Statut mis à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 3: // Supprimer
-                if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?\n\nCette action est irréversible.`)) {
-                    this.selectedTasks.forEach(taskId => {
-                        window.taskManager.deleteTask(taskId);
-                    });
-                    this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-        }
-    }
-
-    markComplete(taskId) {
-        window.taskManager.updateTask(taskId, { 
-            status: 'completed',
-            completedAt: new Date().toISOString()
-        });
-        this.refreshView();
-        this.showToast('Tâche marquée comme terminée', 'success');
-    }
-
-    markRelanced(taskId) {
-        window.taskManager.updateTask(taskId, { 
-            status: 'relanced',
-            relanceDate: new Date().toISOString()
-        });
-        this.refreshView();
-        this.showToast('Tâche relancée', 'info');
-    }
-
-    refreshTasks() {
-        this.refreshView();
-        this.showToast('Tâches actualisées', 'success');
-    }
-
     async copyReplyToClipboard(replyIndex, taskId) {
         const task = window.taskManager.getTask(taskId);
         if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
@@ -2093,418 +2133,11 @@ class TasksView {
         });
         
         this.showToast('Email de réponse ouvert dans votre client email', 'success');
-        this.closeModal();
-        this.refreshView();
-    }
-
-    // Filters
-    quickFilter(filterId) {
-        this.currentFilters = {
-            status: 'all',
-            priority: 'all',
-            category: 'all',
-            client: 'all',
-            search: this.currentFilters.search,
-            sortBy: this.currentFilters.sortBy,
-            overdue: false,
-            needsReply: false
-        };
-
-        switch (filterId) {
-            case 'all':
-                break;
-            case 'todo':
-            case 'in-progress':
-            case 'completed':
-            case 'relanced':
-            case 'waiting':
-                this.currentFilters.status = filterId;
-                break;
-            case 'overdue':
-                this.currentFilters.overdue = true;
-                break;
-            case 'needsReply':
-                this.currentFilters.needsReply = true;
-                break;
-        }
-
-        this.refreshView();
-    }
-
-    updateFilter(filterType, value) {
-        this.currentFilters[filterType] = value;
-        this.refreshView();
-    }
-
-    resetAllFilters() {
-        this.currentFilters = {
-            status: 'all',
-            priority: 'all',
-            category: 'all',
-            client: 'all',
-            search: '',
-            sortBy: 'created'
-        };
         
-        const searchInput = document.getElementById('taskSearchInput');
-        if (searchInput) searchInput.value = '';
-        
-        this.refreshView();
-        this.showToast('Filtres réinitialisés', 'info');
-    }
-
-    toggleAdvancedFilters() {
-        this.showAdvancedFilters = !this.showAdvancedFilters;
-        
-        const panel = document.getElementById('advancedFiltersPanel');
-        const toggle = document.querySelector('.btn-filters');
-        
-        if (panel) {
-            panel.classList.toggle('show', this.showAdvancedFilters);
-        }
-        
-        if (toggle) {
-            toggle.classList.toggle('active', this.showAdvancedFilters);
-            const chevron = toggle.querySelector('.fa-chevron-down, .fa-chevron-up');
-            if (chevron) {
-                chevron.classList.toggle('fa-chevron-down', !this.showAdvancedFilters);
-                chevron.classList.toggle('fa-chevron-up', this.showAdvancedFilters);
-            }
-        }
-    }
-
-    changeViewMode(mode) {
-        this.currentViewMode = mode;
-        this.refreshView();
-    }
-
-    clearSearch() {
-        this.currentFilters.search = '';
-        const searchInput = document.getElementById('taskSearchInput');
-        if (searchInput) searchInput.value = '';
-        this.refreshView();
-    }
-
-    // Utility Methods
-    buildClientFilterOptions() {
-        const tasks = window.taskManager.getAllTasks();
-        const clients = new Set();
-        
-        tasks.forEach(task => {
-            if (task.client) {
-                clients.add(task.client);
-            }
-        });
-        
-        let options = `<option value="all">Tous les clients</option>`;
-        
-        Array.from(clients).sort().forEach(client => {
-            const count = tasks.filter(t => t.client === client).length;
-            options += `<option value="${client}">${client} (${count})</option>`;
-        });
-        
-        return options;
-    }
-
-    setupEventListeners() {
-        const searchInput = document.getElementById('taskSearchInput');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.handleSearch(e.target.value);
-                }, 300);
-            });
-        }
-    }
-
-    handleSearch(value) {
-        this.currentFilters.search = value.trim();
-        this.refreshView();
-    }
-
-    refreshView() {
-        const container = document.getElementById('tasksContainer');
-        if (container) {
-            container.innerHTML = this.renderTasksList();
-        }
-        
-        // Mettre à jour les stats dans les pills
-        const stats = window.taskManager.getStats();
-        document.querySelectorAll('.status-filters').forEach(container => {
-            container.innerHTML = this.buildStatusPills(stats);
-        });
-        
-        // Mettre à jour l'affichage des actions de sélection
-        this.updateSelectionUI();
-    }
-
-    updateSelectionUI() {
-        const selectedCount = this.selectedTasks.size;
-        const mainActionsDiv = document.querySelector('.main-actions');
-        
-        if (mainActionsDiv) {
-            const existingPanel = mainActionsDiv.querySelector('.selection-panel');
-            
-            if (selectedCount > 0) {
-                const selectionHTML = `
-                    <div class="selection-panel">
-                        <span class="selection-count">${selectedCount} sélectionné(s)</span>
-                        <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer sélection">
-                            <i class="fas fa-times"></i>
-                        </button>
-                        <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions groupées">
-                            Actions
-                            <span class="count-badge">${selectedCount}</span>
-                        </button>
-                    </div>
-                `;
-                
-                if (existingPanel) {
-                    existingPanel.outerHTML = selectionHTML;
-                } else {
-                    mainActionsDiv.insertAdjacentHTML('afterbegin', selectionHTML);
-                }
-            } else {
-                if (existingPanel) {
-                    existingPanel.remove();
-                }
-            }
-        }
-    }
-
-    closeModal(modalId) {
-        if (modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) modal.remove();
-        } else {
-            document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        }
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
         document.body.style.overflow = 'auto';
-    }
-
-    showToast(message, type = 'info') {
-        if (window.uiManager && window.uiManager.showToast) {
-            window.uiManager.showToast(message, type);
-        } else {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : type === 'warning' ? 'exclamation' : 'info'}-circle"></i>
-                <span>${message}</span>
-            `;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 10);
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-    }
-
-    renderEmptyState() {
-        let title, text, action = '';
         
-        if (this.currentFilters.search) {
-            title = 'Aucun résultat trouvé';
-            text = `Aucune tâche ne correspond à votre recherche "${this.currentFilters.search}"`;
-            action = `
-                <button class="btn-action btn-primary" onclick="window.tasksView.clearSearch()">
-                    <i class="fas fa-undo"></i>
-                    Effacer la recherche
-                </button>
-            `;
-        } else if (this.hasActiveFilters()) {
-            title = 'Aucune tâche trouvée';
-            text = 'Aucune tâche ne correspond à vos critères de filtrage.';
-            action = `
-                <button class="btn-action btn-primary" onclick="window.tasksView.resetAllFilters()">
-                    <i class="fas fa-undo"></i>
-                    Réinitialiser les filtres
-                </button>
-            `;
-        } else {
-            title = 'Aucune tâche';
-            text = 'Vous n\'avez aucune tâche pour le moment.';
-            action = `
-                <button class="btn-action btn-primary" onclick="window.tasksView.showCreateModal()">
-                    <i class="fas fa-plus"></i>
-                    Créer votre première tâche
-                </button>
-            `;
-        }
-        
-        return `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-tasks"></i>
-                </div>
-                <h3 class="empty-state-title">${title}</h3>
-                <p class="empty-state-text">${text}</p>
-                ${action}
-            </div>
-        `;
-    }
-
-    hasActiveFilters() {
-        return this.currentFilters.status !== 'all' ||
-               this.currentFilters.priority !== 'all' ||
-               this.currentFilters.category !== 'all' ||
-               this.currentFilters.client !== 'all' ||
-               this.currentFilters.search !== '' ||
-               this.currentFilters.overdue ||
-               this.currentFilters.needsReply;
-    }
-
-    isFilterActive(filterId) {
-        switch (filterId) {
-            case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
-            case 'todo':
-            case 'in-progress':
-            case 'completed':
-            case 'relanced':
-            case 'waiting':
-                return this.currentFilters.status === filterId;
-            case 'overdue': return this.currentFilters.overdue;
-            case 'needsReply': return this.currentFilters.needsReply;
-            default: return false;
-        }
-    }
-
-    getChecklistProgress(task) {
-        if (!task.checklist || task.checklist.length === 0) return '';
-        const completed = task.checklist.filter(item => item.completed).length;
-        return `${completed}/${task.checklist.length}`;
-    }
-
-    formatDescription(description) {
-        if (!description) return '';
-        
-        if (description.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')) {
-            return `<div class="structured-description">${description.replace(/\n/g, '<br>')}</div>`;
-        } else {
-            return `<div class="simple-description">${this.escapeHtml(description).replace(/\n/g, '<br>')}</div>`;
-        }
-    }
-
-    formatEmailContent(content) {
-        if (!content) return '<p>Contenu non disponible</p>';
-        
-        const formattedContent = content
-            .replace(/\n/g, '<br>')
-            .replace(/Email de:/g, '<strong>Email de:</strong>')
-            .replace(/Date:/g, '<strong>Date:</strong>')
-            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
-            
-        return `<div class="email-original-content">${formattedContent}</div>`;
-    }
-
-    formatDeadline(deadline) {
-        if (!deadline) return '';
-        
-        try {
-            const deadlineDate = new Date(deadline);
-            const now = new Date();
-            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays < 0) {
-                return `Échue il y a ${Math.abs(diffDays)}j`;
-            } else if (diffDays === 0) {
-                return 'Aujourd\'hui';
-            } else if (diffDays === 1) {
-                return 'Demain';
-            } else if (diffDays <= 7) {
-                return `${diffDays}j`;
-            } else {
-                return deadlineDate.toLocaleDateString('fr-FR', { 
-                    day: 'numeric', 
-                    month: 'short' 
-                });
-            }
-        } catch (error) {
-            return deadline;
-        }
-    }
-
-    formatDueDate(dateString) {
-        if (!dateString) {
-            return { 
-                html: '', 
-                text: '', 
-                className: 'no-deadline' 
-            };
-        }
-        
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
-        
-        let className = 'deadline-normal';
-        let text = '';
-        
-        if (diffDays < 0) {
-            className = 'deadline-overdue';
-            text = `En retard de ${Math.abs(diffDays)}j`;
-        } else if (diffDays === 0) {
-            className = 'deadline-today';
-            text = 'Aujourd\'hui';
-        } else if (diffDays === 1) {
-            className = 'deadline-tomorrow';
-            text = 'Demain';
-        } else if (diffDays <= 7) {
-            className = 'deadline-week';
-            text = `${diffDays}j`;
-        } else {
-            text = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        }
-        
-        return {
-            html: `<span class="deadline-badge ${className}">📅 ${text}</span>`,
-            text: text,
-            className: className
-        };
-    }
-
-    getPriorityIcon(priority) {
-        const icons = { urgent: '🚨', high: '⚡', medium: '📌', low: '📄' };
-        return icons[priority] || '📌';
-    }
-
-    getPriorityColor(priority) {
-        const colors = { urgent: '#ef4444', high: '#f97316', medium: '#3b82f6', low: '#10b981' };
-        return colors[priority] || '#3b82f6';
-    }
-
-    getPriorityLabel(priority) {
-        const labels = { urgent: 'Urgente', high: 'Haute', medium: 'Normale', low: 'Basse' };
-        return labels[priority] || 'Normale';
-    }
-
-    getStatusIcon(status) {
-        const icons = { 
-            todo: '⏳', 
-            'in-progress': '🔄', 
-            completed: '✅',
-            relanced: '📨',
-            waiting: '⌛'
-        };
-        return icons[status] || '⏳';
-    }
-
-    getStatusLabel(status) {
-        const labels = { 
-            todo: 'À faire', 
-            'in-progress': 'En cours', 
-            completed: 'Terminé',
-            relanced: 'Relancé',
-            waiting: 'En attente'
-        };
-        return labels[status] || 'À faire';
+        this.refreshView();
     }
 
     getReplyToneIcon(tone) {
@@ -2533,20 +2166,21 @@ class TasksView {
         return labels[tone] || 'Neutre';
     }
 
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.remove();
+        }
+        document.body.style.overflow = 'auto';
     }
 
-    addStyles() {
-        if (document.getElementById('taskManagerStyles')) return;
+    addCorrectedStyles() {
+        if (document.getElementById('correctedTaskStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'taskManagerStyles';
+        styles.id = 'correctedTaskStyles';
         styles.textContent = `
-            /* Variables CSS pour TaskManager v11 */
+            /* Variables CSS pour TaskManager v10.1 Corrigé */
             :root {
                 --primary-color: #3b82f6;
                 --primary-hover: #2563eb;
@@ -2572,7 +2206,7 @@ class TasksView {
                 font-size: 14px;
             }
 
-            /* RECTANGLE BLANC PRINCIPAL - 2 LIGNES */
+            /* RECTANGLE BLANC PRINCIPAL - 2 LIGNES SEULEMENT */
             .controls-section-corrected {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
@@ -2586,7 +2220,7 @@ class TasksView {
                 gap: 16px;
             }
 
-            /* LIGNE 1 */
+            /* LIGNE 1 : Recherche + Actions principales */
             .main-controls-line {
                 display: flex;
                 align-items: center;
@@ -2673,6 +2307,10 @@ class TasksView {
                 font-size: 13px;
             }
 
+            .selection-count {
+                white-space: nowrap;
+            }
+
             .btn-action {
                 height: 44px;
                 padding: 0 16px;
@@ -2752,7 +2390,7 @@ class TasksView {
                 border: 2px solid white;
             }
 
-            /* LIGNE 2 */
+            /* LIGNE 2 : Modes de vue + Filtres de statut */
             .views-filters-line {
                 display: flex;
                 align-items: center;
@@ -2917,6 +2555,11 @@ class TasksView {
                 box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
             }
 
+            .filter-actions {
+                display: flex;
+                align-items: end;
+            }
+
             .btn-reset {
                 background: var(--bg-secondary);
                 color: var(--text-secondary);
@@ -2932,7 +2575,7 @@ class TasksView {
                 background: transparent;
             }
 
-            /* VUE MINIMALE */
+            /* VUE MINIMALISTE - UNE LIGNE PAR TÂCHE */
             .tasks-minimal-list {
                 display: flex;
                 flex-direction: column;
@@ -2988,6 +2631,37 @@ class TasksView {
                 flex-shrink: 0;
             }
 
+            .task-priority {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                flex-shrink: 0;
+            }
+
+            .task-priority.priority-urgent {
+                background: #fef2f2;
+                color: #dc2626;
+            }
+
+            .task-priority.priority-high {
+                background: #fef3c7;
+                color: #d97706;
+            }
+
+            .task-priority.priority-medium {
+                background: #eff6ff;
+                color: #2563eb;
+            }
+
+            .task-priority.priority-low {
+                background: #f0fdf4;
+                color: #16a34a;
+            }
+
             .task-info {
                 flex: 1;
                 display: flex;
@@ -3019,14 +2693,8 @@ class TasksView {
             .task-meta {
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 8px;
                 flex-shrink: 0;
-            }
-
-            .checklist-progress {
-                font-size: 12px;
-                color: var(--text-secondary);
-                font-weight: 500;
             }
 
             .task-deadline {
@@ -3062,6 +2730,15 @@ class TasksView {
                 font-style: italic;
             }
 
+            .email-badge {
+                background: #eff6ff;
+                color: var(--primary-color);
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 600;
+            }
+
             .task-actions {
                 display: flex;
                 gap: 4px;
@@ -3095,12 +2772,6 @@ class TasksView {
                 color: var(--success-color);
             }
 
-            .action-btn.relance:hover {
-                background: #f3e8ff;
-                border-color: #8b5cf6;
-                color: #8b5cf6;
-            }
-
             .action-btn.edit:hover {
                 background: #fef3c7;
                 border-color: var(--warning-color);
@@ -3119,7 +2790,7 @@ class TasksView {
                 color: var(--primary-color);
             }
 
-            /* VUE NORMALE */
+            /* VUE NORMALE - UNE LIGNE PAR TÂCHE AMÉLIORÉE */
             .tasks-normal-list {
                 display: flex;
                 flex-direction: column;
@@ -3216,46 +2887,62 @@ class TasksView {
                 flex-shrink: 0;
             }
 
-            .status-badge {
-                padding: 3px 8px;
+            .priority-badge,
+            .status-badge,
+            .reply-badge {
+                padding: 3px 6px;
                 border-radius: 4px;
                 font-size: 10px;
                 font-weight: 600;
-                white-space: nowrap;
+                border: 1px solid;
             }
 
-            .status-badge.todo {
+            .priority-badge.priority-urgent {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+
+            .priority-badge.priority-high {
                 background: #fef3c7;
                 color: #d97706;
+                border-color: #fde68a;
             }
 
-            .status-badge.in-progress {
+            .priority-badge.priority-medium {
                 background: #eff6ff;
                 color: #2563eb;
+                border-color: #bfdbfe;
             }
 
-            .status-badge.completed {
+            .priority-badge.priority-low {
                 background: #f0fdf4;
                 color: #16a34a;
+                border-color: #bbf7d0;
             }
 
-            .status-badge.relanced {
-                background: #f3e8ff;
-                color: #8b5cf6;
+            .status-badge.status-todo {
+                background: #fef3c7;
+                color: #d97706;
+                border-color: #fde68a;
             }
 
-            .status-badge.waiting {
-                background: #fee2e2;
+            .status-badge.status-in-progress {
+                background: #eff6ff;
+                color: #2563eb;
+                border-color: #bfdbfe;
+            }
+
+            .status-badge.status-completed {
+                background: #f0fdf4;
+                color: #16a34a;
+                border-color: #bbf7d0;
+            }
+
+            .reply-badge {
+                background: #fef2f2;
                 color: #dc2626;
-            }
-
-            .relance-badge {
-                background: #f3e8ff;
-                color: #8b5cf6;
-                padding: 3px 8px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 600;
+                border-color: #fecaca;
             }
 
             .task-details {
@@ -3266,13 +2953,14 @@ class TasksView {
                 color: var(--text-secondary);
             }
 
-            .checklist-info {
+            .task-client,
+            .task-normal .task-deadline {
                 display: flex;
                 align-items: center;
                 gap: 4px;
             }
 
-            /* VUE DÉTAILLÉE */
+            /* VUE DÉTAILLÉE - GRILLE DE CARTES */
             .tasks-detailed-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -3320,33 +3008,6 @@ class TasksView {
                 flex: 1;
             }
 
-            .priority-badge {
-                padding: 3px 8px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 600;
-            }
-
-            .priority-badge.urgent {
-                background: #fef2f2;
-                color: #dc2626;
-            }
-
-            .priority-badge.high {
-                background: #fef3c7;
-                color: #d97706;
-            }
-
-            .priority-badge.medium {
-                background: #eff6ff;
-                color: #2563eb;
-            }
-
-            .priority-badge.low {
-                background: #f0fdf4;
-                color: #16a34a;
-            }
-
             .task-detailed-content {
                 flex: 1;
                 margin-bottom: 12px;
@@ -3375,9 +3036,8 @@ class TasksView {
 
             .task-meta-grid {
                 display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 12px;
+                flex-direction: column;
+                gap: 6px;
             }
 
             .meta-item {
@@ -3388,10 +3048,18 @@ class TasksView {
                 font-weight: 500;
             }
 
-            .meta-item.deadline-centered {
-                flex: 1;
-                text-align: center;
-                justify-content: center;
+            .meta-item.email-meta {
+                color: var(--primary-color);
+            }
+
+            .reply-needed {
+                background: #fef3c7;
+                color: #d97706;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 500;
+                margin-left: 4px;
             }
 
             .task-detailed-actions {
@@ -3481,7 +3149,7 @@ class TasksView {
                 color: var(--text-secondary);
             }
 
-            /* MODALES */
+            /* MODALES COMPLÈTES */
             .modal-overlay {
                 position: fixed;
                 top: 0;
@@ -3714,135 +3382,6 @@ class TasksView {
                 margin-bottom: 0;
             }
 
-            /* CHECKLIST */
-            .checklist-section {
-                margin-top: 20px;
-                padding: 16px;
-                background: var(--bg-secondary);
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-            }
-
-            .checklist-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 12px;
-            }
-
-            .checklist-title {
-                font-size: 16px;
-                font-weight: 600;
-                color: var(--text-primary);
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin: 0;
-            }
-
-            .btn-add-checklist {
-                padding: 6px 12px;
-                background: var(--primary-color);
-                color: white;
-                border: none;
-                border-radius: 6px;
-                font-size: 12px;
-                font-weight: 500;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                transition: var(--transition);
-            }
-
-            .btn-add-checklist:hover {
-                background: var(--primary-hover);
-                transform: translateY(-1px);
-            }
-
-            .checklist-items {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .checklist-item {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 8px 12px;
-                background: white;
-                border: 1px solid var(--border-color);
-                border-radius: 6px;
-                transition: var(--transition);
-            }
-
-            .checklist-item:hover {
-                border-color: var(--primary-color);
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            }
-
-            .checklist-item input[type="checkbox"] {
-                width: 16px;
-                height: 16px;
-                cursor: pointer;
-                flex-shrink: 0;
-            }
-
-            .checklist-item input[type="text"] {
-                flex: 1;
-                border: none;
-                background: transparent;
-                font-size: 14px;
-                color: var(--text-primary);
-                outline: none;
-            }
-
-            .checklist-item.completed input[type="text"] {
-                text-decoration: line-through;
-                color: var(--text-secondary);
-            }
-
-            .checklist-remove {
-                background: none;
-                border: none;
-                color: var(--danger-color);
-                cursor: pointer;
-                font-size: 14px;
-                opacity: 0;
-                transition: opacity 0.2s;
-                padding: 4px;
-            }
-
-            .checklist-item:hover .checklist-remove {
-                opacity: 1;
-            }
-
-            .checklist-detail-items {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .checklist-detail-item {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 8px 12px;
-                background: white;
-                border: 1px solid var(--border-color);
-                border-radius: 6px;
-            }
-
-            .checklist-detail-item.completed {
-                opacity: 0.7;
-            }
-
-            .checklist-detail-item.completed span {
-                text-decoration: line-through;
-                color: var(--text-secondary);
-            }
-
             /* DÉTAILS DES TÂCHES */
             .task-details-content {
                 max-width: none;
@@ -3870,8 +3409,7 @@ class TasksView {
             
             .priority-badge-details,
             .status-badge-details,
-            .deadline-badge-details,
-            .relance-badge-details {
+            .deadline-badge-details {
                 display: inline-flex;
                 align-items: center;
                 gap: 6px;
@@ -3923,18 +3461,6 @@ class TasksView {
                 border: 1px solid #bbf7d0;
             }
             
-            .status-badge-details.status-relanced {
-                background: #f3e8ff;
-                color: #8b5cf6;
-                border: 1px solid #e9d5ff;
-            }
-            
-            .status-badge-details.status-waiting {
-                background: #fee2e2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-            }
-            
             .deadline-badge-details.deadline-overdue {
                 background: #fef2f2;
                 color: #dc2626;
@@ -3970,12 +3496,6 @@ class TasksView {
                 color: #9ca3af;
                 border: 1px solid #d1d5db;
                 font-style: italic;
-            }
-            
-            .relance-badge-details {
-                background: #f3e8ff;
-                color: #8b5cf6;
-                border: 1px solid #e9d5ff;
             }
             
             .details-section {
@@ -4159,53 +3679,46 @@ class TasksView {
                 color: var(--text-primary);
                 line-height: 1.4;
             }
-
-            /* COMMENTAIRES */
-            .comments-list {
+            
+            .attention-section {
+                background: #fef3c7;
+                border-color: #fbbf24;
+            }
+            
+            .attention-section h3 {
+                background: #fef9e8;
+                border-bottom-color: #fbbf24;
+                color: #92400e;
+            }
+            
+            .attention-list {
                 padding: 16px 20px;
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
+                gap: 10px;
             }
-
-            .comment-item {
-                background: white;
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 12px;
-            }
-
-            .comment-header {
+            
+            .attention-item {
                 display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 8px;
-                font-size: 12px;
-                color: var(--text-secondary);
+                align-items: flex-start;
+                gap: 10px;
+                background: #fffbeb;
+                border: 1px solid #fde68a;
+                border-radius: 6px;
+                padding: 10px 12px;
             }
-
-            .comment-date {
-                font-size: 11px;
-            }
-
-            .comment-text {
+            
+            .attention-item i {
                 font-size: 14px;
-                color: var(--text-primary);
-                line-height: 1.5;
+                color: #f59e0b;
+                margin-top: 2px;
             }
-
-            .no-comments {
-                text-align: center;
-                color: var(--text-secondary);
-                font-style: italic;
-                padding: 20px;
-            }
-
-            .add-comment-form {
-                padding: 16px 20px;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
+            
+            .attention-item span {
+                flex: 1;
+                font-size: 13px;
+                color: #92400e;
+                line-height: 1.4;
             }
 
             /* SUGGESTIONS DE RÉPONSE */
@@ -4365,77 +3878,6 @@ class TasksView {
                 max-height: 150px;
                 overflow-y: auto;
             }
-
-            /* TOAST */
-            .toast {
-                position: fixed;
-                bottom: 24px;
-                right: 24px;
-                padding: 16px 24px;
-                background: var(--text-primary);
-                color: white;
-                border-radius: 8px;
-                box-shadow: var(--shadow-md);
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                opacity: 0;
-                transform: translateX(100%);
-                transition: all 0.3s ease;
-                z-index: 100000;
-            }
-
-            .toast.show {
-                opacity: 1;
-                transform: translateX(0);
-            }
-
-            .toast.success {
-                background: var(--success-color);
-            }
-
-            .toast.error {
-                background: var(--danger-color);
-            }
-
-            .toast.warning {
-                background: var(--warning-color);
-            }
-
-            .toast.info {
-                background: var(--primary-color);
-            }
-
-            /* Style pour les clients cliquables */
-            .clickable-client {
-                cursor: pointer;
-                color: var(--primary-color);
-                text-decoration: underline;
-                text-decoration-style: dotted;
-                text-underline-offset: 2px;
-                transition: all 0.2s ease;
-            }
-
-            .clickable-client:hover {
-                color: var(--primary-hover);
-                text-decoration-style: solid;
-                background: rgba(59, 130, 246, 0.1);
-                padding: 2px 4px;
-                border-radius: 4px;
-                margin: -2px -4px;
-            }
-
-            .task-client.clickable-client {
-                font-size: 12px;
-                color: var(--primary-color);
-                font-weight: 500;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                flex: 1;
-            }
-
-            /* RESPONSIVE */
             @media (max-width: 1024px) {
                 .main-controls-line {
                     flex-direction: column;
@@ -4526,12 +3968,6 @@ class TasksView {
                     width: 100%;
                     justify-content: space-between;
                 }
-
-                .modal-container {
-                    margin: 0;
-                    max-height: 100vh;
-                    border-radius: 0;
-                }
             }
 
             @media (max-width: 480px) {
@@ -4565,10 +4001,6 @@ class TasksView {
                     height: 28px;
                     font-size: 11px;
                 }
-
-                .form-row {
-                    grid-template-columns: 1fr;
-                }
             }
         `;
         
@@ -4577,11 +4009,11 @@ class TasksView {
 }
 
 // =====================================
-// Initialisation
+// GLOBAL INITIALIZATION
 // =====================================
 
-function initializeTaskManagerV11() {
-    console.log('[TaskManager] Initializing v11...');
+function initializeTaskManagerV10Corrected() {
+    console.log('[TaskManager] Initializing v10.1 - Interface harmonisée corrigée...');
     
     if (!window.taskManager || !window.taskManager.initialized) {
         window.taskManager = new TaskManager();
@@ -4604,80 +4036,15 @@ function initializeTaskManagerV11() {
         }
     });
     
-    // IMPORTANT: S'assurer que les méthodes sont accessibles globalement pour les onclick
-    window.tasksView.showEmailAttachModal = window.tasksView.showEmailAttachModal.bind(window.tasksView);
-    window.tasksView.toggleEmailFields = window.tasksView.toggleEmailFields.bind(window.tasksView);
-    window.tasksView.searchEmails = window.tasksView.searchEmails.bind(window.tasksView);
-    window.tasksView.parseEmailContent = window.tasksView.parseEmailContent.bind(window.tasksView);
-    window.tasksView.attachEmail = window.tasksView.attachEmail.bind(window.tasksView);
-    window.tasksView.removeAttachedEmail = window.tasksView.removeAttachedEmail.bind(window.tasksView);
-    window.tasksView.selectEmailResult = window.tasksView.selectEmailResult.bind(window.tasksView);
-    
-    // IMPORTANT: Chercher et utiliser le conteneur existant pour l'affichage
-    const renderTasksView = () => {
-        // Chercher le conteneur des tâches (même logique que l'original)
-        let container = document.querySelector('#tasksContainer');
-        
-        // Si pas trouvé, chercher dans la zone principale
-        if (!container) {
-            container = document.querySelector('.content-area');
-        }
-        
-        // Si pas trouvé, chercher le main content
-        if (!container) {
-            container = document.querySelector('#mainContent');
-        }
-        
-        // Si pas trouvé, utiliser le body avec un conteneur
-        if (!container) {
-            const body = document.body;
-            // Vérifier si on n'a pas déjà créé le conteneur
-            container = document.getElementById('taskManagerContainer');
-            if (!container) {
-                container = document.createElement('div');
-                container.id = 'taskManagerContainer';
-                container.style.cssText = 'width: 100%; min-height: 100vh;';
-                body.appendChild(container);
-            }
-        }
-        
-        // Rendre l'interface des tâches
-        if (container) {
-            window.tasksView.render(container);
-            console.log('✅ TaskManager v11 interface rendered');
-        } else {
-            console.error('❌ No container found for TaskManager');
-        }
-    };
-    
-    // Attendre que le taskManager soit initialisé
-    const checkAndRender = () => {
-        if (window.taskManager && window.taskManager.initialized) {
-            renderTasksView();
-        } else {
-            setTimeout(checkAndRender, 100);
-        }
-    };
-    
-    checkAndRender();
-    
-    console.log('✅ TaskManager v11 loaded - Version optimisée avec checklist et statuts étendus');
+    console.log('✅ TaskManager v10.1 loaded - Interface harmonisée avec alignement corrigé');
 }
 
-// Fonction pour afficher manuellement les tâches (si besoin)
-window.showTasks = function() {
-    const container = document.querySelector('#mainContent') || document.querySelector('.content-area') || document.body;
-    if (window.tasksView && container) {
-        window.tasksView.render(container);
-    }
-};
-
 // Initialisation immédiate ET sur DOMContentLoaded
-initializeTaskManagerV11();
+initializeTaskManagerV10Corrected();
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[TaskManager] DOM ready, ensuring initialization...');
-    initializeTaskManagerV11();
+    initializeTaskManagerV10Corrected();
 });
 
 // Fallback sur window.load
@@ -4685,7 +4052,7 @@ window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.taskManager || !window.taskManager.initialized) {
             console.log('[TaskManager] Fallback initialization...');
-            initializeTaskManagerV11();
+            initializeTaskManagerV10Corrected();
         }
     }, 1000);
 });
