@@ -4597,6 +4597,15 @@ function initializeTaskManagerV11() {
         }
     });
     
+    // IMPORTANT: S'assurer que les méthodes sont accessibles globalement pour les onclick
+    window.tasksView.showEmailAttachModal = window.tasksView.showEmailAttachModal.bind(window.tasksView);
+    window.tasksView.toggleEmailFields = window.tasksView.toggleEmailFields.bind(window.tasksView);
+    window.tasksView.searchEmails = window.tasksView.searchEmails.bind(window.tasksView);
+    window.tasksView.parseEmailContent = window.tasksView.parseEmailContent.bind(window.tasksView);
+    window.tasksView.attachEmail = window.tasksView.attachEmail.bind(window.tasksView);
+    window.tasksView.removeAttachedEmail = window.tasksView.removeAttachedEmail.bind(window.tasksView);
+    window.tasksView.selectEmailResult = window.tasksView.selectEmailResult.bind(window.tasksView);
+    
     // IMPORTANT: Chercher et utiliser le conteneur existant pour l'affichage
     const renderTasksView = () => {
         // Chercher le conteneur des tâches (même logique que l'original)
