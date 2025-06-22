@@ -249,12 +249,24 @@ class TaskManager {
         const fullEmailContent = this.extractFullEmailContent(email, taskData);
         const htmlEmailContent = this.extractHtmlEmailContent(email, taskData);
         
+        // CORRECTION CRITIQUE: Extraire correctement les informations client depuis l'email
+        const emailInfo = this.extractEmailClientInfo(email, taskData);
+        
         const task = this.ensureTaskProperties({
             ...taskData,
             id: taskData.id || this.generateId(),
             hasEmail: true,
             emailContent: fullEmailContent,
             emailHtmlContent: htmlEmailContent,
+            
+            // Informations client extraites de l'email
+            client: emailInfo.client || taskData.client || 'Externe',
+            emailFrom: emailInfo.emailFrom || taskData.emailFrom,
+            emailFromName: emailInfo.emailFromName || taskData.emailFromName,
+            emailDomain: emailInfo.emailDomain || taskData.emailDomain,
+            emailSubject: emailInfo.emailSubject || taskData.emailSubject,
+            emailDate: emailInfo.emailDate || taskData.emailDate,
+            
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         });
@@ -263,8 +275,131 @@ class TaskManager {
         this.saveTasks();
         this.emitTaskUpdate('create', task);
         
-        console.log('[TaskManager] Email task created successfully:', task.id);
+        console.log('[TaskManager] Email task created successfully:', task.id, 'Client:', task.client);
         return task;
+    }
+
+    // NOUVELLE MÉTHODE: Extraction intelligente des informations client depuis l'email
+    extractEmailClientInfo(email, taskData) {
+        const info = {
+            client: null,
+            emailFrom: null,
+            emailFromName: null,
+            emailDomain: null,
+            emailSubject: null,
+            emailDate: null
+        };
+
+        console.log('[TaskManager] 🔍 Extraction infos email:', email ? 'Email fourni' : 'Pas d\'email', taskData);
+
+        // Priorité 1: Depuis l'objet email fourni
+        if (email) {
+            console.log('[TaskManager] 📧 Traitement email object:', email);
+            
+            // Adresse email de l'expéditeur
+            if (email.from?.emailAddress?.address) {
+                info.emailFrom = email.from.emailAddress.address;
+                info.emailDomain = email.from.emailAddress.address.split('@')[1] || null;
+                console.log('[TaskManager] ✅ Email FROM extrait:', info.emailFrom, 'Domaine:', info.emailDomain);
+            } else if (email.from?.address) {
+                info.emailFrom = email.from.address;
+                info.emailDomain = email.from.address.split('@')[1] || null;
+                console.log('[TaskManager] ✅ Email FROM (format alternatif):', info.emailFrom);
+            }
+
+            // Nom de l'expéditeur
+            if (email.from?.emailAddress?.name) {
+                info.emailFromName = email.from.emailAddress.name;
+                console.log('[TaskManager] ✅ Nom expéditeur:', info.emailFromName);
+            } else if (email.from?.name) {
+                info.emailFromName = email.from.name;
+            }
+
+            // Sujet de l'email
+            if (email.subject) {
+                info.emailSubject = email.subject;
+                console.log('[TaskManager] ✅ Sujet email:', info.emailSubject);
+            }
+
+            // Date de l'email
+            if (email.receivedDateTime) {
+                info.emailDate = email.receivedDateTime;
+                console.log('[TaskManager] ✅ Date email:', info.emailDate);
+            }
+        }
+
+        // Priorité 2: Depuis taskData (données PageManager)
+        if (!info.emailFrom && taskData.emailFrom) {
+            info.emailFrom = taskData.emailFrom;
+            info.emailDomain = taskData.emailFrom.split('@')[1] || null;
+            console.log('[TaskManager] 📋 Email FROM depuis taskData:', info.emailFrom);
+        }
+
+        if (!info.emailFromName && taskData.emailFromName) {
+            info.emailFromName = taskData.emailFromName;
+            console.log('[TaskManager] 📋 Nom depuis taskData:', info.emailFromName);
+        }
+
+        if (!info.emailSubject && taskData.emailSubject) {
+            info.emailSubject = taskData.emailSubject;
+        }
+
+        if (!info.emailDate && taskData.emailDate) {
+            info.emailDate = taskData.emailDate;
+        }
+
+        if (!info.emailDomain && taskData.emailDomain) {
+            info.emailDomain = taskData.emailDomain;
+        }
+
+        // Priorité 3: Essayer d'extraire depuis le contenu email
+        if (!info.emailFrom && (taskData.emailContent || email?.body?.content)) {
+            const content = taskData.emailContent || email.body.content || '';
+            const emailMatch = content.match(/(?:De:|From:|Email de:)\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i);
+            if (emailMatch) {
+                info.emailFrom = emailMatch[1];
+                info.emailDomain = emailMatch[1].split('@')[1];
+                console.log('[TaskManager] 🔍 Email extrait du contenu:', info.emailFrom);
+            }
+        }
+
+        // Déterminer le nom du client
+        if (info.emailFromName && info.emailFromName.trim() && info.emailFromName !== info.emailFrom) {
+            // Utiliser le nom de la personne si disponible
+            info.client = info.emailFromName.trim();
+        } else if (info.emailDomain) {
+            // Sinon, utiliser le domaine de l'email
+            info.client = this.formatDomainAsClient(info.emailDomain);
+        } else if (info.emailFrom) {
+            // En dernier recours, utiliser l'email complet
+            info.client = info.emailFrom.split('@')[0] || 'Externe';
+        } else {
+            // Valeur par défaut
+            info.client = 'Externe';
+        }
+
+        console.log('[TaskManager] 🎯 Client final déterminé:', info.client);
+        console.log('[TaskManager] 📊 Infos complètes:', info);
+
+        return info;
+    }
+
+    // NOUVELLE MÉTHODE: Formatage intelligent du domaine en nom de client
+    formatDomainAsClient(domain) {
+        if (!domain) return 'Externe';
+
+        // Supprimer les sous-domaines courants
+        const cleanDomain = domain.replace(/^(www\.|mail\.|smtp\.|mx\.)/, '');
+        
+        // Extraire le nom principal (sans l'extension)
+        const parts = cleanDomain.split('.');
+        const mainName = parts[0];
+        
+        // Capitaliser la première lettre
+        const formatted = mainName.charAt(0).toUpperCase() + mainName.slice(1).toLowerCase();
+        
+        console.log('[TaskManager] 🏢 Domaine formaté:', domain, '->', formatted);
+        return formatted;
     }
 
     updateTask(id, updates) {
@@ -380,15 +515,61 @@ class TaskManager {
         return this.sortTasks(filtered, filters.sortBy || 'created');
     }
 
-    // NOUVEAU: Méthode pour obtenir dynamiquement tous les clients
-    getAllClients() {
-        const clients = new Set();
-        this.tasks.forEach(task => {
-            if (task.client && task.client.trim()) {
-                clients.add(task.client.trim());
+    // NOUVELLE MÉTHODE: Synchronisation avec EmailScanner pour récupérer les clients d'emails
+    syncClientsFromEmailScanner() {
+        console.log('[TaskManager] 🔄 Synchronisation clients depuis EmailScanner...');
+        
+        if (!window.emailScanner || !window.emailScanner.getAllEmails) {
+            console.log('[TaskManager] ⚠️ EmailScanner non disponible');
+            return [];
+        }
+
+        const emails = window.emailScanner.getAllEmails();
+        const emailClients = new Set();
+        
+        emails.forEach(email => {
+            if (email.from?.emailAddress?.address) {
+                const emailFrom = email.from.emailAddress.address;
+                const emailFromName = email.from.emailAddress.name;
+                const domain = emailFrom.split('@')[1];
+                
+                // Utiliser le nom de la personne en priorité, sinon le domaine formaté
+                const clientName = (emailFromName && emailFromName.trim() && emailFromName !== emailFrom) 
+                    ? emailFromName.trim()
+                    : this.formatDomainAsClient(domain);
+                    
+                emailClients.add(clientName);
+                console.log('[TaskManager] 📧 Client email détecté:', clientName, 'depuis', emailFrom);
             }
         });
-        return Array.from(clients).sort();
+
+        const uniqueEmailClients = Array.from(emailClients);
+        console.log('[TaskManager] ✅ Clients emails synchronisés:', uniqueEmailClients.length, uniqueEmailClients);
+        
+        return uniqueEmailClients;
+    }
+
+    // MÉTHODE AMÉLIORÉE: Obtenir tous les clients (tâches + emails)
+    getAllClients() {
+        // Clients depuis les tâches existantes
+        const taskClients = new Set();
+        this.tasks.forEach(task => {
+            if (task.client && task.client.trim() && task.client !== 'Interne') {
+                taskClients.add(task.client.trim());
+            }
+        });
+
+        // Clients depuis les emails scannés
+        const emailClients = this.syncClientsFromEmailScanner();
+        
+        // Fusionner les deux listes
+        const allClients = new Set([...taskClients, ...emailClients]);
+        
+        // Toujours inclure "Interne" en premier
+        const sortedClients = ['Interne', ...Array.from(allClients).filter(c => c !== 'Interne').sort()];
+        
+        console.log('[TaskManager] 📊 Tous les clients disponibles:', sortedClients.length, sortedClients);
+        return sortedClients;
     }
 
     sortTasks(tasks, sortBy) {
@@ -800,17 +981,30 @@ class TasksView {
         `).join('');
     }
 
-    // NOUVEAU: Construction dynamique des options de filtrage client
+    // NOUVEAU: Construction dynamique des options de filtrage client AMÉLIORÉE
     buildClientFilterOptions() {
-        const clients = window.taskManager?.getAllClients() || [];
+        const allClients = window.taskManager?.getAllClients() || [];
         
         let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
         
-        clients.forEach(client => {
+        allClients.forEach(client => {
             const count = window.taskManager.tasks.filter(t => t.client === client).length;
-            options += `<option value="${this.escapeHtml(client)}" ${this.currentFilters.client === client ? 'selected' : ''}>${this.escapeHtml(client)} (${count})</option>`;
+            const isSelected = this.currentFilters.client === client ? 'selected' : '';
+            
+            // Ajouter une icône pour différencier les types de clients
+            let clientIcon = '';
+            if (client === 'Interne') {
+                clientIcon = '🏢 ';
+            } else if (client.includes('@')) {
+                clientIcon = '📧 ';
+            } else {
+                clientIcon = '👤 ';
+            }
+            
+            options += `<option value="${this.escapeHtml(client)}" ${isSelected}>${clientIcon}${this.escapeHtml(client)} (${count})</option>`;
         });
         
+        console.log('[TasksView] 🔄 Options client mises à jour:', allClients.length, 'clients');
         return options;
     }
 
@@ -847,6 +1041,9 @@ class TasksView {
         const priorityIcon = this.getPriorityIcon(task.priority);
         const dueDateInfo = this.formatDueDate(task.dueDate);
         
+        // CORRECTION: Affichage intelligent du client
+        const displayClient = this.getDisplayClient(task);
+        
         return `
             <div class="task-minimal ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
                  data-task-id="${task.id}"
@@ -860,7 +1057,7 @@ class TasksView {
                     
                     <div class="task-info">
                         <span class="task-title">${this.escapeHtml(task.title)}</span>
-                        <span class="task-client">${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
+                        <span class="task-client">${displayClient.icon} ${this.escapeHtml(displayClient.name)}</span>
                     </div>
                     
                     <div class="task-meta">
@@ -896,6 +1093,9 @@ class TasksView {
         const dueDateInfo = this.formatDueDate(task.dueDate);
         const checklistProgress = this.getChecklistProgress(task.checklist);
         
+        // CORRECTION: Affichage intelligent du client
+        const displayClient = this.getDisplayClient(task);
+        
         return `
             <div class="task-normal ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
                  data-task-id="${task.id}"
@@ -922,12 +1122,17 @@ class TasksView {
                                         ${checklistProgress.completed}/${checklistProgress.total}
                                     </span>
                                 ` : ''}
+                                ${task.hasEmail ? `
+                                    <span class="email-badge">
+                                        📧 Email
+                                    </span>
+                                ` : ''}
                             </div>
                         </div>
                         
                         <div class="task-details">
                             <span class="task-client">
-                                ${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}
+                                ${displayClient.icon} ${this.escapeHtml(displayClient.name)}
                             </span>
                             <span class="task-deadline ${dueDateInfo.className}">
                                 ${dueDateInfo.text || 'Pas d\'échéance'}
@@ -943,6 +1148,43 @@ class TasksView {
         `;
     }
 
+    // NOUVELLE MÉTHODE: Déterminer l'affichage intelligent du client
+    getDisplayClient(task) {
+        let clientName = task.client || 'Interne';
+        let clientIcon = '🏢';
+
+        if (task.hasEmail) {
+            // Pour les tâches créées depuis des emails
+            if (task.emailFromName && task.emailFromName.trim() && task.emailFromName !== task.emailFrom) {
+                // Utiliser le nom de la personne
+                clientName = task.emailFromName;
+                clientIcon = '👤';
+            } else if (task.emailFrom) {
+                // Utiliser l'email ou le domaine
+                if (task.client && task.client !== 'Externe' && task.client !== 'Interne') {
+                    clientName = task.client;
+                    clientIcon = '🏢';
+                } else {
+                    const domain = task.emailFrom.split('@')[1];
+                    clientName = window.taskManager?.formatDomainAsClient(domain) || task.emailFrom;
+                    clientIcon = '📧';
+                }
+            }
+        } else {
+            // Pour les tâches manuelles
+            if (clientName === 'Interne') {
+                clientIcon = '🏢';
+            } else {
+                clientIcon = '👤';
+            }
+        }
+
+        return {
+            name: clientName,
+            icon: clientIcon
+        };
+    }
+
     renderDetailedView(tasks) {
         return `
             <div class="tasks-detailed-grid">
@@ -956,6 +1198,9 @@ class TasksView {
         const isCompleted = task.status === 'completed';
         const dueDateInfo = this.formatDueDate(task.dueDate);
         const checklistProgress = this.getChecklistProgress(task.checklist);
+        
+        // CORRECTION: Affichage intelligent du client
+        const displayClient = this.getDisplayClient(task);
         
         return `
             <div class="task-detailed ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
@@ -974,6 +1219,11 @@ class TasksView {
                         <span class="status-badge status-${task.status}">
                             ${this.getStatusIcon(task.status)} ${this.getStatusLabel(task.status)}
                         </span>
+                        ${task.hasEmail ? `
+                            <span class="email-badge">
+                                📧 Email
+                            </span>
+                        ` : ''}
                     </div>
                 </div>
                 
@@ -994,7 +1244,7 @@ class TasksView {
                     
                     <div class="task-meta-grid">
                         <div class="meta-item">
-                            <span>${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
+                            <span>${displayClient.icon} ${this.escapeHtml(displayClient.name)}</span>
                         </div>
                         <div class="meta-item deadline-centered ${dueDateInfo.className}">
                             <span>${dueDateInfo.text || 'Pas d\'échéance'}</span>
