@@ -43,56 +43,56 @@ class TaskManager {
         }
     }
 
-    ensureTaskProperties(task) {
-        return {
-            // Propriétés de base obligatoires
-            id: task.id || this.generateId(),
-            title: task.title || 'Tâche sans titre',
-            description: task.description || '',
-            priority: task.priority || 'medium',
-            status: task.status || 'todo',
-            dueDate: task.dueDate || null,
-            category: task.category || 'other',
-            
-            // Métadonnées
-            client: task.client || 'Interne',
-            tags: Array.isArray(task.tags) ? task.tags : [],
-            
-            // Email info
-            hasEmail: task.hasEmail || false,
-            emailId: task.emailId || null,
-            emailFrom: task.emailFrom || null,
-            emailFromName: task.emailFromName || null,
-            emailSubject: task.emailSubject || null,
-            emailContent: task.emailContent || '',
-            emailHtmlContent: task.emailHtmlContent || '',
-            emailDomain: task.emailDomain || null,
-            emailDate: task.emailDate || null,
-            emailReplied: task.emailReplied || false,
-            needsReply: task.needsReply || false,
-            hasAttachments: task.hasAttachments || false,
-            
-            // Données structurées IA
-            summary: task.summary || '',
-            actions: Array.isArray(task.actions) ? task.actions : [],
-            keyInfo: Array.isArray(task.keyInfo) ? task.keyInfo : [],
-            risks: Array.isArray(task.risks) ? task.risks : [],
-            aiAnalysis: task.aiAnalysis || null,
-            
-            // Suggestions de réponse IA (obligatoires)
-            suggestedReplies: Array.isArray(task.suggestedReplies) ? task.suggestedReplies : this.generateBasicReplies(task),
-            aiRepliesGenerated: task.aiRepliesGenerated || false,
-            aiRepliesGeneratedAt: task.aiRepliesGeneratedAt || null,
-            
-            // Timestamps
-            createdAt: task.createdAt || new Date().toISOString(),
-            updatedAt: task.updatedAt || new Date().toISOString(),
-            completedAt: task.completedAt || null,
-            
-            // Méthode de création
-            method: task.method || 'manual'
-        };
-    }
+ensureTaskProperties(task) {
+    return {
+        // Propriétés de base obligatoires
+        id: task.id || this.generateId(),
+        title: task.title || 'Tâche sans titre',
+        description: task.description || '',
+        priority: task.priority || 'medium',
+        status: task.status || 'todo',
+        dueDate: task.dueDate || null,
+        category: task.category || 'other',
+        
+        // Métadonnées
+        client: task.client || 'Interne',
+        tags: Array.isArray(task.tags) ? task.tags : [],
+        
+        // Email info
+        hasEmail: task.hasEmail || false,
+        emailId: task.emailId || null,
+        emailFrom: task.emailFrom || null,
+        emailFromName: task.emailFromName || null,
+        emailSubject: task.emailSubject || null,
+        emailContent: task.emailContent || '',
+        emailHtmlContent: task.emailHtmlContent || '',
+        emailDomain: task.emailDomain || null,
+        emailDate: task.emailDate || null,
+        emailReplied: task.emailReplied || false,
+        needsReply: task.needsReply || false,
+        hasAttachments: task.hasAttachments || false,
+        
+        // Données structurées IA
+        summary: task.summary || '',
+        actions: Array.isArray(task.actions) ? task.actions : [],
+        keyInfo: Array.isArray(task.keyInfo) ? task.keyInfo : [],
+        risks: Array.isArray(task.risks) ? task.risks : [],
+        aiAnalysis: task.aiAnalysis || null,
+        
+        // Suggestions de réponse IA (obligatoires)
+        suggestedReplies: Array.isArray(task.suggestedReplies) ? task.suggestedReplies : this.generateBasicReplies(task),
+        aiRepliesGenerated: task.aiRepliesGenerated || false,
+        aiRepliesGeneratedAt: task.aiRepliesGeneratedAt || null,
+        
+        // Timestamps
+        createdAt: task.createdAt || new Date().toISOString(),
+        updatedAt: task.updatedAt || new Date().toISOString(),
+        completedAt: task.completedAt || null,
+        
+        // Méthode de création
+        method: task.method || 'manual'
+    };
+}
 
     generateBasicReplies(task) {
         if (!task.hasEmail || !task.emailFrom) return [];
@@ -380,33 +380,32 @@ class TaskManager {
         return sorted;
     }
 
-    // ================================================
-    // STATISTIQUES
-    // ================================================
-    
-    getStats() {
-        const byStatus = {
-            todo: this.tasks.filter(t => t.status === 'todo').length,
-            'in-progress': this.tasks.filter(t => t.status === 'in-progress').length,
-            completed: this.tasks.filter(t => t.status === 'completed').length
-        };
+getStats() {
+    const byStatus = {
+        todo: this.tasks.filter(t => t.status === 'todo').length,
+        'in-progress': this.tasks.filter(t => t.status === 'in-progress').length,
+        'waiting': this.tasks.filter(t => t.status === 'waiting').length,
+        'followed-up': this.tasks.filter(t => t.status === 'followed-up').length,
+        completed: this.tasks.filter(t => t.status === 'completed').length
+    };
 
-        return {
-            total: this.tasks.length,
-            byStatus,
-            todo: byStatus.todo,
-            inProgress: byStatus['in-progress'],
-            completed: byStatus.completed,
-            overdue: this.tasks.filter(t => {
-                if (!t.dueDate || t.status === 'completed') return false;
-                return new Date(t.dueDate) < new Date();
-            }).length,
-            needsReply: this.tasks.filter(t => 
-                t.needsReply || (t.hasEmail && !t.emailReplied && t.status !== 'completed')
-            ).length
-        };
-    }
-
+    return {
+        total: this.tasks.length,
+        byStatus,
+        todo: byStatus.todo,
+        inProgress: byStatus['in-progress'],
+        waiting: byStatus['waiting'],
+        followedUp: byStatus['followed-up'],
+        completed: byStatus.completed,
+        overdue: this.tasks.filter(t => {
+            if (!t.dueDate || t.status === 'completed') return false;
+            return new Date(t.dueDate) < new Date();
+        }).length,
+        needsReply: this.tasks.filter(t => 
+            t.needsReply || (t.hasEmail && !t.emailReplied && t.status !== 'completed')
+        ).length
+    };
+}
     // ================================================
     // MÉTHODES UTILITAIRES
     // ================================================
@@ -725,27 +724,29 @@ class TasksView {
         console.log('[TasksView] Interface harmonisée corrigée rendue');
     }
 
-    buildStatusPills(stats) {
-        const pills = [
-            { id: 'all', name: 'Tous', icon: '📋', count: stats.total },
-            { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
-            { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
-            { id: 'overdue', name: 'En retard', icon: '⚠️', count: stats.overdue },
-            { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply },
-            { id: 'completed', name: 'Terminées', icon: '✅', count: stats.completed }
-        ];
+buildStatusPills(stats) {
+    const pills = [
+        { id: 'all', name: 'Tous', icon: '📋', count: stats.total },
+        { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
+        { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
+        { id: 'waiting', name: 'En attente', icon: '⏸️', count: stats.waiting },
+        { id: 'followed-up', name: 'Relancé', icon: '📨', count: stats.followedUp },
+        { id: 'overdue', name: 'En retard', icon: '⚠️', count: stats.overdue },
+        { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply },
+        { id: 'completed', name: 'Terminées', icon: '✅', count: stats.completed }
+    ];
 
-        return pills.map(pill => `
-            <button class="status-pill ${this.isFilterActive(pill.id) ? 'active' : ''}" 
-                    data-filter="${pill.id}"
-                    onclick="window.tasksView.quickFilter('${pill.id}')"
-                    title="${pill.name}: ${pill.count} tâche(s)">
-                <span class="pill-icon">${pill.icon}</span>
-                <span class="pill-text">${pill.name}</span>
-                <span class="pill-count">${pill.count}</span>
-            </button>
-        `).join('');
-    }
+    return pills.map(pill => `
+        <button class="status-pill ${this.isFilterActive(pill.id) ? 'active' : ''}" 
+                data-filter="${pill.id}"
+                onclick="window.tasksView.quickFilter('${pill.id}')"
+                title="${pill.name}: ${pill.count} tâche(s)">
+            <span class="pill-icon">${pill.icon}</span>
+            <span class="pill-text">${pill.name}</span>
+            <span class="pill-count">${pill.count}</span>
+        </button>
+    `).join('');
+}
 
     renderTasksList() {
         const tasks = window.taskManager.filterTasks(this.currentFilters);
@@ -1070,21 +1071,23 @@ class TasksView {
                 }
                 break;
                 
-            case 2: // Changer le statut
-                const status = prompt('Nouveau statut:\n1. À faire\n2. En cours\n3. Terminé\n\nEntrez le numéro:');
-                const statuses = ['', 'todo', 'in-progress', 'completed'];
-                if (status && statuses[parseInt(status)]) {
-                    this.selectedTasks.forEach(taskId => {
-                        const updates = { status: statuses[parseInt(status)] };
-                        if (updates.status === 'completed') {
-                            updates.completedAt = new Date().toISOString();
-                        }
-                        window.taskManager.updateTask(taskId, updates);
-                    });
-                    this.showToast(`Statut mis à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
+// Dans la fonction bulkActions, remplacer la partie case 2 par :
+
+case 2: // Changer le statut
+    const status = prompt('Nouveau statut:\n1. À faire\n2. En cours\n3. En attente\n4. Relancé\n5. Terminé\n\nEntrez le numéro:');
+    const statuses = ['', 'todo', 'in-progress', 'waiting', 'followed-up', 'completed'];
+    if (status && statuses[parseInt(status)]) {
+        this.selectedTasks.forEach(taskId => {
+            const updates = { status: statuses[parseInt(status)] };
+            if (updates.status === 'completed') {
+                updates.completedAt = new Date().toISOString();
+            }
+            window.taskManager.updateTask(taskId, updates);
+        });
+        this.showToast(`Statut mis à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
+        this.clearSelection();
+    }
+    break;
                 
             case 3: // Supprimer
                 if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?\n\nCette action est irréversible.`)) {
@@ -1148,38 +1151,40 @@ class TasksView {
         this.refreshView();
     }
 
-    quickFilter(filterId) {
-        // Reset filters
-        this.currentFilters = {
-            status: 'all',
-            priority: 'all',
-            category: 'all',
-            client: 'all',
-            search: this.currentFilters.search,
-            sortBy: this.currentFilters.sortBy,
-            overdue: false,
-            needsReply: false
-        };
+quickFilter(filterId) {
+    // Reset filters
+    this.currentFilters = {
+        status: 'all',
+        priority: 'all',
+        category: 'all',
+        client: 'all',
+        search: this.currentFilters.search,
+        sortBy: this.currentFilters.sortBy,
+        overdue: false,
+        needsReply: false
+    };
 
-        // Apply specific filter
-        switch (filterId) {
-            case 'all':
-                break;
-            case 'todo':
-            case 'in-progress':
-            case 'completed':
-                this.currentFilters.status = filterId;
-                break;
-            case 'overdue':
-                this.currentFilters.overdue = true;
-                break;
-            case 'needsReply':
-                this.currentFilters.needsReply = true;
-                break;
-        }
-
-        this.refreshView();
+    // Apply specific filter
+    switch (filterId) {
+        case 'all':
+            break;
+        case 'todo':
+        case 'in-progress':
+        case 'waiting':
+        case 'followed-up':
+        case 'completed':
+            this.currentFilters.status = filterId;
+            break;
+        case 'overdue':
+            this.currentFilters.overdue = true;
+            break;
+        case 'needsReply':
+            this.currentFilters.needsReply = true;
+            break;
     }
+
+    this.refreshView();
+}
 
     updateFilter(filterType, value) {
         this.currentFilters[filterType] = value;
@@ -1407,17 +1412,19 @@ class TasksView {
         `;
     }
 
-    isFilterActive(filterId) {
-        switch (filterId) {
-            case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
-            case 'todo': return this.currentFilters.status === 'todo';
-            case 'in-progress': return this.currentFilters.status === 'in-progress';
-            case 'completed': return this.currentFilters.status === 'completed';
-            case 'overdue': return this.currentFilters.overdue;
-            case 'needsReply': return this.currentFilters.needsReply;
-            default: return false;
-        }
+isFilterActive(filterId) {
+    switch (filterId) {
+        case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
+        case 'todo': return this.currentFilters.status === 'todo';
+        case 'in-progress': return this.currentFilters.status === 'in-progress';
+        case 'waiting': return this.currentFilters.status === 'waiting';
+        case 'followed-up': return this.currentFilters.status === 'followed-up';
+        case 'completed': return this.currentFilters.status === 'completed';
+        case 'overdue': return this.currentFilters.overdue;
+        case 'needsReply': return this.currentFilters.needsReply;
+        default: return false;
     }
+}
 
     hasActiveFilters() {
         return this.currentFilters.status !== 'all' ||
@@ -1444,15 +1451,27 @@ class TasksView {
         return labels[priority] || 'Normale';
     }
 
-    getStatusIcon(status) {
-        const icons = { todo: '⏳', 'in-progress': '🔄', completed: '✅' };
-        return icons[status] || '⏳';
-    }
+getStatusIcon(status) {
+    const icons = { 
+        todo: '⏳', 
+        'in-progress': '🔄', 
+        'waiting': '⏸️',
+        'followed-up': '📨',
+        completed: '✅' 
+    };
+    return icons[status] || '⏳';
+}
 
-    getStatusLabel(status) {
-        const labels = { todo: 'À faire', 'in-progress': 'En cours', completed: 'Terminé' };
-        return labels[status] || 'À faire';
-    }
+getStatusLabel(status) {
+    const labels = { 
+        todo: 'À faire', 
+        'in-progress': 'En cours', 
+        'waiting': 'En attente',
+        'followed-up': 'Relancé',
+        completed: 'Terminé' 
+    };
+    return labels[status] || 'À faire';
+}
 
     formatDueDate(dateString) {
         if (!dateString) {
@@ -1668,76 +1687,77 @@ class TasksView {
             if (firstInput) firstInput.focus();
         }, 100);
     }
-
-    buildEditForm(task) {
-        return `
-            <div class="edit-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Titre de la tâche *</label>
-                        <input type="text" id="edit-title" class="form-input" 
-                               value="${this.escapeHtml(task.title)}" required />
-                    </div>
+buildEditForm(task) {
+    return `
+        <div class="edit-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Titre de la tâche *</label>
+                    <input type="text" id="edit-title" class="form-input" 
+                           value="${this.escapeHtml(task.title)}" required />
                 </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Description</label>
-                        <textarea id="edit-description" class="form-textarea" rows="4">${this.escapeHtml(task.description)}</textarea>
-                    </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="edit-description" class="form-textarea" rows="4">${this.escapeHtml(task.description)}</textarea>
                 </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Priorité</label>
-                        <select id="edit-priority" class="form-select">
-                            <option value="low" ${task.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
-                            <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
-                            <option value="high" ${task.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
-                            <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Statut</label>
-                        <select id="edit-status" class="form-select">
-                            <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>⏳ À faire</option>
-                            <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>🔄 En cours</option>
-                            <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>✅ Terminé</option>
-                        </select>
-                    </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Priorité</label>
+                    <select id="edit-priority" class="form-select">
+                        <option value="low" ${task.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                        <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                        <option value="high" ${task.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                        <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                    </select>
                 </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Client/Projet</label>
-                        <input type="text" id="edit-client" class="form-input" 
-                               value="${this.escapeHtml(task.client)}" />
-                    </div>
-                    <div class="form-group">
-                        <label>Date d'échéance</label>
-                        <input type="date" id="edit-duedate" class="form-input" 
-                               value="${task.dueDate || ''}" />
-                    </div>
+                <div class="form-group">
+                    <label>Statut</label>
+                    <select id="edit-status" class="form-select">
+                        <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>⏳ À faire</option>
+                        <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>🔄 En cours</option>
+                        <option value="waiting" ${task.status === 'waiting' ? 'selected' : ''}>⏸️ En attente</option>
+                        <option value="followed-up" ${task.status === 'followed-up' ? 'selected' : ''}>📨 Relancé</option>
+                        <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>✅ Terminé</option>
+                    </select>
                 </div>
-                
-                ${task.hasEmail ? `
-                    <div class="form-section">
-                        <h3><i class="fas fa-envelope"></i> Informations Email</h3>
-                        <div class="email-info-readonly">
-                            <div><strong>De:</strong> ${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</div>
-                            <div><strong>Sujet:</strong> ${this.escapeHtml(task.emailSubject || 'Sans sujet')}</div>
-                            <div>
-                                <label>
-                                    <input type="checkbox" id="edit-needs-reply" ${task.needsReply ? 'checked' : ''} />
-                                    Réponse requise
-                                </label>
-                            </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Client/Projet</label>
+                    <input type="text" id="edit-client" class="form-input" 
+                           value="${this.escapeHtml(task.client)}" />
+                </div>
+                <div class="form-group">
+                    <label>Date d'échéance</label>
+                    <input type="date" id="edit-duedate" class="form-input" 
+                           value="${task.dueDate || ''}" />
+                </div>
+            </div>
+            
+            ${task.hasEmail ? `
+                <div class="form-section">
+                    <h3><i class="fas fa-envelope"></i> Informations Email</h3>
+                    <div class="email-info-readonly">
+                        <div><strong>De:</strong> ${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</div>
+                        <div><strong>Sujet:</strong> ${this.escapeHtml(task.emailSubject || 'Sans sujet')}</div>
+                        <div>
+                            <label>
+                                <input type="checkbox" id="edit-needs-reply" ${task.needsReply ? 'checked' : ''} />
+                                Réponse requise
+                            </label>
                         </div>
                     </div>
-                ` : ''}
-            </div>
-        `;
-    }
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
 
     saveTaskChanges(taskId, modalId) {
         const title = document.getElementById('edit-title')?.value?.trim();
