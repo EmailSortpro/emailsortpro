@@ -2267,7 +2267,7 @@ class TasksView {
                 width: 100%;
             }
 
-            .search-section-compact { flex: 0 0 240px; }
+            .search-section-compact { flex: 0 0 320px; }
             .search-box-compact { position: relative; display: flex; align-items: center; height: 42px; }
             .search-input-compact {
                 width: 100%;
@@ -2382,31 +2382,51 @@ class TasksView {
                 border: 2px solid white;
             }
 
-            .status-filters-line { display: flex; align-items: center; width: 100%; }
-            .status-filters { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; justify-content: center; }
+            .status-filters-line { 
+                display: flex; 
+                align-items: center; 
+                width: 100%; 
+            }
+            .status-filters { 
+                display: flex; 
+                gap: 8px; 
+                flex: 1; 
+                flex-wrap: nowrap;
+                overflow-x: auto;
+            }
             .status-pill {
                 display: flex;
                 align-items: center;
                 gap: 6px;
-                padding: 8px 14px;
+                padding: 10px 16px;
                 background: white;
                 border: 1px solid var(--border);
                 border-radius: 8px;
                 cursor: pointer;
                 transition: var(--trans);
-                font-size: 12px;
+                font-size: 13px;
                 font-weight: 600;
                 color: var(--text-p);
-                min-width: 100px;
-                justify-content: space-between;
-                height: 36px;
+                flex: 1;
+                min-width: 120px;
+                justify-content: center;
+                height: 40px;
+                white-space: nowrap;
             }
             .status-pill:hover { border-color: var(--primary); background: #f0f9ff; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
             .status-pill.active { background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%); color: white; border-color: var(--primary); box-shadow: var(--shadow-md); }
             .status-pill.active .pill-count { background: rgba(255,255,255,0.3); color: white; }
-            .pill-icon { font-size: 14px; }
-            .pill-text { flex: 1; text-align: center; font-size: 11px; }
-            .pill-count { background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; min-width: 20px; text-align: center; }
+            .pill-icon { font-size: 16px; }
+            .pill-text { font-size: 12px; }
+            .pill-count { 
+                background: rgba(0,0,0,0.1); 
+                padding: 3px 8px; 
+                border-radius: 12px; 
+                font-size: 12px; 
+                font-weight: 700; 
+                min-width: 24px; 
+                text-align: center; 
+            }
 
             .advanced-filters-panel {
                 background: rgba(255,255,255,0.95);
@@ -2438,7 +2458,10 @@ class TasksView {
             .btn-reset { background: var(--bg-s); color: var(--text-s); }
             .btn-reset:hover { background: var(--border); color: var(--text-p); }
 
-            .tasks-container { background: transparent; }
+            .tasks-container { 
+                background: transparent; 
+                min-height: 400px;
+            }
 
             /* Vue minimaliste alignée */
             .tasks-minimal-list { 
