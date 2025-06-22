@@ -571,11 +571,11 @@ render(container) {
     
     container.innerHTML = `
         <div class="tasks-page-symmetric">
-            <!-- RECTANGLE BLANC PRINCIPAL - DEUX LIGNES SYMÉTRIQUES -->
+            <!-- RECTANGLE BLANC PRINCIPAL - 3 LIGNES -->
             <div class="controls-section-symmetric">
-                <!-- LIGNE 1 : Recherche + Actions (6 colonnes) -->
-                <div class="controls-line-1">
-                    <!-- Recherche (col 1-2) -->
+                <!-- LIGNE 1 : Actions principales -->
+                <div class="controls-line-main">
+                    <!-- Recherche -->
                     <div class="search-wrapper">
                         <div class="search-box-compact">
                             <i class="fas fa-search search-icon"></i>
@@ -592,7 +592,7 @@ render(container) {
                         </div>
                     </div>
                     
-                    <!-- Sélectionner tout (col 3) -->
+                    <!-- Sélectionner tout -->
                     <button class="btn-control ${selectedCount > 0 ? 'has-selection' : ''}" 
                             onclick="window.tasksView.selectAllVisible()" 
                             title="Sélectionner tout">
@@ -601,7 +601,7 @@ render(container) {
                         ${selectedCount > 0 ? `<span class="selection-badge">${selectedCount}</span>` : ''}
                     </button>
                     
-                    <!-- Actualiser (col 4) -->
+                    <!-- Actualiser -->
                     <button class="btn-control" 
                             onclick="window.tasksView.refreshTasks()" 
                             title="Actualiser">
@@ -609,7 +609,7 @@ render(container) {
                         <span class="btn-text">Actualiser</span>
                     </button>
                     
-                    <!-- Nouvelle (col 5) -->
+                    <!-- Nouvelle -->
                     <button class="btn-control btn-primary" 
                             onclick="window.tasksView.showCreateModal()" 
                             title="Nouvelle tâche">
@@ -617,7 +617,7 @@ render(container) {
                         <span class="btn-text">Nouvelle</span>
                     </button>
                     
-                    <!-- Filtres (col 6) -->
+                    <!-- Filtres -->
                     <button class="btn-control ${this.showAdvancedFilters ? 'active' : ''}" 
                             onclick="window.tasksView.toggleAdvancedFilters()" 
                             title="Filtres avancés">
@@ -627,35 +627,42 @@ render(container) {
                     </button>
                 </div>
                 
-                <!-- LIGNE 2 : Modes de vue + Filtres de statut (6 colonnes équivalentes) -->
-                <div class="controls-line-2">
-                    <!-- Modes de vue (col 1-2) -->
-                    <div class="view-modes-wrapper">
-                        <div class="view-modes-group">
-                            <button class="view-mode-btn ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('minimal')"
-                                    title="Vue minimaliste">
-                                <i class="fas fa-list"></i>
-                                Minimal
-                            </button>
-                            <button class="view-mode-btn ${this.currentViewMode === 'normal' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('normal')"
-                                    title="Vue normale">
-                                <i class="fas fa-th-list"></i>
-                                Normal
-                            </button>
-                            <button class="view-mode-btn ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('detailed')"
-                                    title="Vue détaillée">
-                                <i class="fas fa-th-large"></i>
-                                Détaillé
-                            </button>
-                        </div>
+                <!-- LIGNE 2 : Modes de vue -->
+                <div class="controls-line-views">
+                    <div class="view-modes-label">
+                        <i class="fas fa-eye"></i>
+                        <span>Affichage :</span>
                     </div>
-                    
-                    <!-- Filtres de statut (col 3-6) -->
-                    <div class="status-filters-wrapper">
-                        ${this.buildCompactStatusFilters(stats)}
+                    <div class="view-modes-group">
+                        <button class="view-mode-btn ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
+                                onclick="window.tasksView.changeViewMode('minimal')"
+                                title="Vue minimaliste">
+                            <i class="fas fa-list"></i>
+                            Minimal
+                        </button>
+                        <button class="view-mode-btn ${this.currentViewMode === 'normal' ? 'active' : ''}" 
+                                onclick="window.tasksView.changeViewMode('normal')"
+                                title="Vue normale">
+                            <i class="fas fa-th-list"></i>
+                            Normal
+                        </button>
+                        <button class="view-mode-btn ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
+                                onclick="window.tasksView.changeViewMode('detailed')"
+                                title="Vue détaillée">
+                            <i class="fas fa-th-large"></i>
+                            Détaillé
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- LIGNE 3 : Filtres de statut -->
+                <div class="controls-line-status">
+                    <div class="status-filters-label">
+                        <i class="fas fa-filter"></i>
+                        <span>Filtrer par statut :</span>
+                    </div>
+                    <div class="status-filters-group">
+                        ${this.buildStatusFiltersWithLabels(stats)}
                     </div>
                 </div>
             </div>
@@ -736,10 +743,36 @@ render(container) {
         </div>
     `;
 
-    this.addSymmetricStyles();
+    this.addStatusLineStyles();
     this.setupEventListeners();
-    console.log('[TasksView] Interface symétrique rendue');
+    console.log('[TasksView] Interface avec ligne de statuts rendue');
 }
+
+buildStatusFiltersWithLabels(stats) {
+    const filters = [
+        { id: 'all', name: 'Tous', icon: '📋', count: stats.total, color: '#6b7280' },
+        { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo, color: '#f59e0b' },
+        { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress, color: '#3b82f6' },
+        { id: 'waiting', name: 'En attente', icon: '⏸️', count: stats.waiting, color: '#6b7280' },
+        { id: 'followed-up', name: 'Relancé', icon: '📨', count: stats.followedUp, color: '#be185d' },
+        { id: 'overdue', name: 'En retard', icon: '⚠️', count: stats.overdue, color: '#ef4444' },
+        { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply, color: '#8b5cf6' },
+        { id: 'completed', name: 'Terminé', icon: '✅', count: stats.completed, color: '#10b981' }
+    ];
+
+    return filters.map(filter => `
+        <button class="status-filter-full ${this.isFilterActive(filter.id) ? 'active' : ''}" 
+                data-filter="${filter.id}"
+                onclick="window.tasksView.quickFilter('${filter.id}')"
+                title="${filter.name}: ${filter.count} tâche(s)"
+                style="--filter-color: ${filter.color}">
+            <span class="filter-icon">${filter.icon}</span>
+            <span class="filter-label">${filter.name}</span>
+            <span class="filter-badge">${filter.count}</span>
+        </button>
+    `).join('');
+}
+
 addSymmetricStyles() {
     if (document.getElementById('symmetricTaskStyles')) return;
     
@@ -1232,10 +1265,10 @@ buildCompactStatusFilters(stats) {
         { id: 'all', name: 'Tous', icon: '📋', count: stats.total },
         { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
         { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
-        { id: 'waiting', name: 'Attente', icon: '⏸️', count: stats.waiting },
+        { id: 'waiting', name: 'En attente', icon: '⏸️', count: stats.waiting },
         { id: 'followed-up', name: 'Relancé', icon: '📨', count: stats.followedUp },
-        { id: 'overdue', name: 'Retard', icon: '⚠️', count: stats.overdue },
-        { id: 'needsReply', name: 'Répondre', icon: '📧', count: stats.needsReply },
+        { id: 'overdue', name: 'En retard', icon: '⚠️', count: stats.overdue },
+        { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply },
         { id: 'completed', name: 'Terminé', icon: '✅', count: stats.completed }
     ];
 
@@ -1243,9 +1276,12 @@ buildCompactStatusFilters(stats) {
         <button class="status-filter-btn ${this.isFilterActive(filter.id) ? 'active' : ''}" 
                 data-filter="${filter.id}"
                 onclick="window.tasksView.quickFilter('${filter.id}')"
-                title="${filter.name}: ${filter.count}">
-            <span class="filter-icon">${filter.icon}</span>
-            <span class="filter-count">${filter.count}</span>
+                title="${filter.name}: ${filter.count} tâche(s)">
+            <div class="filter-content">
+                <span class="filter-icon">${filter.icon}</span>
+                <span class="filter-name">${filter.name}</span>
+                <span class="filter-count">${filter.count}</span>
+            </div>
         </button>
     `).join('');
 }
