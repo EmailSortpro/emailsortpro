@@ -328,10 +328,10 @@ class PageManager {
                                     <!-- Bouton Sélectionner/Désélectionner tout -->
                                     <button class="btn-expanded btn-selection-toggle" 
                                             onclick="window.pageManager.toggleAllSelection()"
-                                            title="Sélectionner/Désélectionner tout">
+                                            title="Sélectionner/Désélectionner tous les emails visibles">
                                         <i class="fas fa-check-square"></i>
-                                        <span>Tout</span>
-                                        ${this.getVisibleEmails().length > 0 ? `<span class="count-badge-expanded">${this.getVisibleEmails().length}</span>` : ''}
+                                        <span class="main-text">Sélectionner tous</span>
+                                        <span class="sub-text">(${this.getVisibleEmails().length})</span>
                                     </button>
                                     
                                     <!-- Bouton Créer tâches -->
@@ -392,9 +392,9 @@ class PageManager {
                             </div>
                         </div>
 
-                        <!-- Filtres de catégories -->
-                        <div class="status-filters-harmonized-twolines">
-                            ${this.buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories)}
+                        <!-- Filtres de catégories compacts -->
+                        <div class="status-filters-compact">
+                            ${this.buildCompactCategoryTabs(categoryCounts, totalEmails, categories)}
                         </div>
                     </div>
 
@@ -506,7 +506,7 @@ class PageManager {
         });
 
         // Filtres de catégories dans le sticky
-        stickyContainer.querySelectorAll('.status-pill-harmonized-twolines').forEach(pill => {
+        stickyContainer.querySelectorAll('.status-pill-compact').forEach(pill => {
             pill.addEventListener('click', (e) => {
                 e.preventDefault();
                 const categoryId = pill.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
@@ -533,7 +533,7 @@ class PageManager {
 
         // Synchroniser les états actifs des boutons
         const originalButtons = originalContainer.querySelectorAll('.active, .disabled');
-        const stickyButtons = stickyContainer.querySelectorAll('button, .status-pill-harmonized-twolines');
+        const stickyButtons = stickyContainer.querySelectorAll('button, .status-pill-compact');
         
         originalButtons.forEach((origBtn, index) => {
             const stickyBtn = stickyButtons[index];
@@ -861,6 +861,7 @@ class PageManager {
     updateControlsBarOnly() {
         const selectedCount = this.selectedEmails.size;
         const visibleEmails = this.getVisibleEmails();
+        const allSelected = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
         
         console.log('[PageManager] Mise à jour contrôles uniquement -', selectedCount, 'sélectionnés');
         
@@ -871,21 +872,30 @@ class PageManager {
             // Mettre à jour le bouton "Sélectionner tout"
             const selectAllBtn = container.querySelector('.btn-selection-toggle');
             if (selectAllBtn) {
-                const allSelected = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
-                const span = selectAllBtn.querySelector('span');
-                const countBadge = selectAllBtn.querySelector('.count-badge-expanded');
+                const mainText = selectAllBtn.querySelector('.main-text');
+                const subText = selectAllBtn.querySelector('.sub-text');
+                const icon = selectAllBtn.querySelector('i');
                 
-                if (span) {
-                    span.textContent = allSelected ? 'Aucun' : 'Tout';
+                if (allSelected) {
+                    // Tous sélectionnés -> Proposer de désélectionner
+                    if (mainText) mainText.textContent = 'Désélectionner tous';
+                    if (icon) {
+                        icon.classList.remove('fa-check-square');
+                        icon.classList.add('fa-square');
+                    }
+                    selectAllBtn.classList.add('all-selected');
+                } else {
+                    // Pas tous sélectionnés -> Proposer de sélectionner
+                    if (mainText) mainText.textContent = 'Sélectionner tous';
+                    if (icon) {
+                        icon.classList.remove('fa-square');
+                        icon.classList.add('fa-check-square');
+                    }
+                    selectAllBtn.classList.remove('all-selected');
                 }
                 
-                if (countBadge) {
-                    countBadge.textContent = visibleEmails.length;
-                } else if (visibleEmails.length > 0) {
-                    const newBadge = document.createElement('span');
-                    newBadge.className = 'count-badge-expanded';
-                    newBadge.textContent = visibleEmails.length;
-                    selectAllBtn.appendChild(newBadge);
+                if (subText) {
+                    subText.textContent = `(${visibleEmails.length})`;
                 }
             }
             
@@ -1036,7 +1046,7 @@ class PageManager {
         console.log('[PageManager] Vue emails rafraîchie avec', this.selectedEmails.size, 'sélectionnés');
     }
 
-    buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
+    buildCompactCategoryTabs(categoryCounts, totalEmails, categories) {
         // Récupérer les catégories pré-sélectionnées
         const preselectedCategories = this.getTaskPreselectedCategories();
         console.log('[PageManager] 📌 Catégories pré-sélectionnées pour l\'affichage:', preselectedCategories);
@@ -1083,25 +1093,19 @@ class PageManager {
             });
         }
         
-        // Générer le HTML avec étoile TOUJOURS visible
+        // Générer le HTML compact
         return tabs.map(tab => {
             const isCurrentCategory = this.currentCategory === tab.id;
-            const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''}`;
+            const baseClasses = `status-pill-compact ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''}`;
             
             return `
                 <button class="${baseClasses}" 
                         onclick="window.pageManager.filterByCategory('${tab.id}')"
                         data-category-id="${tab.id}"
                         title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
-                    <div class="pill-content-twolines">
-                        <div class="pill-first-line-twolines">
-                            <span class="pill-icon-twolines">${tab.icon}</span>
-                            <span class="pill-count-twolines">${tab.count}</span>
-                        </div>
-                        <div class="pill-second-line-twolines">
-                            <span class="pill-text-twolines">${tab.name}</span>
-                        </div>
-                    </div>
+                    <span class="pill-icon">${tab.icon}</span>
+                    <span class="pill-text">${tab.name}</span>
+                    <span class="pill-count">${tab.count}</span>
                     ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
                 </button>
             `;
@@ -1140,7 +1144,7 @@ class PageManager {
             const containerSelector = suffix ? '.sticky-controls-container' : '.controls-and-filters-container';
             const container = document.querySelector(containerSelector);
             if (container) {
-                container.querySelectorAll('.status-pill-harmonized-twolines').forEach(pill => {
+                container.querySelectorAll('.status-pill-compact').forEach(pill => {
                     const pillCategoryId = pill.dataset.categoryId;
                     if (pillCategoryId === categoryId) {
                         pill.classList.add('active');
@@ -3015,8 +3019,8 @@ class PageManager {
                 position: relative;
             }
             
-            /* ===== FILTRES DE CATÉGORIES (inchangés) ===== */
-            .status-filters-harmonized-twolines {
+            /* ===== FILTRES DE CATÉGORIES COMPACTS ===== */
+            .status-filters-compact {
                 display: flex;
                 gap: var(--gap-small);
                 margin-bottom: var(--gap-medium);
@@ -3024,23 +3028,20 @@ class PageManager {
                 width: 100%;
                 position: relative;
                 z-index: 10;
+                align-items: center;
             }
             
-            .status-pill-harmonized-twolines {
-                height: 60px;
-                padding: var(--gap-small);
-                font-size: 12px;
-                font-weight: 700;
-                flex: 0 1 calc(16.666% - var(--gap-small));
-                min-width: 120px;
-                max-width: 180px;
+            .status-pill-compact {
+                height: 36px;
+                padding: 0 12px;
+                font-size: 13px;
+                font-weight: 600;
                 border-radius: var(--btn-border-radius);
                 box-shadow: var(--shadow-base);
                 transition: all var(--transition-speed) ease;
                 display: flex;
                 align-items: center;
-                justify-content: center;
-                text-align: center;
+                gap: 6px;
                 background: white;
                 color: #374151;
                 border: 1px solid #e5e7eb;
@@ -3048,133 +3049,129 @@ class PageManager {
                 position: relative;
                 overflow: visible;
                 z-index: 11;
+                white-space: nowrap;
+                flex-shrink: 0;
             }
             
-            .status-pill-harmonized-twolines.preselected-category {
+            .status-pill-compact.preselected-category {
+                border-color: var(--preselect-color);
+                background: rgba(139, 92, 246, 0.05);
                 animation: pulsePreselected 3s ease-in-out infinite;
-                border-width: 2px;
             }
             
-            .status-pill-harmonized-twolines.preselected-category::before {
-                content: '';
-                position: absolute;
-                top: -3px;
-                left: -3px;
-                right: -3px;
-                bottom: -3px;
-                border-radius: inherit;
-                background: linear-gradient(45deg, var(--preselect-color), var(--preselect-color-light), var(--preselect-color));
-                background-size: 300% 300%;
-                animation: gradientShift 4s ease infinite;
-                z-index: -1;
-                opacity: 0.3;
+            .status-pill-compact .pill-icon {
+                font-size: 14px;
+                flex-shrink: 0;
             }
             
-            @keyframes pulsePreselected {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.03); }
+            .status-pill-compact .pill-text {
+                font-weight: 600;
+                color: inherit;
+                flex-shrink: 0;
             }
             
-            @keyframes gradientShift {
-                0% { background-position: 0% 50%; }
-                50% { background-position: 100% 50%; }
-                100% { background-position: 0% 50%; }
-            }
-            
-            .pill-content-twolines {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 4px;
-                width: 100%;
-                height: 100%;
-                justify-content: center;
-            }
-            
-            .pill-first-line-twolines {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-            
-            .pill-icon-twolines {
-                font-size: 16px;
-            }
-            
-            .pill-count-twolines {
+            .status-pill-compact .pill-count {
                 background: rgba(0, 0, 0, 0.1);
                 padding: 2px 6px;
-                border-radius: 6px;
-                font-size: 10px;
-                font-weight: 800;
-                min-width: 18px;
+                border-radius: 8px;
+                font-size: 11px;
+                font-weight: 700;
+                min-width: 20px;
                 text-align: center;
+                flex-shrink: 0;
             }
             
-            .preselected-star {
+            .status-pill-compact .preselected-star {
                 position: absolute;
-                top: -8px;
-                right: -8px;
-                width: 20px;
-                height: 20px;
+                top: -6px;
+                right: -6px;
+                width: 16px;
+                height: 16px;
                 background: var(--preselect-color);
                 color: white;
                 border-radius: 50%;
                 display: flex !important;
                 align-items: center;
                 justify-content: center;
-                font-size: 11px;
+                font-size: 9px;
                 border: 2px solid white;
-                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+                box-shadow: 0 2px 4px rgba(139, 92, 246, 0.4);
                 animation: starPulse 2s ease-in-out infinite;
                 z-index: 15;
                 visibility: visible !important;
                 opacity: 1 !important;
             }
             
-            @keyframes starPulse {
-                0%, 100% { 
-                    transform: scale(1);
-                    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
-                }
-                50% { 
-                    transform: scale(1.15);
-                    box-shadow: 0 3px 8px rgba(139, 92, 246, 0.6);
-                }
-            }
-            
-            .pill-text-twolines {
-                font-weight: 700;
-                font-size: 12px;
-                line-height: 1.2;
-                text-align: center;
-            }
-            
-            .status-pill-harmonized-twolines:hover {
+            .status-pill-compact:hover {
                 border-color: #3b82f6;
                 background: #f0f9ff;
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
                 z-index: 12;
             }
             
-            .status-pill-harmonized-twolines.active {
+            .status-pill-compact.active {
                 background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
                 color: white;
                 border-color: #3b82f6;
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+                transform: translateY(-1px);
                 z-index: 13;
             }
             
-            .status-pill-harmonized-twolines.active.preselected-category {
+            .status-pill-compact.active.preselected-category {
                 background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
-                box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
             }
             
-            .status-pill-harmonized-twolines.active .pill-count-twolines {
+            .status-pill-compact.active .pill-count {
                 background: rgba(255, 255, 255, 0.3);
                 color: white;
+            }
+            
+            /* Bouton de sélection amélioré */
+            .btn-expanded.btn-selection-toggle {
+                background: #f0f9ff;
+                color: #0369a1;
+                border-color: #0ea5e9;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: calc(var(--btn-height) + 8px);
+                min-width: 120px;
+                gap: 2px;
+            }
+            
+            .btn-expanded.btn-selection-toggle .main-text {
+                font-size: 12px;
+                font-weight: 700;
+                line-height: 1.2;
+            }
+            
+            .btn-expanded.btn-selection-toggle .sub-text {
+                font-size: 10px;
+                font-weight: 500;
+                opacity: 0.8;
+                line-height: 1;
+            }
+            
+            .btn-expanded.btn-selection-toggle:hover {
+                background: #e0f2fe;
+                color: #0c4a6e;
+                border-color: #0284c7;
+            }
+            
+            .btn-expanded.btn-selection-toggle.all-selected {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+            
+            .btn-expanded.btn-selection-toggle.all-selected:hover {
+                background: #fee2e2;
+                color: #b91c1c;
+                border-color: #fca5a5;
             }
             
             /* Container des emails */
