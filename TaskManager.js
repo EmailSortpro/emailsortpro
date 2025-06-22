@@ -542,187 +542,713 @@ class TasksView {
         });
     }
 
-    render(container) {
-        if (!container) {
-            console.error('[TasksView] No container provided');
-            return;
-        }
+render(container) {
+    if (!container) {
+        console.error('[TasksView] No container provided');
+        return;
+    }
 
-        if (!window.taskManager || !window.taskManager.initialized) {
-            container.innerHTML = `
-                <div class="loading-state">
-                    <div class="loading-icon">
-                        <i class="fas fa-spinner fa-spin"></i>
-                    </div>
-                    <p>Chargement des tâches...</p>
-                </div>
-            `;
-            
-            setTimeout(() => {
-                if (window.taskManager && window.taskManager.initialized) {
-                    this.render(container);
-                }
-            }, 500);
-            return;
-        }
-
-        const stats = window.taskManager.getStats();
-        const selectedCount = this.selectedTasks.size;
-        
+    if (!window.taskManager || !window.taskManager.initialized) {
         container.innerHTML = `
-            <div class="tasks-page-corrected">
-                <!-- RECTANGLE BLANC HARMONISÉ - DEUX LIGNES SEULEMENT -->
-                <div class="controls-section-corrected">
-                    <!-- Ligne 1 : Recherche + Actions principales sur une seule ligne -->
-                    <div class="main-controls-line">
-                        <!-- Recherche -->
-                        <div class="search-section">
-                            <div class="search-box-corrected">
-                                <i class="fas fa-search search-icon"></i>
-                                <input type="text" 
-                                       class="search-input-corrected" 
-                                       id="taskSearchInput"
-                                       placeholder="Rechercher tâches..." 
-                                       value="${this.currentFilters.search}">
-                                ${this.currentFilters.search ? `
-                                    <button class="search-clear" onclick="window.tasksView.clearSearch()">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </div>
+            <div class="loading-state">
+                <div class="loading-icon">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <p>Chargement des tâches...</p>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            if (window.taskManager && window.taskManager.initialized) {
+                this.render(container);
+            }
+        }, 500);
+        return;
+    }
 
-                        <!-- Actions principales centrées -->
-                        <div class="main-actions">
-                            <!-- Sélection info et actions -->
-                            ${selectedCount > 0 ? `
-                                <div class="selection-panel">
-                                    <span class="selection-count">${selectedCount} sélectionné(s)</span>
-                                    <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer sélection">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                    <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions groupées">
-                                        Actions
-                                        <span class="count-badge">${selectedCount}</span>
-                                    </button>
-                                </div>
+    const stats = window.taskManager.getStats();
+    const selectedCount = this.selectedTasks.size;
+    
+    container.innerHTML = `
+        <div class="tasks-page-symmetric">
+            <!-- RECTANGLE BLANC PRINCIPAL - DEUX LIGNES SYMÉTRIQUES -->
+            <div class="controls-section-symmetric">
+                <!-- LIGNE 1 : Recherche + Actions (6 colonnes) -->
+                <div class="controls-line-1">
+                    <!-- Recherche (col 1-2) -->
+                    <div class="search-wrapper">
+                        <div class="search-box-compact">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" 
+                                   class="search-input-compact" 
+                                   id="taskSearchInput"
+                                   placeholder="Rechercher..." 
+                                   value="${this.currentFilters.search}">
+                            ${this.currentFilters.search ? `
+                                <button class="search-clear-btn" onclick="window.tasksView.clearSearch()">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             ` : ''}
-                            
-                            <!-- Bouton Sélectionner tout -->
-                            <button class="btn-action btn-select-all" onclick="window.tasksView.selectAllVisible()" title="Sélectionner toutes les tâches visibles">
-                                <i class="fas fa-check-square"></i>
-                                Tout sélectionner
+                        </div>
+                    </div>
+                    
+                    <!-- Sélectionner tout (col 3) -->
+                    <button class="btn-control ${selectedCount > 0 ? 'has-selection' : ''}" 
+                            onclick="window.tasksView.selectAllVisible()" 
+                            title="Sélectionner tout">
+                        <i class="fas fa-check-square"></i>
+                        <span class="btn-text">Sélectionner</span>
+                        ${selectedCount > 0 ? `<span class="selection-badge">${selectedCount}</span>` : ''}
+                    </button>
+                    
+                    <!-- Actualiser (col 4) -->
+                    <button class="btn-control" 
+                            onclick="window.tasksView.refreshTasks()" 
+                            title="Actualiser">
+                        <i class="fas fa-sync-alt"></i>
+                        <span class="btn-text">Actualiser</span>
+                    </button>
+                    
+                    <!-- Nouvelle (col 5) -->
+                    <button class="btn-control btn-primary" 
+                            onclick="window.tasksView.showCreateModal()" 
+                            title="Nouvelle tâche">
+                        <i class="fas fa-plus"></i>
+                        <span class="btn-text">Nouvelle</span>
+                    </button>
+                    
+                    <!-- Filtres (col 6) -->
+                    <button class="btn-control ${this.showAdvancedFilters ? 'active' : ''}" 
+                            onclick="window.tasksView.toggleAdvancedFilters()" 
+                            title="Filtres avancés">
+                        <i class="fas fa-filter"></i>
+                        <span class="btn-text">Filtres</span>
+                        <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'} chevron-icon"></i>
+                    </button>
+                </div>
+                
+                <!-- LIGNE 2 : Modes de vue + Filtres de statut (6 colonnes équivalentes) -->
+                <div class="controls-line-2">
+                    <!-- Modes de vue (col 1-2) -->
+                    <div class="view-modes-wrapper">
+                        <div class="view-modes-group">
+                            <button class="view-mode-btn ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
+                                    onclick="window.tasksView.changeViewMode('minimal')"
+                                    title="Vue minimaliste">
+                                <i class="fas fa-list"></i>
+                                Minimal
                             </button>
-
-                            <!-- Actions standard -->
-                            <button class="btn-action btn-refresh" onclick="window.tasksView.refreshTasks()" title="Actualiser">
-                                <i class="fas fa-sync-alt"></i>
-                                Actualiser
+                            <button class="view-mode-btn ${this.currentViewMode === 'normal' ? 'active' : ''}" 
+                                    onclick="window.tasksView.changeViewMode('normal')"
+                                    title="Vue normale">
+                                <i class="fas fa-th-list"></i>
+                                Normal
                             </button>
-                            
-                            <button class="btn-action btn-new" onclick="window.tasksView.showCreateModal()" title="Nouvelle tâche">
-                                <i class="fas fa-plus"></i>
-                                Nouvelle
-                            </button>
-                            
-                            <button class="btn-action btn-filters ${this.showAdvancedFilters ? 'active' : ''}" 
-                                    onclick="window.tasksView.toggleAdvancedFilters()" 
-                                    title="Afficher/Masquer les filtres avancés">
-                                <i class="fas fa-filter"></i>
-                                Filtres
-                                <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
+                            <button class="view-mode-btn ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
+                                    onclick="window.tasksView.changeViewMode('detailed')"
+                                    title="Vue détaillée">
+                                <i class="fas fa-th-large"></i>
+                                Détaillé
                             </button>
                         </div>
                     </div>
                     
-                    <!-- Ligne 2 : Modes de vue + Filtres de statut -->
-                    <div class="views-filters-line">
-                        <!-- Modes de vue -->
-                        <div class="view-modes">
-                            <button class="view-mode ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('minimal')"
-                                    title="Vue minimaliste">
-                                Minimal
-                            </button>
-                            <button class="view-mode ${this.currentViewMode === 'normal' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('normal')"
-                                    title="Vue normale">
-                                Normal
-                            </button>
-                            <button class="view-mode ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('detailed')"
-                                    title="Vue détaillée">
-                                Détaillé
-                            </button>
-                        </div>
-                        
-                        <!-- Filtres de statut -->
-                        <div class="status-filters">
-                            ${this.buildStatusPills(stats)}
-                        </div>
+                    <!-- Filtres de statut (col 3-6) -->
+                    <div class="status-filters-wrapper">
+                        ${this.buildCompactStatusFilters(stats)}
                     </div>
-                </div>
-
-                <!-- Filtres avancés (masqués par défaut) -->
-                <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
-                    <div class="advanced-filters-grid">
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-flag"></i> Priorité
-                            </label>
-                            <select class="filter-select" id="priorityFilter" 
-                                    onchange="window.tasksView.updateFilter('priority', this.value)">
-                                <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
-                                <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
-                                <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
-                                <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
-                                <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-building"></i> Client
-                            </label>
-                            <select class="filter-select" id="clientFilter" 
-                                    onchange="window.tasksView.updateFilter('client', this.value)">
-                                ${this.buildClientFilterOptions()}
-                            </select>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-sort"></i> Trier par
-                            </label>
-                            <select class="filter-select" id="sortByFilter" 
-                                    onchange="window.tasksView.updateFilter('sortBy', this.value)">
-                                <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
-                                <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
-                                <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
-                                <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
-                                <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-actions">
-                            <button class="btn-action btn-reset" onclick="window.tasksView.resetAllFilters()">
-                                <i class="fas fa-undo"></i>
-                                Réinitialiser
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tasks-container" id="tasksContainer">
-                    ${this.renderTasksList()}
                 </div>
             </div>
-        `;
 
-        this.addCorrectedStyles();
-        this.setupEventListeners();
-        console.log('[TasksView] Interface harmonisée corrigée rendue');
-    }
+            <!-- Actions de sélection (affichées uniquement si des éléments sont sélectionnés) -->
+            ${selectedCount > 0 ? `
+                <div class="selection-actions-bar">
+                    <div class="selection-info">
+                        <i class="fas fa-check-circle"></i>
+                        <span>${selectedCount} élément(s) sélectionné(s)</span>
+                    </div>
+                    <div class="selection-actions">
+                        <button class="btn-selection" onclick="window.tasksView.clearSelection()">
+                            <i class="fas fa-times"></i>
+                            Désélectionner
+                        </button>
+                        <button class="btn-selection btn-selection-primary" onclick="window.tasksView.bulkActions()">
+                            <i class="fas fa-cogs"></i>
+                            Actions groupées
+                        </button>
+                    </div>
+                </div>
+            ` : ''}
+
+            <!-- Filtres avancés (masqués par défaut) -->
+            <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
+                <div class="advanced-filters-grid">
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-flag"></i> Priorité
+                        </label>
+                        <select class="filter-select" id="priorityFilter" 
+                                onchange="window.tasksView.updateFilter('priority', this.value)">
+                            <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
+                            <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                            <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                            <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                            <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-building"></i> Client
+                        </label>
+                        <select class="filter-select" id="clientFilter" 
+                                onchange="window.tasksView.updateFilter('client', this.value)">
+                            ${this.buildClientFilterOptions()}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-sort"></i> Trier par
+                        </label>
+                        <select class="filter-select" id="sortByFilter" 
+                                onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                            <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
+                            <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                            <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
+                            <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
+                            <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button class="btn-control btn-secondary" onclick="window.tasksView.resetAllFilters()">
+                            <i class="fas fa-undo"></i>
+                            Réinitialiser
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tasks-container" id="tasksContainer">
+                ${this.renderTasksList()}
+            </div>
+        </div>
+    `;
+
+    this.addSymmetricStyles();
+    this.setupEventListeners();
+    console.log('[TasksView] Interface symétrique rendue');
+}
+addSymmetricStyles() {
+    if (document.getElementById('symmetricTaskStyles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'symmetricTaskStyles';
+    styles.textContent = `
+        /* Variables CSS pour l'interface symétrique */
+        :root {
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --border-color: #e5e7eb;
+            --border-radius: 8px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --transition: all 0.2s ease;
+            --control-height: 40px;
+            --grid-gap: 8px;
+        }
+
+        .tasks-page-symmetric {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 16px;
+            font-size: 14px;
+        }
+
+        /* RECTANGLE BLANC PRINCIPAL */
+        .controls-section-symmetric {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* GRILLE SYMÉTRIQUE - 6 colonnes */
+        .controls-line-1,
+        .controls-line-2 {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: var(--grid-gap);
+            align-items: center;
+        }
+
+        /* RECHERCHE - occupe 2 colonnes */
+        .search-wrapper {
+            grid-column: span 2;
+        }
+
+        .search-box-compact {
+            position: relative;
+            display: flex;
+            align-items: center;
+            height: var(--control-height);
+        }
+
+        .search-input-compact {
+            width: 100%;
+            height: var(--control-height);
+            padding: 0 36px 0 36px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 13px;
+            background: white;
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .search-input-compact:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        .search-clear-btn {
+            position: absolute;
+            right: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            transition: var(--transition);
+        }
+
+        .search-clear-btn:hover {
+            background: var(--danger-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        /* BOUTONS DE CONTRÔLE - 1 colonne chacun */
+        .btn-control {
+            height: var(--control-height);
+            padding: 0 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: white;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
+            position: relative;
+            width: 100%;
+        }
+
+        .btn-control:hover {
+            background: var(--bg-secondary);
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-control.btn-primary {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .btn-control.btn-primary:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .btn-control.btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+
+        .btn-control.btn-secondary:hover {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-control.active {
+            background: #eff6ff;
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-control.has-selection {
+            border-color: var(--primary-color);
+            background: #eff6ff;
+        }
+
+        .btn-text {
+            font-size: 12px;
+        }
+
+        .chevron-icon {
+            font-size: 10px;
+            margin-left: 4px;
+        }
+
+        .selection-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: var(--primary-color);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 16px;
+            text-align: center;
+            border: 2px solid white;
+        }
+
+        /* MODES DE VUE - occupe 2 colonnes */
+        .view-modes-wrapper {
+            grid-column: span 2;
+        }
+
+        .view-modes-group {
+            display: flex;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 2px;
+            gap: 2px;
+            height: var(--control-height);
+        }
+
+        .view-mode-btn {
+            flex: 1;
+            padding: 0 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .view-mode-btn:hover {
+            background: rgba(255, 255, 255, 0.8);
+            color: var(--text-primary);
+        }
+
+        .view-mode-btn.active {
+            background: white;
+            color: var(--text-primary);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .view-mode-btn i {
+            font-size: 14px;
+        }
+
+        /* FILTRES DE STATUT - occupe 4 colonnes */
+        .status-filters-wrapper {
+            grid-column: span 4;
+            display: flex;
+            gap: 4px;
+            justify-content: flex-end;
+        }
+
+        .status-filter-btn {
+            flex: 1;
+            max-width: 60px;
+            height: var(--control-height);
+            padding: 0 8px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            position: relative;
+        }
+
+        .status-filter-btn:hover {
+            border-color: var(--primary-color);
+            background: #f0f9ff;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .status-filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .filter-icon {
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .filter-count {
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            color: inherit;
+        }
+
+        .status-filter-btn.active .filter-count {
+            color: white;
+        }
+
+        /* BARRE D'ACTIONS DE SÉLECTION */
+        .selection-actions-bar {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 1px solid #93c5fd;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .selection-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1e40af;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .selection-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-selection {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: white;
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .btn-selection:hover {
+            background: var(--bg-secondary);
+            border-color: var(--text-secondary);
+        }
+
+        .btn-selection.btn-selection-primary {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .btn-selection.btn-selection-primary:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        /* FILTRES AVANCÉS - même style que l'original */
+        .advanced-filters-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+
+        .advanced-filters-panel.show {
+            max-height: 200px;
+            opacity: 1;
+            padding: 20px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .controls-line-1,
+            .controls-line-2 {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+
+            .search-wrapper {
+                grid-column: span 3;
+                margin-bottom: 8px;
+            }
+
+            .view-modes-wrapper {
+                grid-column: span 3;
+                margin-bottom: 8px;
+            }
+
+            .status-filters-wrapper {
+                grid-column: span 3;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .controls-section-symmetric {
+                padding: 12px;
+            }
+
+            .controls-line-1,
+            .controls-line-2 {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+            }
+
+            .search-wrapper {
+                grid-column: span 2;
+            }
+
+            .view-modes-wrapper {
+                grid-column: span 2;
+            }
+
+            .status-filters-wrapper {
+                grid-column: span 2;
+                flex-wrap: wrap;
+            }
+
+            .btn-text {
+                display: none;
+            }
+
+            .btn-control {
+                padding: 0 8px;
+            }
+
+            .status-filter-btn {
+                max-width: none;
+                flex: 0 0 calc(25% - 3px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .controls-line-1,
+            .controls-line-2 {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+
+            .search-wrapper,
+            .view-modes-wrapper,
+            .status-filters-wrapper {
+                grid-column: span 1;
+            }
+
+            .btn-control {
+                height: 36px;
+            }
+
+            .status-filters-wrapper {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 4px;
+            }
+
+            .status-filter-btn {
+                flex: unset;
+                max-width: none;
+            }
+        }
+    `;
+    
+    document.head.appendChild(styles);
+}
+buildCompactStatusFilters(stats) {
+    const filters = [
+        { id: 'all', name: 'Tous', icon: '📋', count: stats.total },
+        { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
+        { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
+        { id: 'waiting', name: 'Attente', icon: '⏸️', count: stats.waiting },
+        { id: 'followed-up', name: 'Relancé', icon: '📨', count: stats.followedUp },
+        { id: 'overdue', name: 'Retard', icon: '⚠️', count: stats.overdue },
+        { id: 'needsReply', name: 'Répondre', icon: '📧', count: stats.needsReply },
+        { id: 'completed', name: 'Terminé', icon: '✅', count: stats.completed }
+    ];
+
+    return filters.map(filter => `
+        <button class="status-filter-btn ${this.isFilterActive(filter.id) ? 'active' : ''}" 
+                data-filter="${filter.id}"
+                onclick="window.tasksView.quickFilter('${filter.id}')"
+                title="${filter.name}: ${filter.count}">
+            <span class="filter-icon">${filter.icon}</span>
+            <span class="filter-count">${filter.count}</span>
+        </button>
+    `).join('');
+}
 
 buildStatusPills(stats) {
     const pills = [
