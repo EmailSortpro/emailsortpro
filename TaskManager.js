@@ -514,7 +514,7 @@ class TasksView {
                             <label class="filter-label">
                                 <i class="fas fa-building"></i> Client
                             </label>
-                            <select class="filter-select" onchange="window.tasksView.updateFilter('client', this.value)">
+                            <select class="filter-select" id="clientFilter" onchange="window.tasksView.updateFilter('client', this.value)">
                                 ${this.buildClientFilterOptions()}
                             </select>
                         </div>
@@ -4404,6 +4404,35 @@ class TasksView {
 
             .toast.info {
                 background: var(--primary-color);
+            }
+
+            /* Style pour les clients cliquables */
+            .clickable-client {
+                cursor: pointer;
+                color: var(--primary-color);
+                text-decoration: underline;
+                text-decoration-style: dotted;
+                text-underline-offset: 2px;
+                transition: all 0.2s ease;
+            }
+
+            .clickable-client:hover {
+                color: var(--primary-hover);
+                text-decoration-style: solid;
+                background: rgba(59, 130, 246, 0.1);
+                padding: 2px 4px;
+                border-radius: 4px;
+                margin: -2px -4px;
+            }
+
+            .task-client.clickable-client {
+                font-size: 12px;
+                color: var(--primary-color);
+                font-weight: 500;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                flex: 1;
             }
 
             /* RESPONSIVE */
