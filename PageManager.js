@@ -277,118 +277,112 @@ class PageManager {
 
                     <!-- Container original des contrôles et filtres -->
                     <div class="controls-and-filters-container">
-                        <!-- Barre de contrôles réorganisée sur 2 lignes -->
-                        <div class="controls-bar-harmonized-expanded">
-                            <!-- PREMIÈRE LIGNE : Barre de recherche étendue -->
-                            <div class="search-line-full">
-                                <div class="search-box-full">
-                                    <i class="fas fa-search search-icon-full"></i>
+                        <!-- Barre de contrôles unifiée sur une seule ligne -->
+                        <div class="controls-bar-single-line">
+                            <!-- Barre de recherche -->
+                            <div class="search-section">
+                                <div class="search-box">
+                                    <i class="fas fa-search search-icon"></i>
                                     <input type="text" 
-                                           class="search-input-full" 
+                                           class="search-input" 
                                            id="emailSearchInput"
-                                           placeholder="Rechercher dans vos emails (expéditeur, sujet, contenu)..." 
+                                           placeholder="Rechercher..." 
                                            value="${this.searchTerm}">
                                     ${this.searchTerm ? `
-                                        <button class="search-clear-full" onclick="window.pageManager.clearSearch()">
+                                        <button class="search-clear" onclick="window.pageManager.clearSearch()">
                                             <i class="fas fa-times"></i>
                                         </button>
                                     ` : ''}
                                 </div>
                             </div>
                             
-                            <!-- SECONDE LIGNE : Tous les boutons -->
-                            <div class="buttons-line-full">
-                                <!-- Modes de vue -->
-                                <div class="view-modes-expanded">
-                                    <button class="view-mode-expanded ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
-                                            onclick="window.pageManager.changeViewMode('grouped-domain')"
-                                            title="Par domaine">
-                                        <i class="fas fa-globe"></i>
-                                        <span>Domaine</span>
-                                    </button>
-                                    <button class="view-mode-expanded ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
-                                            onclick="window.pageManager.changeViewMode('grouped-sender')"
-                                            title="Par expéditeur">
-                                        <i class="fas fa-user"></i>
-                                        <span>Expéditeur</span>
-                                    </button>
-                                    <button class="view-mode-expanded ${this.currentViewMode === 'flat' ? 'active' : ''}" 
-                                            onclick="window.pageManager.changeViewMode('flat')"
-                                            title="Liste complète">
-                                        <i class="fas fa-list"></i>
-                                        <span>Liste</span>
-                                    </button>
-                                </div>
+                            <!-- Modes de vue -->
+                            <div class="view-modes">
+                                <button class="view-mode ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                        onclick="window.pageManager.changeViewMode('grouped-domain')"
+                                        title="Par domaine">
+                                    <i class="fas fa-globe"></i>
+                                    <span>Domaine</span>
+                                </button>
+                                <button class="view-mode ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                                        onclick="window.pageManager.changeViewMode('grouped-sender')"
+                                        title="Par expéditeur">
+                                    <i class="fas fa-user"></i>
+                                    <span>Expéditeur</span>
+                                </button>
+                                <button class="view-mode ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                        onclick="window.pageManager.changeViewMode('flat')"
+                                        title="Liste complète">
+                                    <i class="fas fa-list"></i>
+                                    <span>Liste</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Actions principales -->
+                            <div class="action-buttons">
+                                <!-- Bouton Sélectionner/Désélectionner tout -->
+                                <button class="btn-action btn-selection-toggle" 
+                                        onclick="window.pageManager.toggleAllSelection()"
+                                        title="Sélectionner/Désélectionner tous les emails visibles">
+                                    <i class="fas fa-check-square"></i>
+                                    <span class="btn-text">Sélectionner tous</span>
+                                    <span class="btn-count">(${this.getVisibleEmails().length})</span>
+                                </button>
                                 
-                                <!-- Séparateur visuel -->
-                                <div class="buttons-separator"></div>
+                                <!-- Bouton Créer tâches -->
+                                <button class="btn-action btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
+                                        onclick="window.pageManager.createTasksFromSelection()"
+                                        ${selectedCount === 0 ? 'disabled' : ''}>
+                                    <i class="fas fa-tasks"></i>
+                                    <span class="btn-text">Créer tâche${selectedCount > 1 ? 's' : ''}</span>
+                                    ${selectedCount > 0 ? `<span class="count-badge">${selectedCount}</span>` : ''}
+                                </button>
                                 
-                                <!-- Actions principales -->
-                                <div class="action-buttons-expanded">
-                                    <!-- Bouton Sélectionner/Désélectionner tout -->
-                                    <button class="btn-expanded btn-selection-toggle" 
-                                            onclick="window.pageManager.toggleAllSelection()"
-                                            title="Sélectionner/Désélectionner tous les emails visibles">
-                                        <i class="fas fa-check-square"></i>
-                                        <span class="main-text">Sélectionner tous</span>
-                                        <span class="sub-text">(${this.getVisibleEmails().length})</span>
-                                    </button>
-                                    
-                                    <!-- Bouton Créer tâches -->
-                                    <button class="btn-expanded btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
-                                            onclick="window.pageManager.createTasksFromSelection()"
+                                <!-- Bouton Actions -->
+                                <div class="dropdown-action">
+                                    <button class="btn-action btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
+                                            onclick="window.pageManager.toggleBulkActions(event)"
                                             ${selectedCount === 0 ? 'disabled' : ''}>
-                                        <i class="fas fa-tasks"></i>
-                                        <span>Créer tâche${selectedCount > 1 ? 's' : ''}</span>
-                                        ${selectedCount > 0 ? `<span class="count-badge-main">${selectedCount}</span>` : ''}
+                                        <i class="fas fa-ellipsis-v"></i>
+                                        <span class="btn-text">Actions</span>
+                                        <i class="fas fa-chevron-down"></i>
                                     </button>
-                                    
-                                    <!-- Bouton Actions -->
-                                    <div class="dropdown-action-expanded">
-                                        <button class="btn-expanded btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
-                                                onclick="window.pageManager.toggleBulkActions(event)"
-                                                ${selectedCount === 0 ? 'disabled' : ''}>
-                                            <i class="fas fa-ellipsis-v"></i>
-                                            <span>Actions</span>
-                                            <i class="fas fa-chevron-down"></i>
+                                    <div class="dropdown-menu" id="bulkActionsMenu">
+                                        <button class="dropdown-item" onclick="window.pageManager.bulkMarkAsRead()">
+                                            <i class="fas fa-eye"></i>
+                                            <span>Marquer comme lu</span>
                                         </button>
-                                        <div class="dropdown-menu-expanded" id="bulkActionsMenu">
-                                            <button class="dropdown-item-expanded" onclick="window.pageManager.bulkMarkAsRead()">
-                                                <i class="fas fa-eye"></i>
-                                                <span>Marquer comme lu</span>
-                                            </button>
-                                            <button class="dropdown-item-expanded" onclick="window.pageManager.bulkArchive()">
-                                                <i class="fas fa-archive"></i>
-                                                <span>Archiver</span>
-                                            </button>
-                                            <button class="dropdown-item-expanded danger" onclick="window.pageManager.bulkDelete()">
-                                                <i class="fas fa-trash"></i>
-                                                <span>Supprimer</span>
-                                            </button>
-                                            <div class="dropdown-divider"></div>
-                                            <button class="dropdown-item-expanded" onclick="window.pageManager.bulkExport()">
-                                                <i class="fas fa-download"></i>
-                                                <span>Exporter</span>
-                                            </button>
-                                        </div>
+                                        <button class="dropdown-item" onclick="window.pageManager.bulkArchive()">
+                                            <i class="fas fa-archive"></i>
+                                            <span>Archiver</span>
+                                        </button>
+                                        <button class="dropdown-item danger" onclick="window.pageManager.bulkDelete()">
+                                            <i class="fas fa-trash"></i>
+                                            <span>Supprimer</span>
+                                        </button>
+                                        <div class="dropdown-divider"></div>
+                                        <button class="dropdown-item" onclick="window.pageManager.bulkExport()">
+                                            <i class="fas fa-download"></i>
+                                            <span>Exporter</span>
+                                        </button>
                                     </div>
-                                    
-                                    <!-- Bouton Actualiser -->
-                                    <button class="btn-expanded btn-secondary" onclick="window.pageManager.refreshEmails()">
-                                        <i class="fas fa-sync-alt"></i>
-                                        <span>Actualiser</span>
-                                    </button>
-                                    
-                                    <!-- Bouton Effacer sélection (uniquement si des emails sont sélectionnés) -->
-                                    ${selectedCount > 0 ? `
-                                        <button class="btn-expanded btn-clear-selection" 
-                                                onclick="window.pageManager.clearSelection()"
-                                                title="Effacer la sélection">
-                                            <i class="fas fa-times"></i>
-                                            <span>Effacer (${selectedCount})</span>
-                                        </button>
-                                    ` : ''}
                                 </div>
+                                
+                                <!-- Bouton Actualiser -->
+                                <button class="btn-action btn-secondary" onclick="window.pageManager.refreshEmails()">
+                                    <i class="fas fa-sync-alt"></i>
+                                    <span class="btn-text">Actualiser</span>
+                                </button>
+                                
+                                <!-- Bouton Effacer sélection (uniquement si des emails sont sélectionnés) -->
+                                ${selectedCount > 0 ? `
+                                    <button class="btn-action btn-clear" 
+                                            onclick="window.pageManager.clearSelection()"
+                                            title="Effacer la sélection">
+                                        <i class="fas fa-times"></i>
+                                        <span class="btn-text">Effacer (${selectedCount})</span>
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
 
@@ -484,7 +478,7 @@ class PageManager {
         }
 
         // Boutons de mode de vue dans le sticky
-        stickyContainer.querySelectorAll('.view-mode-expanded').forEach(btn => {
+        stickyContainer.querySelectorAll('.view-mode').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 const mode = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
@@ -872,13 +866,13 @@ class PageManager {
             // Mettre à jour le bouton "Sélectionner tout"
             const selectAllBtn = container.querySelector('.btn-selection-toggle');
             if (selectAllBtn) {
-                const mainText = selectAllBtn.querySelector('.main-text');
-                const subText = selectAllBtn.querySelector('.sub-text');
+                const btnText = selectAllBtn.querySelector('.btn-text');
+                const btnCount = selectAllBtn.querySelector('.btn-count');
                 const icon = selectAllBtn.querySelector('i');
                 
                 if (allSelected) {
                     // Tous sélectionnés -> Proposer de désélectionner
-                    if (mainText) mainText.textContent = 'Désélectionner tous';
+                    if (btnText) btnText.textContent = 'Désélectionner tous';
                     if (icon) {
                         icon.classList.remove('fa-check-square');
                         icon.classList.add('fa-square');
@@ -886,7 +880,7 @@ class PageManager {
                     selectAllBtn.classList.add('all-selected');
                 } else {
                     // Pas tous sélectionnés -> Proposer de sélectionner
-                    if (mainText) mainText.textContent = 'Sélectionner tous';
+                    if (btnText) btnText.textContent = 'Sélectionner tous';
                     if (icon) {
                         icon.classList.remove('fa-square');
                         icon.classList.add('fa-check-square');
@@ -894,16 +888,16 @@ class PageManager {
                     selectAllBtn.classList.remove('all-selected');
                 }
                 
-                if (subText) {
-                    subText.textContent = `(${visibleEmails.length})`;
+                if (btnCount) {
+                    btnCount.textContent = `(${visibleEmails.length})`;
                 }
             }
             
             // Mettre à jour le bouton "Créer tâches"
             const createTaskBtn = container.querySelector('.btn-primary[onclick*="createTasksFromSelection"]');
             if (createTaskBtn) {
-                const span = createTaskBtn.querySelector('span');
-                const countBadge = createTaskBtn.querySelector('.count-badge-main');
+                const span = createTaskBtn.querySelector('.btn-text');
+                const countBadge = createTaskBtn.querySelector('.count-badge');
                 
                 if (selectedCount === 0) {
                     createTaskBtn.classList.add('disabled');
@@ -920,13 +914,13 @@ class PageManager {
                 if (countBadge) {
                     if (selectedCount > 0) {
                         countBadge.textContent = selectedCount;
-                        countBadge.style.display = 'block';
+                        countBadge.style.display = 'inline';
                     } else {
                         countBadge.style.display = 'none';
                     }
                 } else if (selectedCount > 0) {
                     const newBadge = document.createElement('span');
-                    newBadge.className = 'count-badge-main';
+                    newBadge.className = 'count-badge';
                     newBadge.textContent = selectedCount;
                     createTaskBtn.appendChild(newBadge);
                 }
@@ -945,22 +939,22 @@ class PageManager {
             }
             
             // Gérer le bouton "Effacer sélection"
-            const existingClearBtn = container.querySelector('.btn-clear-selection');
-            const actionButtonsContainer = container.querySelector('.action-buttons-expanded');
+            const existingClearBtn = container.querySelector('.btn-clear');
+            const actionButtonsContainer = container.querySelector('.action-buttons');
             
             if (selectedCount > 0) {
                 if (!existingClearBtn && actionButtonsContainer) {
                     const clearBtn = document.createElement('button');
-                    clearBtn.className = 'btn-expanded btn-clear-selection';
+                    clearBtn.className = 'btn-action btn-clear';
                     clearBtn.onclick = () => window.pageManager.clearSelection();
                     clearBtn.title = 'Effacer la sélection';
                     clearBtn.innerHTML = `
                         <i class="fas fa-times"></i>
-                        <span>Effacer (${selectedCount})</span>
+                        <span class="btn-text">Effacer (${selectedCount})</span>
                     `;
                     actionButtonsContainer.appendChild(clearBtn);
                 } else if (existingClearBtn) {
-                    const span = existingClearBtn.querySelector('span');
+                    const span = existingClearBtn.querySelector('.btn-text');
                     if (span) {
                         span.textContent = `Effacer (${selectedCount})`;
                     }
@@ -1586,7 +1580,7 @@ class PageManager {
         const isCurrentlyVisible = menu.classList.contains('show');
         
         // Fermer tous les autres dropdowns
-        document.querySelectorAll('.dropdown-menu-expanded.show').forEach(dropdown => {
+        document.querySelectorAll('.dropdown-menu.show').forEach(dropdown => {
             if (dropdown !== menu) {
                 dropdown.classList.remove('show');
             }
@@ -2602,130 +2596,117 @@ class PageManager {
                 visibility: visible;
             }
             
-            /* ===== BARRE DE CONTRÔLES ÉTENDUE SUR 2 LIGNES ===== */
-            .controls-bar-harmonized-expanded {
+            /* ===== BARRE DE CONTRÔLES UNIFIÉE SUR UNE LIGNE ===== */
+            .controls-bar-single-line {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 border-radius: var(--card-border-radius);
-                padding: var(--gap-large);
+                padding: var(--gap-medium);
                 margin-bottom: var(--gap-medium);
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
                 display: flex;
-                flex-direction: column;
+                align-items: center;
                 gap: var(--gap-large);
                 position: relative;
                 z-index: 1000;
+                min-height: var(--btn-height);
             }
             
-            /* PREMIÈRE LIGNE : Recherche étendue */
-            .search-line-full {
-                width: 100%;
-                display: flex;
-                justify-content: center;
+            /* Section de recherche */
+            .search-section {
+                flex: 1;
+                max-width: 400px;
+                min-width: 250px;
             }
             
-            .search-box-full {
+            .search-box {
                 position: relative;
                 width: 100%;
-                max-width: 800px;
-                height: calc(var(--btn-height) + 8px);
+                height: var(--btn-height);
                 display: flex;
                 align-items: center;
             }
             
-            .search-input-full {
+            .search-input {
                 width: 100%;
                 height: 100%;
-                padding: 0 var(--gap-large) 0 56px;
+                padding: 0 var(--gap-medium) 0 40px;
                 border: 2px solid #e5e7eb;
-                border-radius: calc(var(--btn-border-radius) + 4px);
-                font-size: calc(var(--btn-font-size) + 2px);
+                border-radius: var(--btn-border-radius);
+                font-size: var(--btn-font-size);
                 background: #f9fafb;
                 transition: all var(--transition-speed) ease;
                 outline: none;
                 font-weight: 500;
                 color: #374151;
-                box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
             }
             
-            .search-input-full:focus {
+            .search-input:focus {
                 border-color: #3b82f6;
                 background: white;
-                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.05);
-                transform: translateY(-1px);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
             
-            .search-input-full::placeholder {
+            .search-input::placeholder {
                 color: #9ca3af;
                 font-weight: 400;
             }
             
-            .search-icon-full {
+            .search-icon {
                 position: absolute;
-                left: var(--gap-large);
+                left: var(--gap-medium);
                 color: #6b7280;
                 pointer-events: none;
-                font-size: 18px;
+                font-size: 14px;
                 z-index: 1;
             }
             
-            .search-input-full:focus + .search-icon-full {
+            .search-input:focus + .search-icon {
                 color: #3b82f6;
             }
             
-            .search-clear-full {
+            .search-clear {
                 position: absolute;
-                right: var(--gap-medium);
+                right: var(--gap-small);
                 background: #ef4444;
                 color: white;
                 border: none;
-                width: 32px;
-                height: 32px;
+                width: 24px;
+                height: 24px;
                 border-radius: 50%;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 12px;
+                font-size: 11px;
                 transition: all var(--transition-speed) ease;
-                box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
             }
             
-            .search-clear-full:hover {
+            .search-clear:hover {
                 background: #dc2626;
                 transform: scale(1.1);
-                box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
             }
             
-            /* SECONDE LIGNE : Tous les boutons */
-            .buttons-line-full {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: var(--gap-large);
-                width: 100%;
-            }
-            
-            /* Modes de vue étendus */
-            .view-modes-expanded {
+            /* Modes de vue */
+            .view-modes {
                 display: flex;
                 background: #f8fafc;
                 border: 1px solid #e2e8f0;
                 border-radius: var(--btn-border-radius);
-                padding: 4px;
+                padding: 3px;
                 gap: 2px;
                 height: var(--btn-height);
                 flex-shrink: 0;
             }
             
-            .view-mode-expanded {
+            .view-mode {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: var(--btn-gap);
-                padding: 0 var(--btn-padding-horizontal);
-                height: calc(var(--btn-height) - 8px);
+                gap: 6px;
+                padding: 0 12px;
+                height: calc(var(--btn-height) - 6px);
                 border: none;
                 background: transparent;
                 color: #6b7280;
@@ -2734,64 +2715,53 @@ class PageManager {
                 transition: all var(--transition-speed) ease;
                 font-size: var(--btn-font-size);
                 font-weight: var(--btn-font-weight);
-                min-width: 120px;
+                min-width: 80px;
                 white-space: nowrap;
             }
             
-            .view-mode-expanded:hover {
+            .view-mode:hover {
                 background: rgba(255, 255, 255, 0.8);
                 color: #374151;
-                transform: translateY(-1px);
             }
             
-            .view-mode-expanded.active {
+            .view-mode.active {
                 background: white;
                 color: #1f2937;
                 box-shadow: var(--shadow-base);
                 font-weight: 700;
-                transform: translateY(-1px);
             }
             
-            /* Séparateur visuel */
-            .buttons-separator {
-                width: 1px;
-                height: calc(var(--btn-height) - 8px);
-                background: linear-gradient(to bottom, transparent, #e5e7eb, transparent);
-                flex-shrink: 0;
-            }
-            
-            /* Actions étendues */
-            .action-buttons-expanded {
+            /* Actions */
+            .action-buttons {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-medium);
-                flex: 1;
-                justify-content: flex-end;
+                gap: var(--gap-small);
+                flex-shrink: 0;
                 position: relative;
                 z-index: 1001;
             }
             
-            .btn-expanded {
+            .btn-action {
                 height: var(--btn-height);
                 background: white;
                 color: #374151;
                 border: 1px solid #e5e7eb;
                 border-radius: var(--btn-border-radius);
-                padding: 0 var(--btn-padding-horizontal);
+                padding: 0 var(--gap-medium);
                 font-size: var(--btn-font-size);
                 font-weight: var(--btn-font-weight);
                 cursor: pointer;
                 transition: all var(--transition-speed) ease;
                 display: flex;
                 align-items: center;
-                gap: var(--btn-gap);
+                gap: 6px;
                 box-shadow: var(--shadow-base);
                 position: relative;
                 white-space: nowrap;
                 flex-shrink: 0;
             }
             
-            .btn-expanded:hover {
+            .btn-action:hover {
                 background: #f9fafb;
                 border-color: #6366f1;
                 color: #1f2937;
@@ -2799,21 +2769,13 @@ class PageManager {
                 box-shadow: var(--shadow-hover);
             }
             
-            /* Boutons désactivés */
-            .btn-expanded.disabled {
+            .btn-action.disabled {
                 opacity: 0.5;
                 cursor: not-allowed !important;
                 pointer-events: none;
             }
             
-            .btn-expanded.disabled:hover {
-                transform: none !important;
-                box-shadow: var(--shadow-base) !important;
-                background: white !important;
-                border-color: #e5e7eb !important;
-            }
-            
-            .btn-expanded.btn-primary {
+            .btn-action.btn-primary {
                 background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
                 color: white;
                 border-color: transparent;
@@ -2821,117 +2783,95 @@ class PageManager {
                 font-weight: 700;
             }
             
-            .btn-expanded.btn-primary:hover {
+            .btn-action.btn-primary:hover {
                 background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
                 transform: translateY(-2px);
                 box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
             }
             
-            .btn-expanded.btn-primary.disabled {
-                background: #e5e7eb !important;
-                color: #9ca3af !important;
-                box-shadow: var(--shadow-base) !important;
-            }
-            
-            .btn-expanded.btn-secondary {
+            .btn-action.btn-secondary {
                 background: #f8fafc;
                 color: #475569;
                 border-color: #e2e8f0;
             }
             
-            .btn-expanded.btn-secondary:hover {
+            .btn-action.btn-secondary:hover {
                 background: #f1f5f9;
                 color: #334155;
                 border-color: #cbd5e1;
             }
             
-            .btn-expanded.btn-selection-toggle {
+            .btn-action.btn-selection-toggle {
                 background: #f0f9ff;
                 color: #0369a1;
                 border-color: #0ea5e9;
+                min-width: 140px;
             }
             
-            .btn-expanded.btn-selection-toggle:hover {
+            .btn-action.btn-selection-toggle:hover {
                 background: #e0f2fe;
                 color: #0c4a6e;
                 border-color: #0284c7;
             }
             
-            .count-badge-expanded {
-                background: #0ea5e9;
-                color: white;
-                font-size: 10px;
-                font-weight: 700;
-                padding: 3px 6px;
-                border-radius: 8px;
-                margin-left: 4px;
-                min-width: 18px;
-                text-align: center;
+            .btn-action.btn-selection-toggle.all-selected {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
             }
             
-            .count-badge-main {
+            .btn-action.btn-selection-toggle.all-selected:hover {
+                background: #fee2e2;
+                color: #b91c1c;
+                border-color: #fca5a5;
+            }
+            
+            .btn-action.btn-clear {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+            
+            .btn-action.btn-clear:hover {
+                background: #fee2e2;
+                color: #b91c1c;
+                border-color: #fca5a5;
+            }
+            
+            .btn-text {
+                font-weight: inherit;
+            }
+            
+            .btn-count {
+                font-size: 11px;
+                opacity: 0.8;
+                margin-left: 2px;
+            }
+            
+            .count-badge {
                 position: absolute;
-                top: -8px;
-                right: -8px;
+                top: -6px;
+                right: -6px;
                 background: #ef4444;
                 color: white;
                 font-size: 10px;
                 font-weight: 700;
-                padding: 3px 6px;
-                border-radius: 10px;
-                min-width: 18px;
+                padding: 2px 5px;
+                border-radius: 8px;
+                min-width: 16px;
                 text-align: center;
                 border: 2px solid white;
                 animation: badgePulse 2s ease-in-out infinite;
             }
             
-            @keyframes badgePulse {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.1); }
-            }
-            
-            .btn-expanded.btn-clear-selection {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-                font-weight: 600;
-            }
-            
-            .btn-expanded.btn-clear-selection:hover {
-                background: #fee2e2;
-                color: #b91c1c;
-                border-color: #fca5a5;
-                transform: translateY(-1px);
-            }
-            
-            .selection-info-expanded {
-                height: var(--btn-height);
-                padding: 0 var(--btn-padding-horizontal);
-                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                border: 1px solid #93c5fd;
-                border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                color: #1e40af;
-                display: flex;
-                align-items: center;
-                gap: var(--btn-gap);
-                box-shadow: var(--shadow-base);
-                white-space: nowrap;
-            }
-            
-            .selection-count-expanded {
-                font-weight: 700;
-            }
-            
-            /* Dropdown étendu */
-            .dropdown-action-expanded {
+            /* Dropdown */
+            .dropdown-action {
                 position: relative;
                 display: inline-block;
                 z-index: 1002;
             }
             
-            .dropdown-menu-expanded {
+            .dropdown-menu {
                 position: absolute;
                 top: calc(100% + 8px);
                 right: 0;
@@ -2939,29 +2879,26 @@ class PageManager {
                 border: 1px solid #e5e7eb;
                 border-radius: var(--btn-border-radius);
                 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-                min-width: 220px;
+                min-width: 200px;
                 z-index: 9999;
                 padding: 8px 0;
                 opacity: 0;
                 visibility: hidden;
                 transform: translateY(-10px);
                 transition: all 0.2s ease;
-                backdrop-filter: blur(10px);
-                border: 2px solid rgba(99, 102, 241, 0.2);
             }
             
-            .dropdown-menu-expanded.show {
+            .dropdown-menu.show {
                 opacity: 1;
                 visibility: visible;
                 transform: translateY(0);
-                box-shadow: 0 25px 50px rgba(0, 0, 0, 0.35);
             }
             
-            .dropdown-item-expanded {
+            .dropdown-item {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-medium);
-                padding: 12px 16px;
+                gap: var(--gap-small);
+                padding: 10px 16px;
                 background: none;
                 border: none;
                 width: 100%;
@@ -2973,50 +2910,18 @@ class PageManager {
                 transition: all 0.2s ease;
             }
             
-            .dropdown-item-expanded:hover {
+            .dropdown-item:hover {
                 background: #f8fafc;
                 color: #1f2937;
             }
             
-            .dropdown-item-expanded.danger {
+            .dropdown-item.danger {
                 color: #dc2626;
             }
             
-            .dropdown-item-expanded.danger:hover {
+            .dropdown-item.danger:hover {
                 background: #fef2f2;
                 color: #b91c1c;
-            }
-            
-            .dropdown-divider {
-                height: 1px;
-                background: #e5e7eb;
-                margin: 8px 0;
-            }
-            
-            .dropdown-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                z-index: 9998;
-                background: rgba(0, 0, 0, 0.1);
-                cursor: pointer;
-                display: none;
-            }
-            
-            .dropdown-overlay.show {
-                display: block;
-            }
-            
-            .dropdown-action-expanded .dropdown-toggle.show {
-                background: #f0f9ff;
-                border-color: #3b82f6;
-                color: #1e40af;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-                z-index: 1003;
-                position: relative;
             }
             
             /* ===== FILTRES DE CATÉGORIES COMPACTS ===== */
@@ -3670,14 +3575,99 @@ class PageManager {
             }
             
             @media (max-width: 1024px) {
-                .controls-bar-harmonized-expanded {
-                    background: rgba(255, 255, 255, 0.95);
-                    backdrop-filter: blur(20px);
-                    border: 1px solid rgba(255, 255, 255, 0.2);
-                    border-radius: var(--card-border-radius);
-                    padding: var(--gap-large);
-                    margin-bottom: var(--gap-medium);
-                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+                .controls-bar-single-line {
+                    flex-direction: column;
+                    gap: var(--gap-medium);
+                    align-items: stretch;
+                }
+                
+                .search-section {
+                    max-width: none;
+                    order: 1;
+                }
+                
+                .view-modes {
+                    width: 100%;
+                    justify-content: space-around;
+                    order: 2;
+                }
+                
+                .action-buttons {
+                    width: 100%;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                    order: 3;
+                }
+                
+                .dropdown-menu {
+                    right: auto;
+                    left: 0;
+                }
+            }
+            
+            @media (max-width: 768px) {
+                .view-mode span,
+                .btn-action .btn-text {
+                    display: none;
+                }
+                
+                .view-mode {
+                    min-width: 44px;
+                    padding: 0;
+                    justify-content: center;
+                }
+                
+                .btn-action {
+                    padding: 0 var(--gap-small);
+                    min-width: 44px;
+                    justify-content: center;
+                }
+                
+                .btn-action .btn-count {
+                    display: none;
+                }
+                
+                .search-input {
+                    font-size: 14px;
+                    padding: 0 var(--gap-small) 0 36px;
+                }
+                
+                .search-icon {
+                    left: var(--gap-small);
+                    font-size: 14px;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                .controls-bar-single-line {
+                    padding: var(--gap-small);
+                    gap: var(--gap-small);
+                }
+                
+                .action-buttons {
+                    flex-direction: column;
+                    gap: var(--gap-small);
+                    align-items: stretch;
+                }
+                
+                .action-buttons > * {
+                    width: 100%;
+                    justify-content: center;
+                }
+                
+                .dropdown-menu {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 90vw;
+                    max-width: 300px;
+                }
+                
+                .sticky-controls-container {
+                    padding: var(--gap-small);
+                }
+            }, 0.06);
                     display: flex;
                     flex-direction: column;
                     gap: var(--gap-large);
