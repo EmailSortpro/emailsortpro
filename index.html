@@ -464,6 +464,40 @@
             line-height: 1.4;
         }
 
+        /* FOOTER CONFORMITÉ GOOGLE */
+        .google-compliance-footer {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            text-align: center;
+        }
+
+        .compliance-links {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .compliance-link {
+            color: #4F46E5;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 8px 12px;
+            border: 1px solid rgba(79, 70, 229, 0.3);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .compliance-link:hover {
+            background: rgba(79, 70, 229, 0.1);
+            border-color: #4F46E5;
+        }
+
         /* === STYLES POUR L'APPLICATION SOBRE === */
         /* Header Application */
         .app-header {
@@ -582,35 +616,6 @@
             color: rgba(255,255,255,0.8) !important;
         }
 
-        /* Forcer spécifiquement pour le header */
-        .app-header .auth-status,
-        .app-header .auth-status *,
-        .app-header .user-info,
-        .app-header .user-info *,
-        .app-header .user-name,
-        .app-header .user-email,
-        .app-header .user-details,
-        .app-header .user-details * {
-            color: white !important;
-        }
-
-        /* Styles spécifiques pour les données utilisateur */
-        .header-content .user-name {
-            color: white !important;
-            font-weight: 600 !important;
-            font-size: 14px !important;
-        }
-
-        .header-content .user-email {
-            color: white !important;
-            font-size: 12px !important;
-            opacity: 0.9 !important;
-        }
-
-        .header-content .user-info div {
-            color: white !important;
-        }
-
         /* Navigation sobre */
         .app-nav {
             position: fixed;
@@ -702,7 +707,6 @@
             color: #475569;
         }
 
-        /* ÉTAT ACTIF SOBRE - FOND BLEU CLAIR QUI VA BIEN AVEC LE TEXTE */
         .nav-item.active {
             background: #E0E7FF;
             color: #3730A3;
@@ -964,58 +968,6 @@
             text-align: center;
         }
 
-        /* Configuration error styles sobre */
-        .config-error-banner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #dc2626;
-            color: white;
-            padding: 12px;
-            text-align: center;
-            z-index: 99999;
-            font-family: monospace;
-            font-size: 13px;
-        }
-
-        .config-error-actions {
-            margin-top: 8px;
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .config-error-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 4px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            text-decoration: none;
-        }
-
-        .config-error-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .domain-warning {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #f59e0b;
-            color: white;
-            padding: 10px;
-            text-align: center;
-            z-index: 99998;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
         /* Responsive sobre */
         @media (max-width: 768px) {
             .login-container {
@@ -1046,6 +998,16 @@
             .step-number {
                 margin: 0;
                 flex-shrink: 0;
+            }
+
+            .compliance-links {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .compliance-link {
+                font-size: 0.8rem;
+                padding: 6px 10px;
             }
 
             .app-nav {
@@ -1323,6 +1285,30 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- FOOTER CONFORMITÉ GOOGLE - NOUVEAU -->
+                    <div class="google-compliance-footer">
+                        <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 8px;">
+                            EmailSortProAI respecte votre vie privée et se conforme aux politiques Google.
+                        </p>
+                        <div class="compliance-links">
+                            <a href="/privacy-policy.html" class="compliance-link">
+                                <i class="fas fa-shield-alt"></i>
+                                Politique de Confidentialité
+                            </a>
+                            <a href="/terms.html" class="compliance-link">
+                                <i class="fas fa-file-contract"></i>
+                                Conditions d'Utilisation
+                            </a>
+                            <a href="mailto:vianneyhastings@emailsortpro.fr" class="compliance-link">
+                                <i class="fas fa-envelope"></i>
+                                Support
+                            </a>
+                        </div>
+                        <p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
+                            Développé par Vianney Hastings • vianneyhastings@emailsortpro.fr
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -1345,39 +1331,42 @@
         <div id="toastContainer" class="toast-container"></div>
     </div>
 
-    <!-- Scripts - Ordre critique pour unification -->
-    <!-- 1. Services Core -->
+    <!-- Scripts - Ordre CORRIGÉ pour éviter le délai de 10 secondes -->
+    
+    <!-- 1. UIManager EN PREMIER pour éviter l'attente -->
+    <script src="UIManager.js"></script>
+    
+    <!-- 2. Services Core -->
     <script src="AuthService.js"></script>
     <script src="GoogleAuthService.js"></script>
     <script src="MailService.js"></script>
-    <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
 
-    <!-- 2. CategoryManager -->
+    <!-- 3. CategoryManager -->
     <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
     
-    <!-- 3. TaskManager AVANT PageManager -->
+    <!-- 4. TaskManager AVANT PageManager -->
     <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
     
-    <!-- 4. Autres Managers -->
+    <!-- 5. Autres Managers -->
     <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
     <script src="EmailDeduplicationManager.js"></script>
     <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
     
-    <!-- 5. DASHBOARD MODULE - NOUVEAU -->
+    <!-- 6. DASHBOARD MODULE -->
     <script src="dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
     
-    <!-- 6. Page Manager APRÈS Dashboard et TaskManager -->
+    <!-- 7. Page Manager APRÈS Dashboard et TaskManager -->
     <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
     
-    <!-- 7. Modules de pages -->
+    <!-- 8. Modules de pages -->
     <script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
     <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
     <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
     
-    <!-- 8. Modules Optionnels -->
+    <!-- 9. Modules Optionnels -->
     <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
     
-    <!-- 9. Application Principal EN DERNIER -->
+    <!-- 10. Application Principal EN DERNIER -->
     <script src="app.js"></script>
     
     <!-- Scripts de gestion des événements -->
@@ -1845,32 +1834,6 @@
                     }
                 });
             }
-            
-            // Vérifier la configuration après le chargement du DOM
-            setTimeout(function() {
-                if (window.AppConfig) {
-                    const validation = window.AppConfig.validate();
-                    
-                    if (!validation.valid) {
-                        const errorBanner = document.createElement('div');
-                        errorBanner.className = 'config-error-banner';
-                        errorBanner.innerHTML = `
-                            <div>
-                                ⚠️ <strong>CONFIGURATION:</strong> URI de redirection invalide pour emailsortpro.netlify.app
-                            </div>
-                            <div>
-                                Vérifiez votre configuration Azure App Registration
-                            </div>
-                            <div class="config-error-actions">
-                                <button class="config-error-btn" onclick="this.parentElement.parentElement.remove()">Masquer</button>
-                                <a href="/setup.html" class="config-error-btn">Configuration</a>
-                                <button class="config-error-btn" onclick="console.log('Debug:', window.AppConfig.getDebugInfo())">Debug</button>
-                            </div>
-                        `;
-                        document.body.appendChild(errorBanner);
-                    }
-                }
-            }, 1000);
         });
         
         // Fonction globale pour basculer vers l'app après connexion
