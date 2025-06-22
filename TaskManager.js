@@ -917,6 +917,27 @@ class TasksView {
                     </div>
                 </div>
                 
+                <!-- Section Email -->
+                <div class="email-attach-section">
+                    <div class="email-attach-header">
+                        <h3><i class="fas fa-envelope"></i> Email attaché</h3>
+                        <button type="button" class="btn-attach-email" onclick="window.tasksView.showEmailAttachModal()">
+                            <i class="fas fa-paperclip"></i> Attacher un email
+                        </button>
+                    </div>
+                    <div id="attachedEmailInfo" class="attached-email-info" style="display: none;">
+                        <div class="email-preview">
+                            <div class="email-preview-header">
+                                <strong>De:</strong> <span id="emailFromPreview"></span><br>
+                                <strong>Sujet:</strong> <span id="emailSubjectPreview"></span>
+                            </div>
+                            <button type="button" class="btn-remove-email" onclick="window.tasksView.removeAttachedEmail()">
+                                <i class="fas fa-times"></i> Retirer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="checklist-section">
                     <div class="checklist-header">
                         <h3 class="checklist-title">
@@ -970,6 +991,23 @@ class TasksView {
     }
 
     buildEditForm(task) {
+        // Préparer l'email attaché si la tâche en a un
+        if (task.hasEmail) {
+            this.tempAttachedEmail = {
+                hasEmail: true,
+                emailId: task.emailId,
+                emailFrom: task.emailFrom,
+                emailFromName: task.emailFromName,
+                emailSubject: task.emailSubject,
+                emailContent: task.emailContent,
+                emailDate: task.emailDate,
+                emailDomain: task.emailDomain,
+                needsReply: task.needsReply,
+                emailReplied: task.emailReplied,
+                hasAttachments: task.hasAttachments
+            };
+        }
+        
         return `
             <div class="edit-form">
                 <div class="form-row">
@@ -1022,21 +1060,36 @@ class TasksView {
                     </div>
                 </div>
                 
-                ${task.hasEmail ? `
-                    <div class="form-section">
-                        <h3><i class="fas fa-envelope"></i> Informations Email</h3>
-                        <div class="email-info-readonly">
-                            <div><strong>De:</strong> ${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</div>
-                            <div><strong>Sujet:</strong> ${this.escapeHtml(task.emailSubject || 'Sans sujet')}</div>
-                            <div>
-                                <label>
-                                    <input type="checkbox" id="edit-needs-reply" ${task.needsReply ? 'checked' : ''} />
-                                    Réponse requise
-                                </label>
+                <!-- Section Email -->
+                <div class="email-attach-section">
+                    <div class="email-attach-header">
+                        <h3><i class="fas fa-envelope"></i> Email attaché</h3>
+                        ${!task.hasEmail ? `
+                            <button type="button" class="btn-attach-email" onclick="window.tasksView.showEmailAttachModal()">
+                                <i class="fas fa-paperclip"></i> Attacher un email
+                            </button>
+                        ` : ''}
+                    </div>
+                    <div id="attachedEmailInfo" class="attached-email-info" style="${task.hasEmail ? 'display: block;' : 'display: none;'}">
+                        <div class="email-preview">
+                            <div class="email-preview-header">
+                                <strong>De:</strong> <span id="emailFromPreview">${task.hasEmail ? this.escapeHtml(task.emailFromName + ' <' + task.emailFrom + '>') : ''}</span><br>
+                                <strong>Sujet:</strong> <span id="emailSubjectPreview">${task.hasEmail ? this.escapeHtml(task.emailSubject) : ''}</span>
+                                ${task.hasEmail ? `
+                                    <br><label style="margin-top: 8px;">
+                                        <input type="checkbox" id="edit-needs-reply" ${task.needsReply ? 'checked' : ''} />
+                                        Réponse requise
+                                    </label>
+                                ` : ''}
                             </div>
+                            ${!task.hasEmail ? `
+                                <button type="button" class="btn-remove-email" onclick="window.tasksView.removeAttachedEmail()">
+                                    <i class="fas fa-times"></i> Retirer
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
-                ` : ''}
+                </div>
                 
                 <div class="checklist-section">
                     <div class="checklist-header">
@@ -1386,6 +1439,356 @@ class TasksView {
         this.refreshView();
     }
 
+    // Email temporaire attaché
+    tempAttachedEmail = null;
+
+    showEmailAttachModal() {
+        const modalContent = `
+            <h2><i class="fas fa-envelope"></i> Attacher un email</h2>
+            <div class="email-attach-form">
+                <div class="form-group">
+                    <label>Type d'email</label>
+                    <select id="emailType" class="form-select" onchange="window.tasksView.toggleEmailFields()">
+                        <option value="search">Rechercher dans la boîte mail</option>
+                        <option value="manual">Saisie manuelle</option>
+                        <option value="paste">Coller un email</option>
+                    </select>
+                </div>
+                
+                <div id="searchEmailFields">
+                    <div class="form-group">
+                        <label>Rechercher un email</label>
+                        <div class="email-search-box">
+                            <input type="text" id="emailSearchQuery" class="form-input" 
+                                   placeholder="Rechercher par expéditeur, sujet ou contenu..."
+                                   onkeyup="window.tasksView.searchEmails(event)">
+                            <button type="button" class="btn-search-email" onclick="window.tasksView.searchEmails()">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="email-search-filters">
+                        <label>
+                            <input type="radio" name="emailFolder" value="inbox" checked> Boîte de réception
+                        </label>
+                        <label>
+                            <input type="radio" name="emailFolder" value="sent"> Envoyés
+                        </label>
+                        <label>
+                            <input type="radio" name="emailFolder" value="all"> Tous
+                        </label>
+                    </div>
+                    
+                    <div id="emailSearchResults" class="email-search-results">
+                        <div class="search-info">Entrez un terme de recherche pour afficher les emails</div>
+                    </div>
+                </div>
+                
+                <div id="manualEmailFields" style="display: none;">
+                    <div class="form-group">
+                        <label>De (Email) *</label>
+                        <input type="email" id="emailFrom" class="form-input" placeholder="exemple@domaine.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Nom de l'expéditeur</label>
+                        <input type="text" id="emailFromName" class="form-input" placeholder="Nom Prénom">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Sujet *</label>
+                        <input type="text" id="emailSubject" class="form-input" placeholder="Sujet de l'email">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Contenu de l'email</label>
+                        <textarea id="emailContent" class="form-textarea" rows="6" placeholder="Contenu du message..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="needsReply"> Réponse requise
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="pasteEmailFields" style="display: none;">
+                    <div class="form-group">
+                        <label>Coller l'email complet (avec en-têtes)</label>
+                        <textarea id="emailPaste" class="form-textarea" rows="10" 
+                                  placeholder="Collez ici l'email complet avec les en-têtes (De:, À:, Sujet:, etc.)"></textarea>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="window.tasksView.parseEmailContent()">
+                        <i class="fas fa-magic"></i> Analyser l'email
+                    </button>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal()">
+                    Annuler
+                </button>
+                <button class="btn-modal btn-primary" onclick="window.tasksView.attachEmail()">
+                    <i class="fas fa-paperclip"></i> Attacher
+                </button>
+            </div>
+        `;
+        
+        this.showModal(modalContent);
+    }
+
+    toggleEmailFields() {
+        const emailType = document.getElementById('emailType').value;
+        const searchFields = document.getElementById('searchEmailFields');
+        const manualFields = document.getElementById('manualEmailFields');
+        const pasteFields = document.getElementById('pasteEmailFields');
+        
+        // Cacher tous les champs
+        searchFields.style.display = 'none';
+        manualFields.style.display = 'none';
+        pasteFields.style.display = 'none';
+        
+        // Afficher le bon ensemble de champs
+        switch(emailType) {
+            case 'search':
+                searchFields.style.display = 'block';
+                break;
+            case 'manual':
+                manualFields.style.display = 'block';
+                break;
+            case 'paste':
+                pasteFields.style.display = 'block';
+                break;
+        }
+    }
+
+    searchEmails(event) {
+        // Si c'est un keyup, ne chercher que si c'est Enter
+        if (event && event.type === 'keyup' && event.key !== 'Enter') {
+            return;
+        }
+
+        const query = document.getElementById('emailSearchQuery').value.trim();
+        const folder = document.querySelector('input[name="emailFolder"]:checked').value;
+        
+        if (!query) {
+            document.getElementById('emailSearchResults').innerHTML = 
+                '<div class="search-info">Entrez un terme de recherche pour afficher les emails</div>';
+            return;
+        }
+
+        // Afficher un loader
+        document.getElementById('emailSearchResults').innerHTML = 
+            '<div class="search-loading"><i class="fas fa-spinner fa-spin"></i> Recherche en cours...</div>';
+
+        // Simuler une recherche d'emails (à remplacer par l'API réelle)
+        setTimeout(() => {
+            const mockEmails = this.getMockEmails(query, folder);
+            this.displayEmailSearchResults(mockEmails);
+        }, 500);
+    }
+
+    getMockEmails(query, folder) {
+        // Simulation d'emails pour la démo
+        // À remplacer par un appel API réel vers votre serveur mail
+        const allEmails = [
+            {
+                id: 'email1',
+                from: 'sarah.martin@acme-corp.com',
+                fromName: 'Sarah Martin',
+                subject: 'Validation campagne marketing Q2',
+                preview: 'Bonjour, j\'ai besoin de votre validation pour la campagne Q2...',
+                date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                folder: 'inbox',
+                hasAttachments: true
+            },
+            {
+                id: 'email2',
+                from: 'jean.dupont@example.com',
+                fromName: 'Jean Dupont',
+                subject: 'Demande de devis urgent',
+                preview: 'Pourriez-vous me faire parvenir un devis pour...',
+                date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+                folder: 'inbox',
+                hasAttachments: false
+            },
+            {
+                id: 'email3',
+                from: 'vous@votreentreprise.com',
+                fromName: 'Vous',
+                to: 'client@example.com',
+                subject: 'Re: Proposition commerciale',
+                preview: 'Suite à notre conversation, voici la proposition...',
+                date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+                folder: 'sent',
+                hasAttachments: true
+            }
+        ];
+
+        // Filtrer par dossier
+        let emails = allEmails;
+        if (folder !== 'all') {
+            emails = emails.filter(e => e.folder === folder);
+        }
+
+        // Filtrer par recherche
+        const searchLower = query.toLowerCase();
+        emails = emails.filter(e => 
+            e.from.toLowerCase().includes(searchLower) ||
+            e.fromName.toLowerCase().includes(searchLower) ||
+            e.subject.toLowerCase().includes(searchLower) ||
+            e.preview.toLowerCase().includes(searchLower)
+        );
+
+        return emails;
+    }
+
+    displayEmailSearchResults(emails) {
+        const resultsDiv = document.getElementById('emailSearchResults');
+        
+        if (emails.length === 0) {
+            resultsDiv.innerHTML = '<div class="search-info">Aucun email trouvé</div>';
+            return;
+        }
+
+        const resultsHTML = emails.map(email => `
+            <div class="email-result-item ${this.selectedEmailId === email.id ? 'selected' : ''}" 
+                 data-email-id="${email.id}"
+                 onclick="window.tasksView.selectEmailResult('${email.id}', ${JSON.stringify(email).replace(/"/g, '&quot;')})">
+                <div class="email-result-header">
+                    <div class="email-result-from">
+                        <strong>${this.escapeHtml(email.fromName || email.from)}</strong>
+                        <span class="email-address">&lt;${this.escapeHtml(email.from || email.to)}&gt;</span>
+                    </div>
+                    <div class="email-result-date">
+                        ${this.formatEmailDate(email.date)}
+                        ${email.hasAttachments ? '<i class="fas fa-paperclip"></i>' : ''}
+                    </div>
+                </div>
+                <div class="email-result-subject">${this.escapeHtml(email.subject)}</div>
+                <div class="email-result-preview">${this.escapeHtml(email.preview)}</div>
+            </div>
+        `).join('');
+
+        resultsDiv.innerHTML = `
+            <div class="search-results-header">${emails.length} email(s) trouvé(s)</div>
+            <div class="email-results-list">${resultsHTML}</div>
+        `;
+    }
+
+    selectEmailResult(emailId, emailData) {
+        // Marquer comme sélectionné
+        this.selectedEmailId = emailId;
+        document.querySelectorAll('.email-result-item').forEach(item => {
+            item.classList.toggle('selected', item.dataset.emailId === emailId);
+        });
+
+        // Stocker les données de l'email sélectionné
+        this.selectedEmailData = emailData;
+    }
+
+    attachEmail() {
+        const emailType = document.getElementById('emailType').value;
+        
+        if (emailType === 'search') {
+            if (!this.selectedEmailData) {
+                this.showToast('Veuillez sélectionner un email', 'warning');
+                return;
+            }
+            
+            // Utiliser l'email sélectionné
+            this.tempAttachedEmail = {
+                hasEmail: true,
+                emailId: this.selectedEmailData.id,
+                emailFrom: this.selectedEmailData.from || this.selectedEmailData.to,
+                emailFromName: this.selectedEmailData.fromName || this.selectedEmailData.from.split('@')[0],
+                emailSubject: this.selectedEmailData.subject,
+                emailContent: this.selectedEmailData.preview, // À remplacer par le contenu complet via API
+                emailDate: this.selectedEmailData.date,
+                emailDomain: (this.selectedEmailData.from || this.selectedEmailData.to).split('@')[1] || '',
+                needsReply: this.selectedEmailData.folder === 'inbox',
+                emailReplied: false,
+                hasAttachments: this.selectedEmailData.hasAttachments
+            };
+            
+            // Afficher l'info de l'email attaché
+            this.showAttachedEmailInfo();
+            this.closeModal();
+            this.showToast('Email attaché avec succès', 'success');
+            
+            // Réinitialiser la sélection
+            this.selectedEmailId = null;
+            this.selectedEmailData = null;
+            
+        } else if (emailType === 'manual') {
+            // Code existant pour la saisie manuelle
+            const emailFrom = document.getElementById('emailFrom').value.trim();
+            const emailFromName = document.getElementById('emailFromName').value.trim();
+            const emailSubject = document.getElementById('emailSubject').value.trim();
+            const emailContent = document.getElementById('emailContent').value.trim();
+            const needsReply = document.getElementById('needsReply').checked;
+            
+            if (!emailFrom || !emailSubject) {
+                this.showToast('L\'email et le sujet sont requis', 'warning');
+                return;
+            }
+            
+            this.tempAttachedEmail = {
+                hasEmail: true,
+                emailFrom,
+                emailFromName: emailFromName || emailFrom.split('@')[0],
+                emailSubject,
+                emailContent,
+                emailDate: new Date().toISOString(),
+                emailDomain: emailFrom.split('@')[1] || '',
+                needsReply,
+                emailReplied: false
+            };
+            
+            this.showAttachedEmailInfo();
+            this.closeModal();
+            this.showToast('Email attaché avec succès', 'success');
+        }
+    }
+
+    formatEmailDate(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
+        
+        if (diffHours < 24) {
+            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        } else if (diffHours < 48) {
+            return 'Hier';
+        } else if (diffHours < 168) { // 7 jours
+            return date.toLocaleDateString('fr-FR', { weekday: 'long' });
+        } else {
+            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        }
+    }
+
+    showAttachedEmailInfo() {
+        const infoDiv = document.getElementById('attachedEmailInfo');
+        const fromPreview = document.getElementById('emailFromPreview');
+        const subjectPreview = document.getElementById('emailSubjectPreview');
+        
+        if (this.tempAttachedEmail && infoDiv && fromPreview && subjectPreview) {
+            fromPreview.textContent = this.tempAttachedEmail.emailFromName + ' <' + this.tempAttachedEmail.emailFrom + '>';
+            subjectPreview.textContent = this.tempAttachedEmail.emailSubject;
+            infoDiv.style.display = 'block';
+        }
+    }
+
+    removeAttachedEmail() {
+        this.tempAttachedEmail = null;
+        const infoDiv = document.getElementById('attachedEmailInfo');
+        if (infoDiv) {
+            infoDiv.style.display = 'none';
+        }
+        this.showToast('Email retiré', 'info');
+    }
+
     createNewTask(modalId) {
         const title = document.getElementById('new-task-title')?.value?.trim();
         const description = document.getElementById('new-task-description')?.value?.trim();
@@ -1425,8 +1828,19 @@ class TasksView {
             checklist
         };
 
+        // Ajouter les infos email si un email est attaché
+        if (this.tempAttachedEmail) {
+            Object.assign(taskData, this.tempAttachedEmail);
+            taskData.category = 'email';
+            // Si le client n'est pas défini, utiliser le domaine de l'email
+            if (taskData.client === 'Interne' && this.tempAttachedEmail.emailDomain) {
+                taskData.client = this.tempAttachedEmail.emailDomain.split('.')[0].toUpperCase();
+            }
+        }
+
         try {
             const task = window.taskManager.createTask(taskData);
+            this.tempAttachedEmail = null; // Réinitialiser
             this.closeModal(modalId);
             this.showToast('Tâche créée avec succès', 'success');
             this.refreshView();
@@ -1475,8 +1889,15 @@ class TasksView {
             checklist
         };
 
+        // Ajouter les infos email si un nouvel email est attaché
+        if (this.tempAttachedEmail) {
+            Object.assign(updates, this.tempAttachedEmail);
+            updates.category = 'email';
+        }
+
         try {
             window.taskManager.updateTask(taskId, updates);
+            this.tempAttachedEmail = null; // Réinitialiser
             this.closeModal(modalId);
             this.showToast('Tâche mise à jour avec succès', 'success');
             this.refreshView();
