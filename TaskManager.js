@@ -534,13 +534,13 @@ class TasksView {
         container.innerHTML = `
             <div class="tasks-page-v11">
                 <div class="controls-section">
-                    <!-- Ligne 1 : Recherche compacte + Modes vue + Actions principales -->
+                    <!-- Ligne 1 : Recherche + Actions -->
                     <div class="main-controls-line">
-                        <div class="search-section-compact">
-                            <div class="search-box-compact">
+                        <div class="search-section">
+                            <div class="search-box">
                                 <i class="fas fa-search search-icon"></i>
                                 <input type="text" 
-                                       class="search-input-compact" 
+                                       class="search-input" 
                                        id="taskSearchInput"
                                        placeholder="Rechercher..." 
                                        value="${this.filters.search}">
@@ -564,44 +564,111 @@ class TasksView {
                         <div class="main-actions">
                             ${selCount > 0 ? `
                                 <div class="selection-panel">
-                                    <span class="selection-count">${selCount}</span>
+                                    <span class="selection-count">${selCount} sélectionné(s)</span>
                                     <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer">
                                         <i class="fas fa-times"></i>
                                     </button>
                                     <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions">
-                                        <i class="fas fa-tasks"></i>
+                                        Actions
                                         <span class="count-badge">${selCount}</span>
                                     </button>
                                 </div>
                             ` : ''}
                             
-                            <button class="btn-action btn-select-all" onclick="window.tasksView.selectAllVisible()" title="Tout sélectionner">
+                            <button class="btn-action btn-select-all" onclick="window.tasksView.selectAllVisible()">
                                 <i class="fas fa-check-square"></i>
+                                Tout sélectionner
                             </button>
 
-                            <button class="btn-action btn-refresh" onclick="window.tasksView.refreshTasks()" title="Actualiser">
+                            <button class="btn-action btn-refresh" onclick="window.tasksView.refreshTasks()">
                                 <i class="fas fa-sync-alt"></i>
+                                Actualiser
                             </button>
                             
-                            <button class="btn-action btn-new" onclick="window.tasksView.showCreateModal()" title="Nouvelle tâche">
+                            <button class="btn-action btn-new" onclick="window.tasksView.showCreateModal()">
                                 <i class="fas fa-plus"></i>
+                                Nouvelle
                             </button>
                             
                             <button class="btn-action btn-filters ${this.showAdvFilters ? 'active' : ''}" 
-                                    onclick="window.tasksView.toggleAdvFilters()" 
-                                    title="Filtres avancés">
+                                    onclick="window.tasksView.toggleAdvFilters()">
                                 <i class="fas fa-filter"></i>
+                                Filtres
+                                <i class="fas fa-chevron-${this.showAdvFilters ? 'up' : 'down'}"></i>
                             </button>
                         </div>
                     </div>
                     
-                    <!-- Ligne 2 : Filtres de statuts uniquement -->
+                    <!-- Ligne 2 : Statuts -->
                     <div class="status-filters-line">
                         <div class="status-filters">
                             ${this.buildStatusPills(stats)}
                         </div>
                     </div>
                 </div>
+
+                <!-- Filtres avancés -->
+                <div class="advanced-filters-panel ${this.showAdvFilters ? 'show' : ''}" id="advFiltersPanel">
+                    <div class="adv-filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-flag"></i> Priorité
+                            </label>
+                            <select class="filter-select" onchange="window.tasksView.updateFilter('priority', this.value)">
+                                <option value="all">Toutes</option>
+                                ${['urgent', 'high', 'medium', 'low'].map(p => `
+                                    <option value="${p}" ${this.filters.priority === p ? 'selected' : ''}>
+                                        ${this.getPriorityIcon(p)} ${this.getPriorityLabel(p)}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-building"></i> Client
+                            </label>
+                            <select class="filter-select" onchange="window.tasksView.updateFilter('client', this.value)">
+                                ${this.buildClientOptions()}
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-sort"></i> Trier par
+                            </label>
+                            <select class="filter-select" onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                                ${[
+                                    ['created', 'Date création'],
+                                    ['priority', 'Priorité'],
+                                    ['dueDate', 'Échéance'],
+                                    ['title', 'Titre A-Z'],
+                                    ['client', 'Client'],
+                                    ['progress', 'Progression']
+                                ].map(([v, l]) => `
+                                    <option value="${v}" ${this.filters.sortBy === v ? 'selected' : ''}>${l}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button class="btn-action btn-reset" onclick="window.tasksView.resetFilters()">
+                                <i class="fas fa-undo"></i>
+                                Réinitialiser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tasks-container" id="tasksContainer">
+                    ${this.renderTasksList()}
+                </div>
+            </div>
+        `;
+
+        this.addStyles();
+        this.setupListeners();
+    }
 
                 <!-- Filtres avancés -->
                 <div class="advanced-filters-panel ${this.showAdvFilters ? 'show' : ''}" id="advFiltersPanel">
@@ -2263,39 +2330,39 @@ class TasksView {
             .main-controls-line {
                 display: flex;
                 align-items: center;
-                gap: 16px;
+                gap: 20px;
                 width: 100%;
             }
 
-            .search-section-compact { flex: 0 0 320px; }
-            .search-box-compact { position: relative; display: flex; align-items: center; height: 42px; }
-            .search-input-compact {
+            .search-section { flex: 1; max-width: 400px; }
+            .search-box { position: relative; display: flex; align-items: center; height: 44px; }
+            .search-input {
                 width: 100%;
-                height: 42px;
-                padding: 0 14px 0 40px;
+                height: 44px;
+                padding: 0 16px 0 44px;
                 border: 2px solid var(--border);
-                border-radius: 8px;
+                border-radius: 10px;
                 font-size: 14px;
                 background: white;
                 transition: var(--trans);
                 outline: none;
             }
-            .search-input-compact:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-            .search-icon { position: absolute; left: 14px; color: var(--text-s); pointer-events: none; z-index: 1; font-size: 14px; }
+            .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+            .search-icon { position: absolute; left: 16px; color: var(--text-s); pointer-events: none; z-index: 1; }
             .search-clear {
                 position: absolute;
-                right: 10px;
+                right: 12px;
                 background: var(--danger);
                 color: white;
                 border: none;
-                width: 26px;
-                height: 26px;
+                width: 28px;
+                height: 28px;
                 border-radius: 50%;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 11px;
+                font-size: 12px;
                 transition: var(--trans);
             }
             .search-clear:hover { background: #dc2626; transform: scale(1.1); }
@@ -2320,12 +2387,11 @@ class TasksView {
                 font-size: 13px;
                 font-weight: 600;
                 white-space: nowrap;
-                height: 36px;
             }
             .view-mode:hover { background: rgba(255,255,255,0.8); color: var(--text-p); }
             .view-mode.active { background: white; color: var(--text-p); box-shadow: var(--shadow-sm); }
 
-            .main-actions { display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end; }
+            .main-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
             .selection-panel {
                 display: flex;
                 align-items: center;
@@ -2337,35 +2403,34 @@ class TasksView {
                 color: #1e40af;
                 font-weight: 600;
                 font-size: 13px;
-                height: 42px;
             }
-            .selection-count { font-size: 13px; }
 
             .btn-action {
-                height: 42px;
-                width: 42px;
-                padding: 0;
+                height: 44px;
+                padding: 0 16px;
                 border: 1px solid var(--border);
                 border-radius: 8px;
                 background: white;
                 color: var(--text-p);
-                font-size: 16px;
+                font-size: 13px;
+                font-weight: 600;
                 cursor: pointer;
                 transition: var(--trans);
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                gap: 6px;
+                white-space: nowrap;
                 position: relative;
             }
-            .btn-action:hover { background: var(--bg-s); border-color: var(--primary); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+            .btn-action:hover { background: var(--bg-s); border-color: var(--primary); transform: translateY(-1px); box-shadow: var(--shadow-md); }
             .btn-action.btn-new { background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%); color: white; border-color: transparent; }
             .btn-action.btn-new:hover { background: linear-gradient(135deg, var(--primary-h) 0%, #5856eb 100%); }
-            .btn-action.btn-bulk { background: var(--success); color: white; border-color: transparent; width: auto; padding: 0 12px; }
+            .btn-action.btn-bulk { background: var(--success); color: white; border-color: transparent; }
             .btn-action.btn-bulk:hover { background: #059669; }
-            .btn-action.btn-clear { background: var(--bg-s); color: var(--text-s); }
+            .btn-action.btn-clear { width: 44px; padding: 0; background: var(--bg-s); color: var(--text-s); }
             .btn-action.btn-clear:hover { background: var(--danger); color: white; }
             .btn-action.btn-filters.active { background: #eff6ff; color: var(--primary); border-color: var(--primary); }
-            .btn-action i { font-size: 16px; }
 
             .count-badge {
                 position: absolute;
@@ -2375,58 +2440,37 @@ class TasksView {
                 color: white;
                 font-size: 10px;
                 font-weight: 700;
-                padding: 2px 5px;
+                padding: 2px 6px;
                 border-radius: 10px;
                 min-width: 16px;
                 text-align: center;
                 border: 2px solid white;
             }
 
-            .status-filters-line { 
-                display: flex; 
-                align-items: center; 
-                width: 100%; 
-            }
-            .status-filters { 
-                display: flex; 
-                gap: 8px; 
-                flex: 1; 
-                flex-wrap: nowrap;
-                overflow-x: auto;
-            }
+            .status-filters-line { display: flex; align-items: center; width: 100%; }
+            .status-filters { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; justify-content: center; }
             .status-pill {
                 display: flex;
                 align-items: center;
                 gap: 6px;
-                padding: 10px 16px;
+                padding: 8px 12px;
                 background: white;
                 border: 1px solid var(--border);
                 border-radius: 8px;
                 cursor: pointer;
                 transition: var(--trans);
-                font-size: 13px;
+                font-size: 12px;
                 font-weight: 600;
                 color: var(--text-p);
-                flex: 1;
-                min-width: 120px;
-                justify-content: center;
-                height: 40px;
-                white-space: nowrap;
+                min-width: 100px;
+                justify-content: space-between;
             }
             .status-pill:hover { border-color: var(--primary); background: #f0f9ff; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
             .status-pill.active { background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%); color: white; border-color: var(--primary); box-shadow: var(--shadow-md); }
             .status-pill.active .pill-count { background: rgba(255,255,255,0.3); color: white; }
-            .pill-icon { font-size: 16px; }
-            .pill-text { font-size: 12px; }
-            .pill-count { 
-                background: rgba(0,0,0,0.1); 
-                padding: 3px 8px; 
-                border-radius: 12px; 
-                font-size: 12px; 
-                font-weight: 700; 
-                min-width: 24px; 
-                text-align: center; 
-            }
+            .pill-icon { font-size: 14px; }
+            .pill-text { flex: 1; text-align: center; font-size: 11px; }
+            .pill-count { background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 700; min-width: 20px; text-align: center; }
 
             .advanced-filters-panel {
                 background: rgba(255,255,255,0.95);
