@@ -1442,6 +1442,36 @@ class TasksView {
     // Email temporaire attaché
     tempAttachedEmail = null;
 
+    showModal(content, size = 'medium') {
+        // Supprimer les modales existantes
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-container ${size === 'large' ? 'modal-large' : ''}">
+                <button class="modal-close" onclick="window.tasksView.closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="modal-content">
+                    ${content}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeModal(modalId) {
+        if (modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.remove();
+        } else {
+            document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        }
+        document.body.style.overflow = 'auto';
+    }
+
     showEmailAttachModal() {
         const modalContent = `
             <h2><i class="fas fa-envelope"></i> Attacher un email</h2>
