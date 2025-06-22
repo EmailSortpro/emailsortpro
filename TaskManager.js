@@ -1,8 +1,5 @@
-// TaskManager Pro v10.1 - Interface Harmonisée Corrigée avec Alignement Parfait
+// TaskManager Pro v11 - Optimisé avec nouveaux statuts et checklist
 
-// =====================================
-// ENHANCED TASK MANAGER CLASS
-// =====================================
 class TaskManager {
     constructor() {
         this.tasks = [];
@@ -13,12 +10,11 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v10.1 - Interface harmonisée corrigée...');
             await this.loadTasks();
             this.initialized = true;
-            console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
-        } catch (error) {
-            console.error('[TaskManager] Initialization error:', error);
+            console.log('[TM] Init OK:', this.tasks.length, 'tasks');
+        } catch (e) {
+            console.error('[TM] Init error:', e);
             this.tasks = [];
             this.initialized = true;
         }
@@ -28,102 +24,95 @@ class TaskManager {
         try {
             const saved = localStorage.getItem('emailsort_tasks');
             if (saved) {
-                this.tasks = JSON.parse(saved);
-                console.log(`[TaskManager] Loaded ${this.tasks.length} tasks from storage`);
-                
-                // Assurer que toutes les tâches ont les propriétés requises
-                this.tasks = this.tasks.map(task => this.ensureTaskProperties(task));
+                this.tasks = JSON.parse(saved).map(t => this.ensureTaskProps(t));
             } else {
-                console.log('[TaskManager] No saved tasks found, creating sample tasks');
                 this.generateSampleTasks();
             }
-        } catch (error) {
-            console.error('[TaskManager] Error loading tasks:', error);
+        } catch (e) {
+            console.error('[TM] Load error:', e);
             this.tasks = [];
         }
     }
 
-    ensureTaskProperties(task) {
+    ensureTaskProps(t) {
+        const now = new Date().toISOString();
         return {
-            // Propriétés de base obligatoires
-            id: task.id || this.generateId(),
-            title: task.title || 'Tâche sans titre',
-            description: task.description || '',
-            priority: task.priority || 'medium',
-            status: task.status || 'todo',
-            dueDate: task.dueDate || null,
-            category: task.category || 'other',
+            id: t.id || this.genId(),
+            title: t.title || 'Tâche sans titre',
+            description: t.description || '',
+            priority: t.priority || 'medium',
+            status: t.status || 'todo', // todo, in-progress, completed, waiting, follow-up, blocked
+            dueDate: t.dueDate || null,
+            category: t.category || 'other',
+            client: t.client || 'Interne',
+            tags: t.tags || [],
             
-            // Métadonnées
-            client: task.client || 'Interne',
-            tags: Array.isArray(task.tags) ? task.tags : [],
+            // Checklist
+            checklist: t.checklist || [],
+            checklistProgress: t.checklistProgress || 0,
             
-            // Email info
-            hasEmail: task.hasEmail || false,
-            emailId: task.emailId || null,
-            emailFrom: task.emailFrom || null,
-            emailFromName: task.emailFromName || null,
-            emailSubject: task.emailSubject || null,
-            emailContent: task.emailContent || '',
-            emailHtmlContent: task.emailHtmlContent || '',
-            emailDomain: task.emailDomain || null,
-            emailDate: task.emailDate || null,
-            emailReplied: task.emailReplied || false,
-            needsReply: task.needsReply || false,
-            hasAttachments: task.hasAttachments || false,
+            // Email
+            hasEmail: t.hasEmail || false,
+            emailId: t.emailId || null,
+            emailFrom: t.emailFrom || null,
+            emailFromName: t.emailFromName || null,
+            emailSubject: t.emailSubject || null,
+            emailContent: t.emailContent || '',
+            emailHtmlContent: t.emailHtmlContent || '',
+            emailDomain: t.emailDomain || null,
+            emailDate: t.emailDate || null,
+            emailReplied: t.emailReplied || false,
+            needsReply: t.needsReply || false,
+            hasAttachments: t.hasAttachments || false,
             
-            // Données structurées IA
-            summary: task.summary || '',
-            actions: Array.isArray(task.actions) ? task.actions : [],
-            keyInfo: Array.isArray(task.keyInfo) ? task.keyInfo : [],
-            risks: Array.isArray(task.risks) ? task.risks : [],
-            aiAnalysis: task.aiAnalysis || null,
-            
-            // Suggestions de réponse IA (obligatoires)
-            suggestedReplies: Array.isArray(task.suggestedReplies) ? task.suggestedReplies : this.generateBasicReplies(task),
-            aiRepliesGenerated: task.aiRepliesGenerated || false,
-            aiRepliesGeneratedAt: task.aiRepliesGeneratedAt || null,
+            // IA
+            summary: t.summary || '',
+            actions: t.actions || [],
+            keyInfo: t.keyInfo || [],
+            risks: t.risks || [],
+            aiAnalysis: t.aiAnalysis || null,
+            suggestedReplies: t.suggestedReplies || (t.hasEmail ? this.genBasicReplies(t) : []),
+            aiRepliesGenerated: t.aiRepliesGenerated || false,
+            aiRepliesGeneratedAt: t.aiRepliesGeneratedAt || null,
             
             // Timestamps
-            createdAt: task.createdAt || new Date().toISOString(),
-            updatedAt: task.updatedAt || new Date().toISOString(),
-            completedAt: task.completedAt || null,
-            
-            // Méthode de création
-            method: task.method || 'manual'
+            createdAt: t.createdAt || now,
+            updatedAt: t.updatedAt || now,
+            completedAt: t.completedAt || null,
+            method: t.method || 'manual'
         };
     }
 
-    generateBasicReplies(task) {
-        if (!task.hasEmail || !task.emailFrom) return [];
-        
-        const senderName = task.emailFromName || task.emailFrom.split('@')[0] || 'l\'expéditeur';
-        const subject = task.emailSubject || 'votre message';
+    genBasicReplies(t) {
+        if (!t.hasEmail || !t.emailFrom) return [];
+        const name = t.emailFromName || t.emailFrom.split('@')[0] || 'l\'expéditeur';
+        const subj = t.emailSubject || 'votre message';
+        const now = new Date().toISOString();
         
         return [
             {
                 tone: 'professionnel',
-                subject: `Re: ${subject}`,
-                content: `Bonjour ${senderName},\n\nMerci pour votre message concernant "${subject}".\n\nJ'ai bien pris connaissance de votre demande et je m'en occupe rapidement.\n\nCordialement,\n[Votre nom]`,
+                subject: `Re: ${subj}`,
+                content: `Bonjour ${name},\n\nMerci pour votre message concernant "${subj}".\n\nJ'ai bien pris connaissance de votre demande et je m'en occupe rapidement.\n\nCordialement,\n[Votre nom]`,
                 description: 'Réponse professionnelle standard',
                 generatedBy: 'basic-template',
-                generatedAt: new Date().toISOString()
+                generatedAt: now
             },
             {
                 tone: 'détaillé',
-                subject: `Re: ${subject} - Réponse détaillée`,
-                content: `Bonjour ${senderName},\n\nJe vous confirme la bonne réception de votre message.\n\nJ'étudie attentivement votre demande et je vous recontacte rapidement avec les éléments nécessaires.\n\nN'hésitez pas à me recontacter si vous avez des questions complémentaires.\n\nCordialement,\n[Votre nom]`,
+                subject: `Re: ${subj} - Réponse détaillée`,
+                content: `Bonjour ${name},\n\nJe vous confirme la bonne réception de votre message.\n\nJ'étudie attentivement votre demande et je vous recontacte rapidement avec les éléments nécessaires.\n\nN'hésitez pas à me recontacter si vous avez des questions complémentaires.\n\nCordialement,\n[Votre nom]`,
                 description: 'Réponse complète et détaillée',
                 generatedBy: 'basic-template',
-                generatedAt: new Date().toISOString()
+                generatedAt: now
             }
         ];
     }
 
     generateSampleTasks() {
-        const sampleTasks = [
+        this.tasks = [
             {
-                id: 'sample_1',
+                id: 's1',
                 title: 'Répondre à l\'équipe marketing sur la campagne Q2',
                 description: '📧 RÉSUMÉ EXÉCUTIF\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDe: Sarah Martin (acme-corp.com)\nObjet: Demande de validation pour la campagne marketing Q2\n📮 Réponse attendue\n\n🎯 ACTIONS REQUISES:\n1. Valider les visuels de la campagne\n2. Confirmer le budget alloué\n3. Définir les dates de lancement\n\n💡 INFORMATIONS CLÉS:\n• Budget proposé : 50k€\n• Cible : 25-45 ans\n• Canaux : LinkedIn, Google Ads\n\n⚠️ POINTS D\'ATTENTION:\n• Deadline serrée pour le lancement\n• Coordination avec l\'équipe commerciale requise',
                 priority: 'high',
@@ -135,7 +124,6 @@ class TaskManager {
                 emailSubject: 'Validation campagne marketing Q2',
                 emailDate: '2025-06-06T09:15:00Z',
                 emailDomain: 'acme-corp.com',
-                emailContent: `Email de: Sarah Martin <sarah.martin@acme-corp.com>\nDate: ${new Date().toLocaleString('fr-FR')}\nSujet: Validation campagne marketing Q2\n\nBonjour,\n\nJ'espère que vous allez bien. Je vous contacte concernant notre campagne marketing Q2 qui nécessite votre validation.\n\nNous avons préparé les éléments suivants :\n- Visuels créatifs pour les réseaux sociaux\n- Budget détaillé de 50k€\n- Calendrier de lancement\n\nPourriez-vous valider ces éléments avant vendredi ? Nous devons coordonner avec l'équipe commerciale pour le lancement.\n\nMerci d'avance,\nSarah Martin`,
                 tags: ['marketing', 'validation', 'q2'],
                 client: 'ACME Corp',
                 dueDate: '2025-06-20',
@@ -146,19 +134,17 @@ class TaskManager {
                     { text: 'Confirmer le budget alloué', deadline: '2025-06-18' },
                     { text: 'Définir les dates de lancement', deadline: null }
                 ],
-                keyInfo: [
-                    'Budget proposé : 50k€',
-                    'Cible : 25-45 ans',
-                    'Canaux : LinkedIn, Google Ads'
-                ],
-                risks: [
-                    'Deadline serrée pour le lancement',
-                    'Coordination avec l\'équipe commerciale requise'
+                keyInfo: ['Budget proposé : 50k€', 'Cible : 25-45 ans', 'Canaux : LinkedIn, Google Ads'],
+                risks: ['Deadline serrée pour le lancement', 'Coordination avec l\'équipe commerciale requise'],
+                checklist: [
+                    { id: 'c1', text: 'Réviser les visuels', checked: false },
+                    { id: 'c2', text: 'Analyser le budget', checked: false },
+                    { id: 'c3', text: 'Coordonner avec commercial', checked: false }
                 ],
                 method: 'ai'
             },
             {
-                id: 'sample_2',
+                id: 's2',
                 title: 'Préparer présentation trimestrielle',
                 description: 'Préparer la présentation des résultats Q1 pour le comité de direction',
                 priority: 'medium',
@@ -172,224 +158,230 @@ class TaskManager {
                     { text: 'Créer les graphiques', deadline: '2025-06-24' },
                     { text: 'Répéter la présentation', deadline: '2025-06-25' }
                 ],
-                keyInfo: [
-                    'Résultats Q1 en hausse de 15%',
-                    'Nouveau client majeur acquis',
-                    'Équipe agrandie de 3 personnes'
+                keyInfo: ['Résultats Q1 en hausse de 15%', 'Nouveau client majeur acquis', 'Équipe agrandie de 3 personnes'],
+                checklist: [
+                    { id: 'c1', text: 'Données financières', checked: true },
+                    { id: 'c2', text: 'Graphiques', checked: false }
                 ],
+                checklistProgress: 50,
                 method: 'manual'
             },
             {
-                id: 'sample_3',
-                title: 'Répondre à Jean Dupont - Devis urgent',
-                description: 'Jean Dupont demande un devis pour un projet de refonte website',
+                id: 's3',
+                title: 'Projet en attente de validation client',
+                priority: 'high',
+                status: 'waiting',
+                category: 'work',
+                client: 'TechCorp',
+                description: 'En attente de retour client sur la proposition technique',
+                dueDate: '2025-06-30',
+                method: 'manual'
+            },
+            {
+                id: 's4',
+                title: 'Relancer fournisseur pour devis',
                 priority: 'urgent',
-                status: 'todo',
-                category: 'email',
-                hasEmail: true,
-                emailFrom: 'jean.dupont@example.com',
-                emailFromName: 'Jean Dupont',
-                emailSubject: 'Demande de devis - Refonte site web',
-                emailDate: '2025-06-15T14:30:00Z',
-                emailDomain: 'example.com',
-                client: 'Jean Dupont',
-                dueDate: '2025-06-17',
-                needsReply: true,
-                summary: 'Demande de devis urgent pour refonte complète du site web',
-                method: 'ai'
+                status: 'follow-up',
+                category: 'work',
+                client: 'Interne',
+                description: 'Relancer le fournisseur pour obtenir le devis matériel',
+                checklist: [
+                    { id: 'c1', text: 'Email envoyé', checked: true },
+                    { id: 'c2', text: 'Relance téléphonique', checked: false }
+                ],
+                checklistProgress: 50,
+                method: 'manual'
+            },
+            {
+                id: 's5',
+                title: 'Migration serveur bloquée',
+                priority: 'urgent',
+                status: 'blocked',
+                category: 'work',
+                client: 'IT',
+                description: 'Migration bloquée en attente des accès administrateur',
+                dueDate: '2025-06-18',
+                risks: ['Retard sur le planning', 'Impact sur les autres projets'],
+                method: 'manual'
             }
-        ];
+        ].map(t => this.ensureTaskProps(t));
         
-        // Assurer les propriétés complètes pour chaque tâche
-        this.tasks = sampleTasks.map(task => this.ensureTaskProperties(task));
         this.saveTasks();
     }
 
-    // ================================================
-    // MÉTHODES CRUD COMPLÈTES
-    // ================================================
-    
-    createTask(taskData) {
-        console.log('[TaskManager] Creating task:', taskData.title || 'Untitled');
-        
-        const task = this.ensureTaskProperties({
-            ...taskData,
-            id: taskData.id || this.generateId(),
+    // CRUD
+    createTask(data) {
+        const task = this.ensureTaskProps({
+            ...data,
+            id: data.id || this.genId(),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         });
         
         this.tasks.push(task);
         this.saveTasks();
-        this.emitTaskUpdate('create', task);
-        
-        console.log('[TaskManager] Task created successfully:', task.id);
+        this.emit('create', task);
         return task;
     }
 
-    createTaskFromEmail(taskData, email = null) {
-        console.log('[TaskManager] Creating task from email:', taskData.title);
-        
-        const fullEmailContent = this.extractFullEmailContent(email, taskData);
-        const htmlEmailContent = this.extractHtmlEmailContent(email, taskData);
-        
-        const task = this.ensureTaskProperties({
-            ...taskData,
-            id: taskData.id || this.generateId(),
+    createTaskFromEmail(data, email = null) {
+        const task = this.ensureTaskProps({
+            ...data,
+            id: data.id || this.genId(),
             hasEmail: true,
-            emailContent: fullEmailContent,
-            emailHtmlContent: htmlEmailContent,
+            emailContent: this.extractEmailContent(email, data),
+            emailHtmlContent: this.extractHtmlContent(email, data),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         });
         
         this.tasks.push(task);
         this.saveTasks();
-        this.emitTaskUpdate('create', task);
-        
-        console.log('[TaskManager] Email task created successfully:', task.id);
+        this.emit('create', task);
         return task;
     }
 
     updateTask(id, updates) {
-        const index = this.tasks.findIndex(task => task.id === id);
-        if (index === -1) {
-            console.error('[TaskManager] Task not found for update:', id);
-            return null;
+        const idx = this.tasks.findIndex(t => t.id === id);
+        if (idx === -1) return null;
+        
+        // Mise à jour checklist progress si checklist modifiée
+        if (updates.checklist) {
+            const checked = updates.checklist.filter(item => item.checked).length;
+            updates.checklistProgress = updates.checklist.length > 0 
+                ? Math.round((checked / updates.checklist.length) * 100) 
+                : 0;
         }
         
-        this.tasks[index] = this.ensureTaskProperties({
-            ...this.tasks[index],
+        this.tasks[idx] = this.ensureTaskProps({
+            ...this.tasks[idx],
             ...updates,
             updatedAt: new Date().toISOString()
         });
         
-        if (updates.status === 'completed' && !this.tasks[index].completedAt) {
-            this.tasks[index].completedAt = new Date().toISOString();
+        if (updates.status === 'completed' && !this.tasks[idx].completedAt) {
+            this.tasks[idx].completedAt = new Date().toISOString();
         }
         
         this.saveTasks();
-        this.emitTaskUpdate('update', this.tasks[index]);
-        
-        console.log('[TaskManager] Task updated successfully:', id);
-        return this.tasks[index];
+        this.emit('update', this.tasks[idx]);
+        return this.tasks[idx];
     }
 
     deleteTask(id) {
-        const index = this.tasks.findIndex(task => task.id === id);
-        if (index === -1) {
-            console.error('[TaskManager] Task not found for deletion:', id);
-            return null;
-        }
+        const idx = this.tasks.findIndex(t => t.id === id);
+        if (idx === -1) return null;
         
-        const deleted = this.tasks.splice(index, 1)[0];
+        const deleted = this.tasks.splice(idx, 1)[0];
         this.saveTasks();
-        this.emitTaskUpdate('delete', deleted);
-        
-        console.log('[TaskManager] Task deleted successfully:', id);
+        this.emit('delete', deleted);
         return deleted;
     }
 
     getTask(id) {
-        return this.tasks.find(task => task.id === id);
+        return this.tasks.find(t => t.id === id);
     }
 
     getAllTasks() {
         return [...this.tasks];
     }
 
-    // ================================================
-    // MÉTHODES DE FILTRAGE ET TRI
-    // ================================================
-    
+    // Checklist
+    addChecklistItem(taskId, text) {
+        const task = this.getTask(taskId);
+        if (!task) return null;
+        
+        const item = {
+            id: 'chk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            text: text,
+            checked: false
+        };
+        
+        const checklist = [...(task.checklist || []), item];
+        return this.updateTask(taskId, { checklist });
+    }
+
+    toggleChecklistItem(taskId, itemId) {
+        const task = this.getTask(taskId);
+        if (!task || !task.checklist) return null;
+        
+        const checklist = task.checklist.map(item => 
+            item.id === itemId ? { ...item, checked: !item.checked } : item
+        );
+        
+        return this.updateTask(taskId, { checklist });
+    }
+
+    removeChecklistItem(taskId, itemId) {
+        const task = this.getTask(taskId);
+        if (!task || !task.checklist) return null;
+        
+        const checklist = task.checklist.filter(item => item.id !== itemId);
+        return this.updateTask(taskId, { checklist });
+    }
+
+    // Filtrage & Tri
     filterTasks(filters = {}) {
         let filtered = [...this.tasks];
         
-        if (filters.status && filters.status !== 'all') {
-            filtered = filtered.filter(task => task.status === filters.status);
-        }
+        const filterMap = {
+            status: (t, v) => v === 'all' ? true : t.status === v,
+            priority: (t, v) => v === 'all' ? true : t.priority === v,
+            category: (t, v) => v === 'all' ? true : t.category === v,
+            client: (t, v) => v === 'all' ? true : t.client === v,
+            search: (t, v) => !v ? true : [t.title, t.description, t.emailFromName, t.client]
+                .filter(Boolean).some(s => s.toLowerCase().includes(v.toLowerCase())),
+            overdue: (t, v) => !v ? true : (t.dueDate && t.status !== 'completed' && new Date(t.dueDate) < new Date()),
+            needsReply: (t, v) => !v ? true : (t.needsReply || (t.hasEmail && !t.emailReplied && t.status !== 'completed'))
+        };
         
-        if (filters.priority && filters.priority !== 'all') {
-            filtered = filtered.filter(task => task.priority === filters.priority);
-        }
-        
-        if (filters.category && filters.category !== 'all') {
-            filtered = filtered.filter(task => task.category === filters.category);
-        }
-        
-        if (filters.client && filters.client !== 'all') {
-            filtered = filtered.filter(task => task.client === filters.client);
-        }
-        
-        if (filters.search) {
-            const search = filters.search.toLowerCase();
-            filtered = filtered.filter(task => 
-                task.title.toLowerCase().includes(search) ||
-                task.description.toLowerCase().includes(search) ||
-                (task.emailFromName && task.emailFromName.toLowerCase().includes(search)) ||
-                (task.client && task.client.toLowerCase().includes(search))
-            );
-        }
-        
-        if (filters.overdue) {
-            filtered = filtered.filter(task => {
-                if (!task.dueDate || task.status === 'completed') return false;
-                return new Date(task.dueDate) < new Date();
-            });
-        }
-        
-        if (filters.needsReply) {
-            filtered = filtered.filter(task => 
-                task.needsReply || (task.hasEmail && !task.emailReplied && task.status !== 'completed')
-            );
-        }
+        Object.entries(filters).forEach(([key, value]) => {
+            if (filterMap[key] && value) {
+                filtered = filtered.filter(t => filterMap[key](t, value));
+            }
+        });
         
         return this.sortTasks(filtered, filters.sortBy || 'created');
     }
 
     sortTasks(tasks, sortBy) {
         const sorted = [...tasks];
+        const sortMap = {
+            priority: (a, b) => {
+                const order = { urgent: 0, high: 1, medium: 2, low: 3 };
+                return order[a.priority] - order[b.priority];
+            },
+            dueDate: (a, b) => {
+                if (!a.dueDate && !b.dueDate) return 0;
+                if (!a.dueDate) return 1;
+                if (!b.dueDate) return -1;
+                return new Date(a.dueDate) - new Date(b.dueDate);
+            },
+            title: (a, b) => a.title.localeCompare(b.title),
+            client: (a, b) => a.client.localeCompare(b.client),
+            updated: (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt),
+            created: (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+            progress: (a, b) => (b.checklistProgress || 0) - (a.checklistProgress || 0)
+        };
         
-        switch (sortBy) {
-            case 'priority':
-                const priorityOrder = { urgent: 0, high: 1, medium: 2, low: 3 };
-                sorted.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-                break;
-            case 'dueDate':
-                sorted.sort((a, b) => {
-                    if (!a.dueDate && !b.dueDate) return 0;
-                    if (!a.dueDate) return 1;
-                    if (!b.dueDate) return -1;
-                    return new Date(a.dueDate) - new Date(b.dueDate);
-                });
-                break;
-            case 'title':
-                sorted.sort((a, b) => a.title.localeCompare(b.title));
-                break;
-            case 'client':
-                sorted.sort((a, b) => a.client.localeCompare(b.client));
-                break;
-            case 'updated':
-                sorted.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-                break;
-            case 'created':
-            default:
-                sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        }
-        
+        sorted.sort(sortMap[sortBy] || sortMap.created);
         return sorted;
     }
 
-    // ================================================
-    // STATISTIQUES
-    // ================================================
-    
+    // Stats
     getStats() {
         const byStatus = {
-            todo: this.tasks.filter(t => t.status === 'todo').length,
-            'in-progress': this.tasks.filter(t => t.status === 'in-progress').length,
-            completed: this.tasks.filter(t => t.status === 'completed').length
+            todo: 0,
+            'in-progress': 0,
+            completed: 0,
+            waiting: 0,
+            'follow-up': 0,
+            blocked: 0
         };
+        
+        this.tasks.forEach(t => {
+            if (byStatus[t.status] !== undefined) byStatus[t.status]++;
+        });
 
         return {
             total: this.tasks.length,
@@ -397,55 +389,40 @@ class TaskManager {
             todo: byStatus.todo,
             inProgress: byStatus['in-progress'],
             completed: byStatus.completed,
-            overdue: this.tasks.filter(t => {
-                if (!t.dueDate || t.status === 'completed') return false;
-                return new Date(t.dueDate) < new Date();
-            }).length,
+            waiting: byStatus.waiting,
+            followUp: byStatus['follow-up'],
+            blocked: byStatus.blocked,
+            overdue: this.tasks.filter(t => 
+                t.dueDate && t.status !== 'completed' && new Date(t.dueDate) < new Date()
+            ).length,
             needsReply: this.tasks.filter(t => 
                 t.needsReply || (t.hasEmail && !t.emailReplied && t.status !== 'completed')
             ).length
         };
     }
 
-    // ================================================
-    // MÉTHODES UTILITAIRES
-    // ================================================
-    
-    generateId() {
+    // Utils
+    genId() {
         return 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 
-    extractFullEmailContent(email, taskData) {
-        if (taskData.emailContent && taskData.emailContent.length > 50) {
-            return taskData.emailContent;
-        }
-        
-        if (email?.body?.content) {
-            return this.cleanEmailContent(email.body.content);
-        }
-        
-        if (email?.bodyPreview) {
-            return email.bodyPreview;
-        }
-        
-        return taskData.emailContent || '';
+    extractEmailContent(email, data) {
+        if (data.emailContent?.length > 50) return data.emailContent;
+        if (email?.body?.content) return this.cleanText(email.body.content);
+        if (email?.bodyPreview) return email.bodyPreview;
+        return data.emailContent || '';
     }
 
-    extractHtmlEmailContent(email, taskData) {
-        if (taskData.emailHtmlContent && taskData.emailHtmlContent.length > 50) {
-            return taskData.emailHtmlContent;
-        }
-        
+    extractHtmlContent(email, data) {
+        if (data.emailHtmlContent?.length > 50) return data.emailHtmlContent;
         if (email?.body?.contentType === 'html' && email?.body?.content) {
-            return this.cleanHtmlEmailContent(email.body.content);
+            return this.cleanHtml(email.body.content);
         }
-        
-        return this.convertTextToHtml(this.extractFullEmailContent(email, taskData), email);
+        return this.textToHtml(this.extractEmailContent(email, data), email);
     }
 
-    cleanEmailContent(content) {
+    cleanText(content) {
         if (!content) return '';
-        
         return content
             .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
             .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
@@ -459,27 +436,26 @@ class TaskManager {
             .trim();
     }
 
-    cleanHtmlEmailContent(htmlContent) {
-        if (!htmlContent) return '';
-        
-        let cleanHtml = htmlContent
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-            .replace(/on\w+="[^"]*"/gi, '')
-            .replace(/javascript:/gi, '');
-        
-        return `<div class="email-content-viewer" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">${cleanHtml}</div>`;
+    cleanHtml(html) {
+        if (!html) return '';
+        return `<div class="email-content-viewer" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">${
+            html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+                .replace(/on\w+="[^"]*"/gi, '')
+                .replace(/javascript:/gi, '')
+        }</div>`;
     }
 
-    convertTextToHtml(textContent, email) {
-        if (!textContent) return '';
+    textToHtml(text, email) {
+        if (!text) return '';
+        const info = {
+            name: email?.from?.emailAddress?.name || 'Expéditeur',
+            email: email?.from?.emailAddress?.address || '',
+            subject: email?.subject || 'Sans sujet',
+            date: email?.receivedDateTime ? new Date(email.receivedDateTime).toLocaleString('fr-FR') : ''
+        };
         
-        const senderName = email?.from?.emailAddress?.name || 'Expéditeur';
-        const senderEmail = email?.from?.emailAddress?.address || '';
-        const subject = email?.subject || 'Sans sujet';
-        const date = email?.receivedDateTime ? new Date(email.receivedDateTime).toLocaleString('fr-FR') : '';
-        
-        const htmlContent = textContent
+        const content = text
             .replace(/\n/g, '<br>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -488,29 +464,26 @@ class TaskManager {
         return `<div class="email-content-viewer" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
             <div style="background: #f8fafc; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
                 <div style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
-                    <strong>De:</strong> ${senderName} &lt;${senderEmail}&gt;<br>
-                    <strong>Date:</strong> ${date}<br>
-                    <strong>Sujet:</strong> ${subject}
+                    <strong>De:</strong> ${info.name} &lt;${info.email}&gt;<br>
+                    <strong>Date:</strong> ${info.date}<br>
+                    <strong>Sujet:</strong> ${info.subject}
                 </div>
             </div>
-            <div style="font-size: 14px; line-height: 1.8;">
-                ${htmlContent}
-            </div>
+            <div style="font-size: 14px; line-height: 1.8;">${content}</div>
         </div>`;
     }
 
     saveTasks() {
         try {
             localStorage.setItem('emailsort_tasks', JSON.stringify(this.tasks));
-            console.log(`[TaskManager] Saved ${this.tasks.length} tasks`);
             return true;
-        } catch (error) {
-            console.error('[TaskManager] Error saving tasks:', error);
+        } catch (e) {
+            console.error('[TM] Save error:', e);
             return false;
         }
     }
 
-    emitTaskUpdate(action, task) {
+    emit(action, task) {
         if (window.dispatchEvent) {
             window.dispatchEvent(new CustomEvent('taskUpdate', {
                 detail: { action, task }
@@ -519,14 +492,12 @@ class TaskManager {
     }
 }
 
-// =====================================
-// TASKS VIEW - INTERFACE HARMONISÉE CORRIGÉE
-// =====================================
+// Vue des tâches optimisée
 class TasksView {
     constructor() {
-        this.currentFilters = {
+        this.filters = {
             status: 'all',
-            priority: 'all', 
+            priority: 'all',
             category: 'all',
             client: 'all',
             search: '',
@@ -534,58 +505,46 @@ class TasksView {
         };
         
         this.selectedTasks = new Set();
-        this.currentViewMode = 'normal'; // normal, minimal, detailed
+        this.viewMode = 'normal';
         this.showCompleted = false;
-        this.showAdvancedFilters = false;
+        this.showAdvFilters = false;
         
-        window.addEventListener('taskUpdate', () => {
-            this.refreshView();
-        });
+        window.addEventListener('taskUpdate', () => this.refresh());
     }
 
     render(container) {
-        if (!container) {
-            console.error('[TasksView] No container provided');
-            return;
-        }
+        if (!container) return;
 
-        if (!window.taskManager || !window.taskManager.initialized) {
+        if (!window.taskManager?.initialized) {
             container.innerHTML = `
                 <div class="loading-state">
-                    <div class="loading-icon">
-                        <i class="fas fa-spinner fa-spin"></i>
-                    </div>
+                    <div class="loading-icon"><i class="fas fa-spinner fa-spin"></i></div>
                     <p>Chargement des tâches...</p>
                 </div>
             `;
-            
             setTimeout(() => {
-                if (window.taskManager && window.taskManager.initialized) {
-                    this.render(container);
-                }
+                if (window.taskManager?.initialized) this.render(container);
             }, 500);
             return;
         }
 
         const stats = window.taskManager.getStats();
-        const selectedCount = this.selectedTasks.size;
+        const selCount = this.selectedTasks.size;
         
         container.innerHTML = `
-            <div class="tasks-page-corrected">
-                <!-- RECTANGLE BLANC HARMONISÉ - DEUX LIGNES SEULEMENT -->
-                <div class="controls-section-corrected">
-                    <!-- Ligne 1 : Recherche + Actions principales sur une seule ligne -->
+            <div class="tasks-page-v11">
+                <div class="controls-section">
+                    <!-- Ligne 1 : Recherche + Actions -->
                     <div class="main-controls-line">
-                        <!-- Recherche -->
                         <div class="search-section">
-                            <div class="search-box-corrected">
+                            <div class="search-box">
                                 <i class="fas fa-search search-icon"></i>
                                 <input type="text" 
-                                       class="search-input-corrected" 
+                                       class="search-input" 
                                        id="taskSearchInput"
-                                       placeholder="Rechercher tâches..." 
-                                       value="${this.currentFilters.search}">
-                                ${this.currentFilters.search ? `
+                                       placeholder="Rechercher..." 
+                                       value="${this.filters.search}">
+                                ${this.filters.search ? `
                                     <button class="search-clear" onclick="window.tasksView.clearSearch()">
                                         <i class="fas fa-times"></i>
                                     </button>
@@ -593,91 +552,75 @@ class TasksView {
                             </div>
                         </div>
 
-                        <!-- Actions principales centrées -->
                         <div class="main-actions">
-                            <!-- Sélection info et actions -->
-                            ${selectedCount > 0 ? `
+                            ${selCount > 0 ? `
                                 <div class="selection-panel">
-                                    <span class="selection-count">${selectedCount} sélectionné(s)</span>
-                                    <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer sélection">
+                                    <span class="selection-count">${selCount} sélectionné(s)</span>
+                                    <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer">
                                         <i class="fas fa-times"></i>
                                     </button>
-                                    <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions groupées">
+                                    <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions">
                                         Actions
-                                        <span class="count-badge">${selectedCount}</span>
+                                        <span class="count-badge">${selCount}</span>
                                     </button>
                                 </div>
                             ` : ''}
                             
-                            <!-- Bouton Sélectionner tout -->
-                            <button class="btn-action btn-select-all" onclick="window.tasksView.selectAllVisible()" title="Sélectionner toutes les tâches visibles">
+                            <button class="btn-action btn-select-all" onclick="window.tasksView.selectAllVisible()">
                                 <i class="fas fa-check-square"></i>
                                 Tout sélectionner
                             </button>
 
-                            <!-- Actions standard -->
-                            <button class="btn-action btn-refresh" onclick="window.tasksView.refreshTasks()" title="Actualiser">
+                            <button class="btn-action btn-refresh" onclick="window.tasksView.refreshTasks()">
                                 <i class="fas fa-sync-alt"></i>
                                 Actualiser
                             </button>
                             
-                            <button class="btn-action btn-new" onclick="window.tasksView.showCreateModal()" title="Nouvelle tâche">
+                            <button class="btn-action btn-new" onclick="window.tasksView.showCreateModal()">
                                 <i class="fas fa-plus"></i>
                                 Nouvelle
                             </button>
                             
-                            <button class="btn-action btn-filters ${this.showAdvancedFilters ? 'active' : ''}" 
-                                    onclick="window.tasksView.toggleAdvancedFilters()" 
-                                    title="Afficher/Masquer les filtres avancés">
+                            <button class="btn-action btn-filters ${this.showAdvFilters ? 'active' : ''}" 
+                                    onclick="window.tasksView.toggleAdvFilters()">
                                 <i class="fas fa-filter"></i>
                                 Filtres
-                                <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
+                                <i class="fas fa-chevron-${this.showAdvFilters ? 'up' : 'down'}"></i>
                             </button>
                         </div>
                     </div>
                     
-                    <!-- Ligne 2 : Modes de vue + Filtres de statut -->
+                    <!-- Ligne 2 : Modes + Statuts -->
                     <div class="views-filters-line">
-                        <!-- Modes de vue -->
                         <div class="view-modes">
-                            <button class="view-mode ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('minimal')"
-                                    title="Vue minimaliste">
-                                Minimal
-                            </button>
-                            <button class="view-mode ${this.currentViewMode === 'normal' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('normal')"
-                                    title="Vue normale">
-                                Normal
-                            </button>
-                            <button class="view-mode ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('detailed')"
-                                    title="Vue détaillée">
-                                Détaillé
-                            </button>
+                            ${['minimal', 'normal', 'detailed'].map(mode => `
+                                <button class="view-mode ${this.viewMode === mode ? 'active' : ''}" 
+                                        onclick="window.tasksView.changeViewMode('${mode}')">
+                                    ${mode === 'minimal' ? 'Minimal' : mode === 'normal' ? 'Normal' : 'Détaillé'}
+                                </button>
+                            `).join('')}
                         </div>
                         
-                        <!-- Filtres de statut -->
                         <div class="status-filters">
                             ${this.buildStatusPills(stats)}
                         </div>
                     </div>
                 </div>
 
-                <!-- Filtres avancés (masqués par défaut) -->
-                <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
-                    <div class="advanced-filters-grid">
+                <!-- Filtres avancés -->
+                <div class="advanced-filters-panel ${this.showAdvFilters ? 'show' : ''}" id="advFiltersPanel">
+                    <div class="adv-filters-grid">
                         <div class="filter-group">
                             <label class="filter-label">
                                 <i class="fas fa-flag"></i> Priorité
                             </label>
-                            <select class="filter-select" id="priorityFilter" 
-                                    onchange="window.tasksView.updateFilter('priority', this.value)">
-                                <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
-                                <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
-                                <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
-                                <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
-                                <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                            <select class="filter-select" onchange="window.tasksView.updateFilter('priority', this.value)">
+                                <option value="all">Toutes</option>
+                                ${['urgent', 'high', 'medium', 'low'].map(p => `
+                                    <option value="${p}" ${this.filters.priority === p ? 'selected' : ''}>
+                                        ${this.getPriorityIcon(p)} ${this.getPriorityLabel(p)}
+                                    </option>
+                                `).join('')}
                             </select>
                         </div>
 
@@ -685,9 +628,8 @@ class TasksView {
                             <label class="filter-label">
                                 <i class="fas fa-building"></i> Client
                             </label>
-                            <select class="filter-select" id="clientFilter" 
-                                    onchange="window.tasksView.updateFilter('client', this.value)">
-                                ${this.buildClientFilterOptions()}
+                            <select class="filter-select" onchange="window.tasksView.updateFilter('client', this.value)">
+                                ${this.buildClientOptions()}
                             </select>
                         </div>
 
@@ -695,18 +637,22 @@ class TasksView {
                             <label class="filter-label">
                                 <i class="fas fa-sort"></i> Trier par
                             </label>
-                            <select class="filter-select" id="sortByFilter" 
-                                    onchange="window.tasksView.updateFilter('sortBy', this.value)">
-                                <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
-                                <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
-                                <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
-                                <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
-                                <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
+                            <select class="filter-select" onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                                ${[
+                                    ['created', 'Date création'],
+                                    ['priority', 'Priorité'],
+                                    ['dueDate', 'Échéance'],
+                                    ['title', 'Titre A-Z'],
+                                    ['client', 'Client'],
+                                    ['progress', 'Progression']
+                                ].map(([v, l]) => `
+                                    <option value="${v}" ${this.filters.sortBy === v ? 'selected' : ''}>${l}</option>
+                                `).join('')}
                             </select>
                         </div>
 
                         <div class="filter-actions">
-                            <button class="btn-action btn-reset" onclick="window.tasksView.resetAllFilters()">
+                            <button class="btn-action btn-reset" onclick="window.tasksView.resetFilters()">
                                 <i class="fas fa-undo"></i>
                                 Réinitialiser
                             </button>
@@ -720,9 +666,8 @@ class TasksView {
             </div>
         `;
 
-        this.addCorrectedStyles();
-        this.setupEventListeners();
-        console.log('[TasksView] Interface harmonisée corrigée rendue');
+        this.addStyles();
+        this.setupListeners();
     }
 
     buildStatusPills(stats) {
@@ -730,197 +675,218 @@ class TasksView {
             { id: 'all', name: 'Tous', icon: '📋', count: stats.total },
             { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
             { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
+            { id: 'waiting', name: 'En attente', icon: '⏸️', count: stats.waiting },
+            { id: 'follow-up', name: 'À relancer', icon: '🔔', count: stats.followUp },
+            { id: 'blocked', name: 'Bloqué', icon: '🚫', count: stats.blocked },
             { id: 'overdue', name: 'En retard', icon: '⚠️', count: stats.overdue },
             { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply },
             { id: 'completed', name: 'Terminées', icon: '✅', count: stats.completed }
         ];
 
-        return pills.map(pill => `
-            <button class="status-pill ${this.isFilterActive(pill.id) ? 'active' : ''}" 
-                    data-filter="${pill.id}"
-                    onclick="window.tasksView.quickFilter('${pill.id}')"
-                    title="${pill.name}: ${pill.count} tâche(s)">
-                <span class="pill-icon">${pill.icon}</span>
-                <span class="pill-text">${pill.name}</span>
-                <span class="pill-count">${pill.count}</span>
+        return pills.map(p => `
+            <button class="status-pill ${this.isFilterActive(p.id) ? 'active' : ''}" 
+                    onclick="window.tasksView.quickFilter('${p.id}')"
+                    title="${p.name}: ${p.count}">
+                <span class="pill-icon">${p.icon}</span>
+                <span class="pill-text">${p.name}</span>
+                <span class="pill-count">${p.count}</span>
             </button>
         `).join('');
     }
 
     renderTasksList() {
-        const tasks = window.taskManager.filterTasks(this.currentFilters);
-        const filteredTasks = this.showCompleted ? tasks : tasks.filter(task => task.status !== 'completed');
+        const tasks = window.taskManager.filterTasks(this.filters);
+        const filtered = this.showCompleted ? tasks : tasks.filter(t => t.status !== 'completed');
         
-        if (filteredTasks.length === 0) {
-            return this.renderEmptyState();
-        }
+        if (filtered.length === 0) return this.renderEmpty();
 
-        switch (this.currentViewMode) {
-            case 'minimal':
-                return this.renderMinimalView(filteredTasks);
-            case 'detailed':
-                return this.renderDetailedView(filteredTasks);
-            case 'normal':
-            default:
-                return this.renderNormalView(filteredTasks);
+        switch (this.viewMode) {
+            case 'minimal': return this.renderMinimal(filtered);
+            case 'detailed': return this.renderDetailed(filtered);
+            default: return this.renderNormal(filtered);
         }
     }
 
-    renderMinimalView(tasks) {
+    renderMinimal(tasks) {
         return `
             <div class="tasks-minimal-list">
-                ${tasks.map(task => this.renderMinimalTaskItem(task)).join('')}
+                ${tasks.map(t => this.renderMinimalTask(t)).join('')}
             </div>
         `;
     }
 
-    renderMinimalTaskItem(task) {
-        const isSelected = this.selectedTasks.has(task.id);
-        const isCompleted = task.status === 'completed';
-        const priorityIcon = this.getPriorityIcon(task.priority);
-        const dueDateInfo = this.formatDueDate(task.dueDate);
+    renderMinimalTask(t) {
+        const sel = this.selectedTasks.has(t.id);
+        const done = t.status === 'completed';
+        const due = this.formatDueDate(t.dueDate);
         
         return `
-            <div class="task-minimal ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
-                 data-task-id="${task.id}"
-                 onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
+            <div class="task-minimal ${done ? 'completed' : ''} ${sel ? 'selected' : ''}" 
+                 data-task-id="${t.id}"
+                 onclick="window.tasksView.handleClick(event, '${t.id}')">
                 
                 <div class="task-content-line">
                     <input type="checkbox" 
                            class="task-checkbox" 
-                           ${isSelected ? 'checked' : ''}
-                           onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
+                           ${sel ? 'checked' : ''}
+                           onclick="event.stopPropagation(); window.tasksView.toggleSelect('${t.id}')">
                     
                     <div class="task-info">
-                        <span class="task-title">${this.escapeHtml(task.title)}</span>
-                        <span class="task-client">${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
+                        <span class="task-title">${this.esc(t.title)}</span>
+                        <span class="task-client">${this.esc(t.client === 'Externe' ? (t.emailFromName || t.emailFrom || 'Société') : t.client)}</span>
                     </div>
                     
                     <div class="task-meta">
-                        <span class="task-deadline ${dueDateInfo.className}">
-                            ${dueDateInfo.text || 'Pas d\'échéance'}
+                        ${t.checklist && t.checklist.length > 0 ? `
+                            <span class="checklist-progress" title="${t.checklistProgress}% complété">
+                                <i class="fas fa-tasks"></i> ${t.checklistProgress}%
+                            </span>
+                        ` : ''}
+                        <span class="task-deadline ${due.className}">
+                            ${due.text || 'Pas d\'échéance'}
                         </span>
                     </div>
                     
                     <div class="task-actions">
-                        ${this.renderTaskActions(task)}
+                        ${this.renderActions(t)}
                     </div>
                 </div>
             </div>
         `;
     }
 
-    renderNormalView(tasks) {
+    renderNormal(tasks) {
         return `
             <div class="tasks-normal-list">
-                ${tasks.map(task => this.renderNormalTaskItem(task)).join('')}
+                ${tasks.map(t => this.renderNormalTask(t)).join('')}
             </div>
         `;
     }
 
-    renderNormalTaskItem(task) {
-        const isSelected = this.selectedTasks.has(task.id);
-        const isCompleted = task.status === 'completed';
-        const priorityIcon = this.getPriorityIcon(task.priority);
-        const statusIcon = this.getStatusIcon(task.status);
-        const dueDateInfo = this.formatDueDate(task.dueDate);
+    renderNormalTask(t) {
+        const sel = this.selectedTasks.has(t.id);
+        const done = t.status === 'completed';
+        const due = this.formatDueDate(t.dueDate);
         
         return `
-            <div class="task-normal ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
-                 data-task-id="${task.id}"
-                 onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
+            <div class="task-normal ${done ? 'completed' : ''} ${sel ? 'selected' : ''}" 
+                 data-task-id="${t.id}"
+                 onclick="window.tasksView.handleClick(event, '${t.id}')">
                 
                 <div class="task-content-line">
                     <input type="checkbox" 
                            class="task-checkbox" 
-                           ${isSelected ? 'checked' : ''}
-                           onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
+                           ${sel ? 'checked' : ''}
+                           onclick="event.stopPropagation(); window.tasksView.toggleSelect('${t.id}')">
                     
-                    <div class="priority-bar" style="background-color: ${this.getPriorityColor(task.priority)}"></div>
+                    <div class="priority-bar" style="background-color: ${this.getPriorityColor(t.priority)}"></div>
                     
                     <div class="task-main">
                         <div class="task-header">
-                            <h3 class="task-title">${this.escapeHtml(task.title)}</h3>
+                            <h3 class="task-title">${this.esc(t.title)}</h3>
                             <div class="task-badges">
-                                <!-- Badges supprimés - affichage épuré -->
+                                <span class="status-badge status-${t.status}">
+                                    ${this.getStatusIcon(t.status)} ${this.getStatusLabel(t.status)}
+                                </span>
+                                ${t.checklist && t.checklist.length > 0 ? `
+                                    <span class="checklist-badge" title="${t.checklistProgress}% complété">
+                                        <i class="fas fa-tasks"></i> ${t.checklist.filter(i => i.checked).length}/${t.checklist.length}
+                                    </span>
+                                ` : ''}
                             </div>
                         </div>
                         
                         <div class="task-details">
                             <span class="task-client">
-                                ${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}
+                                ${this.esc(t.client === 'Externe' ? (t.emailFromName || t.emailFrom || 'Société') : t.client)}
                             </span>
-                            <span class="task-deadline ${dueDateInfo.className}">
-                                ${dueDateInfo.text || 'Pas d\'échéance'}
+                            <span class="task-deadline ${due.className}">
+                                ${due.text || 'Pas d\'échéance'}
                             </span>
                         </div>
                     </div>
                     
                     <div class="task-actions">
-                        ${this.renderTaskActions(task)}
+                        ${this.renderActions(t)}
                     </div>
                 </div>
             </div>
         `;
     }
 
-    renderDetailedView(tasks) {
+    renderDetailed(tasks) {
         return `
             <div class="tasks-detailed-grid">
-                ${tasks.map(task => this.renderDetailedTaskItem(task)).join('')}
+                ${tasks.map(t => this.renderDetailedTask(t)).join('')}
             </div>
         `;
     }
 
-    renderDetailedTaskItem(task) {
-        const isSelected = this.selectedTasks.has(task.id);
-        const isCompleted = task.status === 'completed';
-        const dueDateInfo = this.formatDueDate(task.dueDate);
+    renderDetailedTask(t) {
+        const sel = this.selectedTasks.has(t.id);
+        const done = t.status === 'completed';
+        const due = this.formatDueDate(t.dueDate);
         
         return `
-            <div class="task-detailed ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
-                 data-task-id="${task.id}">
+            <div class="task-detailed ${done ? 'completed' : ''} ${sel ? 'selected' : ''}" 
+                 data-task-id="${t.id}">
                 
                 <div class="task-detailed-header">
                     <input type="checkbox" 
                            class="task-checkbox" 
-                           ${isSelected ? 'checked' : ''}
-                           onclick="window.tasksView.toggleTaskSelection('${task.id}')">
+                           ${sel ? 'checked' : ''}
+                           onclick="window.tasksView.toggleSelect('${t.id}')">
                     
                     <div class="task-badges-group">
-                        <!-- Badges supprimés - affichage épuré -->
+                        <span class="priority-badge priority-${t.priority}">
+                            ${this.getPriorityIcon(t.priority)} ${this.getPriorityLabel(t.priority)}
+                        </span>
+                        <span class="status-badge status-${t.status}">
+                            ${this.getStatusIcon(t.status)} ${this.getStatusLabel(t.status)}
+                        </span>
                     </div>
                 </div>
                 
                 <div class="task-detailed-content">
-                    <h3 class="task-title" onclick="window.tasksView.showTaskDetails('${task.id}')">${this.escapeHtml(task.title)}</h3>
-                    <p class="task-description">${this.escapeHtml(task.description.substring(0, 150))}${task.description.length > 150 ? '...' : ''}</p>
+                    <h3 class="task-title" onclick="window.tasksView.showDetails('${t.id}')">${this.esc(t.title)}</h3>
+                    <p class="task-description">${this.esc(t.description.substring(0, 150))}${t.description.length > 150 ? '...' : ''}</p>
+                    
+                    ${t.checklist && t.checklist.length > 0 ? `
+                        <div class="checklist-preview">
+                            <div class="checklist-progress-bar">
+                                <div class="progress-fill" style="width: ${t.checklistProgress}%"></div>
+                            </div>
+                            <span class="checklist-info">
+                                <i class="fas fa-tasks"></i> ${t.checklist.filter(i => i.checked).length}/${t.checklist.length} tâches
+                            </span>
+                        </div>
+                    ` : ''}
                     
                     <div class="task-meta-grid">
                         <div class="meta-item">
-                            <span>${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
+                            <span>${this.esc(t.client === 'Externe' ? (t.emailFromName || t.emailFrom || 'Société') : t.client)}</span>
                         </div>
-                        <div class="meta-item deadline-centered ${dueDateInfo.className}">
-                            <span>${dueDateInfo.text || 'Pas d\'échéance'}</span>
+                        <div class="meta-item deadline-centered ${due.className}">
+                            <span>${due.text || 'Pas d\'échéance'}</span>
                         </div>
                     </div>
                 </div>
                 
                 <div class="task-detailed-actions">
-                    ${this.renderDetailedActions(task)}
+                    ${this.renderDetailedActions(t)}
                 </div>
             </div>
         `;
     }
 
-    renderTaskActions(task) {
+    renderActions(t) {
         const actions = [];
         
-        if (task.status !== 'completed') {
+        if (t.status !== 'completed') {
             actions.push(`
                 <button class="action-btn complete" 
-                        onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
-                        title="Marquer comme terminé">
+                        onclick="event.stopPropagation(); window.tasksView.markComplete('${t.id}')"
+                        title="Terminer">
                     <i class="fas fa-check"></i>
                 </button>
             `);
@@ -928,25 +894,25 @@ class TasksView {
         
         actions.push(`
             <button class="action-btn edit" 
-                    onclick="event.stopPropagation(); window.tasksView.showEditModal('${task.id}')"
-                    title="Modifier la tâche">
+                    onclick="event.stopPropagation(); window.tasksView.showEditModal('${t.id}')"
+                    title="Modifier">
                 <i class="fas fa-edit"></i>
             </button>
         `);
         
         actions.push(`
             <button class="action-btn details" 
-                    onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
-                    title="Voir les détails">
+                    onclick="event.stopPropagation(); window.tasksView.showDetails('${t.id}')"
+                    title="Détails">
                 <i class="fas fa-eye"></i>
             </button>
         `);
         
-        if (task.hasEmail && task.suggestedReplies && task.suggestedReplies.length > 0) {
+        if (t.hasEmail && t.suggestedReplies?.length > 0) {
             actions.push(`
                 <button class="action-btn reply" 
-                        onclick="event.stopPropagation(); window.tasksView.showSuggestedReplies('${task.id}')"
-                        title="Suggestions de réponse">
+                        onclick="event.stopPropagation(); window.tasksView.showReplies('${t.id}')"
+                        title="Réponses">
                     <i class="fas fa-reply"></i>
                 </button>
             `);
@@ -955,13 +921,13 @@ class TasksView {
         return actions.join('');
     }
 
-    renderDetailedActions(task) {
+    renderDetailedActions(t) {
         const actions = [];
         
-        if (task.status !== 'completed') {
+        if (t.status !== 'completed') {
             actions.push(`
                 <button class="btn-detailed complete" 
-                        onclick="window.tasksView.markComplete('${task.id}')">
+                        onclick="window.tasksView.markComplete('${t.id}')">
                     <i class="fas fa-check"></i>
                     Terminé
                 </button>
@@ -970,7 +936,7 @@ class TasksView {
         
         actions.push(`
             <button class="btn-detailed edit" 
-                    onclick="window.tasksView.showEditModal('${task.id}')">
+                    onclick="window.tasksView.showEditModal('${t.id}')">
                 <i class="fas fa-edit"></i>
                 Modifier
             </button>
@@ -978,7 +944,7 @@ class TasksView {
         
         actions.push(`
             <button class="btn-detailed details" 
-                    onclick="window.tasksView.showTaskDetails('${task.id}')">
+                    onclick="window.tasksView.showDetails('${t.id}')">
                 <i class="fas fa-eye"></i>
                 Détails
             </button>
@@ -987,541 +953,17 @@ class TasksView {
         return actions.join('');
     }
 
-    // ================================================
-    // MÉTHODES D'INTERACTION
-    // ================================================
-
-    selectAllVisible() {
-        const tasks = window.taskManager.filterTasks(this.currentFilters);
-        const filteredTasks = this.showCompleted ? tasks : tasks.filter(task => task.status !== 'completed');
-        
-        if (filteredTasks.length === 0) {
-            this.showToast('Aucune tâche à sélectionner', 'info');
-            return;
-        }
-
-        // Si toutes les tâches visibles sont déjà sélectionnées, on les désélectionne
-        const allSelected = filteredTasks.every(task => this.selectedTasks.has(task.id));
-        
-        if (allSelected) {
-            filteredTasks.forEach(task => this.selectedTasks.delete(task.id));
-            this.showToast('Toutes les tâches désélectionnées', 'info');
-        } else {
-            filteredTasks.forEach(task => this.selectedTasks.add(task.id));
-            this.showToast(`${filteredTasks.length} tâche(s) sélectionnée(s)`, 'success');
-        }
-        
-        this.refreshView();
-    }
-
-    clearSelection() {
-        this.selectedTasks.clear();
-        this.refreshView();
-        this.showToast('Sélection effacée', 'info');
-    }
-
-    toggleTaskSelection(taskId) {
-        if (this.selectedTasks.has(taskId)) {
-            this.selectedTasks.delete(taskId);
-        } else {
-            this.selectedTasks.add(taskId);
-        }
-        this.refreshView();
-    }
-
-    bulkActions() {
-        if (this.selectedTasks.size === 0) return;
-        
-        const actions = [
-            'Marquer comme terminé',
-            'Changer la priorité',
-            'Changer le statut',
-            'Supprimer',
-            'Exporter'
-        ];
-        
-        const action = prompt(`Actions disponibles pour ${this.selectedTasks.size} tâche(s):\n\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEntrez le numéro de l'action:`);
-        
-        if (!action) return;
-        
-        const actionIndex = parseInt(action) - 1;
-        
-        switch (actionIndex) {
-            case 0: // Marquer comme terminé
-                this.selectedTasks.forEach(taskId => {
-                    window.taskManager.updateTask(taskId, { 
-                        status: 'completed',
-                        completedAt: new Date().toISOString()
-                    });
-                });
-                this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
-                this.clearSelection();
-                break;
-                
-            case 1: // Changer la priorité
-                const priority = prompt('Nouvelle priorité:\n1. Basse\n2. Normale\n3. Haute\n4. Urgente\n\nEntrez le numéro:');
-                const priorities = ['', 'low', 'medium', 'high', 'urgent'];
-                if (priority && priorities[parseInt(priority)]) {
-                    this.selectedTasks.forEach(taskId => {
-                        window.taskManager.updateTask(taskId, { priority: priorities[parseInt(priority)] });
-                    });
-                    this.showToast(`Priorité mise à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 2: // Changer le statut
-                const status = prompt('Nouveau statut:\n1. À faire\n2. En cours\n3. Terminé\n\nEntrez le numéro:');
-                const statuses = ['', 'todo', 'in-progress', 'completed'];
-                if (status && statuses[parseInt(status)]) {
-                    this.selectedTasks.forEach(taskId => {
-                        const updates = { status: statuses[parseInt(status)] };
-                        if (updates.status === 'completed') {
-                            updates.completedAt = new Date().toISOString();
-                        }
-                        window.taskManager.updateTask(taskId, updates);
-                    });
-                    this.showToast(`Statut mis à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 3: // Supprimer
-                if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?\n\nCette action est irréversible.`)) {
-                    this.selectedTasks.forEach(taskId => {
-                        window.taskManager.deleteTask(taskId);
-                    });
-                    this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 4: // Exporter
-                this.exportSelectedTasks();
-                break;
-        }
-    }
-
-    exportSelectedTasks() {
-        const tasks = Array.from(this.selectedTasks).map(id => window.taskManager.getTask(id)).filter(Boolean);
-        
-        const csvContent = [
-            ['Titre', 'Description', 'Priorité', 'Statut', 'Échéance', 'Client', 'Créé le'].join(','),
-            ...tasks.map(task => [
-                `"${task.title}"`,
-                `"${task.description || ''}"`,
-                task.priority,
-                task.status,
-                task.dueDate || '',
-                task.client || '',
-                new Date(task.createdAt).toLocaleDateString('fr-FR')
-            ].join(','))
-        ].join('\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `taches_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        this.showToast('Export terminé', 'success');
-        this.clearSelection();
-    }
-
-    // ================================================
-    // MÉTHODES UTILITAIRES (inchangées)
-    // ================================================
-
-    changeViewMode(mode) {
-        this.currentViewMode = mode;
-        this.refreshView();
-    }
-
-    clearSearch() {
-        this.currentFilters.search = '';
-        const searchInput = document.getElementById('taskSearchInput');
-        if (searchInput) searchInput.value = '';
-        this.refreshView();
-    }
-
-    quickFilter(filterId) {
-        // Reset filters
-        this.currentFilters = {
-            status: 'all',
-            priority: 'all',
-            category: 'all',
-            client: 'all',
-            search: this.currentFilters.search,
-            sortBy: this.currentFilters.sortBy,
-            overdue: false,
-            needsReply: false
-        };
-
-        // Apply specific filter
-        switch (filterId) {
-            case 'all':
-                break;
-            case 'todo':
-            case 'in-progress':
-            case 'completed':
-                this.currentFilters.status = filterId;
-                break;
-            case 'overdue':
-                this.currentFilters.overdue = true;
-                break;
-            case 'needsReply':
-                this.currentFilters.needsReply = true;
-                break;
-        }
-
-        this.refreshView();
-    }
-
-    updateFilter(filterType, value) {
-        this.currentFilters[filterType] = value;
-        this.refreshView();
-    }
-
-    resetAllFilters() {
-        this.currentFilters = {
-            status: 'all',
-            priority: 'all',
-            category: 'all',
-            client: 'all',
-            search: '',
-            sortBy: 'created'
-        };
-        
-        const searchInput = document.getElementById('taskSearchInput');
-        if (searchInput) searchInput.value = '';
-        
-        document.querySelectorAll('.filter-select').forEach(select => {
-            if (select.querySelector('option[value="all"]')) {
-                select.value = 'all';
-            } else if (select.id === 'sortByFilter') {
-                select.value = 'created';
-            }
-        });
-        
-        this.refreshView();
-        this.showToast('Filtres réinitialisés', 'info');
-    }
-
-    toggleAdvancedFilters() {
-        this.showAdvancedFilters = !this.showAdvancedFilters;
-        
-        const panel = document.getElementById('advancedFiltersPanel');
-        const toggle = document.querySelector('.btn-filters');
-        
-        if (panel) {
-            panel.classList.toggle('show', this.showAdvancedFilters);
-        }
-        
-        if (toggle) {
-            toggle.classList.toggle('active', this.showAdvancedFilters);
-            const chevron = toggle.querySelector('.fa-chevron-down, .fa-chevron-up');
-            if (chevron) {
-                chevron.classList.toggle('fa-chevron-down', !this.showAdvancedFilters);
-                chevron.classList.toggle('fa-chevron-up', this.showAdvancedFilters);
-            }
-        }
-    }
-
-    buildClientFilterOptions() {
-        const tasks = window.taskManager.getAllTasks();
-        const clients = new Set();
-        
-        tasks.forEach(task => {
-            if (task.client) {
-                clients.add(task.client);
-            }
-        });
-        
-        let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
-        
-        Array.from(clients).sort().forEach(client => {
-            const count = tasks.filter(t => t.client === client).length;
-            options += `<option value="${client}" ${this.currentFilters.client === client ? 'selected' : ''}>${client} (${count})</option>`;
-        });
-        
-        return options;
-    }
-
-    refreshView() {
-        const container = document.getElementById('tasksContainer');
-        if (container) {
-            container.innerHTML = this.renderTasksList();
-        }
-        
-        // Mettre à jour les stats dans les pills
-        const stats = window.taskManager.getStats();
-        document.querySelectorAll('.status-filters').forEach(container => {
-            container.innerHTML = this.buildStatusPills(stats);
-        });
-        
-        // Mettre à jour l'affichage des actions de sélection
-        this.updateSelectionUI();
-    }
-
-    updateSelectionUI() {
-        const selectedCount = this.selectedTasks.size;
-        const mainActionsDiv = document.querySelector('.main-actions');
-        
-        if (mainActionsDiv) {
-            // Rechercher le panneau de sélection existant
-            const existingPanel = mainActionsDiv.querySelector('.selection-panel');
-            
-            if (selectedCount > 0) {
-                const selectionHTML = `
-                    <div class="selection-panel">
-                        <span class="selection-count">${selectedCount} sélectionné(s)</span>
-                        <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer sélection">
-                            <i class="fas fa-times"></i>
-                        </button>
-                        <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions groupées">
-                            Actions
-                            <span class="count-badge">${selectedCount}</span>
-                        </button>
-                    </div>
-                `;
-                
-                if (existingPanel) {
-                    existingPanel.outerHTML = selectionHTML;
-                } else {
-                    mainActionsDiv.insertAdjacentHTML('afterbegin', selectionHTML);
-                }
-            } else {
-                if (existingPanel) {
-                    existingPanel.remove();
-                }
-            }
-        }
-    }
-
-    setupEventListeners() {
-        const searchInput = document.getElementById('taskSearchInput');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.handleSearch(e.target.value);
-                }, 300);
-            });
-        }
-    }
-
-    handleSearch(value) {
-        this.currentFilters.search = value.trim();
-        this.refreshView();
-    }
-
-    handleTaskClick(event, taskId) {
-        if (event.target.type === 'checkbox') {
-            return;
-        }
-        
-        if (event.target.closest('.task-actions')) {
-            return;
-        }
-        
-        const now = Date.now();
-        const lastClick = this.lastTaskClick || 0;
-        
-        if (now - lastClick < 300) {
-            event.preventDefault();
-            event.stopPropagation();
-            this.toggleTaskSelection(taskId);
-            this.lastTaskClick = 0;
-            return;
-        }
-        
-        this.lastTaskClick = now;
-        
-        setTimeout(() => {
-            if (Date.now() - this.lastTaskClick >= 250) {
-                this.showTaskDetails(taskId);
-            }
-        }, 250);
-    }
-
-    markComplete(taskId) {
-        window.taskManager.updateTask(taskId, { 
-            status: 'completed',
-            completedAt: new Date().toISOString()
-        });
-        this.showToast('Tâche marquée comme terminée', 'success');
-        this.refreshView();
-    }
-
-    refreshTasks() {
-        this.refreshView();
-        this.showToast('Tâches actualisées', 'success');
-    }
-
-    renderEmptyState() {
-        let title, text, action = '';
-        
-        if (this.currentFilters.search) {
-            title = 'Aucun résultat trouvé';
-            text = `Aucune tâche ne correspond à votre recherche "${this.currentFilters.search}"`;
-            action = `
-                <button class="btn-action btn-primary" onclick="window.tasksView.clearSearch()">
-                    <i class="fas fa-undo"></i>
-                    Effacer la recherche
-                </button>
-            `;
-        } else if (this.hasActiveFilters()) {
-            title = 'Aucune tâche trouvée';
-            text = 'Aucune tâche ne correspond à vos critères de filtrage.';
-            action = `
-                <button class="btn-action btn-primary" onclick="window.tasksView.resetAllFilters()">
-                    <i class="fas fa-undo"></i>
-                    Réinitialiser les filtres
-                </button>
-            `;
-        } else {
-            title = 'Aucune tâche';
-            text = 'Vous n\'avez aucune tâche pour le moment.';
-            action = `
-                <button class="btn-action btn-primary" onclick="window.tasksView.showCreateModal()">
-                    <i class="fas fa-plus"></i>
-                    Créer votre première tâche
-                </button>
-            `;
-        }
-        
-        return `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-tasks"></i>
-                </div>
-                <h3 class="empty-state-title">${title}</h3>
-                <p class="empty-state-text">${text}</p>
-                ${action}
-            </div>
-        `;
-    }
-
-    isFilterActive(filterId) {
-        switch (filterId) {
-            case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
-            case 'todo': return this.currentFilters.status === 'todo';
-            case 'in-progress': return this.currentFilters.status === 'in-progress';
-            case 'completed': return this.currentFilters.status === 'completed';
-            case 'overdue': return this.currentFilters.overdue;
-            case 'needsReply': return this.currentFilters.needsReply;
-            default: return false;
-        }
-    }
-
-    hasActiveFilters() {
-        return this.currentFilters.status !== 'all' ||
-               this.currentFilters.priority !== 'all' ||
-               this.currentFilters.category !== 'all' ||
-               this.currentFilters.client !== 'all' ||
-               this.currentFilters.search !== '' ||
-               this.currentFilters.overdue ||
-               this.currentFilters.needsReply;
-    }
-
-    getPriorityIcon(priority) {
-        const icons = { urgent: '🚨', high: '⚡', medium: '📌', low: '📄' };
-        return icons[priority] || '📌';
-    }
-
-    getPriorityColor(priority) {
-        const colors = { urgent: '#ef4444', high: '#f97316', medium: '#3b82f6', low: '#10b981' };
-        return colors[priority] || '#3b82f6';
-    }
-
-    getPriorityLabel(priority) {
-        const labels = { urgent: 'Urgente', high: 'Haute', medium: 'Normale', low: 'Basse' };
-        return labels[priority] || 'Normale';
-    }
-
-    getStatusIcon(status) {
-        const icons = { todo: '⏳', 'in-progress': '🔄', completed: '✅' };
-        return icons[status] || '⏳';
-    }
-
-    getStatusLabel(status) {
-        const labels = { todo: 'À faire', 'in-progress': 'En cours', completed: 'Terminé' };
-        return labels[status] || 'À faire';
-    }
-
-    formatDueDate(dateString) {
-        if (!dateString) {
-            return { 
-                html: '', 
-                text: '', 
-                className: 'no-deadline' 
-            };
-        }
-        
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
-        
-        let className = 'deadline-normal';
-        let text = '';
-        
-        if (diffDays < 0) {
-            className = 'deadline-overdue';
-            text = `En retard de ${Math.abs(diffDays)}j`;
-        } else if (diffDays === 0) {
-            className = 'deadline-today';
-            text = 'Aujourd\'hui';
-        } else if (diffDays === 1) {
-            className = 'deadline-tomorrow';
-            text = 'Demain';
-        } else if (diffDays <= 7) {
-            className = 'deadline-week';
-            text = `${diffDays}j`;
-        } else {
-            text = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        }
-        
-        return {
-            html: `<span class="deadline-badge ${className}">📅 ${text}</span>`,
-            text: text,
-            className: className
-        };
-    }
-
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    showToast(message, type = 'info') {
-        if (window.uiManager && window.uiManager.showToast) {
-            window.uiManager.showToast(message, type);
-        } else {
-            console.log(`[Toast] ${type}: ${message}`);
-        }
-    }
-
-    // ================================================
-    // MODALES COMPLÈTES AVEC INTERFACE GRAPHIQUE
-    // ================================================
-
+    // Modales
     showCreateModal() {
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        this.closeModals();
         
-        const uniqueId = 'create_task_modal_' + Date.now();
-        const modalHTML = `
-            <div id="${uniqueId}" class="modal-overlay">
+        const id = 'create_modal_' + Date.now();
+        const html = `
+            <div id="${id}" class="modal-overlay">
                 <div class="modal-container">
                     <div class="modal-header">
                         <h2><i class="fas fa-plus"></i> Créer une nouvelle tâche</h2>
-                        <button class="modal-close" onclick="window.tasksView.closeModal('${uniqueId}')">
+                        <button class="modal-close" onclick="window.tasksView.closeModal('${id}')">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -1529,32 +971,32 @@ class TasksView {
                         ${this.buildCreateForm()}
                     </div>
                     <div class="modal-footer">
-                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${uniqueId}')">
+                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${id}')">
                             Annuler
                         </button>
-                        <button class="btn-modal btn-primary" onclick="window.tasksView.createNewTask('${uniqueId}')">
-                            <i class="fas fa-plus"></i> Créer la tâche
+                        <button class="btn-modal btn-primary" onclick="window.tasksView.createTask('${id}')">
+                            <i class="fas fa-plus"></i> Créer
                         </button>
                     </div>
                 </div>
             </div>
         `;
 
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.insertAdjacentHTML('beforeend', html);
         document.body.style.overflow = 'hidden';
         
         setTimeout(() => {
-            const titleInput = document.getElementById('new-task-title');
-            if (titleInput) titleInput.focus();
+            const input = document.getElementById('new-task-title');
+            if (input) input.focus();
         }, 100);
     }
 
     buildCreateForm() {
         return `
-            <div class="create-form">
+            <div class="form">
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Titre de la tâche *</label>
+                        <label>Titre *</label>
                         <input type="text" id="new-task-title" class="form-input" 
                                placeholder="Titre de la tâche" required />
                     </div>
@@ -1563,8 +1005,8 @@ class TasksView {
                 <div class="form-row">
                     <div class="form-group">
                         <label>Description</label>
-                        <textarea id="new-task-description" class="form-textarea" rows="4" 
-                                  placeholder="Description détaillée..."></textarea>
+                        <textarea id="new-task-desc" class="form-textarea" rows="4" 
+                                  placeholder="Description..."></textarea>
                     </div>
                 </div>
                 
@@ -1579,8 +1021,14 @@ class TasksView {
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Date d'échéance</label>
-                        <input type="date" id="new-task-duedate" class="form-input" />
+                        <label>Statut</label>
+                        <select id="new-task-status" class="form-select">
+                            <option value="todo" selected>⏳ À faire</option>
+                            <option value="in-progress">🔄 En cours</option>
+                            <option value="waiting">⏸️ En attente</option>
+                            <option value="follow-up">🔔 À relancer</option>
+                            <option value="blocked">🚫 Bloqué</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -1588,71 +1036,112 @@ class TasksView {
                     <div class="form-group">
                         <label>Client/Projet</label>
                         <input type="text" id="new-task-client" class="form-input" 
-                               placeholder="Nom du client ou projet" value="Interne" />
+                               placeholder="Client" value="Interne" />
                     </div>
+                    <div class="form-group">
+                        <label>Échéance</label>
+                        <input type="date" id="new-task-due" class="form-input" />
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3><i class="fas fa-tasks"></i> Checklist initiale</h3>
+                    <div id="new-checklist-items"></div>
+                    <button type="button" class="btn-add-checklist" onclick="window.tasksView.addChecklistInput()">
+                        <i class="fas fa-plus"></i> Ajouter un élément
+                    </button>
                 </div>
             </div>
         `;
     }
 
-    createNewTask(modalId) {
+    addChecklistInput() {
+        const container = document.getElementById('new-checklist-items');
+        const id = 'chk_input_' + Date.now();
+        container.insertAdjacentHTML('beforeend', `
+            <div class="checklist-input-row" id="${id}">
+                <input type="text" class="checklist-input" placeholder="Élément de checklist">
+                <button type="button" class="btn-remove-checklist" onclick="document.getElementById('${id}').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `);
+    }
+
+    createTask(modalId) {
         const title = document.getElementById('new-task-title')?.value?.trim();
-        const description = document.getElementById('new-task-description')?.value?.trim();
+        const desc = document.getElementById('new-task-desc')?.value?.trim();
         const priority = document.getElementById('new-task-priority')?.value;
-        const dueDate = document.getElementById('new-task-duedate')?.value;
+        const status = document.getElementById('new-task-status')?.value;
+        const due = document.getElementById('new-task-due')?.value;
         const client = document.getElementById('new-task-client')?.value?.trim();
 
         if (!title) {
-            this.showToast('Le titre est requis', 'warning');
+            this.toast('Le titre est requis', 'warning');
             return;
         }
 
-        const taskData = {
+        // Récupérer les éléments de checklist
+        const checklist = [];
+        document.querySelectorAll('#new-checklist-items .checklist-input').forEach(input => {
+            const text = input.value.trim();
+            if (text) {
+                checklist.push({
+                    id: 'chk_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                    text: text,
+                    checked: false
+                });
+            }
+        });
+
+        const data = {
             title,
-            description: description || '',
+            description: desc || '',
             priority,
-            dueDate: dueDate || null,
+            status,
+            dueDate: due || null,
             client: client || 'Interne',
             category: 'work',
+            checklist,
+            checklistProgress: 0,
             method: 'manual'
         };
 
         try {
-            const task = window.taskManager.createTask(taskData);
+            window.taskManager.createTask(data);
             this.closeModal(modalId);
-            
-            this.showToast('Tâche créée avec succès', 'success');
-            this.refreshView();
-        } catch (error) {
-            console.error('[TasksView] Error creating task:', error);
-            this.showToast('Erreur lors de la création', 'error');
+            this.toast('Tâche créée', 'success');
+            this.refresh();
+        } catch (e) {
+            console.error('[TV] Create error:', e);
+            this.toast('Erreur lors de la création', 'error');
         }
     }
 
     showEditModal(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task) return;
+        const t = window.taskManager.getTask(taskId);
+        if (!t) return;
 
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        this.closeModals();
         
-        const uniqueId = 'edit_task_modal_' + Date.now();
-        const modalHTML = `
-            <div id="${uniqueId}" class="modal-overlay">
+        const id = 'edit_modal_' + Date.now();
+        const html = `
+            <div id="${id}" class="modal-overlay">
                 <div class="modal-container">
                     <div class="modal-header">
                         <h2><i class="fas fa-edit"></i> Modifier la tâche</h2>
-                        <button class="modal-close" onclick="window.tasksView.closeModal('${uniqueId}')">
+                        <button class="modal-close" onclick="window.tasksView.closeModal('${id}')">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     <div class="modal-content">
-                        ${this.buildEditForm(task)}
+                        ${this.buildEditForm(t)}
                     </div>
                     <div class="modal-footer">
-                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${uniqueId}')">
+                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${id}')">
                             Annuler
                         </button>
-                        <button class="btn-modal btn-primary" onclick="window.tasksView.saveTaskChanges('${task.id}', '${uniqueId}')">
+                        <button class="btn-modal btn-primary" onclick="window.tasksView.saveTask('${t.id}', '${id}')">
                             <i class="fas fa-save"></i> Enregistrer
                         </button>
                     </div>
@@ -1660,30 +1149,25 @@ class TasksView {
             </div>
         `;
 
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.insertAdjacentHTML('beforeend', html);
         document.body.style.overflow = 'hidden';
-        
-        setTimeout(() => {
-            const firstInput = document.querySelector(`#${uniqueId} input, #${uniqueId} textarea`);
-            if (firstInput) firstInput.focus();
-        }, 100);
     }
 
-    buildEditForm(task) {
+    buildEditForm(t) {
         return `
-            <div class="edit-form">
+            <div class="form">
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Titre de la tâche *</label>
+                        <label>Titre *</label>
                         <input type="text" id="edit-title" class="form-input" 
-                               value="${this.escapeHtml(task.title)}" required />
+                               value="${this.esc(t.title)}" required />
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
                         <label>Description</label>
-                        <textarea id="edit-description" class="form-textarea" rows="4">${this.escapeHtml(task.description)}</textarea>
+                        <textarea id="edit-desc" class="form-textarea" rows="4">${this.esc(t.description)}</textarea>
                     </div>
                 </div>
                 
@@ -1691,18 +1175,21 @@ class TasksView {
                     <div class="form-group">
                         <label>Priorité</label>
                         <select id="edit-priority" class="form-select">
-                            <option value="low" ${task.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
-                            <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
-                            <option value="high" ${task.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
-                            <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                            ${['low', 'medium', 'high', 'urgent'].map(p => `
+                                <option value="${p}" ${t.priority === p ? 'selected' : ''}>
+                                    ${this.getPriorityIcon(p)} ${this.getPriorityLabel(p)}
+                                </option>
+                            `).join('')}
                         </select>
                     </div>
                     <div class="form-group">
                         <label>Statut</label>
                         <select id="edit-status" class="form-select">
-                            <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>⏳ À faire</option>
-                            <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>🔄 En cours</option>
-                            <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>✅ Terminé</option>
+                            ${['todo', 'in-progress', 'waiting', 'follow-up', 'blocked', 'completed'].map(s => `
+                                <option value="${s}" ${t.status === s ? 'selected' : ''}>
+                                    ${this.getStatusIcon(s)} ${this.getStatusLabel(s)}
+                                </option>
+                            `).join('')}
                         </select>
                     </div>
                 </div>
@@ -1711,103 +1198,177 @@ class TasksView {
                     <div class="form-group">
                         <label>Client/Projet</label>
                         <input type="text" id="edit-client" class="form-input" 
-                               value="${this.escapeHtml(task.client)}" />
+                               value="${this.esc(t.client)}" />
                     </div>
                     <div class="form-group">
-                        <label>Date d'échéance</label>
-                        <input type="date" id="edit-duedate" class="form-input" 
-                               value="${task.dueDate || ''}" />
+                        <label>Échéance</label>
+                        <input type="date" id="edit-due" class="form-input" 
+                               value="${t.dueDate || ''}" />
                     </div>
                 </div>
                 
-                ${task.hasEmail ? `
+                ${t.hasEmail ? `
                     <div class="form-section">
-                        <h3><i class="fas fa-envelope"></i> Informations Email</h3>
-                        <div class="email-info-readonly">
-                            <div><strong>De:</strong> ${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</div>
-                            <div><strong>Sujet:</strong> ${this.escapeHtml(task.emailSubject || 'Sans sujet')}</div>
+                        <h3><i class="fas fa-envelope"></i> Email</h3>
+                        <div class="email-info-ro">
+                            <div><strong>De:</strong> ${this.esc(t.emailFromName || t.emailFrom || 'Inconnu')}</div>
+                            <div><strong>Sujet:</strong> ${this.esc(t.emailSubject || 'Sans sujet')}</div>
                             <div>
                                 <label>
-                                    <input type="checkbox" id="edit-needs-reply" ${task.needsReply ? 'checked' : ''} />
+                                    <input type="checkbox" id="edit-needs-reply" ${t.needsReply ? 'checked' : ''} />
                                     Réponse requise
                                 </label>
                             </div>
                         </div>
                     </div>
                 ` : ''}
+                
+                <div class="form-section">
+                    <h3><i class="fas fa-tasks"></i> Checklist</h3>
+                    <div id="edit-checklist-items">
+                        ${(t.checklist || []).map(item => `
+                            <div class="checklist-edit-row" data-id="${item.id}">
+                                <input type="checkbox" ${item.checked ? 'checked' : ''} 
+                                       onchange="window.tasksView.toggleCheckItem('${t.id}', '${item.id}')">
+                                <input type="text" class="checklist-input" value="${this.esc(item.text)}">
+                                <button type="button" class="btn-remove-checklist" 
+                                        onclick="window.tasksView.removeCheckItem('${t.id}', '${item.id}')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button type="button" class="btn-add-checklist" 
+                            onclick="window.tasksView.addCheckItemToTask('${t.id}')">
+                        <i class="fas fa-plus"></i> Ajouter un élément
+                    </button>
+                </div>
             </div>
         `;
     }
 
-    saveTaskChanges(taskId, modalId) {
+    toggleCheckItem(taskId, itemId) {
+        window.taskManager.toggleChecklistItem(taskId, itemId);
+        // Mettre à jour l'affichage de la progression
+        const task = window.taskManager.getTask(taskId);
+        if (task) {
+            const checked = task.checklist.filter(i => i.checked).length;
+            const progress = task.checklist.length > 0 
+                ? Math.round((checked / task.checklist.length) * 100) 
+                : 0;
+            // Afficher la progression quelque part si nécessaire
+        }
+    }
+
+    removeCheckItem(taskId, itemId) {
+        window.taskManager.removeChecklistItem(taskId, itemId);
+        document.querySelector(`.checklist-edit-row[data-id="${itemId}"]`)?.remove();
+    }
+
+    addCheckItemToTask(taskId) {
+        const text = prompt('Nouvel élément de checklist:');
+        if (!text) return;
+        
+        const task = window.taskManager.addChecklistItem(taskId, text);
+        if (task) {
+            // Rafraîchir la liste
+            const container = document.getElementById('edit-checklist-items');
+            const newItem = task.checklist[task.checklist.length - 1];
+            container.insertAdjacentHTML('beforeend', `
+                <div class="checklist-edit-row" data-id="${newItem.id}">
+                    <input type="checkbox" ${newItem.checked ? 'checked' : ''} 
+                           onchange="window.tasksView.toggleCheckItem('${taskId}', '${newItem.id}')">
+                    <input type="text" class="checklist-input" value="${this.esc(newItem.text)}">
+                    <button type="button" class="btn-remove-checklist" 
+                            onclick="window.tasksView.removeCheckItem('${taskId}', '${newItem.id}')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `);
+        }
+    }
+
+    saveTask(taskId, modalId) {
         const title = document.getElementById('edit-title')?.value?.trim();
-        const description = document.getElementById('edit-description')?.value?.trim();
+        const desc = document.getElementById('edit-desc')?.value?.trim();
         const priority = document.getElementById('edit-priority')?.value;
         const status = document.getElementById('edit-status')?.value;
         const client = document.getElementById('edit-client')?.value?.trim();
-        const dueDate = document.getElementById('edit-duedate')?.value;
+        const due = document.getElementById('edit-due')?.value;
         const needsReply = document.getElementById('edit-needs-reply')?.checked;
 
         if (!title) {
-            this.showToast('Le titre est requis', 'warning');
+            this.toast('Le titre est requis', 'warning');
             return;
         }
 
+        // Récupérer la checklist mise à jour
+        const checklist = [];
+        document.querySelectorAll('#edit-checklist-items .checklist-edit-row').forEach(row => {
+            const id = row.dataset.id;
+            const text = row.querySelector('.checklist-input').value.trim();
+            const checked = row.querySelector('input[type="checkbox"]').checked;
+            if (text) {
+                checklist.push({ id, text, checked });
+            }
+        });
+
         const updates = {
             title,
-            description,
+            description: desc,
             priority,
             status,
             client: client || 'Interne',
-            dueDate: dueDate || null,
-            needsReply: needsReply || false
+            dueDate: due || null,
+            needsReply: needsReply || false,
+            checklist
         };
 
         try {
             window.taskManager.updateTask(taskId, updates);
             this.closeModal(modalId);
-            this.showToast('Tâche mise à jour avec succès', 'success');
-            this.refreshView();
-        } catch (error) {
-            console.error('Error updating task:', error);
-            this.showToast('Erreur lors de la mise à jour', 'error');
+            this.toast('Tâche mise à jour', 'success');
+            this.refresh();
+        } catch (e) {
+            console.error('Update error:', e);
+            this.toast('Erreur lors de la mise à jour', 'error');
         }
     }
 
-    showTaskDetails(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task) return;
+    showDetails(taskId) {
+        const t = window.taskManager.getTask(taskId);
+        if (!t) return;
 
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        this.closeModals();
         
-        const uniqueId = 'task_details_modal_' + Date.now();
-        const modalHTML = `
-            <div id="${uniqueId}" class="modal-overlay">
+        const id = 'details_modal_' + Date.now();
+        const html = `
+            <div id="${id}" class="modal-overlay">
                 <div class="modal-container modal-large">
                     <div class="modal-header">
                         <h2><i class="fas fa-eye"></i> Détails de la tâche</h2>
-                        <button class="modal-close" onclick="window.tasksView.closeModal('${uniqueId}')">
+                        <button class="modal-close" onclick="window.tasksView.closeModal('${id}')">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     <div class="modal-content">
-                        ${this.buildTaskDetailsContent(task)}
+                        ${this.buildDetailsContent(t)}
                     </div>
                     <div class="modal-footer">
-                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${uniqueId}')">
+                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${id}')">
                             Fermer
                         </button>
-                        ${task.hasEmail && task.suggestedReplies && task.suggestedReplies.length > 0 ? `
-                            <button class="btn-modal btn-info" onclick="window.tasksView.showSuggestedReplies('${task.id}')">
-                                <i class="fas fa-reply"></i> Voir suggestions de réponse
+                        ${t.hasEmail && t.suggestedReplies?.length > 0 ? `
+                            <button class="btn-modal btn-info" onclick="window.tasksView.showReplies('${t.id}')">
+                                <i class="fas fa-reply"></i> Suggestions
                             </button>
                         ` : ''}
-                        <button class="btn-modal btn-primary" onclick="window.tasksView.closeModal('${uniqueId}'); window.tasksView.showEditModal('${task.id}')">
+                        <button class="btn-modal btn-primary" onclick="window.tasksView.closeModal('${id}'); window.tasksView.showEditModal('${t.id}')">
                             <i class="fas fa-edit"></i> Modifier
                         </button>
-                        ${task.status !== 'completed' ? `
-                            <button class="btn-modal btn-success" onclick="window.tasksView.markComplete('${task.id}'); window.tasksView.closeModal('${uniqueId}')">
-                                <i class="fas fa-check"></i> Marquer terminé
+                        ${t.status !== 'completed' ? `
+                            <button class="btn-modal btn-success" onclick="window.tasksView.markComplete('${t.id}'); window.tasksView.closeModal('${id}')">
+                                <i class="fas fa-check"></i> Terminer
                             </button>
                         ` : ''}
                     </div>
@@ -1815,113 +1376,130 @@ class TasksView {
             </div>
         `;
 
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.insertAdjacentHTML('beforeend', html);
         document.body.style.overflow = 'hidden';
     }
 
-    buildTaskDetailsContent(task) {
-        const priorityIcon = this.getPriorityIcon(task.priority);
-        const statusLabel = this.getStatusLabel(task.status);
-        const dueDateInfo = this.formatDueDate(task.dueDate);
+    buildDetailsContent(t) {
+        const due = this.formatDueDate(t.dueDate);
         
         return `
             <div class="task-details-content">
                 <div class="details-header">
-                    <h1 class="task-title-details">${this.escapeHtml(task.title)}</h1>
+                    <h1 class="task-title-details">${this.esc(t.title)}</h1>
                     <div class="task-meta-badges">
-                        <span class="priority-badge-details priority-${task.priority}">
-                            ${priorityIcon} ${this.getPriorityLabel(task.priority)}
+                        <span class="priority-badge-details priority-${t.priority}">
+                            ${this.getPriorityIcon(t.priority)} ${this.getPriorityLabel(t.priority)}
                         </span>
-                        <span class="status-badge-details status-${task.status}">
-                            ${this.getStatusIcon(task.status)} ${statusLabel}
+                        <span class="status-badge-details status-${t.status}">
+                            ${this.getStatusIcon(t.status)} ${this.getStatusLabel(t.status)}
                         </span>
-                        <span class="deadline-badge-details ${dueDateInfo.className}">
+                        <span class="deadline-badge-details ${due.className}">
                             <i class="fas fa-calendar"></i>
-                            ${dueDateInfo.text || 'Pas d\'échéance définie'}
+                            ${due.text || 'Pas d\'échéance'}
                         </span>
                     </div>
                 </div>
 
-                ${task.description ? `
+                ${t.description ? `
                     <div class="details-section">
                         <h3><i class="fas fa-align-left"></i> Description</h3>
                         <div class="description-content">
-                            ${this.formatDescription(task.description)}
+                            ${this.formatDesc(t.description)}
                         </div>
                     </div>
                 ` : ''}
 
                 <div class="details-section">
-                    <h3><i class="fas fa-info-circle"></i> Informations Générales</h3>
+                    <h3><i class="fas fa-info-circle"></i> Informations</h3>
                     <div class="info-grid">
                         <div class="info-item">
-                            <strong>Client/Projet:</strong>
-                            <span>${this.escapeHtml(task.client)}</span>
+                            <strong>Client:</strong>
+                            <span>${this.esc(t.client)}</span>
                         </div>
                         <div class="info-item">
                             <strong>Créé le:</strong>
-                            <span>${new Date(task.createdAt).toLocaleString('fr-FR')}</span>
+                            <span>${new Date(t.createdAt).toLocaleString('fr-FR')}</span>
                         </div>
                         <div class="info-item">
-                            <strong>Dernière modification:</strong>
-                            <span>${new Date(task.updatedAt).toLocaleString('fr-FR')}</span>
+                            <strong>Modifié le:</strong>
+                            <span>${new Date(t.updatedAt).toLocaleString('fr-FR')}</span>
                         </div>
-                        ${task.completedAt ? `
+                        ${t.completedAt ? `
                             <div class="info-item">
                                 <strong>Terminé le:</strong>
-                                <span>${new Date(task.completedAt).toLocaleString('fr-FR')}</span>
+                                <span>${new Date(t.completedAt).toLocaleString('fr-FR')}</span>
                             </div>
                         ` : ''}
                     </div>
                 </div>
 
-                ${task.hasEmail ? `
+                ${t.checklist && t.checklist.length > 0 ? `
                     <div class="details-section">
-                        <h3><i class="fas fa-envelope"></i> Informations Email</h3>
+                        <h3><i class="fas fa-tasks"></i> Checklist (${t.checklistProgress}% complété)</h3>
+                        <div class="checklist-detailed">
+                            <div class="checklist-progress-bar-lg">
+                                <div class="progress-fill" style="width: ${t.checklistProgress}%"></div>
+                            </div>
+                            <div class="checklist-items">
+                                ${t.checklist.map(item => `
+                                    <div class="checklist-item ${item.checked ? 'checked' : ''}">
+                                        <i class="fas fa-${item.checked ? 'check-square' : 'square'}"></i>
+                                        <span>${this.esc(item.text)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${t.hasEmail ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-envelope"></i> Email</h3>
                         <div class="email-details-grid">
                             <div class="email-detail-item">
-                                <strong>Expéditeur:</strong>
-                                <span>${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</span>
+                                <strong>De:</strong>
+                                <span>${this.esc(t.emailFromName || t.emailFrom || 'Inconnu')}</span>
                             </div>
-                            ${task.emailFrom ? `
+                            ${t.emailFrom ? `
                                 <div class="email-detail-item">
                                     <strong>Email:</strong>
-                                    <span>${this.escapeHtml(task.emailFrom)}</span>
+                                    <span>${this.esc(t.emailFrom)}</span>
                                 </div>
                             ` : ''}
-                            ${task.emailSubject ? `
+                            ${t.emailSubject ? `
                                 <div class="email-detail-item">
                                     <strong>Sujet:</strong>
-                                    <span>${this.escapeHtml(task.emailSubject)}</span>
+                                    <span>${this.esc(t.emailSubject)}</span>
                                 </div>
                             ` : ''}
                             <div class="email-detail-item">
                                 <strong>Réponse requise:</strong>
-                                <span>${task.needsReply ? '✅ Oui' : '❌ Non'}</span>
+                                <span>${t.needsReply ? '✅ Oui' : '❌ Non'}</span>
                             </div>
                         </div>
                         
-                        ${task.emailContent && task.emailContent.length > 100 ? `
+                        ${t.emailContent?.length > 100 ? `
                             <div class="email-content-section">
-                                <h4>Contenu de l'email</h4>
+                                <h4>Contenu</h4>
                                 <div class="email-content-box">
-                                    ${task.emailHtmlContent || this.formatEmailContent(task.emailContent)}
+                                    ${t.emailHtmlContent || this.formatEmailContent(t.emailContent)}
                                 </div>
                             </div>
                         ` : ''}
                     </div>
                 ` : ''}
 
-                ${task.actions && task.actions.length > 0 ? `
+                ${t.actions?.length > 0 ? `
                     <div class="details-section">
-                        <h3><i class="fas fa-tasks"></i> Actions Requises</h3>
+                        <h3><i class="fas fa-tasks"></i> Actions</h3>
                         <div class="actions-list-details">
-                            ${task.actions.map((action, idx) => `
+                            ${t.actions.map((a, i) => `
                                 <div class="action-item-details">
-                                    <span class="action-number">${idx + 1}</span>
-                                    <span class="action-text">${this.escapeHtml(action.text)}</span>
-                                    ${action.deadline ? `
-                                        <span class="action-deadline">${this.formatDeadline(action.deadline)}</span>
+                                    <span class="action-number">${i + 1}</span>
+                                    <span class="action-text">${this.esc(a.text)}</span>
+                                    ${a.deadline ? `
+                                        <span class="action-deadline">${this.formatDeadline(a.deadline)}</span>
                                     ` : ''}
                                 </div>
                             `).join('')}
@@ -1929,28 +1507,28 @@ class TasksView {
                     </div>
                 ` : ''}
 
-                ${task.keyInfo && task.keyInfo.length > 0 ? `
+                ${t.keyInfo?.length > 0 ? `
                     <div class="details-section">
-                        <h3><i class="fas fa-lightbulb"></i> Informations Clés</h3>
+                        <h3><i class="fas fa-lightbulb"></i> Infos clés</h3>
                         <div class="key-info-grid">
-                            ${task.keyInfo.map(info => `
+                            ${t.keyInfo.map(info => `
                                 <div class="key-info-item">
                                     <i class="fas fa-chevron-right"></i>
-                                    <span>${this.escapeHtml(info)}</span>
+                                    <span>${this.esc(info)}</span>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
                 ` : ''}
 
-                ${task.risks && task.risks.length > 0 ? `
+                ${t.risks?.length > 0 ? `
                     <div class="details-section attention-section">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Points d'Attention</h3>
+                        <h3><i class="fas fa-exclamation-triangle"></i> Points d'attention</h3>
                         <div class="attention-list">
-                            ${task.risks.map(risk => `
+                            ${t.risks.map(risk => `
                                 <div class="attention-item">
                                     <i class="fas fa-exclamation-circle"></i>
-                                    <span>${this.escapeHtml(risk)}</span>
+                                    <span>${this.esc(risk)}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -1960,68 +1538,19 @@ class TasksView {
         `;
     }
 
-    formatDescription(description) {
-        if (!description) return '';
-        
-        if (description.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')) {
-            return `<div class="structured-description">${description.replace(/\n/g, '<br>')}</div>`;
-        } else {
-            return `<div class="simple-description">${this.escapeHtml(description).replace(/\n/g, '<br>')}</div>`;
-        }
-    }
+    showReplies(taskId) {
+        const t = window.taskManager.getTask(taskId);
+        if (!t || !t.suggestedReplies?.length) return;
 
-    formatEmailContent(content) {
-        if (!content) return '<p>Contenu non disponible</p>';
+        this.closeModals();
         
-        const formattedContent = content
-            .replace(/\n/g, '<br>')
-            .replace(/Email de:/g, '<strong>Email de:</strong>')
-            .replace(/Date:/g, '<strong>Date:</strong>')
-            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
-            
-        return `<div class="email-original-content">${formattedContent}</div>`;
-    }
-
-    formatDeadline(deadline) {
-        if (!deadline) return '';
-        
-        try {
-            const deadlineDate = new Date(deadline);
-            const now = new Date();
-            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays < 0) {
-                return `Échue il y a ${Math.abs(diffDays)}j`;
-            } else if (diffDays === 0) {
-                return 'Aujourd\'hui';
-            } else if (diffDays === 1) {
-                return 'Demain';
-            } else if (diffDays <= 7) {
-                return `${diffDays}j`;
-            } else {
-                return deadlineDate.toLocaleDateString('fr-FR', { 
-                    day: 'numeric', 
-                    month: 'short' 
-                });
-            }
-        } catch (error) {
-            return deadline;
-        }
-    }
-
-    showSuggestedReplies(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.suggestedReplies || task.suggestedReplies.length === 0) return;
-
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        
-        const uniqueId = 'replies_modal_' + Date.now();
-        const modalHTML = `
-            <div id="${uniqueId}" class="modal-overlay">
+        const id = 'replies_modal_' + Date.now();
+        const html = `
+            <div id="${id}" class="modal-overlay">
                 <div class="modal-container modal-large">
                     <div class="modal-header">
                         <h2><i class="fas fa-reply-all"></i> Suggestions de Réponse</h2>
-                        <button class="modal-close" onclick="window.tasksView.closeModal('${uniqueId}')">
+                        <button class="modal-close" onclick="window.tasksView.closeModal('${id}')">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -2029,39 +1558,39 @@ class TasksView {
                         <div class="ai-suggestions-info">
                             <div class="ai-badge">
                                 <i class="fas fa-robot"></i>
-                                <span>Suggestions générées automatiquement</span>
+                                <span>Suggestions IA</span>
                             </div>
-                            <p>Réponses personnalisées pour l'email de <strong>${task.emailFromName || 'l\'expéditeur'}</strong></p>
+                            <p>Pour ${t.emailFromName || 'l\'expéditeur'}</p>
                         </div>
                         
                         <div class="replies-list">
-                            ${task.suggestedReplies.map((reply, idx) => `
-                                <div class="reply-suggestion-card">
+                            ${t.suggestedReplies.map((r, i) => `
+                                <div class="reply-card">
                                     <div class="reply-card-header">
-                                        <div class="reply-tone-badge ${reply.tone}">
-                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
+                                        <div class="reply-tone-badge ${r.tone}">
+                                            ${this.getReplyToneIcon(r.tone)} ${this.getReplyToneLabel(r.tone)}
                                         </div>
                                         <div class="reply-card-actions">
-                                            <button class="btn-sm btn-secondary" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${taskId}')">
+                                            <button class="btn-sm btn-secondary" onclick="window.tasksView.copyReply(${i}, '${taskId}')">
                                                 <i class="fas fa-copy"></i> Copier
                                             </button>
-                                            <button class="btn-sm btn-primary" onclick="window.tasksView.useReply('${taskId}', ${idx})">
+                                            <button class="btn-sm btn-primary" onclick="window.tasksView.useReply('${taskId}', ${i})">
                                                 <i class="fas fa-paper-plane"></i> Utiliser
                                             </button>
                                         </div>
                                     </div>
                                     <div class="reply-subject-line">
-                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                                        <strong>Sujet:</strong> ${this.esc(r.subject)}
                                     </div>
                                     <div class="reply-content-preview">
-                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                                        ${this.esc(r.content).replace(/\n/g, '<br>')}
                                     </div>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${uniqueId}')">
+                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${id}')">
                             Fermer
                         </button>
                     </div>
@@ -2069,55 +1598,491 @@ class TasksView {
             </div>
         `;
 
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.insertAdjacentHTML('beforeend', html);
         document.body.style.overflow = 'hidden';
     }
 
-    async copyReplyToClipboard(replyIndex, taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
+    async copyReply(idx, taskId) {
+        const t = window.taskManager.getTask(taskId);
+        if (!t?.suggestedReplies?.[idx]) return;
 
-        const reply = task.suggestedReplies[replyIndex];
-        const text = `Sujet: ${reply.subject}\n\n${reply.content}`;
+        const r = t.suggestedReplies[idx];
+        const text = `Sujet: ${r.subject}\n\n${r.content}`;
         
         try {
             await navigator.clipboard.writeText(text);
-            this.showToast('Réponse copiée dans le presse-papiers', 'success');
-        } catch (error) {
-            console.error('Error copying to clipboard:', error);
-            this.showToast('Erreur lors de la copie', 'error');
+            this.toast('Copié!', 'success');
+        } catch (e) {
+            console.error('Copy error:', e);
+            this.toast('Erreur copie', 'error');
         }
     }
 
-    useReply(taskId, replyIndex) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
+    useReply(taskId, idx) {
+        const t = window.taskManager.getTask(taskId);
+        if (!t?.suggestedReplies?.[idx]) return;
 
-        const reply = task.suggestedReplies[replyIndex];
-        const subject = reply.subject;
-        const body = reply.content;
-        const to = task.emailFrom;
-        
-        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        const r = t.suggestedReplies[idx];
+        const mailtoLink = `mailto:${t.emailFrom}?subject=${encodeURIComponent(r.subject)}&body=${encodeURIComponent(r.content)}`;
         
         window.open(mailtoLink);
         
         window.taskManager.updateTask(taskId, { 
             emailReplied: true,
             needsReply: false,
-            status: task.status === 'todo' ? 'in-progress' : task.status
+            status: t.status === 'todo' ? 'in-progress' : t.status
         });
         
-        this.showToast('Email de réponse ouvert dans votre client email', 'success');
+        this.toast('Email ouvert', 'success');
+        this.closeModals();
+        this.refresh();
+    }
+
+    // Interactions
+    selectAllVisible() {
+        const tasks = window.taskManager.filterTasks(this.filters);
+        const filtered = this.showCompleted ? tasks : tasks.filter(t => t.status !== 'completed');
         
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        document.body.style.overflow = 'auto';
+        if (filtered.length === 0) {
+            this.toast('Aucune tâche', 'info');
+            return;
+        }
+
+        const allSel = filtered.every(t => this.selectedTasks.has(t.id));
         
-        this.refreshView();
+        if (allSel) {
+            filtered.forEach(t => this.selectedTasks.delete(t.id));
+            this.toast('Désélectionné', 'info');
+        } else {
+            filtered.forEach(t => this.selectedTasks.add(t.id));
+            this.toast(`${filtered.length} sélectionnée(s)`, 'success');
+        }
+        
+        this.refresh();
+    }
+
+    clearSelection() {
+        this.selectedTasks.clear();
+        this.refresh();
+        this.toast('Sélection effacée', 'info');
+    }
+
+    toggleSelect(taskId) {
+        if (this.selectedTasks.has(taskId)) {
+            this.selectedTasks.delete(taskId);
+        } else {
+            this.selectedTasks.add(taskId);
+        }
+        this.refresh();
+    }
+
+    bulkActions() {
+        if (this.selectedTasks.size === 0) return;
+        
+        const actions = [
+            'Terminer',
+            'Changer priorité',
+            'Changer statut',
+            'Supprimer',
+            'Exporter'
+        ];
+        
+        const action = prompt(`Actions pour ${this.selectedTasks.size} tâche(s):\n\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nNuméro:`);
+        
+        if (!action) return;
+        
+        const idx = parseInt(action) - 1;
+        
+        switch (idx) {
+            case 0: // Terminer
+                this.selectedTasks.forEach(id => {
+                    window.taskManager.updateTask(id, { 
+                        status: 'completed',
+                        completedAt: new Date().toISOString()
+                    });
+                });
+                this.toast(`${this.selectedTasks.size} terminée(s)`, 'success');
+                this.clearSelection();
+                break;
+                
+            case 1: // Priorité
+                const p = prompt('Priorité:\n1. Basse\n2. Normale\n3. Haute\n4. Urgente\n\nNuméro:');
+                const priorities = ['', 'low', 'medium', 'high', 'urgent'];
+                if (p && priorities[parseInt(p)]) {
+                    this.selectedTasks.forEach(id => {
+                        window.taskManager.updateTask(id, { priority: priorities[parseInt(p)] });
+                    });
+                    this.toast('Priorité mise à jour', 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 2: // Statut
+                const s = prompt('Statut:\n1. À faire\n2. En cours\n3. En attente\n4. À relancer\n5. Bloqué\n6. Terminé\n\nNuméro:');
+                const statuses = ['', 'todo', 'in-progress', 'waiting', 'follow-up', 'blocked', 'completed'];
+                if (s && statuses[parseInt(s)]) {
+                    this.selectedTasks.forEach(id => {
+                        const updates = { status: statuses[parseInt(s)] };
+                        if (updates.status === 'completed') {
+                            updates.completedAt = new Date().toISOString();
+                        }
+                        window.taskManager.updateTask(id, updates);
+                    });
+                    this.toast('Statut mis à jour', 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 3: // Supprimer
+                if (confirm(`Supprimer ${this.selectedTasks.size} tâche(s) ?`)) {
+                    this.selectedTasks.forEach(id => {
+                        window.taskManager.deleteTask(id);
+                    });
+                    this.toast(`${this.selectedTasks.size} supprimée(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 4: // Exporter
+                this.exportSelected();
+                break;
+        }
+    }
+
+    exportSelected() {
+        const tasks = Array.from(this.selectedTasks).map(id => window.taskManager.getTask(id)).filter(Boolean);
+        
+        const csv = [
+            ['Titre', 'Description', 'Priorité', 'Statut', 'Échéance', 'Client', 'Créé le', 'Progression'].join(','),
+            ...tasks.map(t => [
+                `"${t.title}"`,
+                `"${t.description || ''}"`,
+                t.priority,
+                t.status,
+                t.dueDate || '',
+                t.client || '',
+                new Date(t.createdAt).toLocaleDateString('fr-FR'),
+                t.checklistProgress || 0
+            ].join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `taches_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        
+        this.toast('Export terminé', 'success');
+        this.clearSelection();
+    }
+
+    // Utils
+    changeViewMode(mode) {
+        this.viewMode = mode;
+        this.refresh();
+    }
+
+    clearSearch() {
+        this.filters.search = '';
+        const input = document.getElementById('taskSearchInput');
+        if (input) input.value = '';
+        this.refresh();
+    }
+
+    quickFilter(filterId) {
+        this.filters = {
+            status: 'all',
+            priority: 'all',
+            category: 'all',
+            client: 'all',
+            search: this.filters.search,
+            sortBy: this.filters.sortBy,
+            overdue: false,
+            needsReply: false
+        };
+
+        switch (filterId) {
+            case 'all': break;
+            case 'todo':
+            case 'in-progress':
+            case 'waiting':
+            case 'follow-up':
+            case 'blocked':
+            case 'completed':
+                this.filters.status = filterId;
+                break;
+            case 'overdue':
+                this.filters.overdue = true;
+                break;
+            case 'needsReply':
+                this.filters.needsReply = true;
+                break;
+        }
+
+        this.refresh();
+    }
+
+    updateFilter(type, value) {
+        this.filters[type] = value;
+        this.refresh();
+    }
+
+    resetFilters() {
+        this.filters = {
+            status: 'all',
+            priority: 'all',
+            category: 'all',
+            client: 'all',
+            search: '',
+            sortBy: 'created'
+        };
+        
+        const input = document.getElementById('taskSearchInput');
+        if (input) input.value = '';
+        
+        document.querySelectorAll('.filter-select').forEach(sel => {
+            if (sel.querySelector('option[value="all"]')) {
+                sel.value = 'all';
+            } else if (sel.id === 'sortByFilter') {
+                sel.value = 'created';
+            }
+        });
+        
+        this.refresh();
+        this.toast('Filtres réinitialisés', 'info');
+    }
+
+    toggleAdvFilters() {
+        this.showAdvFilters = !this.showAdvFilters;
+        
+        const panel = document.getElementById('advFiltersPanel');
+        const toggle = document.querySelector('.btn-filters');
+        
+        if (panel) panel.classList.toggle('show', this.showAdvFilters);
+        if (toggle) {
+            toggle.classList.toggle('active', this.showAdvFilters);
+            const chevron = toggle.querySelector('.fa-chevron-down, .fa-chevron-up');
+            if (chevron) {
+                chevron.classList.toggle('fa-chevron-down', !this.showAdvFilters);
+                chevron.classList.toggle('fa-chevron-up', this.showAdvFilters);
+            }
+        }
+    }
+
+    buildClientOptions() {
+        const tasks = window.taskManager.getAllTasks();
+        const clients = new Set();
+        
+        tasks.forEach(t => {
+            if (t.client) clients.add(t.client);
+        });
+        
+        let opts = `<option value="all" ${this.filters.client === 'all' ? 'selected' : ''}>Tous</option>`;
+        
+        Array.from(clients).sort().forEach(c => {
+            const count = tasks.filter(t => t.client === c).length;
+            opts += `<option value="${c}" ${this.filters.client === c ? 'selected' : ''}>${c} (${count})</option>`;
+        });
+        
+        return opts;
+    }
+
+    refresh() {
+        const container = document.getElementById('tasksContainer');
+        if (container) {
+            container.innerHTML = this.renderTasksList();
+        }
+        
+        const stats = window.taskManager.getStats();
+        document.querySelectorAll('.status-filters').forEach(c => {
+            c.innerHTML = this.buildStatusPills(stats);
+        });
+        
+        this.updateSelectionUI();
+    }
+
+    updateSelectionUI() {
+        const count = this.selectedTasks.size;
+        const actionsDiv = document.querySelector('.main-actions');
+        
+        if (actionsDiv) {
+            const existing = actionsDiv.querySelector('.selection-panel');
+            
+            if (count > 0) {
+                const html = `
+                    <div class="selection-panel">
+                        <span class="selection-count">${count} sélectionné(s)</span>
+                        <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions">
+                            Actions
+                            <span class="count-badge">${count}</span>
+                        </button>
+                    </div>
+                `;
+                
+                if (existing) {
+                    existing.outerHTML = html;
+                } else {
+                    actionsDiv.insertAdjacentHTML('afterbegin', html);
+                }
+            } else if (existing) {
+                existing.remove();
+            }
+        }
+    }
+
+    setupListeners() {
+        const input = document.getElementById('taskSearchInput');
+        if (input) {
+            let timeout;
+            input.addEventListener('input', (e) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    this.handleSearch(e.target.value);
+                }, 300);
+            });
+        }
+    }
+
+    handleSearch(value) {
+        this.filters.search = value.trim();
+        this.refresh();
+    }
+
+    handleClick(e, taskId) {
+        if (e.target.type === 'checkbox' || e.target.closest('.task-actions')) return;
+        
+        const now = Date.now();
+        const last = this.lastClick || 0;
+        
+        if (now - last < 300) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.toggleSelect(taskId);
+            this.lastClick = 0;
+            return;
+        }
+        
+        this.lastClick = now;
+        
+        setTimeout(() => {
+            if (Date.now() - this.lastClick >= 250) {
+                this.showDetails(taskId);
+            }
+        }, 250);
+    }
+
+    markComplete(taskId) {
+        window.taskManager.updateTask(taskId, { 
+            status: 'completed',
+            completedAt: new Date().toISOString()
+        });
+        this.toast('Tâche terminée', 'success');
+        this.refresh();
+    }
+
+    refreshTasks() {
+        this.refresh();
+        this.toast('Actualisé', 'success');
+    }
+
+    renderEmpty() {
+        let title, text, action = '';
+        
+        if (this.filters.search) {
+            title = 'Aucun résultat';
+            text = `Aucune tâche pour "${this.filters.search}"`;
+            action = `<button class="btn-action btn-primary" onclick="window.tasksView.clearSearch()">
+                <i class="fas fa-undo"></i> Effacer recherche
+            </button>`;
+        } else if (this.hasActiveFilters()) {
+            title = 'Aucune tâche';
+            text = 'Aucune tâche ne correspond.';
+            action = `<button class="btn-action btn-primary" onclick="window.tasksView.resetFilters()">
+                <i class="fas fa-undo"></i> Réinitialiser
+            </button>`;
+        } else {
+            title = 'Aucune tâche';
+            text = 'Créez votre première tâche.';
+            action = `<button class="btn-action btn-primary" onclick="window.tasksView.showCreateModal()">
+                <i class="fas fa-plus"></i> Créer
+            </button>`;
+        }
+        
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fas fa-tasks"></i></div>
+                <h3 class="empty-state-title">${title}</h3>
+                <p class="empty-state-text">${text}</p>
+                ${action}
+            </div>
+        `;
+    }
+
+    isFilterActive(filterId) {
+        switch (filterId) {
+            case 'all': return this.filters.status === 'all' && !this.filters.overdue && !this.filters.needsReply;
+            case 'todo':
+            case 'in-progress':
+            case 'waiting':
+            case 'follow-up':
+            case 'blocked':
+            case 'completed':
+                return this.filters.status === filterId;
+            case 'overdue': return this.filters.overdue;
+            case 'needsReply': return this.filters.needsReply;
+            default: return false;
+        }
+    }
+
+    hasActiveFilters() {
+        return this.filters.status !== 'all' ||
+               this.filters.priority !== 'all' ||
+               this.filters.category !== 'all' ||
+               this.filters.client !== 'all' ||
+               this.filters.search !== '' ||
+               this.filters.overdue ||
+               this.filters.needsReply;
+    }
+
+    getPriorityIcon(p) {
+        return { urgent: '🚨', high: '⚡', medium: '📌', low: '📄' }[p] || '📌';
+    }
+
+    getPriorityColor(p) {
+        return { urgent: '#ef4444', high: '#f97316', medium: '#3b82f6', low: '#10b981' }[p] || '#3b82f6';
+    }
+
+    getPriorityLabel(p) {
+        return { urgent: 'Urgente', high: 'Haute', medium: 'Normale', low: 'Basse' }[p] || 'Normale';
+    }
+
+    getStatusIcon(s) {
+        return { 
+            todo: '⏳', 
+            'in-progress': '🔄', 
+            completed: '✅',
+            waiting: '⏸️',
+            'follow-up': '🔔',
+            blocked: '🚫'
+        }[s] || '⏳';
+    }
+
+    getStatusLabel(s) {
+        return { 
+            todo: 'À faire', 
+            'in-progress': 'En cours', 
+            completed: 'Terminé',
+            waiting: 'En attente',
+            'follow-up': 'À relancer',
+            blocked: 'Bloqué'
+        }[s] || 'À faire';
     }
 
     getReplyToneIcon(tone) {
-        const icons = {
+        return {
             professionnel: '👔',
             formel: '👔',
             informel: '😊',
@@ -2125,12 +2090,11 @@ class TasksView {
             neutre: '📝',
             amical: '🤝',
             détaillé: '📋'
-        };
-        return icons[tone] || '📝';
+        }[tone] || '📝';
     }
 
     getReplyToneLabel(tone) {
-        const labels = {
+        return {
             professionnel: 'Professionnel',
             formel: 'Formel',
             informel: 'Informel',
@@ -2138,43 +2102,125 @@ class TasksView {
             neutre: 'Neutre',
             amical: 'Amical',
             détaillé: 'Détaillé'
-        };
-        return labels[tone] || 'Neutre';
+        }[tone] || 'Neutre';
     }
 
-    closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.remove();
+    formatDueDate(date) {
+        if (!date) return { html: '', text: '', className: 'no-deadline' };
+        
+        const d = new Date(date);
+        const now = new Date();
+        const days = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+        
+        let className = 'deadline-normal';
+        let text = '';
+        
+        if (days < 0) {
+            className = 'deadline-overdue';
+            text = `Retard ${Math.abs(days)}j`;
+        } else if (days === 0) {
+            className = 'deadline-today';
+            text = 'Aujourd\'hui';
+        } else if (days === 1) {
+            className = 'deadline-tomorrow';
+            text = 'Demain';
+        } else if (days <= 7) {
+            className = 'deadline-week';
+            text = `${days}j`;
+        } else {
+            text = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
         }
+        
+        return { html: `<span class="deadline-badge ${className}">📅 ${text}</span>`, text, className };
+    }
+
+    formatDeadline(deadline) {
+        if (!deadline) return '';
+        
+        try {
+            const d = new Date(deadline);
+            const now = new Date();
+            const days = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+            
+            if (days < 0) return `Échue ${Math.abs(days)}j`;
+            if (days === 0) return 'Aujourd\'hui';
+            if (days === 1) return 'Demain';
+            if (days <= 7) return `${days}j`;
+            return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        } catch (e) {
+            return deadline;
+        }
+    }
+
+    formatDesc(desc) {
+        if (!desc) return '';
+        
+        if (desc.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')) {
+            return `<div class="structured-desc">${desc.replace(/\n/g, '<br>')}</div>`;
+        }
+        return `<div class="simple-desc">${this.esc(desc).replace(/\n/g, '<br>')}</div>`;
+    }
+
+    formatEmailContent(content) {
+        if (!content) return '<p>Contenu non disponible</p>';
+        
+        return `<div class="email-original-content">${content
+            .replace(/\n/g, '<br>')
+            .replace(/Email de:/g, '<strong>Email de:</strong>')
+            .replace(/Date:/g, '<strong>Date:</strong>')
+            .replace(/Sujet:/g, '<strong>Sujet:</strong>')}</div>`;
+    }
+
+    esc(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    toast(msg, type = 'info') {
+        if (window.uiManager?.showToast) {
+            window.uiManager.showToast(msg, type);
+        } else {
+            console.log(`[Toast] ${type}: ${msg}`);
+        }
+    }
+
+    closeModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) modal.remove();
         document.body.style.overflow = 'auto';
     }
 
-    addCorrectedStyles() {
-        if (document.getElementById('correctedTaskStyles')) return;
+    closeModals() {
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        document.body.style.overflow = 'auto';
+    }
+
+    addStyles() {
+        if (document.getElementById('tmv11Styles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'correctedTaskStyles';
+        styles.id = 'tmv11Styles';
         styles.textContent = `
-            /* Variables CSS pour TaskManager v10.1 Corrigé */
             :root {
-                --primary-color: #3b82f6;
-                --primary-hover: #2563eb;
-                --success-color: #10b981;
-                --warning-color: #f59e0b;
-                --danger-color: #ef4444;
-                --text-primary: #1f2937;
-                --text-secondary: #6b7280;
-                --bg-primary: #ffffff;
-                --bg-secondary: #f8fafc;
-                --border-color: #e5e7eb;
-                --border-radius: 8px;
-                --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-                --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-                --transition: all 0.2s ease;
+                --primary: #3b82f6;
+                --primary-h: #2563eb;
+                --success: #10b981;
+                --warning: #f59e0b;
+                --danger: #ef4444;
+                --text-p: #1f2937;
+                --text-s: #6b7280;
+                --bg-p: #ffffff;
+                --bg-s: #f8fafc;
+                --border: #e5e7eb;
+                --radius: 8px;
+                --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+                --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+                --trans: all 0.2s ease;
             }
 
-            .tasks-page-corrected {
+            .tasks-page-v11 {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
                 min-height: 100vh;
@@ -2182,21 +2228,19 @@ class TasksView {
                 font-size: 14px;
             }
 
-            /* RECTANGLE BLANC PRINCIPAL - 2 LIGNES SEULEMENT */
-            .controls-section-corrected {
-                background: rgba(255, 255, 255, 0.95);
+            .controls-section {
+                background: rgba(255,255,255,0.95);
                 backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255,255,255,0.2);
                 border-radius: 12px;
                 padding: 20px;
                 margin-bottom: 16px;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+                box-shadow: 0 4px 16px rgba(0,0,0,0.06);
                 display: flex;
                 flex-direction: column;
                 gap: 16px;
             }
 
-            /* LIGNE 1 : Recherche + Actions principales */
             .main-controls-line {
                 display: flex;
                 align-items: center;
@@ -2204,47 +2248,25 @@ class TasksView {
                 width: 100%;
             }
 
-            .search-section {
-                flex: 1;
-                max-width: 400px;
-            }
-
-            .search-box-corrected {
-                position: relative;
-                display: flex;
-                align-items: center;
-                height: 44px;
-            }
-
-            .search-input-corrected {
+            .search-section { flex: 1; max-width: 400px; }
+            .search-box { position: relative; display: flex; align-items: center; height: 44px; }
+            .search-input {
                 width: 100%;
                 height: 44px;
                 padding: 0 16px 0 44px;
-                border: 2px solid var(--border-color);
+                border: 2px solid var(--border);
                 border-radius: 10px;
                 font-size: 14px;
                 background: white;
-                transition: var(--transition);
+                transition: var(--trans);
                 outline: none;
             }
-
-            .search-input-corrected:focus {
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            }
-
-            .search-icon {
-                position: absolute;
-                left: 16px;
-                color: var(--text-secondary);
-                pointer-events: none;
-                z-index: 1;
-            }
-
+            .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+            .search-icon { position: absolute; left: 16px; color: var(--text-s); pointer-events: none; z-index: 1; }
             .search-clear {
                 position: absolute;
                 right: 12px;
-                background: var(--danger-color);
+                background: var(--danger);
                 color: white;
                 border: none;
                 width: 28px;
@@ -2255,21 +2277,11 @@ class TasksView {
                 align-items: center;
                 justify-content: center;
                 font-size: 12px;
-                transition: var(--transition);
+                transition: var(--trans);
             }
+            .search-clear:hover { background: #dc2626; transform: scale(1.1); }
 
-            .search-clear:hover {
-                background: #dc2626;
-                transform: scale(1.1);
-            }
-
-            .main-actions {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                flex-wrap: wrap;
-            }
-
+            .main-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
             .selection-panel {
                 display: flex;
                 align-items: center;
@@ -2283,21 +2295,17 @@ class TasksView {
                 font-size: 13px;
             }
 
-            .selection-count {
-                white-space: nowrap;
-            }
-
             .btn-action {
                 height: 44px;
                 padding: 0 16px;
-                border: 1px solid var(--border-color);
+                border: 1px solid var(--border);
                 border-radius: 8px;
                 background: white;
-                color: var(--text-primary);
+                color: var(--text-p);
                 font-size: 13px;
                 font-weight: 600;
                 cursor: pointer;
-                transition: var(--transition);
+                transition: var(--trans);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -2305,57 +2313,20 @@ class TasksView {
                 white-space: nowrap;
                 position: relative;
             }
-
-            .btn-action:hover {
-                background: var(--bg-secondary);
-                border-color: var(--primary-color);
-                transform: translateY(-1px);
-                box-shadow: var(--shadow-md);
-            }
-
-            .btn-action.btn-new {
-                background: linear-gradient(135deg, var(--primary-color) 0%, #6366f1 100%);
-                color: white;
-                border-color: transparent;
-            }
-
-            .btn-action.btn-new:hover {
-                background: linear-gradient(135deg, var(--primary-hover) 0%, #5856eb 100%);
-            }
-
-            .btn-action.btn-bulk {
-                background: var(--success-color);
-                color: white;
-                border-color: transparent;
-            }
-
-            .btn-action.btn-bulk:hover {
-                background: #059669;
-            }
-
-            .btn-action.btn-clear {
-                width: 44px;
-                padding: 0;
-                background: var(--bg-secondary);
-                color: var(--text-secondary);
-            }
-
-            .btn-action.btn-clear:hover {
-                background: var(--danger-color);
-                color: white;
-            }
-
-            .btn-action.btn-filters.active {
-                background: #eff6ff;
-                color: var(--primary-color);
-                border-color: var(--primary-color);
-            }
+            .btn-action:hover { background: var(--bg-s); border-color: var(--primary); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+            .btn-action.btn-new { background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%); color: white; border-color: transparent; }
+            .btn-action.btn-new:hover { background: linear-gradient(135deg, var(--primary-h) 0%, #5856eb 100%); }
+            .btn-action.btn-bulk { background: var(--success); color: white; border-color: transparent; }
+            .btn-action.btn-bulk:hover { background: #059669; }
+            .btn-action.btn-clear { width: 44px; padding: 0; background: var(--bg-s); color: var(--text-s); }
+            .btn-action.btn-clear:hover { background: var(--danger); color: white; }
+            .btn-action.btn-filters.active { background: #eff6ff; color: var(--primary); border-color: var(--primary); }
 
             .count-badge {
                 position: absolute;
                 top: -6px;
                 right: -6px;
-                background: var(--danger-color);
+                background: var(--danger);
                 color: white;
                 font-size: 10px;
                 font-weight: 700;
@@ -2366,117 +2337,59 @@ class TasksView {
                 border: 2px solid white;
             }
 
-            /* LIGNE 2 : Modes de vue + Filtres de statut */
-            .views-filters-line {
-                display: flex;
-                align-items: center;
-                gap: 20px;
-                width: 100%;
-            }
-
+            .views-filters-line { display: flex; align-items: center; gap: 20px; width: 100%; }
             .view-modes {
                 display: flex;
-                background: var(--bg-secondary);
-                border: 1px solid var(--border-color);
+                background: var(--bg-s);
+                border: 1px solid var(--border);
                 border-radius: 8px;
                 padding: 3px;
                 gap: 2px;
                 flex-shrink: 0;
             }
-
             .view-mode {
                 padding: 8px 16px;
                 border: none;
                 background: transparent;
-                color: var(--text-secondary);
+                color: var(--text-s);
                 border-radius: 6px;
                 cursor: pointer;
-                transition: var(--transition);
+                transition: var(--trans);
                 font-size: 13px;
                 font-weight: 600;
                 white-space: nowrap;
             }
+            .view-mode:hover { background: rgba(255,255,255,0.8); color: var(--text-p); }
+            .view-mode.active { background: white; color: var(--text-p); box-shadow: var(--shadow-sm); }
 
-            .view-mode:hover {
-                background: rgba(255, 255, 255, 0.8);
-                color: var(--text-primary);
-            }
-
-            .view-mode.active {
-                background: white;
-                color: var(--text-primary);
-                box-shadow: var(--shadow-sm);
-            }
-
-            .status-filters {
-                display: flex;
-                gap: 8px;
-                flex: 1;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
+            .status-filters { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; justify-content: center; }
             .status-pill {
                 display: flex;
                 align-items: center;
                 gap: 6px;
                 padding: 8px 12px;
                 background: white;
-                border: 1px solid var(--border-color);
+                border: 1px solid var(--border);
                 border-radius: 8px;
                 cursor: pointer;
-                transition: var(--transition);
+                transition: var(--trans);
                 font-size: 12px;
                 font-weight: 600;
-                color: var(--text-primary);
+                color: var(--text-p);
                 min-width: 100px;
                 justify-content: space-between;
             }
+            .status-pill:hover { border-color: var(--primary); background: #f0f9ff; transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+            .status-pill.active { background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%); color: white; border-color: var(--primary); box-shadow: var(--shadow-md); }
+            .status-pill.active .pill-count { background: rgba(255,255,255,0.3); color: white; }
+            .pill-icon { font-size: 14px; }
+            .pill-text { flex: 1; text-align: center; font-size: 11px; }
+            .pill-count { background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 700; min-width: 20px; text-align: center; }
 
-            .status-pill:hover {
-                border-color: var(--primary-color);
-                background: #f0f9ff;
-                transform: translateY(-1px);
-                box-shadow: var(--shadow-sm);
-            }
-
-            .status-pill.active {
-                background: linear-gradient(135deg, var(--primary-color) 0%, #6366f1 100%);
-                color: white;
-                border-color: var(--primary-color);
-                box-shadow: var(--shadow-md);
-            }
-
-            .status-pill.active .pill-count {
-                background: rgba(255, 255, 255, 0.3);
-                color: white;
-            }
-
-            .pill-icon {
-                font-size: 14px;
-            }
-
-            .pill-text {
-                flex: 1;
-                text-align: center;
-                font-size: 11px;
-            }
-
-            .pill-count {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 2px 6px;
-                border-radius: 6px;
-                font-size: 10px;
-                font-weight: 700;
-                min-width: 20px;
-                text-align: center;
-            }
-
-            /* FILTRES AVANCÉS */
             .advanced-filters-panel {
-                background: rgba(255, 255, 255, 0.95);
+                background: rgba(255,255,255,0.95);
                 backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255,255,255,0.2);
                 border-radius: 12px;
                 margin-bottom: 16px;
                 max-height: 0;
@@ -2484,574 +2397,146 @@ class TasksView {
                 transition: all 0.3s ease;
                 opacity: 0;
             }
-
-            .advanced-filters-panel.show {
-                max-height: 200px;
-                opacity: 1;
-                padding: 20px;
-            }
-
-            .advanced-filters-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
-                align-items: end;
-            }
-
-            .filter-group {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-
-            .filter-label {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                font-weight: 600;
-                font-size: 12px;
-                color: var(--text-primary);
-            }
-
+            .advanced-filters-panel.show { max-height: 200px; opacity: 1; padding: 20px; }
+            .adv-filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; align-items: end; }
+            .filter-group { display: flex; flex-direction: column; gap: 6px; }
+            .filter-label { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12px; color: var(--text-p); }
             .filter-select {
                 height: 44px;
                 padding: 0 12px;
-                border: 1px solid var(--border-color);
+                border: 1px solid var(--border);
                 border-radius: 8px;
                 background: white;
                 font-size: 13px;
-                color: var(--text-primary);
+                color: var(--text-p);
                 cursor: pointer;
-                transition: var(--transition);
+                transition: var(--trans);
             }
+            .filter-select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59,130,246,0.1); }
+            .btn-reset { background: var(--bg-s); color: var(--text-s); }
+            .btn-reset:hover { background: var(--border); color: var(--text-p); }
 
-            .filter-select:focus {
-                outline: none;
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-            }
+            .tasks-container { background: transparent; }
 
-            .filter-actions {
-                display: flex;
-                align-items: end;
-            }
+            /* Vue minimaliste */
+            .tasks-minimal-list { display: flex; flex-direction: column; gap: 2px; background: rgba(255,255,255,0.8); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); }
+            .task-minimal { background: white; border-bottom: 1px solid #f3f4f6; cursor: pointer; transition: var(--trans); }
+            .task-minimal:last-child { border-bottom: none; }
+            .task-minimal:hover { background: var(--bg-s); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+            .task-minimal.selected { background: #eff6ff; border-left: 3px solid var(--primary); }
+            .task-minimal.completed { opacity: 0.6; }
+            .task-minimal.completed .task-title { text-decoration: line-through; }
 
-            .btn-reset {
-                background: var(--bg-secondary);
-                color: var(--text-secondary);
-            }
+            .task-content-line { display: flex; align-items: center; padding: 12px 16px; gap: 12px; height: 56px; }
+            .task-checkbox { width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; }
+            .task-info { flex: 1; display: flex; align-items: center; gap: 16px; min-width: 0; }
+            .task-title { font-weight: 600; color: var(--text-p); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 2; }
+            .task-client { font-size: 12px; color: var(--text-s); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+            .task-meta { display: flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 12px; }
+            .checklist-progress { font-size: 12px; color: var(--primary); font-weight: 500; display: flex; align-items: center; gap: 4px; }
+            .task-deadline { font-size: 12px; font-weight: 500; white-space: nowrap; text-align: center; }
+            .deadline-overdue { color: var(--danger); font-weight: 600; }
+            .deadline-today { color: var(--warning); font-weight: 600; }
+            .deadline-tomorrow { color: var(--warning); }
+            .deadline-week { color: var(--primary); }
+            .deadline-normal { color: var(--text-s); }
+            .no-deadline { color: #9ca3af; font-style: italic; }
 
-            .btn-reset:hover {
-                background: var(--border-color);
-                color: var(--text-primary);
-            }
-
-            /* CONTENEUR DES TÂCHES */
-            .tasks-container {
-                background: transparent;
-            }
-
-            /* VUE MINIMALISTE - UNE LIGNE PAR TÂCHE */
-            .tasks-minimal-list {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-                background: rgba(255, 255, 255, 0.8);
-                border-radius: 12px;
-                overflow: hidden;
-                box-shadow: var(--shadow-sm);
-            }
-
-            .task-minimal {
-                background: white;
-                border-bottom: 1px solid #f3f4f6;
-                cursor: pointer;
-                transition: var(--transition);
-            }
-
-            .task-minimal:last-child {
-                border-bottom: none;
-            }
-
-            .task-minimal:hover {
-                background: var(--bg-secondary);
-                transform: translateY(-1px);
-                box-shadow: var(--shadow-md);
-            }
-
-            .task-minimal.selected {
-                background: #eff6ff;
-                border-left: 3px solid var(--primary-color);
-            }
-
-            .task-minimal.completed {
-                opacity: 0.6;
-            }
-
-            .task-minimal.completed .task-title {
-                text-decoration: line-through;
-            }
-
-            .task-content-line {
-                display: flex;
-                align-items: center;
-                padding: 12px 16px;
-                gap: 12px;
-                height: 56px;
-            }
-
-            .task-checkbox {
-                width: 18px;
-                height: 18px;
-                cursor: pointer;
-                flex-shrink: 0;
-            }
-
-            .task-priority {
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                flex-shrink: 0;
-            }
-
-            .task-priority.priority-urgent {
-                background: #fef2f2;
-                color: #dc2626;
-            }
-
-            .task-priority.priority-high {
-                background: #fef3c7;
-                color: #d97706;
-            }
-
-            .task-priority.priority-medium {
-                background: #eff6ff;
-                color: #2563eb;
-            }
-
-            .task-priority.priority-low {
-                background: #f0fdf4;
-                color: #16a34a;
-            }
-
-            .task-info {
-                flex: 1;
-                display: flex;
-                align-items: center;
-                gap: 16px;
-                min-width: 0;
-            }
-
-            .task-title {
-                font-weight: 600;
-                color: var(--text-primary);
-                font-size: 14px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                flex: 2;
-            }
-
-            .task-client {
-                font-size: 12px;
-                color: var(--text-secondary);
-                font-weight: 500;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                flex: 1;
-            }
-
-            .task-meta {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-            }
-
-            .task-deadline {
-                font-size: 12px;
-                font-weight: 500;
-                white-space: nowrap;
-                text-align: center;
-            }
-
-            .task-deadline.deadline-overdue {
-                color: var(--danger-color);
-                font-weight: 600;
-            }
-
-            .task-deadline.deadline-today {
-                color: var(--warning-color);
-                font-weight: 600;
-            }
-
-            .task-deadline.deadline-tomorrow {
-                color: var(--warning-color);
-            }
-
-            .task-deadline.deadline-week {
-                color: var(--primary-color);
-            }
-
-            .task-deadline.deadline-normal {
-                color: var(--text-secondary);
-            }
-
-            .task-deadline.no-deadline {
-                color: #9ca3af;
-                font-style: italic;
-            }
-
-            .email-badge {
-                background: #eff6ff;
-                color: var(--primary-color);
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 600;
-            }
-
-            .task-actions {
-                display: flex;
-                gap: 4px;
-                flex-shrink: 0;
-            }
-
+            .task-actions { display: flex; gap: 4px; flex-shrink: 0; }
             .action-btn {
                 width: 32px;
                 height: 32px;
-                border: 1px solid var(--border-color);
+                border: 1px solid var(--border);
                 border-radius: 6px;
                 background: white;
-                color: var(--text-secondary);
+                color: var(--text-s);
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: var(--transition);
+                transition: var(--trans);
                 font-size: 12px;
             }
+            .action-btn:hover { background: var(--bg-s); border-color: var(--text-s); transform: translateY(-1px); }
+            .action-btn.complete:hover { background: #dcfce7; border-color: var(--success); color: var(--success); }
+            .action-btn.edit:hover { background: #fef3c7; border-color: var(--warning); color: var(--warning); }
+            .action-btn.details:hover { background: #f3e8ff; border-color: #8b5cf6; color: #8b5cf6; }
+            .action-btn.reply:hover { background: #eff6ff; border-color: var(--primary); color: var(--primary); }
 
-            .action-btn:hover {
-                background: var(--bg-secondary);
-                border-color: var(--text-secondary);
-                transform: translateY(-1px);
-            }
-
-            .action-btn.complete:hover {
-                background: #dcfce7;
-                border-color: var(--success-color);
-                color: var(--success-color);
-            }
-
-            .action-btn.edit:hover {
-                background: #fef3c7;
-                border-color: var(--warning-color);
-                color: var(--warning-color);
-            }
-
-            .action-btn.details:hover {
-                background: #f3e8ff;
-                border-color: #8b5cf6;
-                color: #8b5cf6;
-            }
-
-            .action-btn.reply:hover {
-                background: #eff6ff;
-                border-color: var(--primary-color);
-                color: var(--primary-color);
-            }
-
-            /* VUE NORMALE - UNE LIGNE PAR TÂCHE AMÉLIORÉE */
-            .tasks-normal-list {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-            }
-
-            .task-normal {
-                background: rgba(255, 255, 255, 0.95);
-                border-bottom: 1px solid var(--border-color);
-                cursor: pointer;
-                transition: var(--transition);
-            }
-
-            .task-normal:first-child {
-                border-top-left-radius: 12px;
-                border-top-right-radius: 12px;
-            }
-
-            .task-normal:last-child {
-                border-bottom-left-radius: 12px;
-                border-bottom-right-radius: 12px;
-                border-bottom: none;
-            }
-
-            .task-normal:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: var(--shadow-md);
-                border-color: rgba(59, 130, 246, 0.2);
-                z-index: 1;
-                position: relative;
-            }
-
-            .task-normal.selected {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border-left: 4px solid var(--primary-color);
-                z-index: 2;
-                position: relative;
-            }
-
-            .task-normal.completed {
-                opacity: 0.75;
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-            }
-
-            .task-normal.completed .task-title {
-                text-decoration: line-through;
-                color: var(--text-secondary);
-            }
-
-            .task-normal .task-content-line {
-                padding: 16px;
-                height: 72px;
-            }
-
-            .priority-bar {
-                width: 4px;
-                height: 48px;
-                border-radius: 2px;
-                margin-right: 12px;
-                flex-shrink: 0;
-            }
-
-            .task-main {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                min-width: 0;
-            }
-
-            .task-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-            }
-
-            .task-normal .task-title {
-                font-size: 15px;
-                font-weight: 700;
-                color: var(--text-primary);
-                margin: 0;
-                line-height: 1.3;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                flex: 1;
-            }
-
-            .task-badges {
-                display: flex;
-                gap: 6px;
-                flex-shrink: 0;
-            }
-
-            .priority-badge,
-            .status-badge,
-            .reply-badge {
+            /* Vue normale */
+            .tasks-normal-list { display: flex; flex-direction: column; gap: 0; }
+            .task-normal { background: rgba(255,255,255,0.95); border-bottom: 1px solid var(--border); cursor: pointer; transition: var(--trans); }
+            .task-normal:first-child { border-top-left-radius: 12px; border-top-right-radius: 12px; }
+            .task-normal:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; border-bottom: none; }
+            .task-normal:hover { background: white; transform: translateY(-1px); box-shadow: var(--shadow-md); border-color: rgba(59,130,246,0.2); z-index: 1; position: relative; }
+            .task-normal.selected { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid var(--primary); z-index: 2; position: relative; }
+            .task-normal.completed { opacity: 0.75; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
+            .task-normal.completed .task-title { text-decoration: line-through; color: var(--text-s); }
+            .task-normal .task-content-line { padding: 16px; height: 72px; }
+            .priority-bar { width: 4px; height: 48px; border-radius: 2px; margin-right: 12px; flex-shrink: 0; }
+            .task-main { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+            .task-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+            .task-normal .task-title { font-size: 15px; font-weight: 700; color: var(--text-p); margin: 0; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+            .task-badges { display: flex; gap: 6px; flex-shrink: 0; }
+            .status-badge, .checklist-badge {
                 padding: 3px 6px;
                 border-radius: 4px;
                 font-size: 10px;
                 font-weight: 600;
                 border: 1px solid;
             }
+            .status-badge.status-todo { background: #fef3c7; color: #d97706; border-color: #fde68a; }
+            .status-badge.status-in-progress { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+            .status-badge.status-completed { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+            .status-badge.status-waiting { background: #f3f4f6; color: #6b7280; border-color: #d1d5db; }
+            .status-badge.status-follow-up { background: #fef3c7; color: #d97706; border-color: #fde68a; }
+            .status-badge.status-blocked { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+            .checklist-badge { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+            .task-details { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--text-s); }
 
-            .priority-badge.priority-urgent {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
-            }
-
-            .priority-badge.priority-high {
-                background: #fef3c7;
-                color: #d97706;
-                border-color: #fde68a;
-            }
-
-            .priority-badge.priority-medium {
-                background: #eff6ff;
-                color: #2563eb;
-                border-color: #bfdbfe;
-            }
-
-            .priority-badge.priority-low {
-                background: #f0fdf4;
-                color: #16a34a;
-                border-color: #bbf7d0;
-            }
-
-            .status-badge.status-todo {
-                background: #fef3c7;
-                color: #d97706;
-                border-color: #fde68a;
-            }
-
-            .status-badge.status-in-progress {
-                background: #eff6ff;
-                color: #2563eb;
-                border-color: #bfdbfe;
-            }
-
-            .status-badge.status-completed {
-                background: #f0fdf4;
-                color: #16a34a;
-                border-color: #bbf7d0;
-            }
-
-            .reply-badge {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
-            }
-
-            .task-details {
-                display: flex;
-                align-items: center;
-                gap: 16px;
-                font-size: 12px;
-                color: var(--text-secondary);
-            }
-
-            .task-client,
-            .task-normal .task-deadline {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-
-            /* VUE DÉTAILLÉE - GRILLE DE CARTES */
-            .tasks-detailed-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-                gap: 16px;
-            }
-
+            /* Vue détaillée */
+            .tasks-detailed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 16px; }
             .task-detailed {
-                background: rgba(255, 255, 255, 0.95);
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                background: rgba(255,255,255,0.95);
+                border: 1px solid rgba(255,255,255,0.2);
                 border-radius: 12px;
                 padding: 16px;
-                transition: var(--transition);
+                transition: var(--trans);
                 box-shadow: var(--shadow-sm);
                 display: flex;
                 flex-direction: column;
                 min-height: 200px;
             }
-
-            .task-detailed:hover {
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-md);
-                border-color: rgba(59, 130, 246, 0.3);
-            }
-
-            .task-detailed.selected {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border-color: var(--primary-color);
-            }
-
-            .task-detailed.completed {
-                opacity: 0.8;
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-            }
-
-            .task-detailed-header {
-                display: flex;
+            .task-detailed:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: rgba(59,130,246,0.3); }
+            .task-detailed.selected { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: var(--primary); }
+            .task-detailed.completed { opacity: 0.8; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
+            .task-detailed-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+            .task-badges-group { display: flex; gap: 6px; flex: 1; }
+            .priority-badge, .status-badge {
+                display: inline-flex;
                 align-items: center;
-                gap: 12px;
-                margin-bottom: 12px;
-            }
-
-            .task-badges-group {
-                display: flex;
-                gap: 6px;
-                flex: 1;
-            }
-
-            .task-detailed-content {
-                flex: 1;
-                margin-bottom: 12px;
-            }
-
-            .task-detailed .task-title {
-                font-size: 16px;
-                font-weight: 700;
-                color: var(--text-primary);
-                margin: 0 0 8px 0;
-                line-height: 1.3;
-                cursor: pointer;
-                transition: color 0.2s ease;
-            }
-
-            .task-detailed .task-title:hover {
-                color: var(--primary-color);
-            }
-
-            .task-description {
-                font-size: 13px;
-                color: var(--text-secondary);
-                line-height: 1.5;
-                margin: 0 0 12px 0;
-            }
-
-            .task-meta-grid {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 12px;
-            }
-
-            .meta-item.deadline-centered {
-                flex: 1;
-                text-align: center;
-                justify-content: center;
-            }
-
-            .meta-item {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                font-size: 12px;
-                font-weight: 500;
-            }
-
-            .meta-item.email-meta {
-                color: var(--primary-color);
-            }
-
-            .reply-needed {
-                background: #fef3c7;
-                color: #d97706;
-                padding: 2px 6px;
+                gap: 4px;
+                padding: 4px 8px;
                 border-radius: 4px;
-                font-size: 10px;
-                font-weight: 500;
-                margin-left: 4px;
+                font-size: 11px;
+                font-weight: 600;
             }
-
-            .task-detailed-actions {
-                display: flex;
-                gap: 8px;
-                flex-wrap: wrap;
-            }
-
+            .priority-badge.priority-urgent { background: #fef2f2; color: #dc2626; }
+            .priority-badge.priority-high { background: #fef3c7; color: #d97706; }
+            .priority-badge.priority-medium { background: #eff6ff; color: #2563eb; }
+            .priority-badge.priority-low { background: #f0fdf4; color: #16a34a; }
+            .task-detailed-content { flex: 1; margin-bottom: 12px; }
+            .task-detailed .task-title { font-size: 16px; font-weight: 700; color: var(--text-p); margin: 0 0 8px 0; line-height: 1.3; cursor: pointer; transition: color 0.2s ease; }
+            .task-detailed .task-title:hover { color: var(--primary); }
+            .task-description { font-size: 13px; color: var(--text-s); line-height: 1.5; margin: 0 0 12px 0; }
+            .checklist-preview { margin: 12px 0; }
+            .checklist-progress-bar { width: 100%; height: 6px; background: var(--bg-s); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
+            .progress-fill { height: 100%; background: var(--primary); transition: width 0.3s ease; }
+            .checklist-info { font-size: 12px; color: var(--text-s); display: flex; align-items: center; gap: 4px; }
+            .task-meta-grid { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+            .meta-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+            .meta-item.deadline-centered { flex: 1; text-align: center; justify-content: center; }
+            .task-detailed-actions { display: flex; gap: 8px; flex-wrap: wrap; }
             .btn-detailed {
                 display: flex;
                 align-items: center;
@@ -3061,49 +2546,22 @@ class TasksView {
                 font-size: 12px;
                 font-weight: 600;
                 cursor: pointer;
-                transition: var(--transition);
+                transition: var(--trans);
                 border: 1px solid;
                 white-space: nowrap;
             }
+            .btn-detailed.complete { background: var(--success); color: white; border-color: var(--success); }
+            .btn-detailed.complete:hover { background: #059669; border-color: #059669; }
+            .btn-detailed.edit { background: var(--primary); color: white; border-color: var(--primary); }
+            .btn-detailed.edit:hover { background: var(--primary-h); border-color: var(--primary-h); }
+            .btn-detailed.details { background: var(--bg-s); color: var(--text-p); border-color: var(--border); }
+            .btn-detailed.details:hover { background: var(--border); border-color: var(--text-s); }
 
-            .btn-detailed.complete {
-                background: var(--success-color);
-                color: white;
-                border-color: var(--success-color);
-            }
-
-            .btn-detailed.complete:hover {
-                background: #059669;
-                border-color: #059669;
-            }
-
-            .btn-detailed.edit {
-                background: var(--primary-color);
-                color: white;
-                border-color: var(--primary-color);
-            }
-
-            .btn-detailed.edit:hover {
-                background: var(--primary-hover);
-                border-color: var(--primary-hover);
-            }
-
-            .btn-detailed.details {
-                background: var(--bg-secondary);
-                color: var(--text-primary);
-                border-color: var(--border-color);
-            }
-
-            .btn-detailed.details:hover {
-                background: var(--border-color);
-                border-color: var(--text-secondary);
-            }
-
-            /* ÉTAT VIDE */
+            /* État vide */
             .empty-state {
                 text-align: center;
                 padding: 60px 30px;
-                background: rgba(255, 255, 255, 0.8);
+                background: rgba(255,255,255,0.8);
                 border-radius: 16px;
                 box-shadow: var(--shadow-sm);
                 display: flex;
@@ -3111,36 +2569,18 @@ class TasksView {
                 align-items: center;
                 justify-content: center;
             }
+            .empty-state-icon { font-size: 48px; margin-bottom: 20px; color: #d1d5db; }
+            .empty-state-title { font-size: 20px; font-weight: 700; color: var(--text-p); margin-bottom: 12px; }
+            .empty-state-text { font-size: 14px; margin-bottom: 24px; max-width: 400px; line-height: 1.6; color: var(--text-s); }
 
-            .empty-state-icon {
-                font-size: 48px;
-                margin-bottom: 20px;
-                color: #d1d5db;
-            }
-
-            .empty-state-title {
-                font-size: 20px;
-                font-weight: 700;
-                color: var(--text-primary);
-                margin-bottom: 12px;
-            }
-
-            .empty-state-text {
-                font-size: 14px;
-                margin-bottom: 24px;
-                max-width: 400px;
-                line-height: 1.6;
-                color: var(--text-secondary);
-            }
-
-            /* MODALES COMPLÈTES */
+            /* Modales */
             .modal-overlay {
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.75);
+                background: rgba(0,0,0,0.75);
                 z-index: 99999999;
                 display: flex;
                 align-items: center;
@@ -3148,7 +2588,6 @@ class TasksView {
                 padding: 20px;
                 backdrop-filter: blur(4px);
             }
-            
             .modal-container {
                 background: white;
                 border-radius: 16px;
@@ -3157,65 +2596,40 @@ class TasksView {
                 max-height: 90vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
             }
-            
-            .modal-container.modal-large {
-                max-width: 1000px;
-            }
-            
+            .modal-container.modal-large { max-width: 1000px; }
             .modal-header {
                 padding: 24px;
-                border-bottom: 1px solid var(--border-color);
+                border-bottom: 1px solid var(--border);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
             }
-            
-            .modal-header h2 {
-                margin: 0;
-                font-size: 20px;
-                font-weight: 700;
-                color: var(--text-primary);
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
+            .modal-header h2 { margin: 0; font-size: 20px; font-weight: 700; color: var(--text-p); display: flex; align-items: center; gap: 8px; }
             .modal-close {
                 background: none;
                 border: none;
                 font-size: 20px;
                 cursor: pointer;
-                color: var(--text-secondary);
+                color: var(--text-s);
                 width: 32px;
                 height: 32px;
                 border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: var(--transition);
+                transition: var(--trans);
             }
-            
-            .modal-close:hover {
-                background: var(--bg-secondary);
-                color: var(--text-primary);
-            }
-            
-            .modal-content {
-                padding: 24px;
-                overflow-y: auto;
-                flex: 1;
-            }
-            
+            .modal-close:hover { background: var(--bg-s); color: var(--text-p); }
+            .modal-content { padding: 24px; overflow-y: auto; flex: 1; }
             .modal-footer {
                 padding: 24px;
-                border-top: 1px solid var(--border-color);
+                border-top: 1px solid var(--border);
                 display: flex;
                 justify-content: flex-end;
                 gap: 12px;
             }
-            
             .btn-modal {
                 display: flex;
                 align-items: center;
@@ -3225,175 +2639,92 @@ class TasksView {
                 font-size: 14px;
                 font-weight: 600;
                 cursor: pointer;
-                transition: var(--transition);
+                transition: var(--trans);
                 border: 1px solid;
                 white-space: nowrap;
             }
-            
-            .btn-modal.btn-primary {
-                background: var(--primary-color);
-                color: white;
-                border-color: var(--primary-color);
-            }
-            
-            .btn-modal.btn-primary:hover {
-                background: var(--primary-hover);
-                border-color: var(--primary-hover);
-                transform: translateY(-1px);
-            }
-            
-            .btn-modal.btn-secondary {
-                background: var(--bg-secondary);
-                color: var(--text-primary);
-                border-color: var(--border-color);
-            }
-            
-            .btn-modal.btn-secondary:hover {
-                background: var(--border-color);
-                border-color: var(--text-secondary);
-            }
-            
-            .btn-modal.btn-success {
-                background: var(--success-color);
-                color: white;
-                border-color: var(--success-color);
-            }
-            
-            .btn-modal.btn-success:hover {
-                background: #059669;
-                border-color: #059669;
-                transform: translateY(-1px);
-            }
-            
-            .btn-modal.btn-info {
-                background: #0ea5e9;
-                color: white;
-                border-color: #0ea5e9;
-            }
-            
-            .btn-modal.btn-info:hover {
-                background: #0284c7;
-                border-color: #0284c7;
-                transform: translateY(-1px);
-            }
+            .btn-modal.btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+            .btn-modal.btn-primary:hover { background: var(--primary-h); border-color: var(--primary-h); transform: translateY(-1px); }
+            .btn-modal.btn-secondary { background: var(--bg-s); color: var(--text-p); border-color: var(--border); }
+            .btn-modal.btn-secondary:hover { background: var(--border); border-color: var(--text-s); }
+            .btn-modal.btn-success { background: var(--success); color: white; border-color: var(--success); }
+            .btn-modal.btn-success:hover { background: #059669; border-color: #059669; transform: translateY(-1px); }
+            .btn-modal.btn-info { background: #0ea5e9; color: white; border-color: #0ea5e9; }
+            .btn-modal.btn-info:hover { background: #0284c7; border-color: #0284c7; transform: translateY(-1px); }
 
-            /* FORMULAIRES */
-            .edit-form,
-            .create-form {
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-            }
-            
-            .form-row {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 16px;
-            }
-            
-            .form-row .form-group:only-child {
-                grid-column: 1 / -1;
-            }
-            
-            .form-group {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-            
-            .form-group label {
-                font-weight: 600;
-                color: var(--text-primary);
-                font-size: 14px;
-            }
-            
-            .form-input,
-            .form-select,
-            .form-textarea {
+            /* Formulaires */
+            .form { display: flex; flex-direction: column; gap: 20px; }
+            .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+            .form-row .form-group:only-child { grid-column: 1 / -1; }
+            .form-group { display: flex; flex-direction: column; gap: 6px; }
+            .form-group label { font-weight: 600; color: var(--text-p); font-size: 14px; }
+            .form-input, .form-select, .form-textarea {
                 padding: 12px 16px;
-                border: 2px solid var(--border-color);
+                border: 2px solid var(--border);
                 border-radius: 8px;
                 font-size: 14px;
                 background: white;
                 transition: border-color 0.2s ease;
                 font-family: inherit;
             }
-            
-            .form-input:focus,
-            .form-select:focus,
-            .form-textarea:focus {
-                outline: none;
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            }
-            
-            .form-textarea {
-                resize: vertical;
-                min-height: 80px;
-                font-family: inherit;
-            }
-            
-            .form-section {
-                margin-top: 20px;
-                padding-top: 20px;
-                border-top: 1px solid var(--border-color);
-            }
-            
-            .form-section h3 {
-                margin: 0 0 12px 0;
-                font-size: 16px;
-                font-weight: 600;
-                color: var(--text-primary);
+            .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+            .form-textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+            .form-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+            .form-section h3 { margin: 0 0 12px 0; font-size: 16px; font-weight: 600; color: var(--text-p); display: flex; align-items: center; gap: 8px; }
+            .email-info-ro { background: var(--bg-s); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-size: 14px; color: var(--text-p); }
+            .email-info-ro > div { margin-bottom: 8px; }
+            .email-info-ro > div:last-child { margin-bottom: 0; }
+
+            /* Checklist */
+            .checklist-input-row, .checklist-edit-row {
                 display: flex;
                 align-items: center;
                 gap: 8px;
-            }
-            
-            .email-info-readonly {
-                background: var(--bg-secondary);
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 16px;
-                font-size: 14px;
-                color: var(--text-primary);
-            }
-            
-            .email-info-readonly > div {
                 margin-bottom: 8px;
             }
-            
-            .email-info-readonly > div:last-child {
-                margin-bottom: 0;
+            .checklist-input {
+                flex: 1;
+                padding: 8px 12px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-size: 13px;
             }
-
-            /* DÉTAILS DES TÂCHES */
-            .task-details-content {
-                max-width: none;
-            }
-            
-            .details-header {
-                margin-bottom: 24px;
-                padding-bottom: 16px;
-                border-bottom: 1px solid var(--border-color);
-            }
-            
-            .task-title-details {
-                font-size: 24px;
-                font-weight: 700;
-                color: var(--text-primary);
-                margin: 0 0 12px 0;
-                line-height: 1.3;
-            }
-            
-            .task-meta-badges {
+            .btn-add-checklist {
+                background: var(--bg-s);
+                border: 1px dashed var(--primary);
+                color: var(--primary);
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
                 display: flex;
-                gap: 12px;
-                flex-wrap: wrap;
+                align-items: center;
+                gap: 6px;
+                transition: var(--trans);
             }
-            
-            .priority-badge-details,
-            .status-badge-details,
-            .deadline-badge-details {
+            .btn-add-checklist:hover { background: #eff6ff; border-style: solid; }
+            .btn-remove-checklist {
+                background: var(--bg-s);
+                border: 1px solid var(--border);
+                color: var(--text-s);
+                width: 32px;
+                height: 32px;
+                border-radius: 6px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: var(--trans);
+            }
+            .btn-remove-checklist:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+            /* Détails tâche */
+            .task-details-content { max-width: none; }
+            .details-header { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+            .task-title-details { font-size: 24px; font-weight: 700; color: var(--text-p); margin: 0 0 12px 0; line-height: 1.3; }
+            .task-meta-badges { display: flex; gap: 12px; flex-wrap: wrap; }
+            .priority-badge-details, .status-badge-details, .deadline-badge-details {
                 display: inline-flex;
                 align-items: center;
                 gap: 6px;
@@ -3402,212 +2733,78 @@ class TasksView {
                 font-size: 14px;
                 font-weight: 600;
             }
-            
-            .priority-badge-details.priority-urgent {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-            }
-            
-            .priority-badge-details.priority-high {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-            
-            .priority-badge-details.priority-medium {
-                background: #eff6ff;
-                color: #2563eb;
-                border: 1px solid #bfdbfe;
-            }
-            
-            .priority-badge-details.priority-low {
-                background: #f0fdf4;
-                color: #16a34a;
-                border: 1px solid #bbf7d0;
-            }
-            
-            .status-badge-details.status-todo {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-            
-            .status-badge-details.status-in-progress {
-                background: #eff6ff;
-                color: #2563eb;
-                border: 1px solid #bfdbfe;
-            }
-            
-            .status-badge-details.status-completed {
-                background: #f0fdf4;
-                color: #16a34a;
-                border: 1px solid #bbf7d0;
-            }
-            
-            .deadline-badge-details.deadline-overdue {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-            }
-            
-            .deadline-badge-details.deadline-today {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-            
-            .deadline-badge-details.deadline-tomorrow {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-            
-            .deadline-badge-details.deadline-week {
-                background: #eff6ff;
-                color: #2563eb;
-                border: 1px solid #bfdbfe;
-            }
-            
-            .deadline-badge-details.deadline-normal {
-                background: var(--bg-secondary);
-                color: #64748b;
-                border: 1px solid var(--border-color);
-            }
-            
-            .deadline-badge-details.no-deadline {
-                background: var(--bg-secondary);
-                color: #9ca3af;
-                border: 1px solid #d1d5db;
-                font-style: italic;
-            }
+            .priority-badge-details.priority-urgent { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+            .priority-badge-details.priority-high { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+            .priority-badge-details.priority-medium { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+            .priority-badge-details.priority-low { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+            .status-badge-details.status-todo { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+            .status-badge-details.status-in-progress { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+            .status-badge-details.status-completed { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+            .status-badge-details.status-waiting { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
+            .status-badge-details.status-follow-up { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+            .status-badge-details.status-blocked { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+            .deadline-badge-details.deadline-overdue { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+            .deadline-badge-details.deadline-today { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+            .deadline-badge-details.deadline-tomorrow { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+            .deadline-badge-details.deadline-week { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+            .deadline-badge-details.deadline-normal { background: var(--bg-s); color: #64748b; border: 1px solid var(--border); }
+            .deadline-badge-details.no-deadline { background: var(--bg-s); color: #9ca3af; border: 1px solid #d1d5db; font-style: italic; }
             
             .details-section {
                 margin-bottom: 24px;
-                background: var(--bg-secondary);
-                border: 1px solid var(--border-color);
+                background: var(--bg-s);
+                border: 1px solid var(--border);
                 border-radius: 8px;
                 overflow: hidden;
             }
-            
             .details-section h3 {
                 margin: 0;
                 padding: 16px 20px;
                 background: white;
-                border-bottom: 1px solid var(--border-color);
+                border-bottom: 1px solid var(--border);
                 font-size: 16px;
                 font-weight: 600;
-                color: var(--text-primary);
+                color: var(--text-p);
                 display: flex;
                 align-items: center;
                 gap: 8px;
             }
+            .description-content { padding: 16px 20px; }
+            .structured-desc { font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 13px; line-height: 1.6; background: white; padding: 16px; border-radius: 6px; border: 1px solid var(--border); }
+            .simple-desc { font-size: 14px; line-height: 1.6; color: var(--text-p); }
+            .info-grid { padding: 16px 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+            .info-item { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--text-p); line-height: 1.4; }
+            .info-item strong { min-width: 120px; color: var(--text-p); }
             
-            .description-content {
-                padding: 16px 20px;
-            }
-            
-            .structured-description {
-                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-                font-size: 13px;
-                line-height: 1.6;
-                background: white;
-                padding: 16px;
-                border-radius: 6px;
-                border: 1px solid var(--border-color);
-            }
-            
-            .simple-description {
-                font-size: 14px;
-                line-height: 1.6;
-                color: var(--text-primary);
-            }
-            
-            .info-grid {
-                padding: 16px 20px;
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 12px;
-            }
-            
-            .info-item {
+            /* Checklist détaillée */
+            .checklist-detailed { padding: 16px 20px; }
+            .checklist-progress-bar-lg { width: 100%; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; margin-bottom: 16px; }
+            .checklist-items { display: flex; flex-direction: column; gap: 8px; }
+            .checklist-item {
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                font-size: 14px;
-                color: var(--text-primary);
-                line-height: 1.4;
-            }
-            
-            .info-item strong {
-                min-width: 120px;
-                color: var(--text-primary);
-            }
-            
-            .email-details-grid {
-                padding: 16px 20px;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .email-detail-item {
-                display: flex;
-                gap: 12px;
-                font-size: 14px;
-            }
-            
-            .email-detail-item strong {
-                min-width: 80px;
-                color: var(--text-primary);
-            }
-            
-            .email-content-section {
-                padding: 16px 20px;
-            }
-            
-            .email-content-section h4 {
-                margin: 0 0 12px 0;
-                font-size: 14px;
-                font-weight: 600;
-                color: var(--text-primary);
-            }
-            
-            .email-content-box {
+                gap: 10px;
+                padding: 8px 12px;
                 background: white;
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 16px;
-                max-height: 300px;
-                overflow-y: auto;
-            }
-            
-            .email-content-viewer {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                line-height: 1.6;
-                color: #333;
-            }
-            
-            .email-original-content {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                border-radius: 6px;
+                border: 1px solid var(--border);
                 font-size: 14px;
-                line-height: 1.6;
-                color: var(--text-primary);
-                white-space: pre-wrap;
+                color: var(--text-p);
             }
+            .checklist-item.checked { background: #f0fdf4; border-color: #bbf7d0; color: #16a34a; text-decoration: line-through; }
+            .checklist-item i { font-size: 14px; }
             
-            .email-original-content strong {
-                color: var(--text-primary);
-                font-weight: 600;
-            }
+            .email-details-grid { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+            .email-detail-item { display: flex; gap: 12px; font-size: 14px; }
+            .email-detail-item strong { min-width: 80px; color: var(--text-p); }
+            .email-content-section { padding: 16px 20px; }
+            .email-content-section h4 { margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-p); }
+            .email-content-box { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; max-height: 300px; overflow-y: auto; }
+            .email-content-viewer { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
+            .email-original-content { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.6; color: var(--text-p); white-space: pre-wrap; }
+            .email-original-content strong { color: var(--text-p); font-weight: 600; }
             
-            .actions-list-details {
-                padding: 16px 20px;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            
+            .actions-list-details { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
             .action-item-details {
                 display: flex;
                 align-items: center;
@@ -3615,9 +2812,8 @@ class TasksView {
                 padding: 10px 12px;
                 background: white;
                 border-radius: 6px;
-                border: 1px solid var(--border-color);
+                border: 1px solid var(--border);
             }
-            
             .action-number {
                 width: 24px;
                 height: 24px;
@@ -3631,57 +2827,15 @@ class TasksView {
                 font-weight: 600;
                 flex-shrink: 0;
             }
+            .action-text { flex: 1; font-size: 14px; color: var(--text-p); }
+            .action-deadline { font-size: 12px; color: #dc2626; font-weight: 600; background: #fef2f2; padding: 4px 8px; border-radius: 4px; border: 1px solid #fecaca; }
             
-            .action-text {
-                flex: 1;
-                font-size: 14px;
-                color: var(--text-primary);
-            }
+            .key-info-grid { padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; }
+            .key-info-item { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: var(--text-p); line-height: 1.4; }
             
-            .action-deadline {
-                font-size: 12px;
-                color: #dc2626;
-                font-weight: 600;
-                background: #fef2f2;
-                padding: 4px 8px;
-                border-radius: 4px;
-                border: 1px solid #fecaca;
-            }
-            
-            .key-info-grid {
-                padding: 16px 20px;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .key-info-item {
-                display: flex;
-                align-items: flex-start;
-                gap: 8px;
-                font-size: 14px;
-                color: var(--text-primary);
-                line-height: 1.4;
-            }
-            
-            .attention-section {
-                background: #fef3c7;
-                border-color: #fbbf24;
-            }
-            
-            .attention-section h3 {
-                background: #fef9e8;
-                border-bottom-color: #fbbf24;
-                color: #92400e;
-            }
-            
-            .attention-list {
-                padding: 16px 20px;
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            
+            .attention-section { background: #fef3c7; border-color: #fbbf24; }
+            .attention-section h3 { background: #fef9e8; border-bottom-color: #fbbf24; color: #92400e; }
+            .attention-list { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
             .attention-item {
                 display: flex;
                 align-items: flex-start;
@@ -3691,74 +2845,17 @@ class TasksView {
                 border-radius: 6px;
                 padding: 10px 12px;
             }
-            
-            .attention-item i {
-                font-size: 14px;
-                color: #f59e0b;
-                margin-top: 2px;
-            }
-            
-            .attention-item span {
-                flex: 1;
-                font-size: 13px;
-                color: #92400e;
-                line-height: 1.4;
-            }
+            .attention-item i { font-size: 14px; color: #f59e0b; margin-top: 2px; }
+            .attention-item span { flex: 1; font-size: 13px; color: #92400e; line-height: 1.4; }
 
-            /* SUGGESTIONS DE RÉPONSE */
-            .ai-suggestions-info {
-                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-                border: 1px solid #7dd3fc;
-                border-radius: 8px;
-                padding: 16px;
-                margin-bottom: 20px;
-            }
-            
-            .ai-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                background: #0ea5e9;
-                color: white;
-                padding: 6px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: 600;
-                margin-bottom: 8px;
-            }
-            
-            .ai-suggestions-info p {
-                margin: 0;
-                color: #075985;
-                font-size: 14px;
-            }
-            
-            .replies-list {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-            }
-            
-            .reply-suggestion-card {
-                background: white;
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 16px;
-                transition: var(--transition);
-            }
-            
-            .reply-suggestion-card:hover {
-                border-color: var(--primary-color);
-                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
-            }
-            
-            .reply-card-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 12px;
-            }
-            
+            /* Suggestions réponse */
+            .ai-suggestions-info { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #7dd3fc; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
+            .ai-badge { display: inline-flex; align-items: center; gap: 8px; background: #0ea5e9; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+            .ai-suggestions-info p { margin: 0; color: #075985; font-size: 14px; }
+            .replies-list { display: flex; flex-direction: column; gap: 16px; }
+            .reply-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; transition: var(--trans); }
+            .reply-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(59,130,246,0.1); }
+            .reply-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
             .reply-tone-badge {
                 display: inline-flex;
                 align-items: center;
@@ -3769,43 +2866,12 @@ class TasksView {
                 font-weight: 600;
                 text-transform: capitalize;
             }
-            
-            .reply-tone-badge.professionnel,
-            .reply-tone-badge.formel {
-                background: var(--bg-secondary);
-                color: var(--text-primary);
-                border: 1px solid var(--border-color);
-            }
-            
-            .reply-tone-badge.urgent {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-            }
-            
-            .reply-tone-badge.neutre {
-                background: #eff6ff;
-                color: #2563eb;
-                border: 1px solid #bfdbfe;
-            }
-            
-            .reply-tone-badge.amical {
-                background: #f0fdf4;
-                color: #16a34a;
-                border: 1px solid #bbf7d0;
-            }
-            
-            .reply-tone-badge.détaillé {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-            
-            .reply-card-actions {
-                display: flex;
-                gap: 8px;
-            }
-            
+            .reply-tone-badge.professionnel, .reply-tone-badge.formel { background: var(--bg-s); color: var(--text-p); border: 1px solid var(--border); }
+            .reply-tone-badge.urgent { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+            .reply-tone-badge.neutre { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+            .reply-tone-badge.amical { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+            .reply-tone-badge.détaillé { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+            .reply-card-actions { display: flex; gap: 8px; }
             .btn-sm {
                 display: inline-flex;
                 align-items: center;
@@ -3815,176 +2881,47 @@ class TasksView {
                 font-size: 12px;
                 font-weight: 500;
                 cursor: pointer;
-                transition: var(--transition);
+                transition: var(--trans);
                 border: 1px solid;
             }
-            
-            .btn-sm.btn-secondary {
-                background: var(--bg-secondary);
-                color: var(--text-primary);
-                border-color: var(--border-color);
-            }
-            
-            .btn-sm.btn-secondary:hover {
-                background: var(--border-color);
-                border-color: var(--text-secondary);
-            }
-            
-            .btn-sm.btn-primary {
-                background: var(--primary-color);
-                color: white;
-                border-color: var(--primary-color);
-            }
-            
-            .btn-sm.btn-primary:hover {
-                background: var(--primary-hover);
-                border-color: var(--primary-hover);
-                transform: translateY(-1px);
-            }
-            
-            .reply-subject-line {
-                font-size: 13px;
-                color: #4b5563;
-                margin-bottom: 10px;
-                padding-bottom: 8px;
-                border-bottom: 1px solid var(--border-color);
-            }
-            
-            .reply-content-preview {
-                font-size: 13px;
-                color: var(--text-primary);
-                line-height: 1.6;
-                white-space: pre-wrap;
-                background: var(--bg-secondary);
-                padding: 12px;
-                border-radius: 6px;
-                border: 1px solid var(--border-color);
-                max-height: 150px;
-                overflow-y: auto;
-            }
+            .btn-sm.btn-secondary { background: var(--bg-s); color: var(--text-p); border-color: var(--border); }
+            .btn-sm.btn-secondary:hover { background: var(--border); border-color: var(--text-s); }
+            .btn-sm.btn-primary { background: var(--primary); color: white; border-color: var(--primary); }
+            .btn-sm.btn-primary:hover { background: var(--primary-h); border-color: var(--primary-h); transform: translateY(-1px); }
+            .reply-subject-line { font-size: 13px; color: #4b5563; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+            .reply-content-preview { font-size: 13px; color: var(--text-p); line-height: 1.6; white-space: pre-wrap; background: var(--bg-s); padding: 12px; border-radius: 6px; border: 1px solid var(--border); max-height: 150px; overflow-y: auto; }
+
             @media (max-width: 1024px) {
-                .main-controls-line {
-                    flex-direction: column;
-                    gap: 12px;
-                    align-items: stretch;
-                }
-
-                .search-section {
-                    max-width: none;
-                }
-
-                .main-actions {
-                    justify-content: center;
-                    width: 100%;
-                }
-
-                .views-filters-line {
-                    flex-direction: column;
-                    gap: 12px;
-                    align-items: stretch;
-                }
-
-                .view-modes {
-                    align-self: center;
-                }
-
-                .status-filters {
-                    justify-content: center;
-                }
-
-                .status-pill {
-                    min-width: 90px;
-                }
-
-                .tasks-detailed-grid {
-                    grid-template-columns: 1fr;
-                }
+                .main-controls-line { flex-direction: column; gap: 12px; align-items: stretch; }
+                .search-section { max-width: none; }
+                .main-actions { justify-content: center; width: 100%; }
+                .views-filters-line { flex-direction: column; gap: 12px; align-items: stretch; }
+                .view-modes { align-self: center; }
+                .status-filters { justify-content: center; }
+                .status-pill { min-width: 90px; }
+                .tasks-detailed-grid { grid-template-columns: 1fr; }
             }
 
             @media (max-width: 768px) {
-                .controls-section-corrected {
-                    padding: 16px;
-                }
-
-                .task-content-line {
-                    padding: 12px;
-                    height: auto;
-                    min-height: 56px;
-                }
-
-                .task-info {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 4px;
-                }
-
-                .task-normal .task-content-line {
-                    height: auto;
-                    min-height: 72px;
-                }
-
-                .task-header {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 8px;
-                }
-
-                .task-badges {
-                    align-self: flex-end;
-                }
-
-                .main-actions {
-                    flex-direction: column;
-                    gap: 8px;
-                }
-
-                .selection-panel {
-                    justify-content: center;
-                }
-
-                .status-filters {
-                    flex-direction: column;
-                    gap: 6px;
-                }
-
-                .status-pill {
-                    min-width: auto;
-                    width: 100%;
-                    justify-content: space-between;
-                }
+                .controls-section { padding: 16px; }
+                .task-content-line { padding: 12px; height: auto; min-height: 56px; }
+                .task-info { flex-direction: column; align-items: flex-start; gap: 4px; }
+                .task-normal .task-content-line { height: auto; min-height: 72px; }
+                .task-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+                .task-badges { align-self: flex-end; }
+                .main-actions { flex-direction: column; gap: 8px; }
+                .selection-panel { justify-content: center; }
+                .status-filters { flex-direction: column; gap: 6px; }
+                .status-pill { min-width: auto; width: 100%; justify-content: space-between; }
             }
 
             @media (max-width: 480px) {
-                .tasks-page-corrected {
-                    padding: 8px;
-                }
-
-                .controls-section-corrected {
-                    padding: 12px;
-                    gap: 12px;
-                }
-
-                .btn-action {
-                    height: 40px;
-                    font-size: 12px;
-                    padding: 0 12px;
-                }
-
-                .task-content-line {
-                    padding: 8px;
-                    gap: 8px;
-                }
-
-                .task-actions {
-                    flex-direction: column;
-                    gap: 2px;
-                }
-
-                .action-btn {
-                    width: 28px;
-                    height: 28px;
-                    font-size: 11px;
-                }
+                .tasks-page-v11 { padding: 8px; }
+                .controls-section { padding: 12px; gap: 12px; }
+                .btn-action { height: 40px; font-size: 12px; padding: 0 12px; }
+                .task-content-line { padding: 8px; gap: 8px; }
+                .task-actions { flex-direction: column; gap: 2px; }
+                .action-btn { width: 28px; height: 28px; font-size: 11px; }
             }
         `;
         
@@ -3992,12 +2929,9 @@ class TasksView {
     }
 }
 
-// =====================================
-// GLOBAL INITIALIZATION
-// =====================================
-
-function initializeTaskManagerV10Corrected() {
-    console.log('[TaskManager] Initializing v10.1 - Interface harmonisée corrigée...');
+// Initialisation globale
+function initTaskManagerV11() {
+    console.log('[TM] Init v11...');
     
     if (!window.taskManager || !window.taskManager.initialized) {
         window.taskManager = new TaskManager();
@@ -4007,7 +2941,7 @@ function initializeTaskManagerV10Corrected() {
         window.tasksView = new TasksView();
     }
     
-    // Bind methods pour éviter les erreurs de contexte
+    // Bind methods
     Object.getOwnPropertyNames(TaskManager.prototype).forEach(name => {
         if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
             window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
@@ -4020,23 +2954,23 @@ function initializeTaskManagerV10Corrected() {
         }
     });
     
-    console.log('✅ TaskManager v10.1 loaded - Interface harmonisée avec alignement corrigé');
+    console.log('✅ TaskManager v11 loaded');
 }
 
-// Initialisation immédiate ET sur DOMContentLoaded
-initializeTaskManagerV10Corrected();
+// Init immédiate + DOM ready
+initTaskManagerV11();
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[TaskManager] DOM ready, ensuring initialization...');
-    initializeTaskManagerV10Corrected();
+    console.log('[TM] DOM ready...');
+    initTaskManagerV11();
 });
 
-// Fallback sur window.load
+// Fallback
 window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.taskManager || !window.taskManager.initialized) {
-            console.log('[TaskManager] Fallback initialization...');
-            initializeTaskManagerV10Corrected();
+            console.log('[TM] Fallback init...');
+            initTaskManagerV11();
         }
     }, 1000);
-})
+});
