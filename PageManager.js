@@ -2924,62 +2924,43 @@ class PageManager {
                 color: #b91c1c;
             }
             
-            /* ===== FILTRES DE CATÉGORIES COMPACTS ET OPTIMISÉS ===== */
+            /* ===== FILTRES DE CATÉGORIES COMPACTS ===== */
             .status-filters-compact {
                 display: flex;
-                gap: 0;
+                gap: var(--gap-small);
                 margin-bottom: var(--gap-medium);
+                flex-wrap: wrap;
                 width: 100%;
                 position: relative;
                 z-index: 10;
                 align-items: center;
-                overflow: hidden;
-                border-radius: var(--btn-border-radius);
-                box-shadow: var(--shadow-base);
-                background: white;
-                border: 1px solid #e5e7eb;
             }
             
             .status-pill-compact {
                 height: 36px;
-                padding: 0 16px;
+                padding: 0 12px;
                 font-size: 13px;
                 font-weight: 600;
-                border-radius: 0;
-                box-shadow: none;
+                border-radius: var(--btn-border-radius);
+                box-shadow: var(--shadow-base);
                 transition: all var(--transition-speed) ease;
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 6px;
                 background: white;
                 color: #374151;
-                border: none;
-                border-right: 1px solid #e5e7eb;
+                border: 1px solid #e5e7eb;
                 cursor: pointer;
                 position: relative;
                 overflow: visible;
                 z-index: 11;
                 white-space: nowrap;
-                flex: 1;
-                min-width: 0;
-                justify-content: center;
-            }
-            
-            .status-pill-compact:first-child {
-                border-top-left-radius: var(--btn-border-radius);
-                border-bottom-left-radius: var(--btn-border-radius);
-            }
-            
-            .status-pill-compact:last-child {
-                border-top-right-radius: var(--btn-border-radius);
-                border-bottom-right-radius: var(--btn-border-radius);
-                border-right: none;
+                flex-shrink: 0;
             }
             
             .status-pill-compact.preselected-category {
-                background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
-                border-left: 3px solid var(--preselect-color);
-                border-right: 1px solid var(--preselect-color);
+                border-color: var(--preselect-color);
+                background: rgba(139, 92, 246, 0.05);
                 animation: pulsePreselected 3s ease-in-out infinite;
             }
             
@@ -2991,11 +2972,7 @@ class PageManager {
             .status-pill-compact .pill-text {
                 font-weight: 600;
                 color: inherit;
-                flex: 1;
-                text-align: center;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+                flex-shrink: 0;
             }
             
             .status-pill-compact .pill-count {
@@ -3031,44 +3008,30 @@ class PageManager {
             }
             
             .status-pill-compact:hover {
-                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border-color: #3b82f6;
+                background: #f0f9ff;
                 transform: translateY(-1px);
                 box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
                 z-index: 12;
-                border-left: 3px solid #3b82f6;
-                border-right: 1px solid #3b82f6;
-            }
-            
-            .status-pill-compact:hover:first-child {
-                border-left: 3px solid #3b82f6;
             }
             
             .status-pill-compact.active {
                 background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
                 color: white;
+                border-color: #3b82f6;
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
                 transform: translateY(-1px);
                 z-index: 13;
-                border-left: 3px solid #1d4ed8;
-                border-right: 1px solid #1d4ed8;
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
             }
             
             .status-pill-compact.active.preselected-category {
                 background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
-                border-left: 3px solid var(--preselect-color-dark);
-                border-right: 1px solid var(--preselect-color-dark);
                 box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
             }
             
             .status-pill-compact.active .pill-count {
                 background: rgba(255, 255, 255, 0.3);
                 color: white;
-            }
-            
-            .status-pill-compact.preselected-category:hover {
-                background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.1) 100%);
-                border-left: 3px solid var(--preselect-color);
-                border-right: 1px solid var(--preselect-color);
             }
             
             /* Bouton de sélection amélioré */
@@ -3643,28 +3606,6 @@ class PageManager {
             }
             
             @media (max-width: 768px) {
-                .status-filters-compact {
-                    flex-wrap: wrap;
-                    gap: 2px;
-                    border-radius: 0;
-                    border: none;
-                    box-shadow: none;
-                    background: transparent;
-                }
-                
-                .status-pill-compact {
-                    flex: 0 1 calc(50% - 1px);
-                    min-width: 0;
-                    border-radius: var(--btn-border-radius);
-                    border: 1px solid #e5e7eb;
-                    box-shadow: var(--shadow-base);
-                }
-                
-                .status-pill-compact:first-child,
-                .status-pill-compact:last-child {
-                    border-radius: var(--btn-border-radius);
-                }
-                
                 .view-mode span,
                 .btn-action .btn-text {
                     display: none;
@@ -3698,19 +3639,6 @@ class PageManager {
             }
             
             @media (max-width: 480px) {
-                .status-filters-compact {
-                    flex-direction: column;
-                    gap: 4px;
-                }
-                
-                .status-pill-compact {
-                    flex: none;
-                    width: 100%;
-                    border-radius: var(--btn-border-radius);
-                    border: 1px solid #e5e7eb;
-                    box-shadow: var(--shadow-base);
-                }
-                
                 .controls-bar-single-line {
                     padding: var(--gap-small);
                     gap: var(--gap-small);
