@@ -1,4 +1,4 @@
-// PageManager.js - Version 12.2 - Avec position fixe et sélection tout
+// PageManager.js - Version 12.3 - Liens TaskManager Réparés
 
 class PageManager {
     constructor() {
@@ -31,7 +31,7 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] ✅ Version 12.2 - Position fixe et sélection tout');
+        console.log('[PageManager] ✅ Version 12.3 - Liens TaskManager réparés');
     }
 
     // ================================================
@@ -559,232 +559,6 @@ class PageManager {
             console.error('[PageManager] Erreur récupération catégories pré-sélectionnées:', error);
             return [];
         }
-    }
-
-    debugPreselection() {
-        console.group('🔍 DEBUG PRÉ-SÉLECTION COMPLÈTE');
-        
-        // 1. Sources des catégories
-        console.group('📋 Sources des catégories pré-sélectionnées:');
-        
-        const categoriesFromManager = window.categoryManager?.getTaskPreselectedCategories() || [];
-        const categoriesFromPage = window.categoriesPage?.getTaskPreselectedCategories() || [];
-        const categoriesFromLocal = this.getTaskPreselectedCategories();
-        const categoriesFromScanner = window.emailScanner?.getTaskPreselectedCategories() || [];
-        
-        console.log('CategoryManager:', categoriesFromManager);
-        console.log('CategoriesPage:', categoriesFromPage);
-        console.log('PageManager:', categoriesFromLocal);
-        console.log('EmailScanner:', categoriesFromScanner);
-        
-        // Vérifier la cohérence
-        const allSources = [
-            { name: 'CategoryManager', cats: categoriesFromManager },
-            { name: 'CategoriesPage', cats: categoriesFromPage },
-            { name: 'PageManager', cats: categoriesFromLocal },
-            { name: 'EmailScanner', cats: categoriesFromScanner }
-        ];
-        
-        const referenceSource = categoriesFromManager;
-        const inconsistencies = [];
-        
-        allSources.forEach(source => {
-            if (JSON.stringify([...source.cats].sort()) !== JSON.stringify([...referenceSource].sort())) {
-                inconsistencies.push(source.name);
-            }
-        });
-        
-        if (inconsistencies.length > 0) {
-            console.warn('⚠️ INCOHÉRENCES DÉTECTÉES:', inconsistencies);
-        } else {
-            console.log('✅ Toutes les sources sont synchronisées');
-        }
-        
-        console.groupEnd();
-        
-        // 2. État des emails
-        console.group('📧 État des emails:');
-        
-        const emails = window.emailScanner?.getAllEmails() || [];
-        const preselectedEmails = emails.filter(e => e.isPreselectedForTasks === true);
-        const shouldBePreselected = emails.filter(e => categoriesFromLocal.includes(e.category));
-        const missedEmails = shouldBePreselected.filter(e => !e.isPreselectedForTasks);
-        
-        console.log('Total emails:', emails.length);
-        console.log('Marqués pré-sélectionnés (flag):', preselectedEmails.length);
-        console.log('Devraient être pré-sélectionnés (catégorie):', shouldBePreselected.length);
-        console.log('Emails manqués:', missedEmails.length);
-        
-        if (missedEmails.length > 0) {
-            console.warn('⚠️ Emails qui devraient être marqués mais ne le sont pas:');
-            missedEmails.slice(0, 5).forEach(email => {
-                console.log('  -', {
-                    subject: email.subject?.substring(0, 40),
-                    category: email.category,
-                    isPreselectedForTasks: email.isPreselectedForTasks
-                });
-            });
-        }
-        
-        console.groupEnd();
-        
-        // 3. Détails par catégorie
-        console.group('📊 Détails par catégorie pré-sélectionnée:');
-        
-        categoriesFromLocal.forEach(catId => {
-            const category = window.categoryManager?.getCategory(catId);
-            const emailsInCategory = emails.filter(e => e.category === catId);
-            const markedAsPreselected = emailsInCategory.filter(e => e.isPreselectedForTasks === true);
-            
-            console.group(`${category?.icon || '📂'} ${category?.name || catId} (${catId}):`);
-            console.log('Total emails dans cette catégorie:', emailsInCategory.length);
-            console.log('Marqués pré-sélectionnés:', markedAsPreselected.length);
-            console.log('Pourcentage correct:', markedAsPreselected.length === emailsInCategory.length ? '✅ 100%' : `❌ ${Math.round(markedAsPreselected.length / emailsInCategory.length * 100)}%`);
-            
-            if (markedAsPreselected.length < emailsInCategory.length) {
-                const notMarked = emailsInCategory.filter(e => !e.isPreselectedForTasks);
-                console.warn('Emails non marqués:', notMarked.slice(0, 3).map(e => ({
-                    subject: e.subject?.substring(0, 40),
-                    score: e.categoryScore,
-                    confidence: Math.round(e.categoryConfidence * 100) + '%'
-                })));
-            }
-            
-            console.groupEnd();
-        });
-        
-        console.groupEnd();
-        
-        // 4. État de l'affichage
-        console.group('🖼️ État de l\'affichage:');
-        
-        const categoryButtons = document.querySelectorAll('.status-pill-harmonized-twolines');
-        const preselectedButtons = document.querySelectorAll('.status-pill-harmonized-twolines.preselected-category');
-        const emailCards = document.querySelectorAll('.task-harmonized-card');
-        const preselectedCards = document.querySelectorAll('.task-harmonized-card.preselected-task');
-        
-        console.log('Boutons de catégorie totaux:', categoryButtons.length);
-        console.log('Boutons avec style pré-sélectionné:', preselectedButtons.length);
-        console.log('Cartes d\'email totales:', emailCards.length);
-        console.log('Cartes avec style pré-sélectionné:', preselectedCards.length);
-        
-        console.groupEnd();
-        
-        console.groupEnd();
-        
-        return {
-            sources: {
-                categoryManager: categoriesFromManager,
-                categoriesPage: categoriesFromPage,
-                pageManager: categoriesFromLocal,
-                emailScanner: categoriesFromScanner,
-                isSync: inconsistencies.length === 0
-            },
-            emails: {
-                total: emails.length,
-                markedPreselected: preselectedEmails.length,
-                shouldBePreselected: shouldBePreselected.length,
-                missed: missedEmails.length
-            },
-            display: {
-                categoryButtons: categoryButtons.length,
-                preselectedButtons: preselectedButtons.length,
-                emailCards: emailCards.length,
-                preselectedCards: preselectedCards.length
-            }
-        };
-    }
-
-    // Méthode utilitaire pour dispatcher des événements
-    dispatchEvent(eventName, detail) {
-        try {
-            window.dispatchEvent(new CustomEvent(eventName, { 
-                detail: {
-                    ...detail,
-                    source: 'PageManager',
-                    timestamp: Date.now()
-                }
-            }));
-        } catch (error) {
-            console.error(`[PageManager] Erreur dispatch ${eventName}:`, error);
-        }
-    }
-
-    forceUpdatePreselection() {
-        console.log('[PageManager] 🔄 === FORCE UPDATE PRÉ-SÉLECTION ===');
-        
-        // 1. Forcer la synchronisation des catégories
-        const freshCategories = window.categoryManager?.getTaskPreselectedCategories() || [];
-        console.log('[PageManager] 📋 Catégories fraîches depuis CategoryManager:', freshCategories);
-        
-        // 2. Mettre à jour EmailScanner
-        if (window.emailScanner && typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
-            window.emailScanner.updateTaskPreselectedCategories(freshCategories);
-            console.log('[PageManager] ✅ EmailScanner mis à jour');
-        }
-        
-        // 3. Mettre à jour les emails
-        const emails = window.emailScanner?.getAllEmails() || [];
-        let updated = 0;
-        let added = 0;
-        let removed = 0;
-        
-        emails.forEach(email => {
-            const shouldBePreselected = freshCategories.includes(email.category);
-            const currentlyPreselected = email.isPreselectedForTasks === true;
-            
-            if (shouldBePreselected && !currentlyPreselected) {
-                email.isPreselectedForTasks = true;
-                updated++;
-                added++;
-            } else if (!shouldBePreselected && currentlyPreselected) {
-                email.isPreselectedForTasks = false;
-                updated++;
-                removed++;
-            }
-        });
-        
-        console.log(`[PageManager] 📊 Résultat: ${updated} emails mis à jour (${added} ajoutés, ${removed} retirés)`);
-        
-        // 4. Mettre à jour les boutons de catégories sans reconstruction complète
-        document.querySelectorAll('.status-pill-harmonized-twolines').forEach(button => {
-            const categoryId = button.dataset.categoryId;
-            if (categoryId && categoryId !== 'all') {
-                const starContainer = button.querySelector('.preselected-star-container');
-                if (starContainer) {
-                    if (freshCategories.includes(categoryId)) {
-                        starContainer.classList.add('visible');
-                        button.classList.add('preselected-category');
-                    } else {
-                        starContainer.classList.remove('visible');
-                        button.classList.remove('preselected-category');
-                    }
-                }
-            }
-        });
-        
-        // 5. Rafraîchir seulement la liste des emails
-        const emailsContainer = document.querySelector('.tasks-container-harmonized');
-        if (emailsContainer && this.currentPage === 'emails') {
-            emailsContainer.innerHTML = this.renderEmailsList();
-        }
-        
-        // 6. Déclencher un événement pour notifier les autres modules
-        setTimeout(() => {
-            this.dispatchEvent('preselectionUpdated', {
-                categories: freshCategories,
-                updated: updated,
-                added: added,
-                removed: removed
-            });
-        }, 100);
-        
-        return {
-            categories: freshCategories,
-            emailsUpdated: updated,
-            added: added,
-            removed: removed
-        };
     }
 
     renderEmptyEmailsState() {
@@ -1751,76 +1525,188 @@ class PageManager {
     }
 
     // ================================================
-    // CRÉATION DE TÂCHES
+    // CRÉATION DE TÂCHES - CORRIGÉE POUR TASKMANAGER
     // ================================================
     async createTasksFromSelection() {
         if (this.selectedEmails.size === 0) {
             window.uiManager?.showToast('Aucun email sélectionné', 'warning');
             return;
         }
+
+        console.log('[PageManager] Création de tâches pour', this.selectedEmails.size, 'emails');
+        
+        // Vérifier que TaskManager est disponible et initialisé
+        if (!window.taskManager || !window.taskManager.initialized) {
+            console.error('[PageManager] TaskManager non disponible ou non initialisé');
+            window.uiManager?.showToast('Le gestionnaire de tâches n\'est pas disponible', 'error');
+            return;
+        }
         
         let created = 0;
-        window.uiManager?.showLoading(`Création de ${this.selectedEmails.size} tâches...`);
+        let errors = 0;
+        
+        window.uiManager?.showLoading(`Création de ${this.selectedEmails.size} tâche(s)...`);
         
         for (const emailId of this.selectedEmails) {
             const email = this.getEmailById(emailId);
-            if (!email || this.createdTasks.has(emailId)) continue;
+            if (!email || this.createdTasks.has(emailId)) {
+                console.log('[PageManager] Email ignoré (non trouvé ou tâche existante):', emailId);
+                continue;
+            }
             
             try {
+                console.log('[PageManager] Création tâche pour email:', email.subject);
+                
+                // Obtenir une analyse IA si disponible
                 let analysis = this.aiAnalysisResults.get(emailId);
                 if (!analysis && window.aiTaskAnalyzer) {
-                    analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
-                    this.aiAnalysisResults.set(emailId, analysis);
+                    try {
+                        analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
+                        this.aiAnalysisResults.set(emailId, analysis);
+                    } catch (error) {
+                        console.warn('[PageManager] Erreur analyse IA:', error);
+                        // Continuer sans analyse IA
+                    }
                 }
                 
-                if (analysis && window.taskManager) {
-                    const taskData = this.buildTaskDataFromAnalysis(email, analysis);
-                    const task = window.taskManager.createTaskFromEmail(taskData, email);
+                // Construire les données de la tâche
+                const taskData = this.buildTaskDataFromEmail(email, analysis);
+                
+                // Créer la tâche avec TaskManager.createTask au lieu de createTaskFromEmail
+                const task = window.taskManager.createTask(taskData);
+                
+                if (task && task.id) {
                     this.createdTasks.set(emailId, task.id);
                     created++;
+                    console.log('[PageManager] Tâche créée avec succès:', task.id);
+                } else {
+                    throw new Error('Échec de création de la tâche');
                 }
+                
             } catch (error) {
                 console.error('[PageManager] Erreur création tâche:', emailId, error);
+                errors++;
             }
         }
         
         window.uiManager?.hideLoading();
         
         if (created > 0) {
-            window.taskManager?.saveTasks();
-            window.uiManager?.showToast(`${created} tâche${created > 1 ? 's' : ''} créée${created > 1 ? 's' : ''}`, 'success');
+            // Sauvegarder les tâches si la méthode existe
+            if (window.taskManager.saveTasks) {
+                window.taskManager.saveTasks();
+            }
+            
+            const message = created === 1 ? 
+                '1 tâche créée avec succès' : 
+                `${created} tâches créées avec succès`;
+            
+            window.uiManager?.showToast(message, 'success');
             this.clearSelection();
+            this.refreshEmailsView();
+            
+            console.log('[PageManager] Résultat création:', { created, errors });
         } else {
-            window.uiManager?.showToast('Aucune tâche créée', 'warning');
+            const message = errors > 0 ? 
+                `Échec de création des tâches (${errors} erreurs)` : 
+                'Aucune tâche créée';
+            window.uiManager?.showToast(message, 'warning');
         }
     }
 
-    buildTaskDataFromAnalysis(email, analysis) {
+    buildTaskDataFromEmail(email, analysis) {
         const senderName = email.from?.emailAddress?.name || 'Inconnu';
         const senderEmail = email.from?.emailAddress?.address || '';
         const senderDomain = senderEmail.split('@')[1] || 'unknown';
         
+        // Construire le titre et la description
+        let title = email.subject || `Email de ${senderName}`;
+        let description = '';
+        
+        if (analysis && analysis.mainTask) {
+            title = analysis.mainTask.title || title;
+            description = analysis.mainTask.description || analysis.summary || '';
+        } else {
+            // Description basique sans analyse IA
+            description = `📧 Email de: ${senderName} <${senderEmail}>
+Date: ${new Date(email.receivedDateTime).toLocaleString('fr-FR')}
+Sujet: ${email.subject || 'Sans sujet'}
+
+${email.bodyPreview ? email.bodyPreview.substring(0, 500) : 'Contenu non disponible'}`;
+        }
+        
+        // Construire les données complètes de la tâche selon la structure de TaskManager
         return {
-            id: this.generateTaskId(),
-            title: analysis.mainTask?.title || `Email de ${senderName}`,
-            description: analysis.mainTask?.description || analysis.summary || '',
-            priority: analysis.mainTask?.priority || 'medium',
-            dueDate: analysis.mainTask?.dueDate || null,
+            // Propriétés de base requises par TaskManager
+            title: title,
+            description: description,
+            priority: (analysis && analysis.mainTask) ? analysis.mainTask.priority : 'medium',
             status: 'todo',
+            dueDate: (analysis && analysis.mainTask) ? analysis.mainTask.dueDate : null,
+            category: email.category || 'email',
+            client: this.extractClientFromDomain(senderDomain),
+            tags: [senderDomain, ...(analysis?.tags || [])].filter(Boolean),
+            
+            // Propriétés email spécifiques
+            hasEmail: true,
             emailId: email.id,
-            category: email.category || 'other',
-            createdAt: new Date().toISOString(),
-            aiGenerated: true,
             emailFrom: senderEmail,
             emailFromName: senderName,
             emailSubject: email.subject,
+            emailContent: email.bodyPreview || '',
+            emailHtmlContent: email.body?.content || '',
             emailDomain: senderDomain,
             emailDate: email.receivedDateTime,
+            emailReplied: false,
+            needsReply: true,
             hasAttachments: email.hasAttachments || false,
-            aiAnalysis: analysis,
-            tags: [senderDomain, analysis.importance, ...(analysis.tags || [])].filter(Boolean),
-            method: 'ai'
+            
+            // Propriétés IA (si disponibles)
+            summary: analysis?.summary || '',
+            actions: analysis?.actions || [],
+            keyInfo: analysis?.keyInfo || [],
+            risks: analysis?.risks || [],
+            aiAnalysis: analysis || null,
+            suggestedReplies: analysis?.suggestedReplies || this.generateBasicReplies(email, senderName),
+            
+            // Métadonnées
+            method: analysis ? 'ai' : 'manual',
+            aiGenerated: !!analysis
         };
+    }
+
+    extractClientFromDomain(domain) {
+        if (!domain) return 'Interne';
+        
+        // Nettoyer le domaine et extraire le nom principal
+        const cleanDomain = domain.toLowerCase()
+            .replace(/^(www\.|mail\.|m\.)/, '')
+            .split('.')[0];
+        
+        // Capitaliser la première lettre
+        return cleanDomain.charAt(0).toUpperCase() + cleanDomain.slice(1);
+    }
+
+    generateBasicReplies(email, senderName) {
+        if (!email.subject) return [];
+        
+        const subject = email.subject;
+        
+        return [
+            {
+                tone: 'professionnel',
+                subject: `Re: ${subject}`,
+                content: `Bonjour ${senderName},
+
+Merci pour votre message concernant "${subject}".
+
+J'ai bien pris connaissance de votre demande et je m'en occupe rapidement.
+
+Cordialement,
+[Votre nom]`,
+                description: 'Réponse professionnelle standard'
+            }
+        ];
     }
 
     generateTaskId() {
@@ -1860,9 +1746,9 @@ class PageManager {
         const senderEmail = email.from?.emailAddress?.address || '';
         const senderDomain = senderEmail.split('@')[1] || '';
         
-        const enhancedTitle = analysis.mainTask.title.includes(senderName) ? 
+        const enhancedTitle = analysis && analysis.mainTask.title.includes(senderName) ? 
             analysis.mainTask.title : 
-            `${analysis.mainTask.title} - ${senderName}`;
+            `${analysis?.mainTask?.title || email.subject} - ${senderName}`;
         
         return `
             <div id="${uniqueId}" 
@@ -1901,9 +1787,9 @@ class PageManager {
         const senderEmail = email.from?.emailAddress?.address || '';
         const senderDomain = senderEmail.split('@')[1] || '';
         
-        const enhancedTitle = analysis.mainTask.title.includes(senderName) ? 
+        const enhancedTitle = analysis && analysis.mainTask && analysis.mainTask.title.includes(senderName) ? 
             analysis.mainTask.title : 
-            `${analysis.mainTask.title} - ${senderName}`;
+            `${analysis?.mainTask?.title || email.subject} - ${senderName}`;
         
         return `
             <div style="display: flex; flex-direction: column; gap: 20px;">
@@ -1938,7 +1824,7 @@ class PageManager {
                               style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 100px; transition: border-color 0.2s;"
                               onfocus="this.style.borderColor='#3b82f6'"
                               onblur="this.style.borderColor='#e5e7eb'"
-                              rows="4">${analysis.mainTask.description || analysis.summary || ''}</textarea>
+                              rows="4">${analysis?.mainTask?.description || analysis?.summary || ''}</textarea>
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -1948,10 +1834,10 @@ class PageManager {
                                 style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
                                 onfocus="this.style.borderColor='#3b82f6'"
                                 onblur="this.style.borderColor='#e5e7eb'">
-                            <option value="urgent" ${analysis.mainTask.priority === 'urgent' ? 'selected' : ''}>🚨 Urgent</option>
-                            <option value="high" ${analysis.mainTask.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
-                            <option value="medium" ${analysis.mainTask.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
-                            <option value="low" ${analysis.mainTask.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                            <option value="urgent" ${analysis?.mainTask?.priority === 'urgent' ? 'selected' : ''}>🚨 Urgent</option>
+                            <option value="high" ${analysis?.mainTask?.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                            <option value="medium" ${analysis?.mainTask?.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                            <option value="low" ${analysis?.mainTask?.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
                         </select>
                     </div>
                     <div>
@@ -1960,7 +1846,7 @@ class PageManager {
                                style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
                                onfocus="this.style.borderColor='#3b82f6'"
                                onblur="this.style.borderColor='#e5e7eb'"
-                               value="${analysis.mainTask.dueDate || ''}" />
+                               value="${analysis?.mainTask?.dueDate || ''}" />
                     </div>
                 </div>
                 
@@ -2008,8 +1894,8 @@ class PageManager {
         const email = this.getEmailById(emailId);
         const analysis = this.aiAnalysisResults.get(emailId);
         
-        if (!email || !analysis) {
-            window.uiManager?.showToast('Données manquantes', 'error');
+        if (!email) {
+            window.uiManager?.showToast('Email non trouvé', 'error');
             return;
         }
 
@@ -2024,7 +1910,8 @@ class PageManager {
         }
 
         try {
-            const taskData = this.buildTaskDataFromAnalysis(email, {
+            // Modifier l'analyse avec les valeurs du formulaire
+            const modifiedAnalysis = analysis ? {
                 ...analysis,
                 mainTask: {
                     ...analysis.mainTask,
@@ -2033,12 +1920,15 @@ class PageManager {
                     priority,
                     dueDate
                 }
-            });
+            } : null;
 
-            const task = window.taskManager?.createTaskFromEmail(taskData, email);
-            if (task) {
+            const taskData = this.buildTaskDataFromEmail(email, modifiedAnalysis);
+
+            // Utiliser createTask au lieu de createTaskFromEmail
+            const task = window.taskManager.createTask(taskData);
+            
+            if (task && task.id) {
                 this.createdTasks.set(emailId, task.id);
-                window.taskManager?.saveTasks();
                 window.uiManager?.showToast('Tâche créée avec succès', 'success');
                 this.refreshEmailsView();
             } else {
@@ -2406,22 +2296,37 @@ class PageManager {
     }
 
     async renderTasks(container) {
-        if (window.tasksView && window.tasksView.render) {
-            window.tasksView.render(container);
-        } else {
-            container.innerHTML = `
-                <div class="page-header">
-                    <h1>Tâches</h1>
-                </div>
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <i class="fas fa-tasks"></i>
-                    </div>
-                    <h3 class="empty-title">Aucune tâche</h3>
-                    <p class="empty-text">Créez des tâches à partir de vos emails</p>
-                </div>
-            `;
+        console.log('[PageManager] Rendu page tâches...');
+        
+        // Vérifier que TasksView est disponible et correctement initialisé
+        if (window.tasksView && typeof window.tasksView.render === 'function') {
+            try {
+                console.log('[PageManager] Utilisation TasksView.render');
+                window.tasksView.render(container);
+                return;
+            } catch (error) {
+                console.error('[PageManager] Erreur TasksView.render:', error);
+            }
         }
+        
+        // Fallback si TasksView n'est pas disponible
+        console.log('[PageManager] TasksView non disponible, utilisation fallback');
+        container.innerHTML = `
+            <div class="page-header">
+                <h1>Tâches</h1>
+            </div>
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h3 class="empty-title">Gestionnaire de tâches</h3>
+                <p class="empty-text">Le module de gestion des tâches est en cours de chargement...</p>
+                <button class="btn btn-primary" onclick="location.reload()">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualiser
+                </button>
+            </div>
+        `;
     }
 
     async renderCategories(container) {
@@ -3101,106 +3006,6 @@ class PageManager {
                 color: white;
             }
             
-            /* Adaptation responsive pour maintenir la lisibilité */
-            @media (max-width: 1400px) {
-                .status-pill-compact {
-                    flex: 0 1 calc(20% - var(--gap-small));
-                    min-width: 100px;
-                    max-width: 160px;
-                }
-            }
-            
-            @media (max-width: 1200px) {
-                .status-pill-compact {
-                    flex: 0 1 calc(25% - var(--gap-small));
-                    min-width: 80px;
-                    max-width: 140px;
-                }
-            }
-            
-            @media (max-width: 1024px) {
-                .status-pill-compact {
-                    flex: 0 1 calc(33.333% - var(--gap-small));
-                    min-width: 70px;
-                    max-width: 120px;
-                    height: 52px;
-                }
-                
-                .controls-bar-single-line {
-                    flex-direction: column;
-                    gap: var(--gap-medium);
-                    align-items: stretch;
-                }
-                
-                .search-section {
-                    max-width: none;
-                    order: 1;
-                }
-                
-                .view-modes {
-                    width: 100%;
-                    justify-content: space-around;
-                    order: 2;
-                }
-                
-                .action-buttons {
-                    width: 100%;
-                    justify-content: center;
-                    flex-wrap: wrap;
-                    order: 3;
-                }
-                
-                .dropdown-menu {
-                    right: auto;
-                    left: 0;
-                }
-            }
-            
-            /* Bouton de sélection amélioré */
-            .btn-expanded.btn-selection-toggle {
-                background: #f0f9ff;
-                color: #0369a1;
-                border-color: #0ea5e9;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: calc(var(--btn-height) + 8px);
-                min-width: 120px;
-                gap: 2px;
-            }
-            
-            .btn-expanded.btn-selection-toggle .main-text {
-                font-size: 12px;
-                font-weight: 700;
-                line-height: 1.2;
-            }
-            
-            .btn-expanded.btn-selection-toggle .sub-text {
-                font-size: 10px;
-                font-weight: 500;
-                opacity: 0.8;
-                line-height: 1;
-            }
-            
-            .btn-expanded.btn-selection-toggle:hover {
-                background: #e0f2fe;
-                color: #0c4a6e;
-                border-color: #0284c7;
-            }
-            
-            .btn-expanded.btn-selection-toggle.all-selected {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
-            }
-            
-            .btn-expanded.btn-selection-toggle.all-selected:hover {
-                background: #fee2e2;
-                color: #b91c1c;
-                border-color: #fca5a5;
-            }
-            
             /* Container des emails */
             .tasks-container-harmonized {
                 background: transparent;
@@ -3666,36 +3471,12 @@ class PageManager {
                 font-weight: 500;
             }
             
+            @keyframes badgePulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+            }
+            
             /* RESPONSIVE ÉTENDU */
-            @media (max-width: 1400px) {
-                .search-box-full {
-                    max-width: 700px;
-                }
-                
-                .buttons-line-full {
-                    gap: var(--gap-medium);
-                }
-                
-                .action-buttons-expanded {
-                    gap: var(--gap-small);
-                }
-            }
-            
-            @media (max-width: 1200px) {
-                .search-box-full {
-                    max-width: 600px;
-                }
-                
-                .view-mode-expanded {
-                    min-width: 100px;
-                    padding: 0 12px;
-                }
-                
-                .btn-expanded {
-                    padding: 0 12px;
-                }
-            }
-            
             @media (max-width: 1024px) {
                 .controls-bar-single-line {
                     flex-direction: column;
@@ -3824,104 +3605,6 @@ class PageManager {
                 .sticky-controls-container {
                     padding: var(--gap-small);
                 }
-            }, 0.06);
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--gap-large);
-                    position: relative;
-                    z-index: 100;
-                }
-                
-                .buttons-line-full {
-                    flex-direction: column;
-                    gap: var(--gap-medium);
-                    align-items: stretch;
-                }
-                
-                .view-modes-expanded {
-                    width: 100%;
-                    justify-content: space-around;
-                }
-                
-                .action-buttons-expanded {
-                    width: 100%;
-                    justify-content: center;
-                    flex-wrap: wrap;
-                }
-                
-                .search-box-full {
-                    max-width: 100%;
-                }
-                
-                .buttons-separator {
-                    display: none;
-                }
-            }
-            
-            @media (max-width: 768px) {
-                .view-mode-expanded span,
-                .btn-expanded span {
-                    display: none;
-                }
-                
-                .view-mode-expanded {
-                    min-width: 44px;
-                    padding: 0;
-                    justify-content: center;
-                }
-                
-                .btn-expanded {
-                    padding: 0 var(--gap-small);
-                }
-                
-                .search-input-full {
-                    font-size: var(--btn-font-size);
-                    padding: 0 var(--gap-medium) 0 48px;
-                }
-                
-                .search-icon-full {
-                    left: var(--gap-medium);
-                    font-size: 16px;
-                }
-            }
-            
-            @media (max-width: 480px) {
-                .controls-bar-harmonized-expanded {
-                    padding: var(--gap-small);
-                    gap: var(--gap-medium);
-                }
-                
-                .action-buttons-expanded {
-                    flex-direction: column;
-                    gap: var(--gap-small);
-                    align-items: stretch;
-                }
-                
-                .action-buttons-expanded > * {
-                    width: 100%;
-                    justify-content: center;
-                }
-                
-                .dropdown-menu-expanded {
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    width: 90vw;
-                    max-width: 300px;
-                }
-                
-                .search-box-full {
-                    height: calc(var(--btn-height) + 4px);
-                }
-                
-                .search-input-full {
-                    padding: 0 var(--gap-small) 0 40px;
-                }
-                
-                .sticky-controls-container {
-                    padding: var(--gap-small);
-                }
             }
         `;
         
@@ -3939,4 +3622,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v12.2 loaded - Position fixe et sélection tout');
+console.log('✅ PageManager v12.3 loaded - Liens TaskManager réparés');
