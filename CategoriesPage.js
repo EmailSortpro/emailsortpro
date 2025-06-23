@@ -13,11 +13,37 @@ class SettingsPageVisual {
         this.backupManager = new AutoBackupManager();
         this.editingCategoryId = null;
         this.currentModal = null;
+        this.currentFilter = 'all';
+        this.categorySearchTerm = '';
         this.colors = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
             '#FF9FF3', '#54A0FF', '#48DBFB', '#A29BFE', '#FD79A8'
         ];
+        
+        // Bind toutes les méthodes pour éviter les problèmes de contexte
+        this.bindMethods();
+        
         console.log('[SettingsPage] ✅ Interface avec backup automatique initialisée');
+    }
+
+    bindMethods() {
+        // Bind des méthodes principales
+        const methodsToBind = [
+            'showCreateCategoryModal', 'editCategory', 'toggleCategory', 
+            'togglePreselection', 'deleteCategory', 'selectIcon', 
+            'selectColor', 'createCategory', 'closeModal', 'switchEditTab',
+            'addKeyword', 'removeKeyword', 'addFilter', 'removeFilter',
+            'saveCategory', 'confirmDeleteCategory', 'handleCategorySearch',
+            'clearCategorySearch', 'filterCategories', 'exportCategories',
+            'importBackup', 'exportAllData', 'createManualBackup',
+            'toggleAutoBackup', 'switchTab'
+        ];
+        
+        methodsToBind.forEach(method => {
+            if (typeof this[method] === 'function') {
+                this[method] = this[method].bind(this);
+            }
+        });
     }
 
     // ================================================
@@ -68,6 +94,9 @@ class SettingsPageVisual {
             this.addStyles();
             this.initializeAutoBackup();
             
+            // Assurer que window.settingsPage pointe vers cette instance
+            window.settingsPage = this;
+            
         } catch (error) {
             console.error('[SettingsPage] Erreur:', error);
             container.innerHTML = this.renderError();
@@ -115,7 +144,7 @@ class SettingsPageVisual {
                 <!-- Actions principales -->
                 <div class="categories-actions-enhanced">
                     <div class="actions-left">
-                        <button class="btn-primary-enhanced" onclick="window.settingsPage.showCreateCategoryModal()">
+                        <button class="btn-primary-enhanced" onclick="window.settingsPage?.showCreateCategoryModal()">
                             <div class="btn-icon">
                                 <i class="fas fa-plus"></i>
                             </div>
@@ -125,7 +154,7 @@ class SettingsPageVisual {
                             </div>
                         </button>
                         
-                        <button class="btn-secondary-enhanced" onclick="window.settingsPage.exportCategories()">
+                        <button class="btn-secondary-enhanced" onclick="window.settingsPage?.exportCategories()">
                             <div class="btn-icon">
                                 <i class="fas fa-download"></i>
                             </div>
@@ -146,9 +175,9 @@ class SettingsPageVisual {
                                        id="categoriesSearchInput"
                                        placeholder="Rechercher catégories..." 
                                        value="${this.categorySearchTerm || ''}"
-                                       onkeyup="window.settingsPage.handleCategorySearch(this.value)">
+                                       onkeyup="window.settingsPage?.handleCategorySearch(this.value)">
                                 ${this.categorySearchTerm ? `
-                                    <button class="search-clear-categories" onclick="window.settingsPage.clearCategorySearch()">
+                                    <button class="search-clear-categories" onclick="window.settingsPage?.clearCategorySearch()">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 ` : ''}
@@ -156,15 +185,15 @@ class SettingsPageVisual {
                         </div>
                         
                         <div class="quick-filters">
-                            <button class="filter-btn ${this.currentFilter === 'all' ? 'active' : ''}" onclick="window.settingsPage.filterCategories('all')">
+                            <button class="filter-btn ${this.currentFilter === 'all' ? 'active' : ''}" onclick="window.settingsPage?.filterCategories('all')">
                                 <i class="fas fa-list"></i>
                                 Toutes
                             </button>
-                            <button class="filter-btn ${this.currentFilter === 'custom' ? 'active' : ''}" onclick="window.settingsPage.filterCategories('custom')">
+                            <button class="filter-btn ${this.currentFilter === 'custom' ? 'active' : ''}" onclick="window.settingsPage?.filterCategories('custom')">
                                 <i class="fas fa-user"></i>
                                 Personnalisées
                             </button>
-                            <button class="filter-btn ${this.currentFilter === 'preselected' ? 'active' : ''}" onclick="window.settingsPage.filterCategories('preselected')">
+                            <button class="filter-btn ${this.currentFilter === 'preselected' ? 'active' : ''}" onclick="window.settingsPage?.filterCategories('preselected')">
                                 <i class="fas fa-star"></i>
                                 Pré-sélectionnées
                             </button>
@@ -207,7 +236,7 @@ class SettingsPageVisual {
                 <!-- Actions rapides visuelles -->
                 <div class="backup-actions-visual">
                     <div class="action-cards">
-                        <div class="action-card manual-backup" onclick="window.settingsPage.createManualBackup()">
+                        <div class="action-card manual-backup" onclick="window.settingsPage?.createManualBackup()">
                             <div class="card-visual">
                                 <div class="card-icon-bg">
                                     <i class="fas fa-cloud-upload-alt"></i>
@@ -221,7 +250,7 @@ class SettingsPageVisual {
                             </div>
                         </div>
                         
-                        <div class="action-card import-backup" onclick="window.settingsPage.importBackup()">
+                        <div class="action-card import-backup" onclick="window.settingsPage?.importBackup()">
                             <div class="card-visual">
                                 <div class="card-icon-bg import">
                                     <i class="fas fa-file-import"></i>
@@ -234,7 +263,7 @@ class SettingsPageVisual {
                             </div>
                         </div>
                         
-                        <div class="action-card export-data" onclick="window.settingsPage.exportAllData()">
+                        <div class="action-card export-data" onclick="window.settingsPage?.exportAllData()">
                             <div class="card-visual">
                                 <div class="card-icon-bg export">
                                     <i class="fas fa-file-export"></i>
@@ -254,11 +283,11 @@ class SettingsPageVisual {
                     <div class="timeline-header">
                         <h3><i class="fas fa-history"></i> Historique des sauvegardes</h3>
                         <div class="timeline-controls">
-                            <button class="btn-timeline-refresh" onclick="window.settingsPage.refreshBackupTimeline()" title="Actualiser">
+                            <button class="btn-timeline-refresh" onclick="window.settingsPage?.refreshBackupTimeline()" title="Actualiser">
                                 <i class="fas fa-sync-alt"></i>
                             </button>
                             <div class="timeline-filter">
-                                <select id="timeline-filter" onchange="window.settingsPage.filterTimeline(this.value)">
+                                <select id="timeline-filter" onchange="window.settingsPage?.filterTimeline(this.value)">
                                     <option value="all">Toutes les sauvegardes</option>
                                     <option value="manual">Manuelles uniquement</option>
                                     <option value="auto">Automatiques uniquement</option>
@@ -278,7 +307,7 @@ class SettingsPageVisual {
                 
                 <!-- Paramètres avancés repliables -->
                 <div class="advanced-settings-section">
-                    <div class="advanced-toggle" onclick="window.settingsPage.toggleAdvancedSettings()">
+                    <div class="advanced-toggle" onclick="window.settingsPage?.toggleAdvancedSettings()">
                         <div class="toggle-content">
                             <i class="fas fa-cogs"></i>
                             <span>Paramètres avancés</span>
@@ -295,7 +324,7 @@ class SettingsPageVisual {
                                 </div>
                                 <div class="setting-control">
                                     <label class="setting-switch">
-                                        <input type="checkbox" id="auto-backup-enabled" checked onchange="window.settingsPage.toggleAutoBackup(this.checked)">
+                                        <input type="checkbox" id="auto-backup-enabled" checked onchange="window.settingsPage?.toggleAutoBackup(this.checked)">
                                         <span class="switch-slider small"></span>
                                     </label>
                                 </div>
@@ -307,7 +336,7 @@ class SettingsPageVisual {
                                     <h4>Fréquence automatique</h4>
                                 </div>
                                 <div class="setting-control">
-                                    <select id="auto-backup-frequency" onchange="window.settingsPage.updateBackupFrequency(this.value)">
+                                    <select id="auto-backup-frequency" onchange="window.settingsPage?.updateBackupFrequency(this.value)">
                                         <option value="immediate">Immédiate (recommandé)</option>
                                         <option value="5min">Toutes les 5 minutes</option>
                                         <option value="15min">Toutes les 15 minutes</option>
@@ -322,7 +351,7 @@ class SettingsPageVisual {
                                     <h4>Rétention</h4>
                                 </div>
                                 <div class="setting-control">
-                                    <select id="backup-retention" onchange="window.settingsPage.updateRetention(this.value)">
+                                    <select id="backup-retention" onchange="window.settingsPage?.updateRetention(this.value)">
                                         <option value="20">20 sauvegardes</option>
                                         <option value="50">50 sauvegardes</option>
                                         <option value="100">100 sauvegardes</option>
@@ -369,7 +398,7 @@ class SettingsPageVisual {
                                     <p>Supprimer toutes les données et sauvegardes</p>
                                 </div>
                                 <div class="danger-action">
-                                    <button class="btn-danger-visual" onclick="window.settingsPage.resetAllSettings()">
+                                    <button class="btn-danger-visual" onclick="window.settingsPage?.resetAllSettings()">
                                         <i class="fas fa-trash-alt"></i>
                                         Réinitialiser
                                     </button>
@@ -658,7 +687,7 @@ class SettingsPageVisual {
                 <div class="modal-simple">
                     <div class="modal-header">
                         <h2><i class="fas fa-plus"></i> Nouvelle catégorie</h2>
-                        <button class="btn-close" onclick="window.settingsPage.closeModal('${uniqueId}')">
+                        <button class="btn-close" onclick="window.settingsPage?.closeModal('${uniqueId}')">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -673,7 +702,7 @@ class SettingsPageVisual {
                             <label>Icône</label>
                             <div class="icon-selector">
                                 ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌'].map((icon, i) => 
-                                    `<button class="icon-option ${i === 0 ? 'selected' : ''}" onclick="window.settingsPage.selectIcon('${icon}')">${icon}</button>`
+                                    `<button class="icon-option ${i === 0 ? 'selected' : ''}" onclick="window.settingsPage?.selectIcon('${icon}')">${icon}</button>`
                                 ).join('')}
                             </div>
                             <input type="hidden" id="category-icon" value="📁">
@@ -685,7 +714,7 @@ class SettingsPageVisual {
                                 ${this.colors.map((color, i) => 
                                     `<button class="color-option ${i === 0 ? 'selected' : ''}" 
                                              style="background: ${color}"
-                                             onclick="window.settingsPage.selectColor('${color}')"></button>`
+                                             onclick="window.settingsPage?.selectColor('${color}')"></button>`
                                 ).join('')}
                             </div>
                             <input type="hidden" id="category-color" value="${this.colors[0]}">
@@ -693,8 +722,8 @@ class SettingsPageVisual {
                     </div>
                     
                     <div class="modal-footer">
-                        <button class="btn-secondary" onclick="window.settingsPage.closeModal('${uniqueId}')">Annuler</button>
-                        <button class="btn-primary" onclick="window.settingsPage.createCategory('${uniqueId}')">
+                        <button class="btn-secondary" onclick="window.settingsPage?.closeModal('${uniqueId}')">Annuler</button>
+                        <button class="btn-primary" onclick="window.settingsPage?.createCategory('${uniqueId}')">
                             <i class="fas fa-plus"></i> Créer
                         </button>
                     </div>
@@ -845,11 +874,11 @@ class SettingsPageVisual {
                     <h3>Aucune catégorie trouvée</h3>
                     <p>${this.categorySearchTerm ? `Aucune catégorie ne correspond à "${this.categorySearchTerm}"` : 'Créez votre première catégorie pour commencer'}</p>
                     ${this.categorySearchTerm ? `
-                        <button class="btn-primary" onclick="window.settingsPage.clearCategorySearch()">
+                        <button class="btn-primary" onclick="window.settingsPage?.clearCategorySearch()">
                             <i class="fas fa-times"></i> Effacer la recherche
                         </button>
                     ` : `
-                        <button class="btn-primary" onclick="window.settingsPage.showCreateCategoryModal()">
+                        <button class="btn-primary" onclick="window.settingsPage?.showCreateCategoryModal()">
                             <i class="fas fa-plus"></i> Créer une catégorie
                         </button>
                     `}
@@ -869,19 +898,19 @@ class SettingsPageVisual {
                     <div class="category-card-header">
                         <div class="category-icon-large" 
                              style="background: ${category.color}20; color: ${category.color}"
-                             onclick="window.settingsPage.editCategory('${id}')"
+                             onclick="window.settingsPage?.editCategory('${id}')"
                              title="Cliquer pour modifier">
                             ${category.icon}
                         </div>
                         <div class="category-actions-compact">
                             <button class="action-btn-compact ${isActive ? 'active' : 'inactive'}" 
-                                    onclick="event.stopPropagation(); window.settingsPage.toggleCategory('${id}')"
+                                    onclick="event.stopPropagation(); window.settingsPage?.toggleCategory('${id}')"
                                     title="${isActive ? 'Désactiver' : 'Activer'}">
                                 <i class="fas fa-${isActive ? 'toggle-on' : 'toggle-off'}"></i>
                             </button>
                             ${category.isCustom ? `
                                 <button class="action-btn-compact danger" 
-                                        onclick="event.stopPropagation(); window.settingsPage.deleteCategory('${id}')"
+                                        onclick="event.stopPropagation(); window.settingsPage?.deleteCategory('${id}')"
                                         title="Supprimer">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -889,7 +918,7 @@ class SettingsPageVisual {
                         </div>
                     </div>
                     
-                    <div class="category-card-content" onclick="window.settingsPage.editCategory('${id}')" 
+                    <div class="category-card-content" onclick="window.settingsPage?.editCategory('${id}')" 
                          style="cursor: pointer;" title="Cliquer pour modifier">
                         <h4 class="category-name">${category.name}</h4>
                         <div class="category-stats">
@@ -913,13 +942,13 @@ class SettingsPageVisual {
                     
                     <div class="category-card-footer">
                         <button class="btn-card-action ${isPreselected ? 'selected' : ''}" 
-                                onclick="event.stopPropagation(); window.settingsPage.togglePreselection('${id}')"
+                                onclick="event.stopPropagation(); window.settingsPage?.togglePreselection('${id}')"
                                 title="Pré-sélection pour tâches">
                             <i class="fas fa-star"></i>
                             ${isPreselected ? 'Pré-sélectionnée' : 'Pré-sélectionner'}
                         </button>
                         <button class="btn-card-action secondary" 
-                                onclick="event.stopPropagation(); window.settingsPage.editCategory('${id}')"
+                                onclick="event.stopPropagation(); window.settingsPage?.editCategory('${id}')"
                                 title="Modifier et voir mots-clés">
                             <i class="fas fa-edit"></i>
                             Modifier
