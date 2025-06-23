@@ -1,5 +1,6 @@
-// EmailDeduplicationManager.js - Version 2.0 - MODULE DE DÉDUPLICATION CORRIGÉ
-console.log('[EmailDeduplicationManager] 🚀 Création nouvelle instance v2.0...');
+// EmailDeduplicationManager.js - Version 2.1 - CORRECTION BOUCLE INFINIE
+
+console.log('[EmailDeduplicationManager] 🚀 Création nouvelle instance v2.1...');
 
 class EmailDeduplicationManager {
     constructor() {
@@ -13,11 +14,110 @@ class EmailDeduplicationManager {
             spaceReclaimed: 0
         };
         
-        console.log('[EmailDeduplicationManager] ✅ Module initialisé v2.0');
+        // CORRECTION: Système d'intégration non-bloquant
+        this.integrationAttempts = 0;
+        this.maxIntegrationAttempts = 10;
+        this.integrationTimeout = null;
+        this.isIntegrated = false;
+        
+        console.log('[EmailDeduplicationManager] ✅ Module initialisé v2.1');
+        
+        // Démarrer l'intégration de façon sécurisée
+        this.startSafeIntegration();
     }
 
     // ================================================
-    // MÉTHODES PRINCIPALES
+    // SYSTÈME D'INTÉGRATION SÉCURISÉ (NOUVEAU)
+    // ================================================
+    startSafeIntegration() {
+        // Attendre un délai initial plus long
+        setTimeout(() => {
+            this.attemptIntegration();
+        }, 2000);
+    }
+
+    attemptIntegration() {
+        if (this.isIntegrated) {
+            console.log('[EmailDeduplicationManager] ✅ Déjà intégré, arrêt des tentatives');
+            return;
+        }
+
+        if (this.integrationAttempts >= this.maxIntegrationAttempts) {
+            console.warn('[EmailDeduplicationManager] ⚠️ Nombre max de tentatives d\'intégration atteint');
+            console.log('[EmailDeduplicationManager] ℹ️ Module fonctionnel en mode autonome');
+            return;
+        }
+
+        this.integrationAttempts++;
+        console.log(`[EmailDeduplicationManager] 🔄 Tentative d'intégration ${this.integrationAttempts}/${this.maxIntegrationAttempts}`);
+
+        if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
+            console.log('[EmailDeduplicationManager] ✅ EmailScanner détecté, intégration...');
+            this.performIntegration();
+            this.isIntegrated = true;
+        } else {
+            console.log('[EmailDeduplicationManager] ⏳ EmailScanner non disponible, nouvelle tentative dans 3s');
+            
+            // Programmer la prochaine tentative avec un délai croissant
+            const delay = Math.min(3000 + (this.integrationAttempts * 1000), 10000);
+            
+            if (this.integrationTimeout) {
+                clearTimeout(this.integrationTimeout);
+            }
+            
+            this.integrationTimeout = setTimeout(() => {
+                this.attemptIntegration();
+            }, delay);
+        }
+    }
+
+    performIntegration() {
+        try {
+            console.log('[EmailDeduplicationManager] 🔗 Intégration avec EmailScanner...');
+            
+            // Ajouter la méthode de déduplication à EmailScanner si elle n'existe pas
+            if (!window.emailScanner.analyzeForDuplicates) {
+                window.emailScanner.analyzeForDuplicates = () => {
+                    const emails = window.emailScanner.getAllEmails();
+                    return this.analyzeDuplicates(emails);
+                };
+                console.log('[EmailDeduplicationManager] ➕ Méthode analyzeForDuplicates ajoutée');
+            }
+            
+            // Ajouter la méthode de suppression des doublons
+            if (!window.emailScanner.removeDuplicateEmails) {
+                window.emailScanner.removeDuplicateEmails = async () => {
+                    const analysis = window.emailScanner.analyzeForDuplicates();
+                    if (analysis.duplicateGroups.size > 0) {
+                        return await this.removeDuplicates(analysis.duplicateGroups);
+                    }
+                    return 0;
+                };
+                console.log('[EmailDeduplicationManager] ➕ Méthode removeDuplicateEmails ajoutée');
+            }
+            
+            // Ajouter méthode d'accès au manager
+            if (!window.emailScanner.getDeduplicationManager) {
+                window.emailScanner.getDeduplicationManager = () => this;
+                console.log('[EmailDeduplicationManager] ➕ Méthode getDeduplicationManager ajoutée');
+            }
+            
+            console.log('[EmailDeduplicationManager] ✅ Intégration réussie avec EmailScanner');
+            
+            // Nettoyer le timeout
+            if (this.integrationTimeout) {
+                clearTimeout(this.integrationTimeout);
+                this.integrationTimeout = null;
+            }
+            
+        } catch (error) {
+            console.error('[EmailDeduplicationManager] ❌ Erreur lors de l\'intégration:', error);
+            this.isIntegrated = false;
+        }
+    }
+
+    // ================================================
+    // MÉTHODES PRINCIPALES (inchangées)
     // ================================================
     
     analyzeDuplicates(emails) {
@@ -216,7 +316,9 @@ class EmailDeduplicationManager {
             ...this.stats,
             duplicateGroups: this.duplicateGroups.size,
             conversations: this.conversationThreads.size,
-            potentialSavings: this.formatBytes(this.stats.spaceReclaimed)
+            potentialSavings: this.formatBytes(this.stats.spaceReclaimed),
+            isIntegrated: this.isIntegrated,
+            integrationAttempts: this.integrationAttempts
         };
     }
 
@@ -303,60 +405,152 @@ class EmailDeduplicationManager {
         
         return analysis;
     }
+
+    // ================================================
+    // MÉTHODES DE NETTOYAGE
+    // ================================================
+    cleanup() {
+        console.log('[EmailDeduplicationManager] 🧹 Nettoyage...');
+        
+        if (this.integrationTimeout) {
+            clearTimeout(this.integrationTimeout);
+            this.integrationTimeout = null;
+        }
+        
+        this.reset();
+        this.isIntegrated = false;
+        this.integrationAttempts = 0;
+    }
+
+    destroy() {
+        this.cleanup();
+        console.log('[EmailDeduplicationManager] 💥 Instance détruite');
+    }
+
+    // ================================================
+    // MÉTHODES DE DEBUG
+    // ================================================
+    getDebugInfo() {
+        return {
+            isIntegrated: this.isIntegrated,
+            integrationAttempts: this.integrationAttempts,
+            maxIntegrationAttempts: this.maxIntegrationAttempts,
+            hasIntegrationTimeout: !!this.integrationTimeout,
+            emailScannerAvailable: !!window.emailScanner,
+            emailScannerMethods: window.emailScanner ? Object.keys(window.emailScanner) : [],
+            stats: this.stats,
+            duplicateGroups: this.duplicateGroups.size,
+            conversationThreads: this.conversationThreads.size,
+            version: '2.1'
+        };
+    }
+
+    forceIntegration() {
+        console.log('[EmailDeduplicationManager] 🔄 Force intégration...');
+        this.integrationAttempts = 0;
+        this.isIntegrated = false;
+        
+        if (this.integrationTimeout) {
+            clearTimeout(this.integrationTimeout);
+            this.integrationTimeout = null;
+        }
+        
+        this.attemptIntegration();
+    }
 }
 
 // ================================================
-// FONCTION D'INTÉGRATION GLOBALE
+// INITIALISATION SÉCURISÉE
 // ================================================
-window.integrateEmailDeduplication = function() {
-    console.log('[Integration] 🔗 Intégration de la déduplication...');
-    
-    // Vérifier que EmailScanner existe
-    if (!window.emailScanner) {
-        console.warn('[Integration] EmailScanner non disponible, report de l\'intégration...');
-        setTimeout(() => window.integrateEmailDeduplication(), 1000);
-        return;
-    }
-    
-    // Ajouter la méthode de déduplication à EmailScanner si elle n'existe pas
-    if (!window.emailScanner.analyzeForDuplicates) {
-        window.emailScanner.analyzeForDuplicates = function() {
-            const emails = this.getAllEmails();
-            return window.emailDeduplicationManager.analyzeDuplicates(emails);
-        };
-    }
-    
-    // Ajouter la méthode de suppression des doublons si elle n'existe pas
-    if (!window.emailScanner.removeDuplicateEmails) {
-        window.emailScanner.removeDuplicateEmails = async function() {
-            const analysis = this.analyzeForDuplicates();
-            if (analysis.duplicateGroups.size > 0) {
-                return await window.emailDeduplicationManager.removeDuplicates(analysis.duplicateGroups);
-            }
-            return 0;
-        };
-    }
-    
-    console.log('[Integration] ✅ Déduplication intégrée avec succès');
-};
 
-// ================================================
-// INITIALISATION
-// ================================================
+// Nettoyer l'ancienne instance
 if (window.emailDeduplicationManager) {
     console.log('[EmailDeduplicationManager] 🔄 Nettoyage ancienne instance...');
+    window.emailDeduplicationManager.destroy?.();
     delete window.emailDeduplicationManager;
 }
 
+// Créer la nouvelle instance
 window.emailDeduplicationManager = new EmailDeduplicationManager();
 
-// Intégrer après un court délai pour s'assurer que EmailScanner est prêt
-setTimeout(() => {
-    try {
-        window.integrateEmailDeduplication();
-    } catch (error) {
-        console.error('[EmailDeduplicationManager] Erreur intégration:', error);
+// Méthodes globales de debug et contrôle
+window.debugEmailDeduplication = function() {
+    console.group('🔍 DEBUG EmailDeduplicationManager v2.1');
+    
+    const manager = window.emailDeduplicationManager;
+    if (!manager) {
+        console.error('❌ EmailDeduplicationManager non disponible');
+        console.groupEnd();
+        return;
     }
-}, 100);
+    
+    const debugInfo = manager.getDebugInfo();
+    console.log('Debug Info:', debugInfo);
+    
+    if (debugInfo.isIntegrated) {
+        console.log('✅ Intégration réussie avec EmailScanner');
+    } else {
+        console.warn(`⚠️ Intégration en cours (${debugInfo.integrationAttempts}/${debugInfo.maxIntegrationAttempts})`);
+    }
+    
+    console.log('EmailScanner disponible:', debugInfo.emailScannerAvailable);
+    if (debugInfo.emailScannerAvailable) {
+        console.log('Méthodes EmailScanner:', debugInfo.emailScannerMethods);
+    }
+    
+    console.groupEnd();
+    return debugInfo;
+};
 
-console.log('✅ EmailDeduplicationManager v2.0 loaded - Module de gestion des doublons');
+window.forceEmailDeduplicationIntegration = function() {
+    if (window.emailDeduplicationManager) {
+        window.emailDeduplicationManager.forceIntegration();
+        return { success: true, message: 'Intégration forcée' };
+    }
+    return { success: false, message: 'Manager non disponible' };
+};
+
+window.testEmailDeduplication = function() {
+    console.group('🧪 TEST EmailDeduplicationManager');
+    
+    const manager = window.emailDeduplicationManager;
+    if (!manager) {
+        console.error('❌ Manager non disponible');
+        console.groupEnd();
+        return;
+    }
+    
+    // Test avec des emails factices
+    const testEmails = [
+        {
+            id: '1',
+            subject: 'Test Email',
+            from: { emailAddress: { address: 'test@example.com' } },
+            receivedDateTime: '2024-01-01T10:00:00Z',
+            bodyPreview: 'Ceci est un test'
+        },
+        {
+            id: '2',
+            subject: 'RE: Test Email',
+            from: { emailAddress: { address: 'test@example.com' } },
+            receivedDateTime: '2024-01-01T10:05:00Z',
+            bodyPreview: 'Ceci est un test'
+        },
+        {
+            id: '3',
+            subject: 'Test Email',
+            from: { emailAddress: { address: 'test@example.com' } },
+            receivedDateTime: '2024-01-01T10:01:00Z',
+            bodyPreview: 'Ceci est un test (doublon)'
+        }
+    ];
+    
+    const result = manager.analyzeDuplicates(testEmails);
+    console.log('Résultat test:', result);
+    console.log('Summary:', manager.getSummary());
+    
+    console.groupEnd();
+    return result;
+};
+
+console.log('✅ EmailDeduplicationManager v2.1 loaded - Correction boucle infinie');
