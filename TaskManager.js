@@ -3534,11 +3534,12 @@ class TasksView {
             .status-filters-panel.show,
             .category-filters-panel.show,
             .advanced-filters-panel.show {
-                max-height: 300px;
+                max-height: 400px;
                 opacity: 1;
                 padding: 20px;
                 margin-bottom: 12px;
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+                overflow: visible;
             }
 
             .filter-section-header {
@@ -3591,6 +3592,8 @@ class TasksView {
                 gap: 8px;
                 flex-wrap: wrap;
                 justify-content: flex-start;
+                align-items: center;
+                width: 100%;
             }
 
             /* Filtres de catégories dans panel conditionnel */
@@ -3599,6 +3602,8 @@ class TasksView {
                 gap: 8px;
                 flex-wrap: wrap;
                 justify-content: flex-start;
+                align-items: center;
+                width: 100%;
             }
 
             /* Filtres avancés dans panel conditionnel */
@@ -3673,10 +3678,10 @@ class TasksView {
 
             .status-pill,
             .category-pill {
-                display: flex;
+                display: inline-flex;
                 align-items: center;
                 gap: 6px;
-                padding: 8px 12px;
+                padding: 10px 14px;
                 background: white;
                 border: 2px solid var(--border-color);
                 border-radius: 8px;
@@ -3685,12 +3690,13 @@ class TasksView {
                 font-size: 12px;
                 font-weight: 600;
                 color: var(--text-primary);
-                min-width: 90px;
+                min-width: 100px;
                 justify-content: space-between;
                 position: relative;
-                overflow: hidden;
+                overflow: visible;
                 flex-shrink: 0;
-                margin: 2px;
+                margin: 3px;
+                white-space: nowrap;
             }
 
             .status-pill:hover,
@@ -4823,13 +4829,16 @@ class TasksView {
                     flex-direction: row;
                     gap: 6px;
                     flex-wrap: wrap;
+                    justify-content: flex-start;
+                    width: 100%;
                 }
 
                 .status-pill,
                 .category-pill {
-                    min-width: auto;
-                    flex: 0 1 auto;
+                    min-width: 80px;
+                    flex: 0 0 auto;
                     justify-content: space-between;
+                    margin: 2px;
                 }
             }
 
