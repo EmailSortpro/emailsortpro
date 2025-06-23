@@ -1,4 +1,4 @@
-// EmailScanner.js - Version 12.0 - Intégration Gmail/Outlook complète et fonctionnelle
+// EmailScanner.js - Version 13.0 - GMAIL CORRIGÉ avec intégration CategoryManager
 
 class EmailScanner {
     constructor() {
@@ -20,7 +20,7 @@ class EmailScanner {
             categoryDistribution: {}
         };
         
-        console.log('[EmailScanner] ✅ Version 12.0 - Intégration Gmail/Outlook complète');
+        console.log('[EmailScanner] ✅ Version 13.0 - Gmail corrigé avec CategoryManager');
         this.loadSettingsFromCategoryManager();
     }
 
@@ -105,7 +105,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // SCAN PRINCIPAL - INTÉGRATION COMPLÈTE
+    // SCAN PRINCIPAL - GMAIL CORRIGÉ
     // ================================================
     async scan(options = {}) {
         console.log('[EmailScanner] 🔄 Synchronisation pré-scan');
@@ -150,7 +150,7 @@ class EmailScanner {
             console.log('[EmailScanner] 📊 Options:', mergedOptions);
             console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
 
-            // DÉTECTION PROVIDER UNIFIÉ
+            // DÉTECTION PROVIDER UNIFIÉ via CategoryManager
             const provider = this.detectCurrentProvider();
             console.log('[EmailScanner] 🔌 Provider détecté:', provider);
 
@@ -175,7 +175,7 @@ class EmailScanner {
 
             console.log('[EmailScanner] 📧 Récupération emails depuis:', mergedOptions.folder);
 
-            // RÉCUPÉRATION EMAILS - MÉTHODE UNIFIÉE
+            // RÉCUPÉRATION EMAILS - MÉTHODE CORRIGÉE
             let emails = await this.fetchEmailsUnified(mergedOptions, startDate, endDate, provider);
 
             this.emails = emails || [];
@@ -227,6 +227,15 @@ class EmailScanner {
                 });
             }
 
+            // Enregistrer le scan dans CategoryManager
+            if (window.categoryManager && typeof window.categoryManager.recordScanResult === 'function') {
+                window.categoryManager.recordScanResult({
+                    ...results,
+                    provider: provider,
+                    timestamp: Date.now()
+                });
+            }
+
             // Dispatch des résultats
             setTimeout(() => {
                 this.dispatchEvent('scanCompleted', {
@@ -260,9 +269,16 @@ class EmailScanner {
     }
 
     // ================================================
-    // DÉTECTION PROVIDER UNIFIÉ
+    // DÉTECTION PROVIDER UNIFIÉ VIA CATEGORYMANAGER
     // ================================================
     detectCurrentProvider() {
+        // Utiliser la détection du CategoryManager si disponible
+        if (window.categoryManager && typeof window.categoryManager.detectEmailProvider === 'function') {
+            const provider = window.categoryManager.detectEmailProvider();
+            return provider?.type || null;
+        }
+        
+        // Fallback: détection manuelle
         // Priorité 1: Google Gmail
         if (window.googleAuthService && 
             typeof window.googleAuthService.isAuthenticated === 'function' && 
@@ -286,33 +302,59 @@ class EmailScanner {
     async checkRequiredServices() {
         console.log('[EmailScanner] 🔧 Vérification des services requis...');
         
-        // Vérifier MailService
-        if (!window.mailService) {
-            throw new Error('MailService non disponible - Veuillez recharger la page');
-        }
-        
-        // Initialiser MailService si nécessaire
-        if (!window.mailService.isInitialized) {
-            console.log('[EmailScanner] 🔄 Initialisation MailService...');
-            await window.mailService.initialize();
-        }
-        
-        // Vérifier CategoryManager
+        // Vérifier CategoryManager (OBLIGATOIRE)
         if (!window.categoryManager) {
             throw new Error('CategoryManager non disponible - Veuillez recharger la page');
         }
         
-        console.log('[EmailScanner] ✅ Tous les services sont disponibles');
+        // Vérifier les méthodes de récupération d'emails
+        if (window.categoryManager && typeof window.categoryManager.checkEmailRetrievalMethods === 'function') {
+            const emailMethods = window.categoryManager.checkEmailRetrievalMethods();
+            if (!emailMethods.available) {
+                throw new Error(emailMethods.error || 'Aucune méthode de récupération d\'emails disponible');
+            }
+            console.log('[EmailScanner] ✅ Méthodes de récupération disponibles:', emailMethods.methods);
+        }
+        
+        // Vérifier MailService comme fallback
+        if (!window.mailService) {
+            console.warn('[EmailScanner] ⚠️ MailService non disponible - Utilisation méthodes directes');
+        } else if (!window.mailService.isInitialized) {
+            console.log('[EmailScanner] 🔄 Initialisation MailService...');
+            await window.mailService.initialize();
+        }
+        
+        console.log('[EmailScanner] ✅ Services vérifiés');
     }
 
     // ================================================
-    // RÉCUPÉRATION EMAILS UNIFIÉE - CORRIGÉE
+    // RÉCUPÉRATION EMAILS UNIFIÉE - GMAIL CORRIGÉ
     // ================================================
     async fetchEmailsUnified(options, startDate, endDate, provider) {
         console.log(`[EmailScanner] 📧 Récupération emails ${provider} unifiée`);
         
         try {
-            // MÉTHODE 1: MailService unifié (recommandé)
+            // MÉTHODE 1: Via CategoryManager (RECOMMANDÉ)
+            if (window.categoryManager && typeof window.categoryManager.prepareScanOptions === 'function') {
+                console.log('[EmailScanner] 🔄 Utilisation CategoryManager pour récupération');
+                
+                const scanOptions = window.categoryManager.prepareScanOptions({
+                    days: options.days,
+                    folder: options.folder,
+                    maxEmails: options.maxEmails,
+                    startDate: startDate.toISOString().split('T')[0],
+                    endDate: endDate.toISOString().split('T')[0],
+                    onProgress: options.onProgress
+                });
+                
+                if (provider === 'google') {
+                    return await window.categoryManager.fetchGmailEmailsDirect(scanOptions);
+                } else if (provider === 'microsoft') {
+                    return await window.categoryManager.fetchOutlookEmailsDirect(scanOptions);
+                }
+            }
+            
+            // MÉTHODE 2: MailService unifié
             if (window.mailService && typeof window.mailService.getEmailsFromFolder === 'function') {
                 console.log('[EmailScanner] 🔄 Utilisation MailService unifié');
                 
@@ -325,7 +367,7 @@ class EmailScanner {
                 return await window.mailService.getEmailsFromFolder(options.folder, mailServiceOptions);
             }
             
-            // MÉTHODE 2: API spécifique au provider
+            // MÉTHODE 3: API spécifique au provider
             else if (provider === 'google') {
                 return await this.fetchGmailDirect(options, startDate, endDate);
             }
@@ -333,9 +375,9 @@ class EmailScanner {
                 return await this.fetchMicrosoftDirect(options, startDate, endDate);
             }
             
-            // MÉTHODE 3: Fallback d'urgence
+            // MÉTHODE 4: Erreur - aucune méthode disponible
             else {
-                throw new Error(`Provider ${provider} non supporté ou service indisponible`);
+                throw new Error(`Provider ${provider} non supporté ou aucune méthode de récupération disponible`);
             }
             
         } catch (error) {
@@ -345,10 +387,10 @@ class EmailScanner {
     }
 
     // ================================================
-    // RÉCUPÉRATION GMAIL DIRECTE - CORRIGÉE
+    // RÉCUPÉRATION GMAIL DIRECTE - MÉTHODE DE SECOURS
     // ================================================
     async fetchGmailDirect(options, startDate, endDate) {
-        console.log('[EmailScanner] 🔄 Récupération Gmail directe');
+        console.log('[EmailScanner] 🔄 Récupération Gmail directe (fallback)');
         
         if (!window.googleAuthService || !window.googleAuthService.isAuthenticated()) {
             throw new Error('Gmail non authentifié');
@@ -504,10 +546,10 @@ class EmailScanner {
     }
 
     // ================================================
-    // RÉCUPÉRATION MICROSOFT DIRECTE - CORRIGÉE
+    // RÉCUPÉRATION MICROSOFT DIRECTE - MÉTHODE DE SECOURS
     // ================================================
     async fetchMicrosoftDirect(options, startDate, endDate) {
-        console.log('[EmailScanner] 🔄 Récupération Microsoft directe');
+        console.log('[EmailScanner] 🔄 Récupération Microsoft directe (fallback)');
         
         if (!window.authService || !window.authService.isAuthenticated()) {
             throw new Error('Microsoft non authentifié');
@@ -1150,13 +1192,14 @@ class EmailScanner {
             avgScore: this.calculateAverageScore(),
             settings: this.settings,
             scanMetrics: this.scanMetrics,
-            version: 'v12.0-Complete',
+            version: 'v13.0-Gmail-Fixed',
             hasRequiredServices: {
-                mailService: !!window.mailService,
                 categoryManager: !!window.categoryManager,
+                mailService: !!window.mailService,
                 googleAuth: !!(window.googleAuthService?.isAuthenticated?.()),
                 microsoftAuth: !!(window.authService?.isAuthenticated?.())
-            }
+            },
+            emailRetrievalMethods: window.categoryManager?.checkEmailRetrievalMethods?.() || { available: false, error: 'CategoryManager non disponible' }
         };
     }
 
@@ -1264,20 +1307,92 @@ if (window.emailScanner) {
     window.emailScanner.destroy?.();
 }
 
-console.log('[EmailScanner] 🚀 Création nouvelle instance v12.0...');
+console.log('[EmailScanner] 🚀 Création nouvelle instance v13.0...');
 window.emailScanner = new EmailScanner();
 
 // Méthodes de test globales
 window.testEmailScanner = function() {
-    console.group('🧪 TEST EmailScanner v12.0 - Complete');
+    console.group('🧪 TEST EmailScanner v13.0 - Gmail Fixed');
     
     const debugInfo = window.emailScanner.getDebugInfo();
     console.log('Debug Info:', debugInfo);
     console.log('Provider détecté:', window.emailScanner.detectCurrentProvider());
     console.log('Catégories pré-sélectionnées:', window.emailScanner.getTaskPreselectedCategories());
     
+    // Test des méthodes de récupération d'emails
+    if (debugInfo.emailRetrievalMethods) {
+        console.log('Méthodes de récupération:', debugInfo.emailRetrievalMethods);
+        if (debugInfo.emailRetrievalMethods.available) {
+            console.log('✅ Méthodes de récupération disponibles');
+        } else {
+            console.log('❌ Aucune méthode disponible:', debugInfo.emailRetrievalMethods.error);
+        }
+    }
+    
+    // Test des services requis
+    console.group('🔧 Services requis');
+    Object.entries(debugInfo.hasRequiredServices).forEach(([service, available]) => {
+        console.log(`${service}: ${available ? '✅' : '❌'}`);
+    });
     console.groupEnd();
-    return { success: true, provider: debugInfo.provider, version: debugInfo.version };
+    
+    console.groupEnd();
+    return { 
+        success: true, 
+        provider: debugInfo.provider, 
+        version: debugInfo.version,
+        canRetrieveEmails: debugInfo.emailRetrievalMethods?.available || false
+    };
 };
 
-console.log('✅ EmailScanner v12.0 loaded - Intégration Gmail/Outlook complète et fonctionnelle');
+// Test spécifique pour Gmail
+window.testGmailConnection = async function() {
+    console.group('🧪 TEST Connexion Gmail');
+    
+    try {
+        if (!window.googleAuthService || !window.googleAuthService.isAuthenticated()) {
+            console.log('❌ Gmail non authentifié');
+            return { success: false, error: 'Gmail non authentifié' };
+        }
+        
+        const token = await window.googleAuthService.getAccessToken();
+        if (!token) {
+            console.log('❌ Token Gmail non disponible');
+            return { success: false, error: 'Token non disponible' };
+        }
+        
+        console.log('✅ Gmail authentifié avec token');
+        
+        // Test via CategoryManager si disponible
+        if (window.categoryManager && typeof window.categoryManager.fetchGmailEmailsDirect === 'function') {
+            console.log('🔄 Test récupération Gmail via CategoryManager...');
+            
+            const testOptions = {
+                maxEmails: 5,
+                startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Hier
+                endDate: new Date().toISOString().split('T')[0],
+                onProgress: (progress) => console.log('Progress:', progress.message)
+            };
+            
+            try {
+                const emails = await window.categoryManager.fetchGmailEmailsDirect(testOptions);
+                console.log(`✅ ${emails.length} emails Gmail récupérés via CategoryManager`);
+                return { success: true, emailCount: emails.length, method: 'CategoryManager' };
+            } catch (error) {
+                console.error('❌ Erreur récupération via CategoryManager:', error);
+                return { success: false, error: error.message, method: 'CategoryManager' };
+            }
+        } else {
+            console.log('⚠️ CategoryManager non disponible ou méthode manquante');
+            return { success: false, error: 'CategoryManager non disponible' };
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur test Gmail:', error);
+        return { success: false, error: error.message };
+    } finally {
+        console.groupEnd();
+    }
+};
+
+console.log('✅ EmailScanner v13.0 loaded - Gmail corrigé avec intégration CategoryManager complète');
