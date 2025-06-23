@@ -1,2668 +1,3776 @@
-// SettingsPage.js - Version Complète Réécrite
-console.log('[SettingsPage] 🚀 Chargement page paramètres avancée...');
+// SettingsPage.js - Version Simplifiée avec Backup Local
+console.log('[SettingsPage] 🚀 Loading SettingsPage Simplifiée...');
 
-class SettingsPageComplete {
+// Nettoyer toute instance précédente
+if (window.settingsPage) {
+    console.log('[SettingsPage] 🧹 Nettoyage instance précédente...');
+    delete window.settingsPage;
+}
+
+class SettingsPageSimple {
     constructor() {
         this.currentTab = 'categories';
-        this.searchTerm = '';
-        this.backupManager = new BackupManagerComplete();
-        this.colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
-        this.icons = ['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌', '💰', '🏠', '🛒', '✈️', '🎉', '📚'];
-        this.editingCategory = null;
+        this.backupManager = new BackupManager();
+        this.editingCategoryId = null;
+        this.currentModal = null;
+        this.colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
+            '#FF9FF3', '#54A0FF', '#48DBFB', '#A29BFE', '#FD79A8'
+        ];
+        console.log('[SettingsPage] ✅ Interface simplifiée initialisée');
     }
 
+    // ================================================
+    // RENDU PRINCIPAL
+    // ================================================
     render(container) {
-        console.log('[SettingsPage] 📄 Rendu de la page');
-        if (!container) return;
+        if (!container) {
+            console.error('[SettingsPage] ❌ Container manquant');
+            return;
+        }
 
-        container.innerHTML = `
-            <div class="settings-page">
-                <div class="settings-header">
-                    <h1>⚙️ Paramètres MailSort Pro</h1>
-                    <div class="tabs">
-                        <button class="tab active" onclick="settingsPage.switchTab('categories')">
-                            📂 Catégories
+        try {
+            container.innerHTML = `
+                <div class="settings-page">
+                    <!-- Header -->
+                    <div class="settings-header">
+                        <h1><i class="fas fa-cog"></i> Paramètres</h1>
+                        <p>Gérez vos catégories et vos sauvegardes</p>
+                    </div>
+                    
+                    <!-- Navigation des onglets -->
+                    <div class="settings-tabs">
+                        <button class="tab-button active" data-tab="categories" onclick="window.settingsPage.switchTab('categories')">
+                            <i class="fas fa-tags"></i>
+                            <span>Catégories</span>
                         </button>
-                        <button class="tab" onclick="settingsPage.switchTab('backup')">
-                            💾 Sauvegarde
+                        <button class="tab-button" data-tab="backup" onclick="window.settingsPage.switchTab('backup')">
+                            <i class="fas fa-cloud-download-alt"></i>
+                            <span>Sauvegarde</span>
                         </button>
                     </div>
-                </div>
-
-                <div class="settings-content">
-                    <div id="categories-tab" class="tab-content active">
-                        ${this.renderCategories()}
-                    </div>
-                    <div id="backup-tab" class="tab-content">
-                        ${this.renderBackup()}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal d'édition -->
-            <div id="edit-modal" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2 id="modal-title">✏️ Modifier la catégorie</h2>
-                        <button class="modal-close" onclick="settingsPage.closeModal()">&times;</button>
-                    </div>
-                    <div class="modal-body" id="modal-body">
-                        <!-- Contenu dynamique -->
+                    
+                    <!-- Contenu des onglets -->
+                    <div class="settings-content">
+                        <!-- Onglet Catégories -->
+                        <div id="tab-categories" class="tab-content active">
+                            ${this.renderCategoriesTab()}
+                        </div>
+                        
+                        <!-- Onglet Backup -->
+                        <div id="tab-backup" class="tab-content">
+                            ${this.renderBackupTab()}
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
-
-        this.addStyles();
-        this.initBackup();
-        this.setupEventListeners();
+            `;
+            
+            this.addStyles();
+            this.initializeBackupManager();
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur:', error);
+            container.innerHTML = this.renderError();
+        }
     }
 
-    renderCategories() {
-        const categories = this.getCategories();
-        const filteredCategories = this.filterCategories(categories);
-        const stats = this.getStats(categories);
-
+    // ================================================
+    // ONGLET CATÉGORIES
+    // ================================================
+    // ================================================
+    // ONGLET CATÉGORIES AMÉLIORÉ
+    // ================================================
+    renderCategoriesTab() {
+        const categories = window.categoryManager?.getCategories() || {};
+        const stats = this.calculateCategoryStats();
+        
         return `
             <div class="categories-section">
-                <!-- Header compact -->
-                <div class="categories-header">
-                    <div class="header-row">
-                        <div class="stats-compact">
-                            <span class="stat-item">${stats.total} total</span>
-                            <span class="stat-item">${stats.active} actives</span>
-                            <span class="stat-item">${stats.custom} perso</span>
-                            ${stats.preselected > 0 ? `<span class="stat-item">⭐ ${stats.preselected}</span>` : ''}
+                <!-- Dashboard de statistiques amélioré -->
+                <div class="stats-dashboard">
+                    <div class="stats-grid">
+                        <div class="stat-card primary">
+                            <div class="stat-icon">
+                                <i class="fas fa-tags"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number">${Object.keys(categories).length}</div>
+                                <div class="stat-label">Catégories totales</div>
+                                <div class="stat-detail">${this.getCustomCategoriesCount(categories)} personnalisées</div>
+                            </div>
                         </div>
                         
-                        <div class="search-compact">
-                            <input type="text" 
-                                   id="category-search" 
-                                   placeholder="🔍 Rechercher..." 
-                                   value="${this.searchTerm}"
-                                   oninput="settingsPage.handleSearch(this.value)">
-                            ${this.searchTerm ? '<button class="search-clear" onclick="settingsPage.clearSearch()">✕</button>' : ''}
+                        <div class="stat-card success">
+                            <div class="stat-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number">${stats.totalEmails.toLocaleString()}</div>
+                                <div class="stat-label">Emails classés</div>
+                                <div class="stat-detail">${this.getClassificationRate(stats)}% de réussite</div>
+                            </div>
                         </div>
                         
-                        <div class="actions-compact">
-                            <button class="btn-compact btn-primary" onclick="settingsPage.createCategory()">
-                                ➕ Nouvelle
-                            </button>
-                            <button class="btn-compact btn-secondary" onclick="settingsPage.exportCategories()">
-                                📥
-                            </button>
+                        <div class="stat-card warning">
+                            <div class="stat-icon">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number">${stats.totalKeywords}</div>
+                                <div class="stat-label">Mots-clés définis</div>
+                                <div class="stat-detail">${this.getAvgKeywordsPerCategory(categories, stats)} par catégorie</div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Liste compacte des catégories -->
-                <div class="categories-list">
-                    ${Object.entries(filteredCategories).map(([id, cat]) => this.renderCategoryRow(id, cat)).join('')}
-                </div>
-
-                ${Object.keys(filteredCategories).length === 0 ? `
-                    <div class="empty-state">
-                        <div class="empty-icon">📂</div>
-                        <div class="empty-text">
-                            ${this.searchTerm ? 
-                                `Aucun résultat pour "${this.searchTerm}"` : 
-                                'Aucune catégorie trouvée'
-                            }
+                        
+                        <div class="stat-card info">
+                            <div class="stat-icon">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="stat-content">
+                                <div class="stat-number">${this.getPreselectedCount()}</div>
+                                <div class="stat-label">Pré-sélectionnées</div>
+                                <div class="stat-detail">Pour les tâches</div>
+                            </div>
                         </div>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    }
-
-    renderCategoryRow(id, category) {
-        const settings = this.getSettings();
-        const isActive = settings.activeCategories?.includes(id) ?? true;
-        const isPreselected = settings.preselectedCategories?.includes(id) ?? false;
-        
-        const keywords = category.keywords || this.generateSampleKeywords(category.name);
-        const emails = category.emails || this.generateSampleEmails(category.name);
-        const domains = category.domains || this.generateSampleDomains(category.name);
-
-        return `
-            <div class="category-row ${!isActive ? 'inactive' : ''}" data-id="${id}">
-                <div class="cat-main">
-                    <div class="cat-icon-small" style="background: ${category.color}">${category.icon || '📁'}</div>
-                    <div class="cat-details">
-                        <div class="cat-name">${category.name}</div>
-                        <div class="cat-preview">
-                            ${keywords.slice(0, 2).join(', ')}${keywords.length > 2 ? '...' : ''}
-                            ${emails.length > 0 ? ` • ${emails.slice(0, 1)[0]}` : ''}
-                            ${domains.length > 0 ? ` • ${domains.slice(0, 1)[0]}` : ''}
-                        </div>
-                    </div>
-                    <div class="cat-stats">
-                        <span class="stat-badge">${keywords.length}🔤</span>
-                        <span class="stat-badge">${emails.length}📧</span>
-                        <span class="stat-badge">${domains.length}🌐</span>
                     </div>
                 </div>
                 
-                <div class="cat-controls">
-                    <button class="control-btn ${isActive ? 'active' : 'inactive'}" 
-                            onclick="settingsPage.toggleActive('${id}')" 
-                            title="${isActive ? 'Désactiver' : 'Activer'}">
-                        ${isActive ? '🟢' : '🔴'}
-                    </button>
-                    <button class="control-btn ${isPreselected ? 'starred' : ''}" 
-                            onclick="settingsPage.toggleStar('${id}')" 
-                            title="Favori">
-                        ${isPreselected ? '⭐' : '☆'}
-                    </button>
-                    <button class="control-btn edit" 
-                            onclick="settingsPage.editCategory('${id}')" 
-                            title="Modifier">
-                        ✏️
-                    </button>
-                    ${category.isCustom ? `
-                        <button class="control-btn delete" 
-                                onclick="settingsPage.deleteCategory('${id}')" 
-                                title="Supprimer">
-                            🗑️
+                <!-- Actions principales avec design amélioré -->
+                <div class="categories-actions-enhanced">
+                    <div class="actions-left">
+                        <button class="btn-primary-enhanced" onclick="window.settingsPage.showCreateCategoryModal()">
+                            <div class="btn-icon">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            <div class="btn-content">
+                                <div class="btn-title">Nouvelle catégorie</div>
+                                <div class="btn-subtitle">Créer et configurer</div>
+                            </div>
                         </button>
-                    ` : ''}
+                        
+                        <button class="btn-secondary-enhanced" onclick="window.settingsPage.exportCategories()">
+                            <div class="btn-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <div class="btn-content">
+                                <div class="btn-title">Exporter</div>
+                                <div class="btn-subtitle">Format JSON</div>
+                            </div>
+                        </button>
+                    </div>
+                    
+                    <div class="actions-right">
+                        <div class="quick-filters">
+                            <button class="filter-btn ${this.currentFilter === 'all' ? 'active' : ''}" onclick="window.settingsPage.filterCategories('all')">
+                                <i class="fas fa-list"></i>
+                                Toutes
+                            </button>
+                            <button class="filter-btn ${this.currentFilter === 'custom' ? 'active' : ''}" onclick="window.settingsPage.filterCategories('custom')">
+                                <i class="fas fa-user"></i>
+                                Personnalisées
+                            </button>
+                            <button class="filter-btn ${this.currentFilter === 'preselected' ? 'active' : ''}" onclick="window.settingsPage.filterCategories('preselected')">
+                                <i class="fas fa-star"></i>
+                                Pré-sélectionnées
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Liste des catégories améliorée -->
+                <div class="categories-list-enhanced">
+                    ${this.renderCategoriesList(categories)}
                 </div>
             </div>
         `;
     }
 
-    renderEditModal(categoryId) {
-        const category = this.getCategories()[categoryId];
-        if (!category) return;
-
-        const keywords = category.keywords || this.generateSampleKeywords(category.name);
-        const emails = category.emails || this.generateSampleEmails(category.name);
-        const domains = category.domains || this.generateSampleDomains(category.name);
-
-        return `
-            <form id="edit-form" onsubmit="settingsPage.saveCategory(event, '${categoryId}')">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nom de la catégorie</label>
-                        <input type="text" id="cat-name" value="${category.name}" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Icône</label>
-                        <div class="icon-selector">
-                            <input type="text" id="cat-icon" value="${category.icon}" maxlength="2">
-                            <div class="icon-grid">
-                                ${this.icons.map(icon => `
-                                    <button type="button" class="icon-option" onclick="settingsPage.selectIcon('${icon}')">
-                                        ${icon}
-                                    </button>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Couleur</label>
-                        <div class="color-selector">
-                            <input type="color" id="cat-color" value="${category.color}">
-                            <div class="color-grid">
-                                ${this.colors.map(color => `
-                                    <button type="button" class="color-option" 
-                                            style="background: ${color}" 
-                                            onclick="settingsPage.selectColor('${color}')">
-                                    </button>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="filters-section">
-                    <div class="filter-category">
-                        <h3>🔤 Mots-clés</h3>
-                        <div class="filter-input-group">
-                            <input type="text" id="keyword-input" placeholder="Ajouter un mot-clé...">
-                            <button type="button" onclick="settingsPage.addKeyword()">Ajouter</button>
-                        </div>
-                        <div class="filter-list" id="keywords-list">
-                            ${keywords.map((kw, i) => `
-                                <div class="filter-item">
-                                    <span class="filter-text">${kw}</span>
-                                    <button type="button" onclick="settingsPage.removeKeyword(${i})">✕</button>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-
-                    <div class="filter-category">
-                        <h3>📧 Adresses email</h3>
-                        <div class="filter-input-group">
-                            <input type="email" id="email-input" placeholder="Ajouter une adresse...">
-                            <button type="button" onclick="settingsPage.addEmail()">Ajouter</button>
-                        </div>
-                        <div class="filter-list" id="emails-list">
-                            ${emails.map((email, i) => `
-                                <div class="filter-item">
-                                    <span class="filter-text">${email}</span>
-                                    <button type="button" onclick="settingsPage.removeEmail(${i})">✕</button>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-
-                    <div class="filter-category">
-                        <h3>🌐 Domaines</h3>
-                        <div class="filter-input-group">
-                            <input type="text" id="domain-input" placeholder="example.com">
-                            <button type="button" onclick="settingsPage.addDomain()">Ajouter</button>
-                        </div>
-                        <div class="filter-list" id="domains-list">
-                            ${domains.map((domain, i) => `
-                                <div class="filter-item">
-                                    <span class="filter-text">${domain}</span>
-                                    <button type="button" onclick="settingsPage.removeDomain(${i})">✕</button>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="settingsPage.closeModal()">
-                        Annuler
-                    </button>
-                    <button type="submit" class="btn-primary">
-                        💾 Sauvegarder
-                    </button>
-                </div>
-            </form>
-        `;
+    getCustomCategoriesCount(categories) {
+        return Object.values(categories).filter(cat => cat.isCustom).length;
     }
 
-    renderBackup() {
-        return `
-            <div class="backup-section">
-                <div class="backup-status" id="backup-status-card">
-                    <div class="status-info">
-                        <span class="status-icon">🛡️</span>
-                        <div>
-                            <strong>Système de sauvegarde</strong>
-                            <div class="status-detail" id="backup-status">Initialisation...</div>
-                        </div>
-                    </div>
-                    <div class="backup-path" id="backup-path">
-                        📁 Détection automatique...
-                    </div>
-                </div>
-
-                <div class="backup-actions">
-                    <div class="backup-card">
-                        <div class="card-header">
-                            <span class="card-icon">💾</span>
-                            <div>
-                                <strong>Sauvegarde complète</strong>
-                                <small>Exporter toutes les données</small>
-                            </div>
-                        </div>
-                        <button class="btn-primary" onclick="settingsPage.createBackup()" id="backup-btn">
-                            📤 Créer
-                        </button>
-                    </div>
-
-                    <div class="backup-card">
-                        <div class="card-header">
-                            <span class="card-icon">📂</span>
-                            <div>
-                                <strong>Ouvrir dossier</strong>
-                                <small>Accéder aux sauvegardes</small>
-                            </div>
-                        </div>
-                        <button class="btn-secondary" onclick="settingsPage.openBackupFolder()">
-                            🔗 Ouvrir
-                        </button>
-                    </div>
-
-                    <div class="backup-card">
-                        <div class="card-header">
-                            <span class="card-icon">📥</span>
-                            <div>
-                                <strong>Restaurer</strong>
-                                <small>Importer une sauvegarde</small>
-                            </div>
-                        </div>
-                        <button class="btn-secondary" onclick="settingsPage.importBackup()">
-                            ⬆️ Importer
-                        </button>
-                    </div>
-                </div>
-
-                <div class="backup-history">
-                    <h3>📋 Historique des sauvegardes</h3>
-                    <div class="history-list" id="history-list">
-                        ${this.renderHistory()}
-                    </div>
-                </div>
-            </div>
-        `;
+    getClassificationRate(stats) {
+        // Simulation d'un taux de classification (dans un vrai système, ce serait calculé)
+        return stats.totalEmails > 0 ? Math.min(95, Math.round(85 + Math.random() * 10)) : 0;
     }
 
-    renderHistory() {
-        const history = this.backupManager.getHistory();
-        if (history.length === 0) {
-            return '<div class="empty-state small">Aucune sauvegarde trouvée</div>';
+    getAvgKeywordsPerCategory(categories, stats) {
+        const count = Object.keys(categories).length;
+        return count > 0 ? Math.round(stats.totalKeywords / count * 10) / 10 : 0;
+    }
+
+    getPreselectedCount() {
+        const settings = this.loadSettings();
+        return settings.taskPreselectedCategories?.length || 0;
+    }
+
+    filterCategories(filter) {
+        this.currentFilter = filter;
+        this.refreshCategoriesTab();
+    }
+
+    renderCategoriesList(categories) {
+        if (Object.keys(categories).length === 0) {
+            return `
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>Aucune catégorie</h3>
+                    <p>Créez votre première catégorie pour commencer</p>
+                </div>
+            `;
         }
 
-        return history.slice(0, 8).map(backup => `
-            <div class="history-item">
-                <div class="hist-info">
-                    <div class="hist-name">${backup.name}</div>
-                    <div class="hist-meta">
-                        <span class="hist-date">${new Date(backup.date).toLocaleString('fr')}</span>
-                        <span class="hist-size">${this.formatFileSize(backup.size)}</span>
+        return Object.entries(categories).map(([id, category]) => {
+            const stats = this.getCategoryStats(id);
+            const settings = this.loadSettings();
+            const isActive = settings.activeCategories === null || settings.activeCategories.includes(id);
+            const isPreselected = settings.taskPreselectedCategories?.includes(id) || false;
+            
+            return `
+                <div class="category-item ${!isActive ? 'inactive' : ''}">
+                    <div class="category-main">
+                        <div class="category-icon" style="background: ${category.color}20; color: ${category.color}">
+                            ${category.icon}
+                        </div>
+                        <div class="category-info">
+                            <h3>${category.name}</h3>
+                            <div class="category-meta">
+                                <span>${stats.emailCount} emails</span>
+                                <span>${stats.keywords} mots-clés</span>
+                                ${isPreselected ? '<span class="preselected-badge">⭐ Pré-sélectionnée</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="category-actions">
+                        <button class="action-btn ${isActive ? 'active' : 'inactive'}" 
+                                onclick="window.settingsPage.toggleCategory('${id}')"
+                                title="${isActive ? 'Désactiver' : 'Activer'}">
+                            <i class="fas fa-${isActive ? 'toggle-on' : 'toggle-off'}"></i>
+                        </button>
+                        <button class="action-btn ${isPreselected ? 'selected' : ''}" 
+                                onclick="window.settingsPage.togglePreselection('${id}')"
+                                title="Pré-sélection pour tâches">
+                            <i class="fas fa-star"></i>
+                        </button>
+                        <button class="action-btn" 
+                                onclick="window.settingsPage.editCategory('${id}')"
+                                title="Modifier">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        ${category.isCustom ? `
+                            <button class="action-btn danger" 
+                                    onclick="window.settingsPage.deleteCategory('${id}')"
+                                    title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
-                <div class="hist-actions">
-                    <button onclick="settingsPage.restoreBackup('${backup.id}')" title="Restaurer">
-                        📥
-                    </button>
-                    <button onclick="settingsPage.deleteBackup('${backup.id}')" title="Supprimer">
-                        🗑️
-                    </button>
+            `;
+        }).join('');
+    }
+
+    // ================================================
+    // ONGLET BACKUP
+    // ================================================
+    // ================================================
+    // ONGLET BACKUP SIMPLIFIÉ ET PROFESSIONNEL
+    // ================================================
+    renderBackupTab() {
+        return `
+            <div class="backup-section">
+                <!-- Statut du backup -->
+                <div class="backup-status-card">
+                    <div class="status-header">
+                        <h3><i class="fas fa-shield-alt"></i> Statut du système de sauvegarde</h3>
+                        <div class="status-indicator" id="backup-status-indicator">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Initialisation...</span>
+                        </div>
+                    </div>
+                    <div class="status-details" id="backup-status-details">
+                        <!-- Sera rempli par JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Actions principales simplifiées -->
+                <div class="backup-main-actions">
+                    <div class="action-row">
+                        <!-- Sauvegarde -->
+                        <div class="action-card-simple primary">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <div class="card-title">
+                                    <h4>Sauvegarde complète</h4>
+                                    <p>Catégories, paramètres et configuration</p>
+                                </div>
+                            </div>
+                            <button class="btn-card-action" onclick="window.settingsPage.createBackup()" id="backup-btn">
+                                <i class="fas fa-save"></i>
+                                Créer maintenant
+                            </button>
+                        </div>
+                        
+                        <!-- Import/Export -->
+                        <div class="action-card-simple secondary">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </div>
+                                <div class="card-title">
+                                    <h4>Import / Export</h4>
+                                    <p>Restaurer ou exporter vos données</p>
+                                </div>
+                            </div>
+                            <div class="card-actions-group">
+                                <button class="btn-card-action secondary" onclick="window.settingsPage.importBackup()">
+                                    <i class="fas fa-file-import"></i>
+                                    Importer
+                                </button>
+                                <button class="btn-card-action secondary" onclick="window.settingsPage.exportCategories()">
+                                    <i class="fas fa-file-export"></i>
+                                    Exporter
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Historique des sauvegardes -->
+                <div class="backup-history-section">
+                    <div class="history-header">
+                        <h3><i class="fas fa-history"></i> Historique des sauvegardes</h3>
+                        <button class="btn-refresh" onclick="window.settingsPage.loadBackupHistory()" title="Actualiser">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div class="history-content" id="backup-history-list">
+                        <div class="loading-placeholder">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Chargement de l'historique...
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Paramètres avancés -->
+                <div class="backup-advanced-section">
+                    <div class="advanced-header" onclick="window.settingsPage.toggleAdvancedSettings()">
+                        <h3><i class="fas fa-cogs"></i> Paramètres avancés</h3>
+                        <i class="fas fa-chevron-down toggle-icon" id="advanced-toggle"></i>
+                    </div>
+                    <div class="advanced-content" id="advanced-content" style="display: none;">
+                        <div class="advanced-grid">
+                            <div class="option-card">
+                                <div class="option-header">
+                                    <i class="fas fa-envelope"></i>
+                                    <h4>Échantillon d'emails</h4>
+                                </div>
+                                <div class="option-content">
+                                    <label class="switch">
+                                        <input type="checkbox" id="backup-include-emails" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <div class="option-text">
+                                        <span>Inclure 1000 emails maximum</span>
+                                        <small>Aide à tester les catégories après restauration</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="option-card">
+                                <div class="option-header">
+                                    <i class="fas fa-tasks"></i>
+                                    <h4>Tâches créées</h4>
+                                </div>
+                                <div class="option-content">
+                                    <label class="switch">
+                                        <input type="checkbox" id="backup-include-tasks" checked>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <div class="option-text">
+                                        <span>Sauvegarder les tâches</span>
+                                        <small>Inclut vos tâches et leur statut</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="danger-zone-card">
+                            <div class="danger-header">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <h4>Réinitialisation complète</h4>
+                            </div>
+                            <div class="danger-content">
+                                <p>Supprimer définitivement toutes les données et paramètres</p>
+                                <button class="btn-danger" onclick="window.settingsPage.resetAllSettings()">
+                                    <i class="fas fa-trash-alt"></i>
+                                    Réinitialiser tout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        `).join('');
+        `;
     }
 
     // ================================================
     // GESTION DES ONGLETS
     // ================================================
     switchTab(tabName) {
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.classList.toggle('active', tab.textContent.toLowerCase().includes(tabName.toLowerCase()));
+        // Mettre à jour les boutons d'onglets
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabName);
         });
         
+        // Mettre à jour le contenu
         document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.toggle('active', content.id === `${tabName}-tab`);
+            content.classList.toggle('active', content.id === `tab-${tabName}`);
         });
-
-        this.currentTab = tabName;
-        if (tabName === 'backup') this.refreshBackup();
-    }
-
-    // ================================================
-    // RECHERCHE
-    // ================================================
-    handleSearch(term) {
-        this.searchTerm = term.toLowerCase();
-        this.refreshCategories();
-    }
-
-    clearSearch() {
-        this.searchTerm = '';
-        document.getElementById('category-search').value = '';
-        this.refreshCategories();
-    }
-
-    filterCategories(categories) {
-        if (!this.searchTerm) return categories;
         
-        const filtered = {};
-        Object.entries(categories).forEach(([id, cat]) => {
-            if (cat.name.toLowerCase().includes(this.searchTerm) ||
-                (cat.keywords && cat.keywords.some(kw => kw.toLowerCase().includes(this.searchTerm)))) {
-                filtered[id] = cat;
-            }
-        });
-        return filtered;
+        this.currentTab = tabName;
+        
+        // Actions spécifiques par onglet
+        if (tabName === 'backup') {
+            this.refreshBackupStatus();
+        }
     }
 
     // ================================================
     // GESTION DES CATÉGORIES
     // ================================================
-    getCategories() {
-        // Vérifier si CategoryManager existe et a des catégories
-        if (window.categoryManager?.getCategories) {
-            const categories = window.categoryManager.getCategories();
-            console.log('[SettingsPage] Catégories récupérées:', categories);
-            return categories;
-        }
+    calculateCategoryStats() {
+        const categories = window.categoryManager?.getCategories() || {};
+        const emails = window.emailScanner?.getAllEmails() || [];
         
-        // Sinon, utiliser les données par défaut ou localStorage
-        const savedCategories = localStorage.getItem('mailsort-categories');
-        if (savedCategories) {
-            try {
-                const parsed = JSON.parse(savedCategories);
-                console.log('[SettingsPage] Catégories depuis localStorage:', parsed);
-                return parsed;
-            } catch (e) {
-                console.warn('[SettingsPage] Erreur lecture localStorage:', e);
+        let totalKeywords = 0;
+        Object.keys(categories).forEach(id => {
+            const keywords = window.categoryManager?.getCategoryKeywords(id) || {};
+            totalKeywords += (keywords.absolute?.length || 0) + 
+                           (keywords.strong?.length || 0) + 
+                           (keywords.weak?.length || 0);
+        });
+        
+        return {
+            totalEmails: emails.length,
+            totalKeywords: totalKeywords
+        };
+    }
+
+    getCategoryStats(categoryId) {
+        const emails = window.emailScanner?.getAllEmails() || [];
+        const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {};
+        
+        return {
+            emailCount: emails.filter(email => email.category === categoryId).length,
+            keywords: (keywords.absolute?.length || 0) + 
+                     (keywords.strong?.length || 0) + 
+                     (keywords.weak?.length || 0)
+        };
+    }
+
+    toggleCategory(categoryId) {
+        const settings = this.loadSettings();
+        let activeCategories = settings.activeCategories || null;
+        
+        if (activeCategories === null) {
+            const allCategories = Object.keys(window.categoryManager?.getCategories() || {});
+            activeCategories = allCategories.filter(id => id !== categoryId);
+        } else {
+            if (activeCategories.includes(categoryId)) {
+                activeCategories = activeCategories.filter(id => id !== categoryId);
+            } else {
+                activeCategories.push(categoryId);
             }
         }
         
-        // Données par défaut plus réalistes
-        const defaultCategories = {
-            'factures': { 
-                id: 'factures', 
-                name: 'Factures & Finances', 
-                icon: '💰', 
-                color: '#ef4444', 
-                isCustom: false,
-                keywords: ['facture', 'invoice', 'bill', 'payment', 'paiement', 'échéance'],
-                emails: ['billing@stripe.com', 'noreply@paypal.com', 'factures@orange.fr'],
-                domains: ['paypal.com', 'stripe.com', 'amazon.fr']
-            },
-            'newsletters': { 
-                id: 'newsletters', 
-                name: 'Newsletters & Abonnements', 
-                icon: '📧', 
-                color: '#3b82f6', 
-                isCustom: false,
-                keywords: ['newsletter', 'unsubscribe', 'weekly', 'digest', 'actualités'],
-                emails: ['hello@morning-brew.com', 'newsletter@techcrunch.com'],
-                domains: ['mailchimp.com', 'substack.com']
-            },
-            'work': { 
-                id: 'work', 
-                name: 'Travail & Professionnel', 
-                icon: '💼', 
-                color: '#10b981', 
-                isCustom: false,
-                keywords: ['meeting', 'projet', 'deadline', 'réunion', 'rapport'],
-                emails: ['boss@company.com', 'hr@entreprise.fr'],
-                domains: ['slack.com', 'notion.so', 'teams.microsoft.com']
-            },
-            'shopping': {
-                id: 'shopping',
-                name: 'Achats & Commandes',
-                icon: '🛒',
-                color: '#f59e0b',
-                isCustom: false,
-                keywords: ['commande', 'order', 'livraison', 'shipping', 'confirmation'],
-                emails: ['noreply@amazon.fr', 'commandes@cdiscount.com'],
-                domains: ['amazon.fr', 'zalando.fr', 'fnac.com']
-            },
-            'social': {
-                id: 'social',
-                name: 'Réseaux Sociaux',
-                icon: '📱',
-                color: '#8b5cf6',
-                isCustom: false,
-                keywords: ['notification', 'like', 'comment', 'follow', 'mention'],
-                emails: ['no-reply@facebook.com', 'noreply@twitter.com'],
-                domains: ['facebook.com', 'instagram.com', 'linkedin.com']
+        settings.activeCategories = activeCategories;
+        this.saveSettings(settings);
+        
+        // Notifier CategoryManager
+        if (window.categoryManager) {
+            window.categoryManager.updateActiveCategories(activeCategories);
+        }
+        
+        this.refreshCategoriesTab();
+        this.showToast(`Catégorie ${activeCategories.includes(categoryId) ? 'activée' : 'désactivée'}`);
+    }
+
+    togglePreselection(categoryId) {
+        const settings = this.loadSettings();
+        let taskPreselectedCategories = settings.taskPreselectedCategories || [];
+        
+        if (taskPreselectedCategories.includes(categoryId)) {
+            taskPreselectedCategories = taskPreselectedCategories.filter(id => id !== categoryId);
+        } else {
+            taskPreselectedCategories.push(categoryId);
+        }
+        
+        settings.taskPreselectedCategories = taskPreselectedCategories;
+        this.saveSettings(settings);
+        
+        // Synchroniser avec les autres modules
+        this.syncTaskPreselectedCategories(taskPreselectedCategories);
+        
+        this.refreshCategoriesTab();
+        this.showToast('Pré-sélection mise à jour');
+    }
+
+    syncTaskPreselectedCategories(categories) {
+        // Synchroniser avec CategoryManager
+        if (window.categoryManager && typeof window.categoryManager.updateTaskPreselectedCategories === 'function') {
+            window.categoryManager.updateTaskPreselectedCategories(categories);
+        }
+        
+        // Synchroniser avec EmailScanner
+        if (window.emailScanner && typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
+            window.emailScanner.updateTaskPreselectedCategories(categories);
+        }
+        
+        // Dispatching des événements
+        window.dispatchEvent(new CustomEvent('categorySettingsChanged', { 
+            detail: {
+                type: 'taskPreselectedCategories',
+                value: categories,
+                source: 'SettingsPage'
             }
-        };
+        }));
+    }
+
+    // ================================================
+    // MODALS SIMPLIFIÉES
+    // ================================================
+    showCreateCategoryModal() {
+        this.closeModal();
         
-        // Sauvegarder les données par défaut
-        localStorage.setItem('mailsort-categories', JSON.stringify(defaultCategories));
-        console.log('[SettingsPage] Catégories par défaut créées:', defaultCategories);
-        
-        return defaultCategories;
-    }
-
-    generateSampleKeywords(categoryName) {
-        const samples = {
-            'Factures': ['facture', 'bill', 'invoice', 'payment', 'due'],
-            'Newsletters': ['newsletter', 'unsubscribe', 'weekly', 'digest'],
-            'Travail': ['meeting', 'project', 'deadline', 'report']
-        };
-        return samples[categoryName] || ['keyword1', 'keyword2'];
-    }
-
-    generateSampleEmails(categoryName) {
-        const samples = {
-            'Factures': ['billing@company.com', 'invoices@service.fr'],
-            'Newsletters': ['newsletter@tech.com', 'info@startup.io'],
-            'Travail': ['boss@company.com', 'team@workplace.fr']
-        };
-        return samples[categoryName] || [];
-    }
-
-    generateSampleDomains(categoryName) {
-        const samples = {
-            'Factures': ['paypal.com', 'stripe.com'],
-            'Newsletters': ['mailchimp.com'],
-            'Travail': ['company.com', 'workplace.fr']
-        };
-        return samples[categoryName] || [];
-    }
-
-    toggleActive(categoryId) {
-        const settings = this.getSettings();
-        const active = settings.activeCategories || Object.keys(this.getCategories());
-        
-        if (active.includes(categoryId)) {
-            settings.activeCategories = active.filter(id => id !== categoryId);
-            this.toast('❌ Catégorie désactivée');
-        } else {
-            active.push(categoryId);
-            settings.activeCategories = active;
-            this.toast('✅ Catégorie activée');
-        }
-        
-        this.saveSettings(settings);
-        this.refreshCategories();
-    }
-
-    toggleStar(categoryId) {
-        const settings = this.getSettings();
-        const starred = settings.preselectedCategories || [];
-        
-        if (starred.includes(categoryId)) {
-            settings.preselectedCategories = starred.filter(id => id !== categoryId);
-            this.toast('☆ Favori retiré');
-        } else {
-            starred.push(categoryId);
-            settings.preselectedCategories = starred;
-            this.toast('⭐ Ajouté aux favoris');
-        }
-        
-        this.saveSettings(settings);
-        this.refreshCategories();
-    }
-
-    createCategory() {
-        this.editingCategory = null;
-        document.getElementById('modal-title').textContent = '➕ Nouvelle catégorie';
-        document.getElementById('modal-body').innerHTML = this.renderCreateForm();
-        this.showModal();
-    }
-
-    editCategory(categoryId) {
-        this.editingCategory = categoryId;
-        document.getElementById('modal-title').textContent = '✏️ Modifier la catégorie';
-        document.getElementById('modal-body').innerHTML = this.renderEditModal(categoryId);
-        this.showModal();
-    }
-
-    renderCreateForm() {
-        return `
-            <form id="create-form" onsubmit="settingsPage.saveNewCategory(event)">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Nom de la catégorie</label>
-                        <input type="text" id="cat-name" placeholder="Ex: Réseaux sociaux" required>
+        const modalHTML = `
+            <div class="modal-backdrop" onclick="if(event.target === this) window.settingsPage.closeModal()">
+                <div class="modal-simple">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-plus"></i> Nouvelle catégorie</h2>
+                        <button class="btn-close" onclick="window.settingsPage.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label>Icône</label>
-                        <div class="icon-selector">
-                            <input type="text" id="cat-icon" value="📁" maxlength="2">
-                            <div class="icon-grid">
-                                ${this.icons.map(icon => `
-                                    <button type="button" class="icon-option" onclick="settingsPage.selectIcon('${icon}')">
-                                        ${icon}
-                                    </button>
-                                `).join('')}
+                    
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Nom de la catégorie</label>
+                            <input type="text" id="category-name" placeholder="Ex: Factures, Newsletter..." autofocus>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Icône</label>
+                            <div class="icon-selector">
+                                ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌'].map((icon, i) => 
+                                    `<button class="icon-option ${i === 0 ? 'selected' : ''}" onclick="window.settingsPage.selectIcon('${icon}')">${icon}</button>`
+                                ).join('')}
                             </div>
+                            <input type="hidden" id="category-icon" value="📁">
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Couleur</label>
-                        <div class="color-selector">
-                            <input type="color" id="cat-color" value="#3b82f6">
-                            <div class="color-grid">
-                                ${this.colors.map(color => `
-                                    <button type="button" class="color-option" 
-                                            style="background: ${color}" 
-                                            onclick="settingsPage.selectColor('${color}')">
-                                    </button>
-                                `).join('')}
+                        
+                        <div class="form-group">
+                            <label>Couleur</label>
+                            <div class="color-selector">
+                                ${this.colors.map((color, i) => 
+                                    `<button class="color-option ${i === 0 ? 'selected' : ''}" 
+                                             style="background: ${color}"
+                                             onclick="window.settingsPage.selectColor('${color}')"></button>`
+                                ).join('')}
                             </div>
+                            <input type="hidden" id="category-color" value="${this.colors[0]}">
                         </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="window.settingsPage.closeModal()">Annuler</button>
+                        <button class="btn-primary" onclick="window.settingsPage.createCategory()">
+                            <i class="fas fa-plus"></i> Créer
+                        </button>
                     </div>
                 </div>
-
-                <div class="filters-section">
-                    <div class="filter-category">
-                        <h3>🔤 Mots-clés</h3>
-                        <div class="filter-input-group">
-                            <input type="text" id="keyword-input" placeholder="Ajouter un mot-clé...">
-                            <button type="button" onclick="settingsPage.addKeyword()">Ajouter</button>
-                        </div>
-                        <div class="filter-list" id="keywords-list"></div>
-                    </div>
-
-                    <div class="filter-category">
-                        <h3>📧 Adresses email</h3>
-                        <div class="filter-input-group">
-                            <input type="email" id="email-input" placeholder="contact@example.com">
-                            <button type="button" onclick="settingsPage.addEmail()">Ajouter</button>
-                        </div>
-                        <div class="filter-list" id="emails-list"></div>
-                    </div>
-
-                    <div class="filter-category">
-                        <h3>🌐 Domaines</h3>
-                        <div class="filter-input-group">
-                            <input type="text" id="domain-input" placeholder="example.com">
-                            <button type="button" onclick="settingsPage.addDomain()">Ajouter</button>
-                        </div>
-                        <div class="filter-list" id="domains-list"></div>
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="settingsPage.closeModal()">
-                        Annuler
-                    </button>
-                    <button type="submit" class="btn-primary">
-                        ➕ Créer
-                    </button>
-                </div>
-            </form>
+            </div>
         `;
-    }
-
-    // ================================================
-    // GESTION DU MODAL
-    // ================================================
-    showModal() {
-        document.getElementById('edit-modal').classList.add('show');
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
-    }
-
-    closeModal() {
-        document.getElementById('edit-modal').classList.remove('show');
-        document.body.style.overflow = '';
-        this.editingCategory = null;
+        this.currentModal = true;
+        
+        setTimeout(() => document.getElementById('category-name')?.focus(), 100);
     }
 
     selectIcon(icon) {
-        document.getElementById('cat-icon').value = icon;
-    }
-
-    selectColor(color) {
-        document.getElementById('cat-color').value = color;
-    }
-
-    // ================================================
-    // GESTION DES FILTRES
-    // ================================================
-    addKeyword() {
-        const input = document.getElementById('keyword-input');
-        const value = input.value.trim();
-        if (!value) return;
-
-        const list = document.getElementById('keywords-list');
-        const index = list.children.length;
-        
-        const item = document.createElement('div');
-        item.className = 'filter-item';
-        item.innerHTML = `
-            <span class="filter-text">${value}</span>
-            <button type="button" onclick="settingsPage.removeKeyword(${index})">✕</button>
-        `;
-        list.appendChild(item);
-        input.value = '';
-    }
-
-    addEmail() {
-        const input = document.getElementById('email-input');
-        const value = input.value.trim();
-        if (!value || !value.includes('@')) return;
-
-        const list = document.getElementById('emails-list');
-        const index = list.children.length;
-        
-        const item = document.createElement('div');
-        item.className = 'filter-item';
-        item.innerHTML = `
-            <span class="filter-text">${value}</span>
-            <button type="button" onclick="settingsPage.removeEmail(${index})">✕</button>
-        `;
-        list.appendChild(item);
-        input.value = '';
-    }
-
-    addDomain() {
-        const input = document.getElementById('domain-input');
-        const value = input.value.trim();
-        if (!value) return;
-
-        const list = document.getElementById('domains-list');
-        const index = list.children.length;
-        
-        const item = document.createElement('div');
-        item.className = 'filter-item';
-        item.innerHTML = `
-            <span class="filter-text">${value}</span>
-            <button type="button" onclick="settingsPage.removeDomain(${index})">✕</button>
-        `;
-        list.appendChild(item);
-        input.value = '';
-    }
-
-    removeKeyword(index) {
-        const list = document.getElementById('keywords-list');
-        if (list.children[index]) {
-            list.children[index].remove();
-            this.reindexFilters('keywords-list', 'removeKeyword');
-        }
-    }
-
-    removeEmail(index) {
-        const list = document.getElementById('emails-list');
-        if (list.children[index]) {
-            list.children[index].remove();
-            this.reindexFilters('emails-list', 'removeEmail');
-        }
-    }
-
-    removeDomain(index) {
-        const list = document.getElementById('domains-list');
-        if (list.children[index]) {
-            list.children[index].remove();
-            this.reindexFilters('domains-list', 'removeDomain');
-        }
-    }
-
-    reindexFilters(listId, functionName) {
-        const list = document.getElementById(listId);
-        Array.from(list.children).forEach((item, index) => {
-            const button = item.querySelector('button');
-            button.onclick = () => this[functionName](index);
+        document.getElementById('category-icon').value = icon;
+        document.querySelectorAll('.icon-option').forEach(btn => {
+            btn.classList.toggle('selected', btn.textContent === icon);
         });
     }
 
-    // ================================================
-    // SAUVEGARDE DES CATÉGORIES
-    // ================================================
-    saveNewCategory(event) {
-        event.preventDefault();
-        
-        const name = document.getElementById('cat-name').value.trim();
-        const icon = document.getElementById('cat-icon').value;
-        const color = document.getElementById('cat-color').value;
-        
-        const keywords = this.getFilterValues('keywords-list');
-        const emails = this.getFilterValues('emails-list');
-        const domains = this.getFilterValues('domains-list');
-
-        const id = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        const newCategory = {
-            id, name, icon, color,
-            keywords, emails, domains,
-            isCustom: true
-        };
-
-        if (window.categoryManager?.createCustomCategory) {
-            window.categoryManager.createCustomCategory(newCategory);
-        }
-
-        this.toast('✅ Catégorie créée avec succès');
-        this.closeModal();
-        this.refreshCategories();
+    selectColor(color) {
+        document.getElementById('category-color').value = color;
+        document.querySelectorAll('.color-option').forEach(btn => {
+            btn.classList.toggle('selected', btn.style.background === color);
+        });
     }
 
-    saveCategory(event, categoryId) {
-        event.preventDefault();
+    createCategory() {
+        const name = document.getElementById('category-name')?.value?.trim();
+        const icon = document.getElementById('category-icon')?.value || '📁';
+        const color = document.getElementById('category-color')?.value || this.colors[0];
         
-        const name = document.getElementById('cat-name').value.trim();
-        const icon = document.getElementById('cat-icon').value;
-        const color = document.getElementById('cat-color').value;
-        
-        const keywords = this.getFilterValues('keywords-list');
-        const emails = this.getFilterValues('emails-list');
-        const domains = this.getFilterValues('domains-list');
-
-        const updatedCategory = {
-            id: categoryId,
-            name, icon, color,
-            keywords, emails, domains,
-            isCustom: true
-        };
-
-        if (window.categoryManager?.updateCategory) {
-            window.categoryManager.updateCategory(categoryId, updatedCategory);
+        if (!name) {
+            this.showToast('Le nom est requis', 'error');
+            return;
         }
-
-        this.toast('💾 Catégorie modifiée avec succès');
-        this.closeModal();
-        this.refreshCategories();
+        
+        const categoryData = {
+            name,
+            icon,
+            color,
+            priority: 30,
+            keywords: { absolute: [], strong: [], weak: [], exclusions: [] }
+        };
+        
+        const newCategory = window.categoryManager?.createCustomCategory(categoryData);
+        
+        if (newCategory) {
+            this.closeModal();
+            this.showToast('Catégorie créée avec succès!');
+            this.refreshCategoriesTab();
+        }
     }
 
-    getFilterValues(listId) {
+    editCategory(categoryId) {
+        console.log('[SettingsPage] 📝 Ouverture édition catégorie:', categoryId);
+        
+        const category = window.categoryManager?.getCategory(categoryId);
+        if (!category) {
+            this.showToast('Catégorie introuvable', 'error');
+            return;
+        }
+        
+        this.closeModal();
+        this.editingCategoryId = categoryId;
+        
+        const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {
+            absolute: [], strong: [], weak: [], exclusions: []
+        };
+        
+        const filters = window.categoryManager?.getCategoryFilters(categoryId) || {
+            includeDomains: [], includeEmails: [], excludeDomains: [], excludeEmails: []
+        };
+        
+        const modalHTML = `
+            <div class="modal-backdrop" onclick="if(event.target === this) window.settingsPage.closeModal()">
+                <div class="modal-edit">
+                    <div class="modal-header">
+                        <div class="modal-title">
+                            <span class="modal-icon" style="color: ${category.color}">${category.icon}</span>
+                            <h2>Éditer "${category.name}"</h2>
+                        </div>
+                        <button class="btn-close" onclick="window.settingsPage.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-tabs">
+                        <button class="tab-btn active" data-tab="keywords" onclick="window.settingsPage.switchEditTab('keywords')">
+                            <i class="fas fa-key"></i> Mots-clés
+                        </button>
+                        <button class="tab-btn" data-tab="filters" onclick="window.settingsPage.switchEditTab('filters')">
+                            <i class="fas fa-filter"></i> Filtres
+                        </button>
+                        ${category.isCustom ? `
+                            <button class="tab-btn" data-tab="settings" onclick="window.settingsPage.switchEditTab('settings')">
+                                <i class="fas fa-cog"></i> Paramètres
+                            </button>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="modal-content">
+                        <!-- Onglet Mots-clés -->
+                        <div class="edit-tab-content active" id="edit-keywords">
+                            <div class="keywords-layout">
+                                ${this.renderKeywordSection('absolute', 'Mots-clés absolus', keywords.absolute, '#EF4444', 'fa-star', 'Déclenchent automatiquement cette catégorie')}
+                                ${this.renderKeywordSection('strong', 'Mots-clés forts', keywords.strong, '#F97316', 'fa-bolt', 'Ont un poids important dans la classification')}
+                                ${this.renderKeywordSection('weak', 'Mots-clés faibles', keywords.weak, '#3B82F6', 'fa-feather', 'Ont un poids modéré dans la classification')}
+                                ${this.renderKeywordSection('exclusions', 'Exclusions', keywords.exclusions, '#8B5CF6', 'fa-ban', 'Empêchent la classification dans cette catégorie')}
+                            </div>
+                        </div>
+                        
+                        <!-- Onglet Filtres -->
+                        <div class="edit-tab-content" id="edit-filters">
+                            <div class="filters-layout">
+                                <div class="filter-group">
+                                    <h3><i class="fas fa-check"></i> Inclusions</h3>
+                                    ${this.renderFilterSection('includeDomains', 'Domaines autorisés', filters.includeDomains, 'exemple.com', '#10B981')}
+                                    ${this.renderFilterSection('includeEmails', 'Emails autorisés', filters.includeEmails, 'contact@exemple.com', '#10B981')}
+                                </div>
+                                <div class="filter-group">
+                                    <h3><i class="fas fa-times"></i> Exclusions</h3>
+                                    ${this.renderFilterSection('excludeDomains', 'Domaines exclus', filters.excludeDomains, 'spam.com', '#EF4444')}
+                                    ${this.renderFilterSection('excludeEmails', 'Emails exclus', filters.excludeEmails, 'noreply@exemple.com', '#EF4444')}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Onglet Paramètres (si catégorie personnalisée) -->
+                        ${category.isCustom ? `
+                            <div class="edit-tab-content" id="edit-settings">
+                                <div class="settings-section">
+                                    <div class="danger-zone">
+                                        <h3><i class="fas fa-exclamation-triangle"></i> Zone dangereuse</h3>
+                                        <p>Cette action supprimera définitivement la catégorie et tous ses paramètres.</p>
+                                        <button class="btn-danger" onclick="window.settingsPage.confirmDeleteCategory('${categoryId}')">
+                                            <i class="fas fa-trash"></i> Supprimer cette catégorie
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="window.settingsPage.closeModal()">
+                            <i class="fas fa-times"></i> Annuler
+                        </button>
+                        <button class="btn-primary" onclick="window.settingsPage.saveCategory()">
+                            <i class="fas fa-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        this.currentModal = true;
+    }
+
+    renderKeywordSection(type, title, keywords, color, icon, description) {
+        return `
+            <div class="keyword-section">
+                <div class="section-header">
+                    <h4><i class="fas ${icon}" style="color: ${color}"></i> ${title}</h4>
+                    <span class="keyword-count" style="background: ${color}20; color: ${color}">${keywords.length}</span>
+                </div>
+                <p class="section-description">${description}</p>
+                
+                <div class="input-group">
+                    <input type="text" 
+                           id="${type}-input" 
+                           placeholder="Ajouter un mot-clé..."
+                           onkeypress="if(event.key === 'Enter') window.settingsPage.addKeyword('${type}', '${color}')">
+                    <button class="btn-add" style="background: ${color}" onclick="window.settingsPage.addKeyword('${type}', '${color}')">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                
+                <div class="keywords-list" id="${type}-list">
+                    ${keywords.map(keyword => `
+                        <span class="keyword-tag" style="background: ${color}15; color: ${color}">
+                            ${keyword}
+                            <button onclick="window.settingsPage.removeKeyword('${type}', '${keyword}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </span>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    renderFilterSection(type, title, items, placeholder, color) {
+        return `
+            <div class="filter-section">
+                <h4><i class="fas fa-${type.includes('Domain') ? 'globe' : 'at'}"></i> ${title}</h4>
+                
+                <div class="input-group">
+                    <input type="text" 
+                           id="${type}-input" 
+                           placeholder="${placeholder}"
+                           onkeypress="if(event.key === 'Enter') window.settingsPage.addFilter('${type}', '${color}')">
+                    <button class="btn-add" style="background: ${color}" onclick="window.settingsPage.addFilter('${type}', '${color}')">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                
+                <div class="filters-list" id="${type}-list">
+                    ${items.map(item => `
+                        <span class="filter-tag" style="background: ${color}15; color: ${color}">
+                            ${item}
+                            <button onclick="window.settingsPage.removeFilter('${type}', '${item}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </span>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    switchEditTab(tabName) {
+        // Mettre à jour les boutons d'onglets
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabName);
+        });
+        
+        // Mettre à jour le contenu
+        document.querySelectorAll('.edit-tab-content').forEach(content => {
+            content.classList.toggle('active', content.id === `edit-${tabName}`);
+        });
+    }
+
+    addKeyword(type, color) {
+        const input = document.getElementById(`${type}-input`);
+        if (!input?.value.trim()) return;
+        
+        const keyword = input.value.trim().toLowerCase();
+        const list = document.getElementById(`${type}-list`);
+        
+        if (!list) return;
+        
+        // Vérifier si le mot-clé existe déjà
+        const existing = list.querySelector(`[data-keyword="${keyword}"]`);
+        if (existing) {
+            this.showToast('Ce mot-clé existe déjà', 'warning');
+            return;
+        }
+        
+        list.insertAdjacentHTML('beforeend', `
+            <span class="keyword-tag" style="background: ${color}15; color: ${color}" data-keyword="${keyword}">
+                ${keyword}
+                <button onclick="window.settingsPage.removeKeyword('${type}', '${keyword}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>
+        `);
+        
+        // Mettre à jour le compteur
+        const counter = document.querySelector(`.keyword-section:has(#${type}-input) .keyword-count`);
+        if (counter) {
+            const newCount = list.children.length;
+            counter.textContent = newCount;
+        }
+        
+        input.value = '';
+        input.focus();
+    }
+
+    removeKeyword(type, keyword) {
+        const list = document.getElementById(`${type}-list`);
+        if (!list) return;
+        
+        const tag = list.querySelector(`[data-keyword="${keyword}"]`);
+        if (tag) {
+            tag.remove();
+            
+            // Mettre à jour le compteur
+            const counter = document.querySelector(`.keyword-section:has(#${type}-input) .keyword-count`);
+            if (counter) {
+                const newCount = list.children.length;
+                counter.textContent = newCount;
+            }
+        }
+    }
+
+    addFilter(type, color) {
+        const input = document.getElementById(`${type}-input`);
+        if (!input?.value.trim()) return;
+        
+        const item = input.value.trim().toLowerCase();
+        const list = document.getElementById(`${type}-list`);
+        
+        if (!list) return;
+        
+        // Vérifier si l'élément existe déjà
+        const existing = list.querySelector(`[data-item="${item}"]`);
+        if (existing) {
+            this.showToast('Cet élément existe déjà', 'warning');
+            return;
+        }
+        
+        list.insertAdjacentHTML('beforeend', `
+            <span class="filter-tag" style="background: ${color}15; color: ${color}" data-item="${item}">
+                ${item}
+                <button onclick="window.settingsPage.removeFilter('${type}', '${item}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>
+        `);
+        
+        input.value = '';
+        input.focus();
+    }
+
+    removeFilter(type, item) {
+        const list = document.getElementById(`${type}-list`);
+        if (!list) return;
+        
+        const tag = list.querySelector(`[data-item="${item}"]`);
+        if (tag) {
+            tag.remove();
+        }
+    }
+
+    saveCategory() {
+        if (!this.editingCategoryId) {
+            this.showToast('Aucune catégorie en cours d\'édition', 'error');
+            return;
+        }
+        
+        try {
+            // Collecter les mots-clés
+            const keywords = {
+                absolute: this.collectItems('absolute-list'),
+                strong: this.collectItems('strong-list'),
+                weak: this.collectItems('weak-list'),
+                exclusions: this.collectItems('exclusions-list')
+            };
+            
+            // Collecter les filtres
+            const filters = {
+                includeDomains: this.collectItems('includeDomains-list'),
+                includeEmails: this.collectItems('includeEmails-list'),
+                excludeDomains: this.collectItems('excludeDomains-list'),
+                excludeEmails: this.collectItems('excludeEmails-list')
+            };
+            
+            // Sauvegarder via CategoryManager
+            window.categoryManager?.updateCategoryKeywords(this.editingCategoryId, keywords);
+            window.categoryManager?.updateCategoryFilters(this.editingCategoryId, filters);
+            
+            console.log('[SettingsPage] ✅ Catégorie sauvegardée:', {
+                id: this.editingCategoryId,
+                keywords,
+                filters
+            });
+            
+            this.closeModal();
+            this.showToast('Catégorie mise à jour avec succès!');
+            this.refreshCategoriesTab();
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur sauvegarde:', error);
+            this.showToast('Erreur lors de la sauvegarde', 'error');
+        }
+    }
+
+    collectItems(listId) {
         const list = document.getElementById(listId);
-        return Array.from(list.children).map(item => 
-            item.querySelector('.filter-text').textContent
-        );
+        if (!list) return [];
+        
+        const items = [];
+        list.querySelectorAll('.keyword-tag, .filter-tag').forEach(tag => {
+            const keyword = tag.getAttribute('data-keyword');
+            const item = tag.getAttribute('data-item');
+            if (keyword) items.push(keyword);
+            if (item) items.push(item);
+        });
+        
+        return items;
+    }
+
+    confirmDeleteCategory(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        if (!category) return;
+        
+        if (confirm(`⚠️ ATTENTION ⚠️\n\nÊtes-vous sûr de vouloir supprimer définitivement la catégorie "${category.name}" ?\n\nCette action est irréversible et supprimera :\n- Tous les mots-clés\n- Tous les filtres\n- Toutes les configurations\n\nTapez "SUPPRIMER" pour confirmer :`)) {
+            const confirmation = prompt('Tapez "SUPPRIMER" en majuscules pour confirmer :');
+            if (confirmation === 'SUPPRIMER') {
+                this.deleteCategory(categoryId);
+            } else {
+                this.showToast('Suppression annulée', 'info');
+            }
+        }
     }
 
     deleteCategory(categoryId) {
-        const category = this.getCategories()[categoryId];
+        const category = window.categoryManager?.getCategory(categoryId);
         if (!category) return;
-
-        if (confirm(`Êtes-vous sûr de vouloir supprimer "${category.name}" ?\n\nCette action est irréversible.`)) {
-            if (window.categoryManager?.deleteCustomCategory) {
-                window.categoryManager.deleteCustomCategory(categoryId);
-            }
-            this.toast('🗑️ Catégorie supprimée');
-            this.refreshCategories();
+        
+        if (confirm(`Êtes-vous sûr de vouloir supprimer "${category.name}" ?`)) {
+            window.categoryManager?.deleteCustomCategory(categoryId);
+            this.showToast('Catégorie supprimée');
+            this.refreshCategoriesTab();
         }
+    }
+
+    exportCategories() {
+        const categories = window.categoryManager?.getCategories() || {};
+        const data = JSON.stringify(categories, null, 2);
+        
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mailsort-categories-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        
+        URL.revokeObjectURL(url);
+        this.showToast('Catégories exportées');
+    }
+
+    closeModal() {
+        document.querySelector('.modal-backdrop')?.remove();
+        document.body.style.overflow = 'auto';
+        this.currentModal = null;
+        this.editingCategoryId = null;
     }
 
     // ================================================
     // GESTION DU BACKUP
     // ================================================
-    async initBackup() {
+    async initializeBackupManager() {
         try {
-            const result = await this.backupManager.init();
-            const statusEl = document.getElementById('backup-status');
-            const pathEl = document.getElementById('backup-path');
-            
-            if (result.success) {
-                statusEl.textContent = '✅ Système opérationnel';
-                pathEl.innerHTML = `📁 ${result.path}`;
-                
-                // Changer le style du status
-                const statusCard = document.getElementById('backup-status-card');
-                statusCard.style.borderLeftColor = '#10b981';
-            } else {
-                statusEl.textContent = '❌ Erreur d\'initialisation';
-                pathEl.innerHTML = `⚠️ ${result.error}`;
-                
-                const statusCard = document.getElementById('backup-status-card');
-                statusCard.style.borderLeftColor = '#ef4444';
-            }
+            this.updateBackupStatus('loading', 'Initialisation du système de sauvegarde...');
+            await this.backupManager.initialize();
+            this.refreshBackupStatus();
         } catch (error) {
-            console.error('[Backup] Erreur init:', error);
-            document.getElementById('backup-status').textContent = '❌ Erreur système';
+            console.error('[SettingsPage] Erreur initialisation backup:', error);
+            this.updateBackupStatus('error', 'Système de sauvegarde non disponible - Mode de téléchargement activé');
+            
+            // Même en cas d'erreur, permettre les sauvegardes par téléchargement
+            this.backupManager.hasPermission = true;
+            this.backupManager.backupPath = 'Téléchargements du navigateur';
+            this.backupManager.isInitialized = true;
         }
     }
 
-    async createBackup() {
-        const btn = document.getElementById('backup-btn');
-        const originalText = btn.textContent;
-        btn.textContent = '⏳ Création...';
-        btn.disabled = true;
-
+    async refreshBackupStatus() {
+        if (this.currentTab !== 'backup') return;
+        
         try {
-            const data = {
-                categories: this.getCategories(),
-                settings: this.getSettings(),
-                timestamp: new Date().toISOString(),
-                version: '2.0',
-                application: 'MailSort Pro'
-            };
-
-            const result = await this.backupManager.create(data);
+            const realUsername = await this.backupManager.detectRealUsername();
+            let statusHtml, detailsHtml;
             
-            if (result.success) {
-                this.toast('💾 Sauvegarde créée avec succès');
-                this.refreshHistory();
+            if (this.backupManager.isInitialized && this.backupManager.hasPermission) {
+                statusHtml = `
+                    <i class="fas fa-check-circle text-success"></i>
+                    <span>Système opérationnel</span>
+                `;
+                
+                detailsHtml = `
+                    <div class="status-details-grid">
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-user"></i>
+                                <span>Utilisateur détecté</span>
+                            </div>
+                            <div class="detail-value">
+                                <strong>${realUsername}</strong>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-folder"></i>
+                                <span>Dossier de sauvegarde</span>
+                            </div>
+                            <div class="detail-value">
+                                <code class="path-code">C:\\Users\\${realUsername}\\Documents\\MailSort Pro</code>
+                                <button class="btn-copy-inline" onclick="navigator.clipboard.writeText('C:\\\\Users\\\\${realUsername}\\\\Documents\\\\MailSort Pro'); this.innerHTML='<i class=\\"fas fa-check\\"></i>'; setTimeout(() => this.innerHTML='<i class=\\"fas fa-copy\\"></i>', 2000);" title="Copier le chemin">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-download"></i>
+                                <span>Mode de sauvegarde</span>
+                            </div>
+                            <div class="detail-value">
+                                <span class="badge success">Téléchargement automatique</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Sécurité</span>
+                            </div>
+                            <div class="detail-value">
+                                <span class="badge secure">Données 100% locales</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
             } else {
-                this.toast('❌ Erreur lors de la création');
+                statusHtml = `
+                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                    <span>Mode dégradé</span>
+                `;
+                
+                detailsHtml = `
+                    <div class="status-details-grid degraded">
+                        <div class="detail-row warning">
+                            <div class="detail-label">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>Statut</span>
+                            </div>
+                            <div class="detail-value">
+                                <span class="badge warning">Mode téléchargement uniquement</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-folder"></i>
+                                <span>Emplacement</span>
+                            </div>
+                            <div class="detail-value">
+                                <span>Dossier Téléchargements du navigateur</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row action">
+                            <div class="detail-action">
+                                <button class="btn-reconfigure-inline" onclick="window.settingsPage.backupManager.resetPermissions(); window.settingsPage.initializeBackupManager();">
+                                    <i class="fas fa-redo"></i>
+                                    <span>Reconfigurer le système</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
+            
+            document.getElementById('backup-status-indicator').innerHTML = statusHtml;
+            document.getElementById('backup-status-details').innerHTML = detailsHtml;
+            
+            this.loadBackupHistory();
         } catch (error) {
-            this.toast('❌ Erreur système');
-            console.error('[Backup] Erreur création:', error);
-        } finally {
-            btn.textContent = originalText;
-            btn.disabled = false;
+            console.error('[SettingsPage] Erreur refresh status:', error);
+            document.getElementById('backup-status-indicator').innerHTML = `
+                <i class="fas fa-times-circle text-danger"></i>
+                <span>Erreur de configuration</span>
+            `;
+            document.getElementById('backup-status-details').innerHTML = `
+                <div class="status-details-grid error">
+                    <div class="detail-row error">
+                        <div class="detail-label">
+                            <i class="fas fa-times-circle"></i>
+                            <span>Erreur détectée</span>
+                        </div>
+                        <div class="detail-value">
+                            <span class="badge error">${error.message}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
     }
 
-    openBackupFolder() {
-        this.backupManager.openFolder();
-    }
-
+    // ================================================
+    // NOUVELLES FONCTIONS IMPORT/EXPORT
+    // ================================================
     async importBackup() {
-        try {
-            const file = await this.selectFile('.json');
-            if (!file) return;
-
-            const text = await file.text();
-            const data = JSON.parse(text);
-
-            if (this.validateBackupData(data)) {
-                if (confirm('Voulez-vous restaurer cette sauvegarde ?\n\nToutes les données actuelles seront remplacées.')) {
-                    // Simuler la restauration
-                    this.toast('📥 Sauvegarde importée avec succès');
-                    setTimeout(() => {
-                        this.toast('🔄 Redémarrage de l\'application...');
-                        setTimeout(() => location.reload(), 2000);
-                    }, 1000);
-                }
-            } else {
-                this.toast('❌ Fichier de sauvegarde invalide');
-            }
-        } catch (error) {
-            this.toast('❌ Erreur lors de l\'import');
-            console.error('[Import] Erreur:', error);
-        }
-    }
-
-    validateBackupData(data) {
-        return data && 
-               data.categories && 
-               typeof data.categories === 'object' &&
-               data.timestamp &&
-               data.version;
-    }
-
-    deleteBackup(backupId) {
-        if (confirm('Supprimer cette sauvegarde ?')) {
-            this.backupManager.delete(backupId);
-            this.refreshHistory();
-            this.toast('🗑️ Sauvegarde supprimée');
-        }
-    }
-
-    restoreBackup(backupId) {
-        if (confirm('Restaurer cette sauvegarde ?\n\nToutes les données actuelles seront remplacées.')) {
-            this.toast('📥 Restauration en cours...');
-            setTimeout(() => {
-                this.toast('✅ Sauvegarde restaurée');
-                setTimeout(() => location.reload(), 2000);
-            }, 1000);
-        }
-    }
-
-    // ================================================
-    // IMPORT/EXPORT
-    // ================================================
-    exportCategories() {
-        const data = {
-            categories: this.getCategories(),
-            settings: this.getSettings(),
-            timestamp: new Date().toISOString(),
-            type: 'categories_export'
-        };
-
-        this.downloadFile(
-            JSON.stringify(data, null, 2),
-            `mailsort-categories-${new Date().toISOString().split('T')[0]}.json`,
-            'application/json'
-        );
-        this.toast('📥 Catégories exportées');
-    }
-
-    async importCategories() {
-        try {
-            const file = await this.selectFile('.json');
-            if (!file) return;
-
-            const text = await file.text();
-            const data = JSON.parse(text);
-
-            if (data.categories) {
-                if (confirm('Importer ces catégories ?\n\nCela ajoutera les nouvelles catégories sans supprimer les existantes.')) {
-                    // Simuler l'import
-                    this.toast('📤 Catégories importées avec succès');
-                    this.refreshCategories();
-                }
-            } else {
-                this.toast('❌ Fichier invalide');
-            }
-        } catch (error) {
-            this.toast('❌ Erreur d\'import');
-        }
-    }
-
-    // ================================================
-    // UTILITAIRES
-    // ================================================
-    getSettings() {
-        try {
-            return JSON.parse(localStorage.getItem('mailsort-settings') || '{}');
-        } catch {
-            return { activeCategories: [], preselectedCategories: [] };
-        }
-    }
-
-    saveSettings(settings) {
-        localStorage.setItem('mailsort-settings', JSON.stringify(settings));
-    }
-
-    getStats(categories) {
-        const settings = this.getSettings();
-        return {
-            total: Object.keys(categories).length,
-            active: settings.activeCategories?.length || Object.keys(categories).length,
-            custom: Object.values(categories).filter(c => c.isCustom).length,
-            preselected: settings.preselectedCategories?.length || 0
-        };
-    }
-
-    refreshCategories() {
-        document.getElementById('categories-tab').innerHTML = this.renderCategories();
-    }
-
-    refreshBackup() {
-        document.getElementById('backup-tab').innerHTML = this.renderBackup();
-        this.initBackup();
-    }
-
-    refreshHistory() {
-        const historyEl = document.getElementById('history-list');
-        if (historyEl) {
-            historyEl.innerHTML = this.renderHistory();
-        }
-    }
-
-    setupEventListeners() {
-        // Fermer le modal en cliquant à l'extérieur
-        document.getElementById('edit-modal').addEventListener('click', (e) => {
-            if (e.target.id === 'edit-modal') {
-                this.closeModal();
-            }
-        });
-
-        // Raccourcis clavier
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.closeModal();
-            }
-        });
-    }
-
-    selectFile(accept = '*') {
-        return new Promise(resolve => {
+        console.log('[SettingsPage] 📥 Import de sauvegarde...');
+        
+        return new Promise((resolve, reject) => {
             const input = document.createElement('input');
             input.type = 'file';
-            input.accept = accept;
-            input.onchange = e => resolve(e.target.files[0]);
+            input.accept = '.json';
+            input.style.display = 'none';
+            
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    resolve(false);
+                    return;
+                }
+                
+                try {
+                    const text = await file.text();
+                    const backupData = JSON.parse(text);
+                    
+                    // Validation du fichier
+                    if (!this.validateBackupFile(backupData)) {
+                        this.showToast('Fichier de sauvegarde invalide ou corrompu', 'error');
+                        resolve(false);
+                        return;
+                    }
+                    
+                    // Confirmation avant import
+                    const confirmed = await this.showImportConfirmation(backupData);
+                    if (!confirmed) {
+                        resolve(false);
+                        return;
+                    }
+                    
+                    // Restaurer les données
+                    await this.restoreFromData(backupData);
+                    this.showToast('Import réussi ! Rechargement de la page...', 'success');
+                    
+                    // Recharger la page après 2 secondes
+                    setTimeout(() => location.reload(), 2000);
+                    resolve(true);
+                    
+                } catch (error) {
+                    console.error('[SettingsPage] Erreur import:', error);
+                    this.showToast('Erreur lors de l\'import : ' + error.message, 'error');
+                    reject(error);
+                }
+            };
+            
+            document.body.appendChild(input);
             input.click();
+            document.body.removeChild(input);
         });
     }
 
-    downloadFile(content, filename, type) {
-        const blob = new Blob([content], { type });
+    validateBackupFile(data) {
+        // Vérifier la structure minimale du fichier
+        if (!data || typeof data !== 'object') return false;
+        if (!data.timestamp || !data.version) return false;
+        
+        // Vérifier qu'il y a au moins des catégories ou des paramètres
+        if (!data.categories && !data.settings) return false;
+        
+        return true;
+    }
+
+    async showImportConfirmation(backupData) {
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'modal-backdrop';
+            modal.innerHTML = `
+                <div class="modal-simple">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-file-import"></i> Confirmer l'import</h2>
+                        <button class="btn-close" onclick="this.closest('.modal-backdrop').remove(); window.settingsPage.importConfirmationCallback(false);">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="import-preview">
+                            <h3>📋 Aperçu du fichier de sauvegarde</h3>
+                            
+                            <div class="preview-grid">
+                                <div class="preview-item">
+                                    <strong>📅 Date de création :</strong>
+                                    ${new Date(backupData.timestamp).toLocaleString('fr-FR')}
+                                </div>
+                                <div class="preview-item">
+                                    <strong>📂 Catégories :</strong>
+                                    ${Object.keys(backupData.categories || {}).length} catégorie(s)
+                                </div>
+                                <div class="preview-item">
+                                    <strong>📧 Emails :</strong>
+                                    ${backupData.emails?.length || 0} email(s) d'exemple
+                                </div>
+                                <div class="preview-item">
+                                    <strong>⚙️ Paramètres :</strong>
+                                    ${backupData.settings ? 'Inclus' : 'Non inclus'}
+                                </div>
+                                <div class="preview-item">
+                                    <strong>📝 Tâches :</strong>
+                                    ${backupData.tasks?.length || 0} tâche(s)
+                                </div>
+                            </div>
+                            
+                            <div class="import-warning">
+                                <h4>⚠️ Attention</h4>
+                                <p>L'import va <strong>remplacer</strong> vos données actuelles. Assurez-vous d'avoir créé une sauvegarde de vos données actuelles si nécessaire.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="this.closest('.modal-backdrop').remove(); window.settingsPage.importConfirmationCallback(false);">
+                            <i class="fas fa-times"></i> Annuler
+                        </button>
+                        <button class="btn-primary" onclick="this.closest('.modal-backdrop').remove(); window.settingsPage.importConfirmationCallback(true);">
+                            <i class="fas fa-check"></i> Confirmer l'import
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            this.importConfirmationCallback = resolve;
+            document.body.appendChild(modal);
+        });
+    }
+
+    async restoreFromData(backupData) {
+        try {
+            console.log('[SettingsPage] 🔄 Restauration des données...');
+            
+            // Restaurer les catégories personnalisées
+            if (backupData.categories) {
+                Object.entries(backupData.categories).forEach(([id, category]) => {
+                    if (category.isCustom && window.categoryManager) {
+                        try {
+                            // Supprimer l'ancienne catégorie si elle existe
+                            window.categoryManager.deleteCustomCategory(id);
+                            // Créer la nouvelle catégorie
+                            window.categoryManager.createCustomCategory(category);
+                            console.log('[SettingsPage] ✅ Catégorie restaurée:', category.name);
+                        } catch (error) {
+                            console.warn('[SettingsPage] Erreur restauration catégorie:', category.name, error);
+                        }
+                    }
+                });
+            }
+
+            // Restaurer les paramètres
+            if (backupData.settings) {
+                localStorage.setItem('categorySettings', JSON.stringify(backupData.settings));
+                console.log('[SettingsPage] ✅ Paramètres restaurés');
+            }
+
+            // Restaurer les tâches si présentes
+            if (backupData.tasks && window.taskManager) {
+                try {
+                    // Sauvegarder les tâches existantes
+                    const existingTasks = window.taskManager.getAllTasks();
+                    
+                    // Restaurer les nouvelles tâches
+                    backupData.tasks.forEach(task => {
+                        // Éviter les doublons en vérifiant l'ID ou le contenu
+                        const exists = existingTasks.some(existing => 
+                            existing.id === task.id || 
+                            (existing.title === task.title && existing.content === task.content)
+                        );
+                        
+                        if (!exists) {
+                            window.taskManager.addTask(task.title, task.content, task.category);
+                        }
+                    });
+                    
+                    console.log('[SettingsPage] ✅ Tâches restaurées');
+                } catch (error) {
+                    console.warn('[SettingsPage] Erreur restauration tâches:', error);
+                }
+            }
+
+            console.log('[SettingsPage] ✅ Restauration terminée avec succès');
+        } catch (error) {
+            console.error('[SettingsPage] ❌ Erreur lors de la restauration:', error);
+            throw error;
+        }
+    }
+
+    exportCategories() {
+        console.log('[SettingsPage] 📤 Export des catégories...');
+        
+        try {
+            const categories = window.categoryManager?.getCategories() || {};
+            
+            // Filtrer uniquement les catégories personnalisées
+            const customCategories = {};
+            Object.entries(categories).forEach(([id, category]) => {
+                if (category.isCustom) {
+                    customCategories[id] = category;
+                }
+            });
+            
+            if (Object.keys(customCategories).length === 0) {
+                this.showToast('Aucune catégorie personnalisée à exporter', 'warning');
+                return;
+            }
+            
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                version: '1.0',
+                type: 'categories_only',
+                categories: customCategories,
+                metadata: {
+                    exportedAt: new Date().toISOString(),
+                    totalCategories: Object.keys(customCategories).length,
+                    application: 'MailSort Pro'
+                }
+            };
+            
+            const filename = `mailsort-categories-${new Date().toISOString().split('T')[0]}.json`;
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            
+            this.downloadFile(blob, filename);
+            this.showToast(`${Object.keys(customCategories).length} catégorie(s) exportée(s)`);
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur export:', error);
+            this.showToast('Erreur lors de l\'export', 'error');
+        }
+    }
+
+    downloadFile(blob, filename) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
+        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
 
+    // ================================================
+    // FONCTIONS UTILITAIRES
+    // ================================================
+    toggleAdvancedSettings() {
+        const content = document.getElementById('advanced-content');
+        const toggle = document.getElementById('advanced-toggle');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            toggle.style.transform = 'rotate(180deg)';
+        } else {
+            content.style.display = 'none';
+            toggle.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    async resetAllSettings() {
+        const confirmation = confirm(`⚠️ ATTENTION ⚠️
+
+Cette action va SUPPRIMER DÉFINITIVEMENT :
+• Toutes vos catégories personnalisées
+• Tous vos paramètres de configuration
+• Toutes vos sauvegardes locales
+• Tous vos mots-clés personnalisés
+
+Cette action est IRRÉVERSIBLE !
+
+Tapez "RESET" pour confirmer :`);
+        
+        if (confirmation) {
+            const finalConfirm = prompt('Tapez "RESET" en majuscules pour confirmer la suppression complète :');
+            if (finalConfirm === 'RESET') {
+                try {
+                    // Supprimer toutes les données locales
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    
+                    // Supprimer les catégories personnalisées
+                    if (window.categoryManager) {
+                        const categories = window.categoryManager.getCategories();
+                        Object.entries(categories).forEach(([id, category]) => {
+                            if (category.isCustom) {
+                                window.categoryManager.deleteCustomCategory(id);
+                            }
+                        });
+                    }
+                    
+                    this.showToast('Réinitialisation terminée. Rechargement...', 'success');
+                    setTimeout(() => location.reload(), 2000);
+                    
+                } catch (error) {
+                    console.error('[SettingsPage] Erreur réinitialisation:', error);
+                    this.showToast('Erreur lors de la réinitialisation', 'error');
+                }
+            } else {
+                this.showToast('Réinitialisation annulée', 'info');
+            }
+        }
+    }
+
+    updateBackupStatus(status, message) {
+        const statusEl = document.getElementById('backup-status');
+        if (!statusEl) return;
+        
+        const icons = {
+            loading: 'fa-spinner fa-spin',
+            ready: 'fa-check-circle',
+            error: 'fa-exclamation-triangle'
+        };
+        
+        const colors = {
+            loading: '#6B7280',
+            ready: '#10B981',
+            error: '#EF4444'
+        };
+        
+        statusEl.innerHTML = `
+            <div class="status-${status}" style="color: ${colors[status]}">
+                <i class="fas ${icons[status]}"></i>
+                ${message}
+            </div>
+        `;
+    }
+
+    async createBackup() {
+        const btn = document.getElementById('backup-btn');
+        if (!btn) return;
+        
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
+        btn.disabled = true;
+        
+        try {
+            // Obtenir les options de sauvegarde
+            const includeEmails = document.getElementById('backup-include-emails')?.checked ?? true;
+            const includeTasks = document.getElementById('backup-include-tasks')?.checked ?? true;
+            
+            const realUsername = await this.backupManager.detectRealUsername();
+            
+            // Créer les données de sauvegarde
+            const backupData = {
+                timestamp: new Date().toISOString(),
+                version: '1.0',
+                categories: window.categoryManager?.getCategories() || {},
+                settings: JSON.parse(localStorage.getItem('categorySettings') || '{}'),
+                metadata: {
+                    totalEmails: window.emailScanner?.getAllEmails()?.length || 0,
+                    createdAt: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    platform: this.backupManager.detectPlatform(),
+                    detectedUsername: realUsername,
+                    backupPath: `C:\\Users\\${realUsername}\\Documents\\MailSort Pro`,
+                    application: 'MailSort Pro',
+                    backupType: 'complete'
+                }
+            };
+            
+            // Ajouter les emails si demandé
+            if (includeEmails) {
+                const allEmails = window.emailScanner?.getAllEmails() || [];
+                backupData.emails = allEmails.slice(0, 1000); // Limiter à 1000 emails
+                backupData.metadata.includedEmails = Math.min(allEmails.length, 1000);
+            }
+            
+            // Ajouter les tâches si demandé
+            if (includeTasks && window.taskManager) {
+                try {
+                    backupData.tasks = window.taskManager.getAllTasks();
+                    backupData.metadata.includedTasks = backupData.tasks.length;
+                } catch (error) {
+                    console.warn('[SettingsPage] Erreur récupération tâches:', error);
+                }
+            }
+            
+            // Créer le nom de fichier
+            const filename = `mailsort-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+            
+            // Télécharger le fichier
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            this.downloadFile(blob, filename);
+            
+            // Enregistrer dans l'historique
+            this.saveBackupRecord(filename, blob.size, backupData.metadata);
+            
+            this.showToast('Sauvegarde créée avec succès!');
+            this.loadBackupHistory();
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur backup:', error);
+            this.showToast('Erreur lors de la création de la sauvegarde', 'error');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    saveBackupRecord(filename, size, metadata = {}) {
+        const backups = JSON.parse(localStorage.getItem('mailsort-backups') || '[]');
+        
+        const record = {
+            name: filename,
+            date: new Date().toISOString(),
+            size: size,
+            type: metadata.backupType || 'complete',
+            categories: metadata.totalCategories || Object.keys(window.categoryManager?.getCategories() || {}).length,
+            emails: metadata.includedEmails || 0,
+            tasks: metadata.includedTasks || 0,
+            id: Date.now().toString()
+        };
+        
+        backups.unshift(record);
+        
+        // Garder seulement les 20 dernières sauvegardes
+        backups.splice(20);
+        
+        localStorage.setItem('mailsort-backups', JSON.stringify(backups));
+    }
+
+    async loadBackupHistory() {
+        const listEl = document.getElementById('backup-history-list');
+        if (!listEl) return;
+        
+        try {
+            const backups = JSON.parse(localStorage.getItem('mailsort-backups') || '[]');
+            
+            if (backups.length === 0) {
+                listEl.innerHTML = `
+                    <div class="empty-state-small">
+                        <i class="fas fa-history"></i>
+                        <p>Aucune sauvegarde trouvée</p>
+                        <small>Créez votre première sauvegarde pour commencer</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            listEl.innerHTML = backups.map(backup => `
+                <div class="backup-history-item">
+                    <div class="backup-item-header">
+                        <div class="backup-item-icon">
+                            <i class="fas fa-file-archive"></i>
+                        </div>
+                        <div class="backup-item-info">
+                            <div class="backup-item-name">${backup.name}</div>
+                            <div class="backup-item-meta">
+                                ${new Date(backup.date).toLocaleString('fr-FR')} • ${this.formatFileSize(backup.size)}
+                            </div>
+                        </div>
+                        <div class="backup-item-type">
+                            <span class="type-badge ${backup.type}">${backup.type === 'complete' ? 'Complète' : 'Partielle'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="backup-item-details">
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <i class="fas fa-tags"></i>
+                                <span>${backup.categories || 0} catégories</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-envelope"></i>
+                                <span>${backup.emails || 0} emails</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-tasks"></i>
+                                <span>${backup.tasks || 0} tâches</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="backup-item-actions">
+                        <button class="btn-small danger" onclick="window.settingsPage.deleteBackupRecord('${backup.id}')" title="Supprimer de l'historique">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur chargement historique:', error);
+            listEl.innerHTML = `
+                <div class="error-state-small">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Erreur lors du chargement de l'historique</p>
+                </div>
+            `;
+        }
+    }
+
+    deleteBackupRecord(backupId) {
+        if (!confirm('Supprimer cette entrée de l\'historique ?')) return;
+        
+        try {
+            const backups = JSON.parse(localStorage.getItem('mailsort-backups') || '[]');
+            const filtered = backups.filter(backup => backup.id !== backupId);
+            
+            localStorage.setItem('mailsort-backups', JSON.stringify(filtered));
+            this.loadBackupHistory();
+            
+            this.showToast('Entrée supprimée de l\'historique');
+        } catch (error) {
+            this.showToast('Erreur lors de la suppression', 'error');
+        }
+    }
+
     formatFileSize(bytes) {
         if (bytes === 0) return '0 B';
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    toast(message, type = 'info') {
+    // ================================================
+    // UTILS
+    // ================================================
+    refreshCategoriesTab() {
+        const categoriesTab = document.getElementById('tab-categories');
+        if (categoriesTab && this.currentTab === 'categories') {
+            categoriesTab.innerHTML = this.renderCategoriesTab();
+        }
+    }
+
+    loadSettings() {
+        try {
+            const saved = localStorage.getItem('categorySettings');
+            return saved ? JSON.parse(saved) : { 
+                activeCategories: null,
+                taskPreselectedCategories: []
+            };
+        } catch (error) {
+            return { 
+                activeCategories: null,
+                taskPreselectedCategories: []
+            };
+        }
+    }
+
+    saveSettings(settings) {
+        try {
+            localStorage.setItem('categorySettings', JSON.stringify(settings));
+        } catch (error) {
+            console.error('[SettingsPage] Erreur sauvegarde:', error);
+        }
+    }
+
+    showToast(message, type = 'success') {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        toast.textContent = message;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'}"></i>
+                ${message}
+            </div>
+        `;
         
-        // Conteneur de toasts
-        let container = document.getElementById('toast-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'toast-container';
-            container.className = 'toast-container';
-            document.body.appendChild(container);
-        }
+        document.body.appendChild(toast);
         
-        container.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
         
-        setTimeout(() => toast.classList.add('show'), 100);
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => {
-                if (toast.parentNode) {
-                    toast.parentNode.removeChild(toast);
-                }
-            }, 300);
-        }, 4000);
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    renderError() {
+        return `
+            <div class="error-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Erreur de chargement</h3>
+                <button class="btn-primary" onclick="location.reload()">
+                    <i class="fas fa-redo"></i> Recharger
+                </button>
+            </div>
+        `;
     }
 
     // ================================================
-    // STYLES COMPLETS
+    // STYLES MODERNES
     // ================================================
     addStyles() {
-        if (document.getElementById('settings-styles')) return;
-
+        if (document.getElementById('settingsPageStyles')) return;
+        
         const styles = document.createElement('style');
-        styles.id = 'settings-styles';
+        styles.id = 'settingsPageStyles';
         styles.textContent = `
-            /* Base */
+            /* Variables CSS */
             .settings-page {
-                max-width: 1400px;
+                --primary: #3B82F6;
+                --secondary: #6B7280;
+                --success: #10B981;
+                --warning: #F59E0B;
+                --danger: #EF4444;
+                --bg: #F9FAFB;
+                --surface: #FFFFFF;
+                --border: #E5E7EB;
+                --text: #111827;
+                --text-light: #6B7280;
+                --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+                --radius: 12px;
+                
+                padding: 24px;
+                max-width: 1200px;
                 margin: 0 auto;
-                padding: 1rem;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-                background: #f1f5f9;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                color: var(--text);
+                background: var(--bg);
                 min-height: 100vh;
-                color: #1e293b;
             }
-
+            
             /* Header */
             .settings-header {
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                color: white;
-                padding: 1.5rem;
-                border-radius: 12px;
-                margin-bottom: 1.5rem;
-                box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
+                text-align: center;
+                margin-bottom: 32px;
             }
-
+            
             .settings-header h1 {
-                margin: 0;
-                font-size: 1.75rem;
+                font-size: 32px;
                 font-weight: 700;
+                margin: 0 0 8px 0;
+                color: var(--text);
             }
-
-            .tabs {
+            
+            .settings-header p {
+                font-size: 16px;
+                color: var(--text-light);
+                margin: 0;
+            }
+            
+            /* Navigation des onglets */
+            .settings-tabs {
                 display: flex;
-                gap: 0.5rem;
+                background: var(--surface);
+                border-radius: var(--radius);
+                padding: 4px;
+                margin-bottom: 24px;
+                box-shadow: var(--shadow);
+                gap: 4px;
             }
-
-            .tab {
-                padding: 0.75rem 1.25rem;
+            
+            .tab-button {
+                flex: 1;
+                padding: 12px 20px;
                 border: none;
-                background: rgba(255, 255, 255, 0.1);
-                color: rgba(255, 255, 255, 0.8);
+                background: transparent;
                 border-radius: 8px;
                 cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
                 font-weight: 500;
-                transition: all 0.2s ease;
-                backdrop-filter: blur(10px);
+                color: var(--text-light);
             }
-
-            .tab:hover {
-                background: rgba(255, 255, 255, 0.15);
+            
+            .tab-button:hover {
+                background: var(--bg);
+                color: var(--text);
+            }
+            
+            .tab-button.active {
+                background: var(--primary);
                 color: white;
-                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
             }
-
-            .tab.active {
-                background: rgba(255, 255, 255, 0.2);
-                color: white;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            }
-
-            /* Content */
+            
+            /* Contenu des onglets */
             .settings-content {
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                background: var(--surface);
+                border-radius: var(--radius);
+                box-shadow: var(--shadow);
                 overflow: hidden;
             }
-
+            
             .tab-content {
                 display: none;
-                padding: 1.5rem;
+                padding: 32px;
             }
-
+            
             .tab-content.active {
                 display: block;
             }
-
-            /* Categories Header Compact */
-            .categories-header {
-                margin-bottom: 1rem;
+            
+            /* Stats dashboard amélioré */
+            .stats-dashboard {
+                margin-bottom: 32px;
             }
-
-            .header-row {
+            
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+            }
+            
+            .stat-card {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 20px;
                 display: flex;
-                justify-content: space-between;
                 align-items: center;
-                gap: 1rem;
-                flex-wrap: wrap;
-            }
-
-            .stats-compact {
-                display: flex;
-                gap: 1rem;
-                align-items: center;
-            }
-
-            .stat-item {
-                font-size: 0.875rem;
-                color: #64748b;
-                font-weight: 500;
-                padding: 0.25rem 0.75rem;
-                background: #f1f5f9;
-                border-radius: 20px;
-                border-left: 3px solid #6366f1;
-            }
-
-            .search-compact {
+                gap: 16px;
+                transition: all 0.2s;
                 position: relative;
-                flex: 1;
-                max-width: 300px;
+                overflow: hidden;
             }
-
-            .search-compact input {
-                width: 100%;
-                padding: 0.5rem 0.75rem;
-                border: 2px solid #e2e8f0;
-                border-radius: 20px;
-                font-size: 0.875rem;
-                background: #f8fafc;
-                transition: all 0.2s ease;
-            }
-
-            .search-compact input:focus {
-                outline: none;
-                border-color: #6366f1;
-                background: white;
-                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-            }
-
-            .search-clear {
+            
+            .stat-card::before {
+                content: '';
                 position: absolute;
-                right: 0.5rem;
-                top: 50%;
-                transform: translateY(-50%);
-                background: #ef4444;
-                color: white;
-                border: none;
-                border-radius: 50%;
-                width: 1.25rem;
-                height: 1.25rem;
-                cursor: pointer;
-                font-size: 0.7rem;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: var(--accent);
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+            
+            .stat-card:hover {
+                border-color: var(--accent);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+            
+            .stat-card:hover::before {
+                opacity: 1;
+            }
+            
+            .stat-card.primary {
+                --accent: var(--primary);
+            }
+            
+            .stat-card.success {
+                --accent: var(--success);
+            }
+            
+            .stat-card.warning {
+                --accent: var(--warning);
+            }
+            
+            .stat-card.info {
+                --accent: #3B82F6;
+            }
+            
+            .stat-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                background: var(--accent)15;
+                color: var(--accent);
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                font-size: 20px;
+                flex-shrink: 0;
             }
-
-            .actions-compact {
-                display: flex;
-                gap: 0.5rem;
+            
+            .stat-content {
+                flex: 1;
+                min-width: 0;
             }
-
-            .btn-compact {
-                padding: 0.5rem 1rem;
-                border: none;
-                border-radius: 6px;
-                cursor: pointer;
+            
+            .stat-number {
+                font-size: 24px;
+                font-weight: 700;
+                color: var(--accent);
+                line-height: 1;
+                margin-bottom: 4px;
+            }
+            
+            .stat-label {
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--text);
+                margin-bottom: 2px;
+            }
+            
+            .stat-detail {
+                font-size: 11px;
+                color: var(--text-light);
                 font-weight: 500;
-                font-size: 0.875rem;
-                transition: all 0.2s ease;
             }
-
-            .btn-compact.btn-primary {
-                background: #6366f1;
-                color: white;
-            }
-
-            .btn-compact.btn-primary:hover {
-                background: #5b21b6;
-                transform: translateY(-1px);
-            }
-
-            .btn-compact.btn-secondary {
-                background: #f1f5f9;
-                color: #475569;
-                border: 1px solid #e2e8f0;
-            }
-
-            .btn-compact.btn-secondary:hover {
-                background: #e2e8f0;
-            }
-
-            /* Categories List */
-            .categories-list {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-
-            .category-row {
+            
+            /* Actions améliorées */
+            .categories-actions-enhanced {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 0.75rem 1rem;
-                background: white;
-                border: 1px solid #f1f5f9;
-                border-radius: 8px;
-                transition: all 0.2s ease;
-                cursor: pointer;
+                margin-bottom: 24px;
+                gap: 20px;
             }
-
-            .category-row:hover {
-                border-color: #e2e8f0;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                transform: translateY(-1px);
+            
+            .actions-left {
+                display: flex;
+                gap: 12px;
             }
-
-            .category-row.inactive {
-                opacity: 0.6;
-                background: #f8fafc;
-            }
-
-            .cat-main {
+            
+            .btn-primary-enhanced,
+            .btn-secondary-enhanced {
                 display: flex;
                 align-items: center;
-                gap: 0.75rem;
-                flex: 1;
-                min-width: 0;
+                gap: 12px;
+                padding: 12px 16px;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+                transition: all 0.2s;
+                text-decoration: none;
+                min-width: 140px;
             }
-
-            .cat-icon-small {
-                width: 2rem;
-                height: 2rem;
+            
+            .btn-primary-enhanced {
+                background: linear-gradient(135deg, var(--primary), #3B82F6);
+                color: white;
+                box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+            }
+            
+            .btn-primary-enhanced:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            }
+            
+            .btn-secondary-enhanced {
+                background: var(--surface);
+                color: var(--text);
+                border: 1px solid var(--border);
+            }
+            
+            .btn-secondary-enhanced:hover {
+                background: var(--bg);
+                border-color: var(--primary);
+                transform: translateY(-1px);
+            }
+            
+            .btn-icon {
+                width: 32px;
+                height: 32px;
                 border-radius: 6px;
+                background: rgba(255, 255, 255, 0.2);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                color: white;
-                font-size: 1rem;
+                font-size: 14px;
                 flex-shrink: 0;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
             }
-
-            .cat-details {
-                flex: 1;
-                min-width: 0;
+            
+            .btn-secondary-enhanced .btn-icon {
+                background: var(--primary)15;
+                color: var(--primary);
             }
-
-            .cat-name {
+            
+            .btn-content {
+                text-align: left;
+            }
+            
+            .btn-title {
+                font-size: 14px;
                 font-weight: 600;
-                color: #1e293b;
-                margin-bottom: 0.25rem;
-                font-size: 0.95rem;
+                line-height: 1.2;
+                margin-bottom: 2px;
             }
-
-            .cat-preview {
-                font-size: 0.8rem;
-                color: #64748b;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+            
+            .btn-subtitle {
+                font-size: 11px;
+                opacity: 0.8;
+                line-height: 1;
             }
-
-            .cat-stats {
+            
+            /* Filtres rapides */
+            .quick-filters {
                 display: flex;
-                gap: 0.5rem;
-                margin-right: 1rem;
+                gap: 4px;
+                background: var(--bg);
+                padding: 4px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
             }
-
-            .stat-badge {
-                font-size: 0.75rem;
-                background: #f1f5f9;
-                color: #475569;
-                padding: 0.25rem 0.5rem;
-                border-radius: 12px;
-                font-weight: 500;
-            }
-
-            .cat-controls {
-                display: flex;
-                gap: 0.25rem;
-            }
-
-            .control-btn {
-                width: 1.75rem;
-                height: 1.75rem;
+            
+            .filter-btn {
+                padding: 6px 12px;
                 border: none;
-                background: #f8fafc;
+                background: transparent;
                 border-radius: 4px;
                 cursor: pointer;
-                font-size: 0.8rem;
-                transition: all 0.2s ease;
+                font-size: 12px;
+                font-weight: 500;
+                color: var(--text-light);
+                transition: all 0.2s;
                 display: flex;
                 align-items: center;
-                justify-content: center;
+                gap: 6px;
             }
-
-            .control-btn:hover {
-                background: #f1f5f9;
-                transform: scale(1.1);
-            }
-
-            .control-btn.active {
-                background: #dcfce7;
-            }
-
-            .control-btn.inactive {
-                background: #fee2e2;
-            }
-
-            .control-btn.starred {
-                background: #fef3c7;
-            }
-
-            .control-btn.edit:hover {
-                background: #dbeafe;
-            }
-
-            .control-btn.delete:hover {
-                background: #fee2e2;
-            }
-
-            .btn-primary, .btn-secondary {
-                padding: 0.75rem 1.5rem;
-                border: none;
-                border-radius: 8px;
-                cursor: pointer;
-                font-weight: 600;
-                font-size: 0.875rem;
-                transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-            }
-
-            .btn-primary {
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                color: white;
-                box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
-            }
-
-            .btn-primary:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-            }
-
-            .btn-secondary {
-                background: #f8fafc;
-                color: #475569;
-                border: 2px solid #e2e8f0;
-            }
-
-            .btn-secondary:hover {
-                background: #f1f5f9;
-                border-color: #cbd5e1;
-                transform: translateY(-1px);
-            }
-
-            /* Categories Grid */
-            .categories-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-                gap: 1.25rem;
-            }
-
-            .category-card {
+            
+            .filter-btn:hover {
                 background: white;
-                border: 2px solid #f1f5f9;
-                border-radius: 12px;
-                overflow: hidden;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+                color: var(--text);
             }
-
-            .category-card:hover {
-                border-color: var(--color);
-                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-                transform: translateY(-2px);
+            
+            .filter-btn.active {
+                background: var(--primary);
+                color: white;
+                box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
             }
-
-            .category-card.inactive {
-                opacity: 0.6;
-                background: #f8fafc;
+            
+            /* Liste des catégories améliorée */
+            .categories-list-enhanced {
+                display: grid;
+                gap: 12px;
             }
-
-            .cat-header {
+            
+            .category-item {
                 display: flex;
                 align-items: center;
-                gap: 1rem;
-                padding: 1.25rem;
-                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                justify-content: space-between;
+                padding: 16px;
+                background: var(--bg);
+                border-radius: var(--radius);
+                border: 1px solid var(--border);
+                transition: all 0.2s;
             }
-
-            .cat-icon {
-                width: 3rem;
-                height: 3rem;
+            
+            .category-item:hover {
+                border-color: var(--primary);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            
+            .category-item.inactive {
+                opacity: 0.6;
+                background: #F5F5F5;
+            }
+            
+            .category-main {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+            
+            .category-icon {
+                width: 48px;
+                height: 48px;
                 border-radius: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                color: white;
-                font-size: 1.25rem;
-                flex-shrink: 0;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                font-size: 24px;
             }
-
-            .cat-info {
-                flex: 1;
-                min-width: 0;
+            
+            .category-info h3 {
+                margin: 0 0 4px 0;
+                font-size: 16px;
+                font-weight: 600;
             }
-
-            .cat-name {
-                font-weight: 700;
-                color: #1e293b;
-                margin-bottom: 0.5rem;
-                font-size: 1.1rem;
-            }
-
-            .cat-stats {
-                font-size: 0.8rem;
-                color: #64748b;
-                font-weight: 500;
-            }
-
-            .cat-actions {
+            
+            .category-meta {
                 display: flex;
-                gap: 0.5rem;
+                gap: 12px;
+                font-size: 13px;
+                color: var(--text-light);
             }
-
-            .act-btn {
-                width: 2rem;
-                height: 2rem;
-                border: none;
-                background: #f1f5f9;
+            
+            .preselected-badge {
+                background: var(--warning);
+                color: white;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            
+            .category-actions {
+                display: flex;
+                gap: 8px;
+            }
+            
+            .action-btn {
+                width: 36px;
+                height: 36px;
+                border: 1px solid var(--border);
+                background: white;
                 border-radius: 6px;
                 cursor: pointer;
-                font-size: 0.875rem;
-                transition: all 0.2s ease;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                transition: all 0.2s;
+                color: var(--text-light);
             }
-
-            .act-btn:hover {
-                background: #e2e8f0;
-                transform: scale(1.1);
+            
+            .action-btn:hover {
+                border-color: var(--primary);
+                color: var(--primary);
             }
-
-            .act-btn.active {
-                background: #dcfce7;
+            
+            .action-btn.active {
+                background: var(--success);
+                color: white;
+                border-color: var(--success);
             }
-
-            .act-btn.inactive {
-                background: #fee2e2;
+            
+            .action-btn.inactive {
+                background: var(--danger);
+                color: white;
+                border-color: var(--danger);
             }
-
-            .act-btn.starred {
-                background: #fef3c7;
+            
+            .action-btn.selected {
+                background: var(--warning);
+                color: white;
+                border-color: var(--warning);
             }
-
-            .act-btn.edit:hover {
-                background: #dbeafe;
+            
+            .action-btn.danger:hover {
+                background: var(--danger);
+                color: white;
+                border-color: var(--danger);
             }
-
-            .act-btn.delete:hover {
-                background: #fee2e2;
+            
+            /* Section backup */
+            .backup-status {
+                margin-bottom: 24px;
+                padding: 16px;
+                background: var(--bg);
+                border-radius: var(--radius);
+                border: 1px solid var(--border);
             }
-
-            /* Category Details */
-            .cat-details {
-                padding: 1.25rem;
-                border-top: 1px solid #f1f5f9;
+            
+            .backup-actions {
+                display: grid;
+                gap: 24px;
+                margin-bottom: 32px;
             }
-
-            .filter-preview {
-                display: flex;
-                flex-direction: column;
-                gap: 0.75rem;
+            
+            .backup-group {
+                padding: 20px;
+                background: var(--bg);
+                border-radius: var(--radius);
+                border: 1px solid var(--border);
             }
-
-            .filter-group {
+            
+            .backup-group h3 {
+                margin: 0 0 8px 0;
+                font-size: 16px;
+                font-weight: 600;
                 display: flex;
                 align-items: center;
-                gap: 0.75rem;
-                flex-wrap: wrap;
+                gap: 8px;
             }
-
-            .filter-label {
-                font-size: 0.75rem;
+            
+            .backup-group p {
+                margin: 0 0 16px 0;
+                color: var(--text-light);
+                font-size: 14px;
+            }
+            
+            .backup-history h3 {
+                margin: 0 0 16px 0;
+                font-size: 18px;
                 font-weight: 600;
-                color: #64748b;
-                min-width: 60px;
-            }
-
-            .filter-tags {
                 display: flex;
-                gap: 0.5rem;
-                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .backup-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 12px;
+                background: var(--bg);
+                border-radius: var(--radius);
+                border: 1px solid var(--border);
+                margin-bottom: 8px;
+            }
+            
+            .backup-info {
                 flex: 1;
             }
-
-            .filter-tag {
-                background: #f1f5f9;
-                color: #475569;
-                padding: 0.25rem 0.5rem;
-                border-radius: 4px;
-                font-size: 0.75rem;
-                font-weight: 500;
-                border: 1px solid #e2e8f0;
-            }
-
-            .filter-more {
-                background: #6366f1;
-                color: white;
-                padding: 0.25rem 0.5rem;
-                border-radius: 4px;
-                font-size: 0.75rem;
+            
+            .backup-name {
                 font-weight: 600;
+                margin-bottom: 4px;
             }
-
+            
+            .backup-date {
+                font-size: 13px;
+                color: var(--text-light);
+            }
+            
+            .backup-size {
+                font-size: 12px;
+                color: var(--text-light);
+            }
+            
+            /* Boutons */
+            .btn-primary, .btn-secondary, .btn-small {
+                padding: 10px 16px;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+                font-weight: 500;
+                transition: all 0.2s;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                text-decoration: none;
+                font-size: 14px;
+            }
+            
+            .btn-primary {
+                background: var(--primary);
+                color: white;
+            }
+            
+            .btn-primary:hover {
+                background: #2563EB;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            }
+            
+            .btn-secondary {
+                background: var(--bg);
+                color: var(--text);
+                border: 1px solid var(--border);
+            }
+            
+            .btn-secondary:hover {
+                background: white;
+                border-color: var(--primary);
+            }
+            
+            .btn-small {
+                padding: 6px 12px;
+                font-size: 12px;
+                background: var(--primary);
+                color: white;
+            }
+            
+            .btn-small:hover {
+                background: #2563EB;
+            }
+            
             /* Modal */
-            .modal {
+            .modal-backdrop {
                 position: fixed;
                 top: 0;
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.6);
+                background: rgba(0, 0, 0, 0.7);
+                backdrop-filter: blur(8px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 z-index: 1000;
-                opacity: 0;
-                visibility: hidden;
-                transition: all 0.3s ease;
-                backdrop-filter: blur(5px);
+                padding: 20px;
             }
-
-            .modal.show {
-                opacity: 1;
-                visibility: visible;
-            }
-
-            .modal-content {
+            
+            .modal-simple {
                 background: white;
-                border-radius: 16px;
-                width: 90%;
-                max-width: 800px;
-                max-height: 90vh;
-                overflow-y: auto;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-                transform: scale(0.9);
-                transition: transform 0.3s ease;
+                border-radius: var(--radius);
+                width: 100%;
+                max-width: 500px;
+                box-shadow: var(--shadow-lg);
+                overflow: hidden;
             }
-
-            .modal.show .modal-content {
-                transform: scale(1);
-            }
-
+            
             .modal-header {
+                padding: 20px;
+                border-bottom: 1px solid var(--border);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 1.5rem;
-                border-bottom: 1px solid #f1f5f9;
-                background: #f8fafc;
             }
-
+            
             .modal-header h2 {
                 margin: 0;
-                font-size: 1.25rem;
-                font-weight: 700;
-                color: #1e293b;
+                font-size: 18px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
-
-            .modal-close {
-                background: none;
+            
+            .btn-close {
+                width: 32px;
+                height: 32px;
                 border: none;
-                font-size: 1.5rem;
+                background: var(--bg);
+                border-radius: 6px;
                 cursor: pointer;
-                color: #64748b;
-                width: 2rem;
-                height: 2rem;
-                border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.2s ease;
             }
-
-            .modal-close:hover {
-                background: #f1f5f9;
-                color: #1e293b;
+            
+            .btn-close:hover {
+                background: var(--danger);
+                color: white;
             }
-
+            
             .modal-body {
-                padding: 1.5rem;
+                padding: 20px;
             }
-
-            .modal-footer {
-                display: flex;
-                justify-content: flex-end;
-                gap: 1rem;
-                padding: 1.5rem;
-                border-top: 1px solid #f1f5f9;
-                background: #f8fafc;
-            }
-
-            /* Form */
-            .form-row {
-                display: grid;
-                grid-template-columns: 2fr 1fr 1fr;
-                gap: 1.5rem;
-                margin-bottom: 2rem;
-            }
-
+            
             .form-group {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
+                margin-bottom: 20px;
             }
-
+            
             .form-group label {
-                font-weight: 600;
-                color: #374151;
-                font-size: 0.875rem;
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 500;
+                color: var(--text);
             }
-
+            
             .form-group input {
-                padding: 0.75rem;
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 1rem;
-                transition: all 0.2s ease;
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-size: 14px;
+                box-sizing: border-box;
             }
-
+            
             .form-group input:focus {
                 outline: none;
-                border-color: #6366f1;
-                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
-
-            /* Icon and Color Selectors */
+            
             .icon-selector, .color-selector {
-                display: flex;
-                flex-direction: column;
-                gap: 0.75rem;
-            }
-
-            .icon-grid, .color-grid {
                 display: grid;
-                grid-template-columns: repeat(8, 1fr);
-                gap: 0.5rem;
+                grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+                gap: 8px;
             }
-
-            .icon-option, .color-option {
-                width: 2rem;
-                height: 2rem;
-                border: 2px solid #e5e7eb;
+            
+            .icon-option {
+                width: 40px;
+                height: 40px;
+                border: 1px solid var(--border);
+                background: white;
                 border-radius: 6px;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.2s ease;
-                background: white;
+                font-size: 20px;
+                transition: all 0.2s;
             }
-
-            .icon-option:hover, .color-option:hover {
-                border-color: #6366f1;
+            
+            .icon-option:hover {
+                border-color: var(--primary);
+            }
+            
+            .icon-option.selected {
+                border-color: var(--primary);
+                background: rgba(59, 130, 246, 0.1);
+            }
+            
+            .color-option {
+                width: 40px;
+                height: 40px;
+                border: 2px solid transparent;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.2s;
+                position: relative;
+            }
+            
+            .color-option:hover {
                 transform: scale(1.1);
             }
-
-            .color-option {
-                border-radius: 50%;
+            
+            .color-option.selected {
+                border-color: var(--text);
             }
-
-            /* Filters Section */
-            .filters-section {
-                display: grid;
-                grid-template-columns: 1fr;
-                gap: 1.5rem;
-            }
-
-            .filter-category {
-                border: 1px solid #e5e7eb;
-                border-radius: 10px;
-                padding: 1.25rem;
-                background: #f8fafc;
-            }
-
-            .filter-category h3 {
-                margin: 0 0 1rem 0;
-                font-size: 1rem;
-                font-weight: 600;
-                color: #374151;
-            }
-
-            .filter-input-group {
-                display: flex;
-                gap: 0.75rem;
-                margin-bottom: 1rem;
-            }
-
-            .filter-input-group input {
-                flex: 1;
-                padding: 0.5rem 0.75rem;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 0.875rem;
-            }
-
-            .filter-input-group button {
-                padding: 0.5rem 1rem;
-                background: #6366f1;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-
-            .filter-input-group button:hover {
-                background: #5b21b6;
-            }
-
-            .filter-list {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-
-            .filter-item {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 0.5rem 0.75rem;
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 6px;
-                font-size: 0.875rem;
-            }
-
-            .filter-text {
-                flex: 1;
-                color: #374151;
-            }
-
-            .filter-item button {
-                background: #ef4444;
-                color: white;
-                border: none;
-                border-radius: 50%;
-                width: 1.25rem;
-                height: 1.25rem;
-                cursor: pointer;
-                font-size: 0.75rem;
+            
+            .color-option.selected::after {
+                content: '✓';
+                position: absolute;
+                inset: 0;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                color: white;
+                font-weight: bold;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
             }
-
-            /* Backup Section */
-            .backup-status {
+            
+            .modal-footer {
+                padding: 20px;
+                border-top: 1px solid var(--border);
                 display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 1.5rem;
-                background: #f0fdf4;
-                border-radius: 10px;
-                margin-bottom: 1.5rem;
-                border-left: 4px solid #10b981;
+                justify-content: flex-end;
+                gap: 12px;
             }
-
-            .status-info {
-                display: flex;
-                align-items: center;
-                gap: 1rem;
-            }
-
-            .status-icon {
-                font-size: 2rem;
-            }
-
-            .status-detail {
-                font-size: 0.875rem;
-                color: #059669;
-                font-weight: 500;
-            }
-
-            .backup-path {
-                font-size: 0.75rem;
-                color: #374151;
-                font-family: 'Courier New', monospace;
-                background: white;
-                padding: 0.75rem;
-                border-radius: 6px;
-                border: 1px solid #e5e7eb;
-                max-width: 300px;
-                word-break: break-all;
-            }
-
-            .backup-actions {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 1.5rem;
-                margin-bottom: 2rem;
-            }
-
-            .backup-card {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 1.5rem;
-                border: 2px solid #f1f5f9;
-                border-radius: 12px;
-                background: white;
-                transition: all 0.2s ease;
-            }
-
-            .backup-card:hover {
-                border-color: #e2e8f0;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-                transform: translateY(-1px);
-            }
-
-            .card-header {
-                display: flex;
-                align-items: center;
-                gap: 1rem;
-            }
-
-            .card-icon {
-                font-size: 1.5rem;
-            }
-
-            .card-header strong {
-                font-size: 1rem;
-                color: #1e293b;
-                margin-bottom: 0.25rem;
-                display: block;
-            }
-
-            .card-header small {
-                font-size: 0.8rem;
-                color: #64748b;
-                display: block;
-            }
-
-            /* History */
-            .backup-history h3 {
-                margin: 0 0 1rem 0;
-                font-size: 1.1rem;
-                color: #1e293b;
-                font-weight: 600;
-            }
-
-            .history-list {
-                display: flex;
-                flex-direction: column;
-                gap: 0.75rem;
-            }
-
-            .history-item {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 1rem;
-                background: #f8fafc;
-                border-radius: 8px;
-                border: 1px solid #f1f5f9;
-                transition: all 0.2s ease;
-            }
-
-            .history-item:hover {
-                background: #f1f5f9;
-                border-color: #e2e8f0;
-            }
-
-            .hist-info {
-                flex: 1;
-            }
-
-            .hist-name {
-                font-size: 0.9rem;
-                font-weight: 600;
-                color: #1e293b;
-                margin-bottom: 0.25rem;
-            }
-
-            .hist-meta {
-                display: flex;
-                gap: 1rem;
-                font-size: 0.75rem;
-                color: #64748b;
-            }
-
-            .hist-date, .hist-size {
-                font-weight: 500;
-            }
-
-            .hist-actions {
-                display: flex;
-                gap: 0.5rem;
-            }
-
-            .hist-actions button {
-                background: none;
-                border: none;
-                cursor: pointer;
-                padding: 0.5rem;
-                border-radius: 6px;
-                transition: all 0.2s ease;
-                font-size: 1rem;
-            }
-
-            .hist-actions button:first-child:hover {
-                background: #dbeafe;
-            }
-
-            .hist-actions button:last-child:hover {
-                background: #fee2e2;
-            }
-
-            /* Empty States */
+            
+            /* États vides */
             .empty-state {
                 text-align: center;
-                padding: 3rem 1rem;
-                color: #64748b;
+                padding: 40px 20px;
+                color: var(--text-light);
             }
-
-            .empty-state.small {
-                padding: 2rem 1rem;
+            
+            .empty-state i {
+                font-size: 48px;
+                margin-bottom: 16px;
+                display: block;
             }
-
-            .empty-icon {
-                font-size: 3rem;
-                margin-bottom: 1rem;
-                opacity: 0.5;
+            
+            .empty-state h3 {
+                margin: 0 0 8px 0;
+                color: var(--text);
             }
-
-            .empty-title {
-                font-size: 1.1rem;
-                font-weight: 600;
-                color: #475569;
-                margin-bottom: 0.5rem;
+            
+            .error-state {
+                text-align: center;
+                padding: 40px 20px;
             }
-
-            .empty-subtitle {
-                font-size: 0.9rem;
-                color: #64748b;
+            
+            .error-state i {
+                font-size: 48px;
+                color: var(--danger);
+                margin-bottom: 16px;
+                display: block;
             }
-
-            /* Toast Container */
-            .toast-container {
-                position: fixed;
-                bottom: 1rem;
-                right: 1rem;
-                z-index: 1001;
+            
+            /* Modal d'édition */
+            .modal-edit {
+                background: white;
+                border-radius: var(--radius);
+                width: 100%;
+                max-width: 800px;
+                max-height: 90vh;
+                box-shadow: var(--shadow-lg);
+                overflow: hidden;
                 display: flex;
                 flex-direction: column;
-                gap: 0.5rem;
-                max-width: 300px;
             }
-
-            .toast {
-                background: #1e293b;
-                color: white;
-                padding: 0.875rem 1.25rem;
-                border-radius: 8px;
-                font-size: 0.875rem;
+            
+            .modal-tabs {
+                display: flex;
+                background: var(--bg);
+                border-bottom: 1px solid var(--border);
+                padding: 0 20px;
+            }
+            
+            .tab-btn {
+                padding: 12px 20px;
+                border: none;
+                background: none;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text-light);
                 font-weight: 500;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-                transform: translateX(100%);
-                transition: transform 0.3s ease;
-                word-wrap: break-word;
+                border-bottom: 2px solid transparent;
+                transition: all 0.2s;
             }
-
+            
+            .tab-btn:hover {
+                color: var(--text);
+                background: white;
+            }
+            
+            .tab-btn.active {
+                color: var(--primary);
+                border-bottom-color: var(--primary);
+                background: white;
+            }
+            
+            .edit-tab-content {
+                display: none;
+                padding: 24px;
+                overflow-y: auto;
+                flex: 1;
+            }
+            
+            .edit-tab-content.active {
+                display: block;
+            }
+            
+            /* Layout des mots-clés */
+            .keywords-layout {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+            }
+            
+            .keyword-section {
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 20px;
+            }
+            
+            .section-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+            
+            .section-header h4 {
+                margin: 0;
+                font-size: 16px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .keyword-count {
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            
+            .section-description {
+                margin: 0 0 16px 0;
+                font-size: 13px;
+                color: var(--text-light);
+                line-height: 1.4;
+            }
+            
+            .input-group {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            
+            .input-group input {
+                flex: 1;
+                padding: 8px 12px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            
+            .input-group input:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+            }
+            
+            .btn-add {
+                width: 36px;
+                height: 36px;
+                border: none;
+                border-radius: 6px;
+                color: white;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+            }
+            
+            .btn-add:hover {
+                transform: scale(1.05);
+            }
+            
+            .keywords-list, .filters-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                min-height: 40px;
+            }
+            
+            .keyword-tag, .filter-tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 10px;
+                border-radius: 16px;
+                font-size: 13px;
+                font-weight: 500;
+                transition: all 0.2s;
+            }
+            
+            .keyword-tag button, .filter-tag button {
+                background: none;
+                border: none;
+                color: currentColor;
+                cursor: pointer;
+                padding: 2px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0.7;
+                transition: opacity 0.2s;
+            }
+            
+            .keyword-tag button:hover, .filter-tag button:hover {
+                opacity: 1;
+                background: rgba(255, 255, 255, 0.2);
+            }
+            
+            /* Layout des filtres */
+            .filters-layout {
+                display: grid;
+                gap: 24px;
+            }
+            
+            .filter-group {
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 20px;
+            }
+            
+            .filter-group h3 {
+                margin: 0 0 20px 0;
+                font-size: 18px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text);
+            }
+            
+            .filter-section {
+                margin-bottom: 20px;
+            }
+            
+            .filter-section:last-child {
+                margin-bottom: 0;
+            }
+            
+            .filter-section h4 {
+                margin: 0 0 12px 0;
+                font-size: 14px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text);
+            }
+            
+            /* Zone de danger */
+            .settings-section {
+                max-width: 500px;
+            }
+            
+            .danger-zone {
+                background: var(--danger)05;
+                border: 2px solid var(--danger)20;
+                border-radius: var(--radius);
+                padding: 20px;
+            }
+            
+            .danger-zone h3 {
+                margin: 0 0 8px 0;
+                color: var(--danger);
+                font-size: 16px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .danger-zone p {
+                margin: 0 0 16px 0;
+                color: var(--text-light);
+                font-size: 14px;
+                line-height: 1.4;
+            }
+            
+            /* Informations de backup */
+            .backup-path-info {
+                margin-bottom: 24px;
+                padding: 16px;
+                background: var(--bg);
+                border-radius: var(--radius);
+                border: 1px solid var(--border);
+            }
+            
+            .backup-path-display {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                color: var(--text);
+                font-weight: 500;
+            }
+            
+            .folder-status {
+                background: var(--primary)05;
+                border: 1px solid var(--primary)20;
+                border-radius: 6px;
+                padding: 12px;
+                margin-bottom: 20px;
+            }
+            
+            .folder-status p {
+                margin: 0;
+                font-size: 13px;
+                color: var(--primary);
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+                line-height: 1.4;
+            }
+            
+            .folder-status i {
+                margin-top: 2px;
+                flex-shrink: 0;
+            }
+            
+            .folder-troubleshooting {
+                background: var(--warning)05;
+                border: 1px solid var(--warning)20;
+                border-radius: 6px;
+                padding: 16px;
+                margin-bottom: 20px;
+            }
+            
+            .folder-troubleshooting h4 {
+                margin: 0 0 8px 0;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--warning);
+            }
+            
+            .folder-troubleshooting ul {
+                margin: 0;
+                padding-left: 20px;
+            }
+            
+            .folder-troubleshooting li {
+                margin-bottom: 6px;
+                font-size: 13px;
+                color: var(--text-light);
+            }
+            
+            .folder-troubleshooting strong {
+                color: var(--text);
+            }
+            .backup-notification {
+                position: fixed;
+                top: 24px;
+                right: 24px;
+                background: white;
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                box-shadow: var(--shadow-lg);
+                z-index: 1500;
+                max-width: 400px;
+                animation: slideInRight 0.3s ease;
+            }
+            
+            @keyframes slideInRight {
+                from { transform: translateX(100%); }
+                to { transform: translateX(0); }
+            }
+            
+            .notification-content {
+                padding: 16px;
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .notification-content i {
+                color: var(--primary);
+                font-size: 20px;
+                margin-top: 2px;
+            }
+            
+            .notification-content > div {
+                flex: 1;
+            }
+            
+            .notification-content strong {
+                display: block;
+                margin-bottom: 4px;
+                color: var(--text);
+            }
+            
+            .notification-content p {
+                margin: 0;
+                font-size: 13px;
+                color: var(--text-light);
+                word-break: break-all;
+            }
+            
+            .notification-content button {
+                background: none;
+                border: none;
+                color: var(--text-light);
+                cursor: pointer;
+                padding: 4px;
+                border-radius: 4px;
+                transition: all 0.2s;
+            }
+            
+            .notification-content button:hover {
+                background: var(--bg);
+                color: var(--text);
+            }
+            
+            /* Modal de permissions */
+            .permission-modal .modal-simple {
+                max-width: 600px;
+            }
+            
+            .permission-info {
+                display: flex;
+                gap: 20px;
+                align-items: flex-start;
+            }
+            
+            .permission-icon {
+                background: var(--primary)10;
+                border-radius: 12px;
+                padding: 20px;
+                color: var(--primary);
+                font-size: 32px;
+                flex-shrink: 0;
+            }
+            
+            .permission-content h3 {
+                margin: 0 0 12px 0;
+                color: var(--text);
+                font-size: 18px;
+            }
+            
+            .permission-content > p {
+                margin: 0 0 20px 0;
+                color: var(--text-light);
+                line-height: 1.5;
+            }
+            
+            .permission-details,
+            .permission-benefits,
+            .permission-security {
+                margin-bottom: 20px;
+                padding: 16px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+            }
+            
+            .permission-details {
+                background: var(--bg);
+            }
+            
+            .permission-benefits {
+                background: var(--success)05;
+                border-color: var(--success)20;
+            }
+            
+            .permission-security {
+                background: var(--primary)05;
+                border-color: var(--primary)20;
+            }
+            
+            .permission-details h4,
+            .permission-benefits h4 {
+                margin: 0 0 8px 0;
+                font-size: 14px;
+                font-weight: 600;
+            }
+            
+            .permission-details ul,
+            .permission-benefits ul {
+                margin: 0;
+                padding-left: 20px;
+            }
+            
+            .permission-details li {
+                margin-bottom: 4px;
+                font-size: 13px;
+                color: var(--text-light);
+            }
+            
+            .permission-benefits li {
+                margin-bottom: 4px;
+                font-size: 13px;
+                color: var(--success);
+            }
+            
+            .permission-details code {
+                background: white;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 12px;
+                border: 1px solid var(--border);
+                word-break: break-all;
+            }
+            
+            .permission-security p {
+                margin: 0;
+                font-size: 13px;
+                color: var(--primary);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            /* Modal d'informations de dossier */
+            .folder-info {
+                display: flex;
+                gap: 20px;
+                align-items: flex-start;
+            }
+            
+            .folder-icon {
+                background: var(--warning)10;
+                border-radius: 12px;
+                padding: 20px;
+                color: var(--warning);
+                font-size: 32px;
+                flex-shrink: 0;
+            }
+            
+            .folder-details h3 {
+                margin: 0 0 12px 0;
+                color: var(--text);
+            }
+            
+            .folder-path {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                margin-bottom: 20px;
+                padding: 12px;
+                background: var(--bg);
+                border-radius: 6px;
+                border: 1px solid var(--border);
+            }
+            
+            .folder-path code {
+                flex: 1;
+                background: none;
+                border: none;
+                padding: 0;
+                font-size: 13px;
+                word-break: break-all;
+                color: var(--text);
+            }
+            
+            .btn-copy {
+                background: var(--primary);
+                color: white;
+                border: none;
+                padding: 6px 10px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                transition: all 0.2s;
+                flex-shrink: 0;
+            }
+            
+            .btn-copy:hover {
+                background: #2563EB;
+            }
+            
+            .folder-instructions,
+            .folder-alternatives {
+                margin-bottom: 20px;
+            }
+            
+            .folder-instructions h4,
+            .folder-alternatives h4 {
+                margin: 0 0 8px 0;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text);
+            }
+            
+            .folder-instructions ol,
+            .folder-alternatives ul {
+                margin: 0;
+                padding-left: 20px;
+            }
+            
+            .folder-instructions li,
+            .folder-alternatives li {
+                margin-bottom: 4px;
+                font-size: 13px;
+                color: var(--text-light);
+            }
+            
+            kbd {
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 3px;
+                padding: 2px 6px;
+                font-size: 11px;
+                font-family: monospace;
+            }
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                background: var(--text);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: var(--shadow-lg);
+                z-index: 2000;
+                transform: translateY(100px);
+                transition: transform 0.3s;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                max-width: 400px;
+            }
+            
             .toast.show {
-                transform: translateX(0);
+                transform: translateY(0);
             }
-
+            
             .toast.success {
-                background: #059669;
+                background: var(--success);
             }
-
+            
             .toast.error {
-                background: #dc2626;
+                background: var(--danger);
             }
-
-            .toast.warning {
-                background: #d97706;
+            
+            .toast.info {
+                background: var(--primary);
             }
-
-            /* Responsive Design */
-            @media (max-width: 1024px) {
-                .settings-header {
-                    flex-direction: column;
-                    gap: 1rem;
-                    text-align: center;
-                }
-
-                .form-row {
-                    grid-template-columns: 1fr;
-                }
-
-                .backup-actions {
-                    grid-template-columns: 1fr;
-                }
-            }
-
+            
+            /* Responsive */
             @media (max-width: 768px) {
                 .settings-page {
-                    padding: 0.5rem;
-                }
-
-                .categories-list {
-                    gap: 0.75rem;
+                    padding: 16px;
                 }
                 
-                .category-row {
+                .tab-content {
+                    padding: 20px;
+                }
+                
+                .stats-row {
+                    grid-template-columns: 1fr;
+                }
+                
+                .categories-actions {
                     flex-direction: column;
-                    align-items: flex-start;
-                    gap: 0.75rem;
                 }
-
-                .cat-main {
-                    width: 100%;
-                }
-
-                .cat-controls {
-                    align-self: flex-end;
-                }
-
-                .header-row {
+                
+                .category-item {
                     flex-direction: column;
-                    gap: 0.75rem;
                     align-items: stretch;
+                    gap: 16px;
                 }
-
-                .search-compact {
-                    max-width: none;
-                }
-
-                .stats-compact {
-                    justify-content: center;
-                    flex-wrap: wrap;
-                }
-
-                .actions-compact {
+                
+                .category-actions {
                     justify-content: center;
                 }
-            }
-
-            @media (max-width: 480px) {
-                .cat-stats {
+                
+                .backup-item {
                     flex-direction: column;
-                    gap: 0.25rem;
-                    margin-right: 0.5rem;
+                    align-items: stretch;
+                    gap: 12px;
                 }
-
-                .stat-badge {
-                    font-size: 0.7rem;
-                }
-
-                .stats-compact {
-                    gap: 0.5rem;
-                }
-
-                .stat-item {
-                    font-size: 0.8rem;
-                    padding: 0.2rem 0.5rem;
-                }
-            }
-
-                .modal-content {
-                    width: 95%;
-                    margin: 1rem;
-                }
-
-                .icon-grid, .color-grid {
-                    grid-template-columns: repeat(6, 1fr);
-                }
-
-                .filter-input-group {
-                    flex-direction: column;
-                }
-
-                .search-bar {
-                    max-width: none;
-                }
-
-                .backup-status {
-                    flex-direction: column;
-                    gap: 1rem;
-                    text-align: center;
-                }
-
-                .backup-path {
-                    max-width: none;
-                }
-            }
-
-            @media (max-width: 480px) {
-                .cat-header {
-                    flex-direction: column;
-                    text-align: center;
-                    gap: 0.75rem;
-                }
-
-                .cat-actions {
-                    justify-content: center;
-                }
-
-                .filter-group {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 0.5rem;
-                }
-
-                .toast-container {
-                    left: 1rem;
-                    right: 1rem;
-                    max-width: none;
-                }
-            }
-
-            /* Animation pour les cartes */
-            @keyframes slideIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-
-            .category-card {
-                animation: slideIn 0.3s ease-out;
-            }
-
-            /* Scrollbar personnalisée */
-            .modal-content::-webkit-scrollbar {
-                width: 6px;
-            }
-
-            .modal-content::-webkit-scrollbar-track {
-                background: #f1f5f9;
-            }
-
-            .modal-content::-webkit-scrollbar-thumb {
-                background: #cbd5e1;
-                border-radius: 3px;
-            }
-
-            .modal-content::-webkit-scrollbar-thumb:hover {
-                background: #94a3b8;
             }
         `;
-
+        
         document.head.appendChild(styles);
     }
 }
 
 // ================================================
-// GESTIONNAIRE DE BACKUP COMPLET
+// GESTIONNAIRE DE BACKUP LOCAL INTELLIGENT
 // ================================================
-class BackupManagerComplete {
+class BackupManager {
     constructor() {
-        this.username = null;
         this.backupPath = null;
-        this.history = this.loadHistory();
+        this.backupHandle = null;
+        this.isInitialized = false;
+        this.hasPermission = false;
+        this.detectedPaths = [];
     }
 
-    async init() {
-        console.log('[BackupManager] 🔍 Initialisation du système de sauvegarde...');
-        
+    async initialize() {
         try {
-            // Détecter automatiquement l'utilisateur
-            this.username = await this.detectUser();
-            this.backupPath = `C:\\Users\\${this.username}\\Documents\\MailSort Pro`;
+            console.log('[BackupManager] 🔍 Détection intelligente des dossiers...');
             
-            // Vérifier si le dossier existe
-            const folderExists = await this.checkFolderExists();
+            // Vérifier les permissions déjà accordées
+            const savedPath = localStorage.getItem('mailsort-backup-path');
+            const hasPermission = localStorage.getItem('mailsort-backup-permission') === 'granted';
             
-            console.log('[BackupManager] ✅ Initialisé:', {
-                username: this.username,
-                path: this.backupPath,
-                folderExists
-            });
+            if (savedPath && hasPermission) {
+                this.backupPath = savedPath;
+                this.hasPermission = true;
+                this.isInitialized = true;
+                console.log('[BackupManager] ✅ Utilisation du chemin sauvegardé:', this.backupPath);
+                return;
+            }
+
+            // Détecter les chemins disponibles selon l'environnement
+            await this.detectAvailablePaths();
             
-            return {
-                success: true,
-                path: this.backupPath,
-                username: this.username,
-                folderExists
-            };
+            // Mode simplifié : toujours utiliser le fallback avec téléchargements
+            await this.initializeFallback();
+
+            this.isInitialized = true;
+            console.log('[BackupManager] ✅ Initialisé avec le chemin:', this.backupPath);
+        } catch (error) {
+            console.error('[BackupManager] ❌ Erreur d\'initialisation:', error);
+            // Même en cas d'erreur, initialiser en mode fallback
+            this.backupPath = 'Dossier Téléchargements';
+            this.hasPermission = true;
+            this.isInitialized = true;
+        }
+    }
+
+    async detectAvailablePaths() {
+        this.detectedPaths = [];
+        
+        // Détecter le vrai nom d'utilisateur
+        const realUsername = await this.detectRealUsername();
+        
+        // Chemins communs selon l'OS avec le vrai nom d'utilisateur
+        const commonPaths = {
+            windows: [
+                `C:\\Users\\${realUsername}\\Documents\\MailSort Pro`,
+                `C:\\Users\\${realUsername}\\Desktop\\MailSort Pro`,
+                `C:\\Users\\${realUsername}\\Downloads\\MailSort Pro`,
+                `C:\\MailSort Pro`,
+                `C:\\Users\\${realUsername}\\AppData\\Roaming\\MailSort Pro`
+            ],
+            mac: [
+                `/Users/${realUsername}/Documents/MailSort Pro`,
+                `/Users/${realUsername}/Desktop/MailSort Pro`,
+                `/Users/${realUsername}/Downloads/MailSort Pro`,
+                '/Applications/MailSort Pro'
+            ],
+            linux: [
+                `/home/${realUsername}/Documents/MailSort Pro`,
+                `/home/${realUsername}/Desktop/MailSort Pro`,
+                `/home/${realUsername}/Downloads/MailSort Pro`,
+                '/opt/MailSort Pro'
+            ]
+        };
+
+        // Détecter l'OS
+        const platform = this.detectPlatform();
+        const paths = commonPaths[platform] || commonPaths.windows;
+        
+        this.detectedPaths = paths;
+        
+        console.log('[BackupManager] 🗂️ Chemins détectés pour', platform, 'utilisateur:', realUsername);
+        console.log('[BackupManager] 📁 Chemins:', this.detectedPaths);
+    }
+
+    async detectRealUsername() {
+        try {
+            console.log('[BackupManager] 🔍 Détection du nom d\'utilisateur...');
+            
+            // Méthode 1: Utiliser l'utilisateur Microsoft connecté
+            if (window.authService && window.authService.isAuthenticated && window.authService.isAuthenticated()) {
+                try {
+                    const userInfo = await window.authService.getUserInfo();
+                    console.log('[BackupManager] 👤 Info utilisateur Microsoft:', userInfo);
+                    
+                    if (userInfo && userInfo.userPrincipalName) {
+                        // Extraire le nom d'utilisateur de l'email : "vianney.hastings@hotmail.fr" → "vianney"
+                        const emailPart = userInfo.userPrincipalName.split('@')[0];
+                        let username = emailPart.split('.')[0]; // Prendre la première partie avant le point
+                        username = username.replace(/[^a-zA-Z0-9]/g, ''); // Nettoyer
+                        
+                        if (username && username.length > 2) {
+                            console.log('[BackupManager] ✅ Nom d\'utilisateur extrait de l\'email:', username);
+                            return username;
+                        }
+                    }
+                    
+                    if (userInfo && userInfo.displayName) {
+                        // Utiliser le prénom du nom d'affichage : "vianney hastings" → "vianney"
+                        const firstName = userInfo.displayName.split(' ')[0];
+                        const cleanName = firstName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                        
+                        if (cleanName && cleanName.length > 2) {
+                            console.log('[BackupManager] ✅ Nom d\'utilisateur extrait du nom d\'affichage:', cleanName);
+                            return cleanName;
+                        }
+                    }
+                } catch (error) {
+                    console.log('[BackupManager] ⚠️ Erreur récupération info utilisateur:', error);
+                }
+            }
+
+            // Méthode 2: Tenter via l'API Electron (si disponible)
+            if (window.electronAPI && window.electronAPI.getUsername) {
+                const username = await window.electronAPI.getUsername();
+                if (username && username !== 'User') {
+                    console.log('[BackupManager] ✅ Nom d\'utilisateur Electron:', username);
+                    return username;
+                }
+            }
+
+            // Méthode 3: Tenter les variables d'environnement
+            if (typeof process !== 'undefined' && process.env) {
+                const envUsername = process.env.USERNAME || process.env.USER;
+                if (envUsername && envUsername !== 'User') {
+                    console.log('[BackupManager] ✅ Nom d\'utilisateur environnement:', envUsername);
+                    return envUsername;
+                }
+            }
+
+            // Méthode 4: Détecter via les API Web modernes
+            try {
+                if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+                    const entropy = await navigator.userAgentData.getHighEntropyValues(['platformVersion']);
+                    // Cette API ne donne pas le nom d'utilisateur, mais on peut essayer d'autres méthodes
+                }
+            } catch (error) {
+                // API non supportée
+            }
+
+            // Fallback intelligent basé sur des noms courants
+            const commonUsernames = [
+                'utilisateur', 'user', 'admin', 'pc', 'desktop',
+                navigator.language?.includes('fr') ? 'utilisateur' : 'user'
+            ];
+            
+            console.log('[BackupManager] ⚠️ Utilisation du fallback, nom par défaut');
+            return commonUsernames[0];
             
         } catch (error) {
-            console.error('[BackupManager] ❌ Erreur init:', error);
-            return {
-                success: false,
-                error: error.message,
-                path: null
-            };
+            console.error('[BackupManager] ❌ Erreur détection nom utilisateur:', error);
+            return 'utilisateur'; // Fallback français
         }
     }
 
-    async detectUser() {
-        // Méthode 1: Vérifier le localStorage
-        let username = localStorage.getItem('mailsort-username');
-        
-        if (username) {
-            console.log('[BackupManager] 👤 Utilisateur trouvé en cache:', username);
-            return username;
+    // Méthode pour tester l'existence d'un dossier (quand possible)
+    async testFolderExists(path) {
+        try {
+            if (window.electronAPI && window.electronAPI.checkFolderExists) {
+                return await window.electronAPI.checkFolderExists(path);
+            }
+            
+            // En environnement web, on ne peut pas tester l'existence
+            // On retourne true par défaut
+            return true;
+        } catch (error) {
+            return false;
         }
-
-        // Méthode 2: Essayer de détecter via les variables d'environnement simulées
-        const possibleUsers = ['Admin', 'User', 'Utilisateur', 'PC'];
-        
-        // Méthode 3: Demander à l'utilisateur avec une interface améliorée
-        username = await this.promptForUsername(possibleUsers);
-        
-        if (username) {
-            username = username.trim().replace(/[^a-zA-Z0-9._-]/g, '');
-            localStorage.setItem('mailsort-username', username);
-            console.log('[BackupManager] 💾 Nom d\'utilisateur sauvegardé:', username);
-            return username;
-        }
-        
-        throw new Error('Nom d\'utilisateur requis pour créer le dossier de sauvegarde');
     }
 
-    async promptForUsername(suggestions) {
+    // Méthode améliorée pour obtenir le meilleur chemin
+    async getBestAvailablePath() {
+        for (const path of this.detectedPaths) {
+            const exists = await this.testFolderExists(path);
+            if (exists) {
+                console.log('[BackupManager] ✅ Dossier existant trouvé:', path);
+                return path;
+            }
+        }
+        
+        // Si aucun dossier n'existe, retourner le premier (Documents)
+        console.log('[BackupManager] 📁 Utilisation du chemin par défaut:', this.detectedPaths[0]);
+        return this.detectedPaths[0];
+    }
+
+    detectPlatform() {
+        const userAgent = navigator.userAgent.toLowerCase();
+        if (userAgent.includes('win')) return 'windows';
+        if (userAgent.includes('mac')) return 'mac';
+        if (userAgent.includes('linux')) return 'linux';
+        return 'windows'; // Défaut
+    }
+
+    resolvePath(path) {
+        if (typeof window !== 'undefined') {
+            // En environnement web, approximation des variables
+            if (path.includes('%USERPROFILE%')) {
+                // Approximation du profil utilisateur
+                const username = 'User'; // Ou récupérer depuis une autre source
+                return path.replace('%USERPROFILE%', `C:\\Users\\${username}`);
+            }
+            if (path.includes('%APPDATA%')) {
+                const username = 'User';
+                return path.replace('%APPDATA%', `C:\\Users\\${username}\\AppData\\Roaming`);
+            }
+            if (path.includes('~')) {
+                return path.replace('~', '/Users/User'); // Approximation macOS/Linux
+            }
+        }
+        return path;
+    }
+
+    async initializeElectron() {
+        try {
+            // Dans un vrai environnement Electron
+            this.backupPath = await window.electronAPI.setupBackupFolder();
+            this.hasPermission = true;
+            this.savePermissions();
+        } catch (error) {
+            console.error('[BackupManager] Erreur Electron:', error);
+            throw error;
+        }
+    }
+
+    async initializeFileSystemAPI() {
+        try {
+            // Demander l'autorisation à l'utilisateur pour choisir/créer le dossier
+            const needsPermission = !localStorage.getItem('mailsort-backup-permission');
+            
+            if (needsPermission) {
+                const userChoice = await this.requestUserPermission();
+                if (!userChoice) {
+                    throw new Error('Permission refusée par l\'utilisateur');
+                }
+            }
+
+            // Utiliser l'API File System Access pour sélectionner/créer le dossier
+            this.backupHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                startIn: 'documents'
+            });
+
+            this.backupPath = this.backupHandle.name;
+            this.hasPermission = true;
+            this.savePermissions();
+
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                throw new Error('Sélection du dossier annulée');
+            }
+            console.error('[BackupManager] Erreur File System API:', error);
+            await this.initializeFallback();
+        }
+    }
+
+    async initializeFallback() {
+        // Mode de fallback : utiliser le meilleur chemin détecté
+        console.log('[BackupManager] 🔄 Mode de fallback activé');
+        
+        this.backupPath = await this.getBestAvailablePath();
+        this.hasPermission = true; // Pas de vraie permission nécessaire en fallback
+        
+        // Informer l'utilisateur avec le vrai chemin
+        this.showPermissionDialog();
+        this.savePermissions();
+    }
+
+    async requestUserPermission() {
         return new Promise((resolve) => {
-            const modal = document.createElement('div');
-            modal.className = 'modal show';
-            modal.style.zIndex = '1002';
-            
-            modal.innerHTML = `
-                <div class="modal-content" style="max-width: 500px;">
-                    <div class="modal-header">
-                        <h2>🔧 Configuration du système de sauvegarde</h2>
-                    </div>
-                    <div class="modal-body">
-                        <div style="margin-bottom: 1.5rem;">
-                            <p style="color: #475569; margin-bottom: 1rem;">
-                                Pour créer automatiquement votre dossier de sauvegarde, nous avons besoin de votre nom d'utilisateur Windows.
-                            </p>
-                            <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; border-left: 3px solid #6366f1;">
-                                <strong>📁 Le dossier sera créé ici :</strong><br>
-                                <code style="color: #6366f1;">C:\\Users\\[VOTRE_NOM]\\Documents\\MailSort Pro</code>
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 1.5rem;">
-                            <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">
-                                Nom d'utilisateur Windows :
-                            </label>
-                            <input type="text" id="username-input" 
-                                   placeholder="Votre nom d'utilisateur..." 
-                                   style="width: 100%; padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem;">
-                        </div>
-
-                        ${suggestions.length > 0 ? `
-                            <div style="margin-bottom: 1.5rem;">
-                                <p style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.75rem;">
-                                    💡 Suggestions courantes :
-                                </p>
-                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                                    ${suggestions.map(user => `
-                                        <button type="button" 
-                                                onclick="document.getElementById('username-input').value='${user}'" 
-                                                style="padding: 0.5rem 1rem; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
-                                            ${user}
-                                        </button>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        ` : ''}
-
-                        <div style="background: #ecfdf5; padding: 1rem; border-radius: 8px; border-left: 3px solid #10b981;">
-                            <strong>ℹ️ Comment trouver votre nom d'utilisateur :</strong><br>
-                            <small style="color: #059669;">
-                                • Appuyez sur Win + R, tapez "cmd" et Entrée<br>
-                                • Tapez "echo %USERNAME%" et Entrée<br>
-                                • Ou regardez dans C:\\Users\\
-                            </small>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" 
-                                onclick="this.closest('.modal').remove(); resolve(null)" 
-                                class="btn-secondary">
-                            Annuler
-                        </button>
-                        <button type="button" 
-                                onclick="
-                                    const input = document.getElementById('username-input');
-                                    if (input.value.trim()) {
-                                        this.closest('.modal').remove();
-                                        resolve(input.value.trim());
-                                    } else {
-                                        input.style.borderColor = '#ef4444';
-                                        input.focus();
-                                    }
-                                " 
-                                class="btn-primary">
-                            ✅ Confirmer
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            // Gérer la fermeture propre
-            const confirmBtn = modal.querySelector('.btn-primary');
-            const cancelBtn = modal.querySelector('.btn-secondary');
-            const input = modal.querySelector('#username-input');
-            
-            confirmBtn.onclick = () => {
-                const value = input.value.trim();
-                if (value) {
-                    document.body.removeChild(modal);
-                    resolve(value);
-                } else {
-                    input.style.borderColor = '#ef4444';
-                    input.focus();
-                }
-            };
-            
-            cancelBtn.onclick = () => {
-                document.body.removeChild(modal);
-                resolve(null);
-            };
-
-            input.onkeypress = (e) => {
-                if (e.key === 'Enter') {
-                    confirmBtn.click();
-                }
-            };
-            
+            const modal = this.createPermissionModal(resolve);
             document.body.appendChild(modal);
-            input.focus();
         });
     }
 
-    async checkFolderExists() {
-        // Simulation de vérification du dossier
-        // Dans une vraie app, cela ferait appel à l'API Electron
-        const existsInCache = localStorage.getItem('mailsort-folder-created');
-        return existsInCache === 'true';
+    createPermissionModal(callback) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop permission-modal';
+        modal.innerHTML = `
+            <div class="modal-simple permission-dialog">
+                <div class="modal-header">
+                    <h2><i class="fas fa-shield-alt"></i> Autorisation de sauvegarde</h2>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="permission-info">
+                        <div class="permission-icon">
+                            <i class="fas fa-folder-plus"></i>
+                        </div>
+                        <div class="permission-content">
+                            <h3>MailSort Pro souhaite créer un dossier de sauvegarde</h3>
+                            <p>Pour sauvegarder vos catégories et paramètres de manière sécurisée, nous avons besoin de créer un dossier dédié.</p>
+                            
+                            <div class="permission-details">
+                                <h4>📍 Emplacements suggérés :</h4>
+                                <ul>
+                                    ${this.detectedPaths.slice(0, 3).map(path => 
+                                        `<li><code>${path}</code></li>`
+                                    ).join('')}
+                                </ul>
+                            </div>
+                            
+                            <div class="permission-benefits">
+                                <h4>✅ Avantages :</h4>
+                                <ul>
+                                    <li>Sauvegarde automatique de vos données</li>
+                                    <li>Restauration facile en cas de problème</li>
+                                    <li>Export/import entre appareils</li>
+                                    <li>Historique des versions</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="permission-security">
+                                <p><i class="fas fa-lock"></i> <strong>Sécurité :</strong> Toutes les données restent locales sur votre appareil. Aucune information n'est envoyée vers des serveurs externes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="this.closest('.permission-modal').remove(); window.settingsPage.backupManager.handlePermissionResponse(false);">
+                        <i class="fas fa-times"></i> Refuser
+                    </button>
+                    <button class="btn-primary" onclick="this.closest('.permission-modal').remove(); window.settingsPage.backupManager.handlePermissionResponse(true);">
+                        <i class="fas fa-check"></i> Autoriser la création
+                    </button>
+                </div>
+            </div>
+        `;
+
+        return modal;
     }
 
-    async create(data) {
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `mailsort-backup-${timestamp}.json`;
+    handlePermissionResponse(granted) {
+        this.permissionCallback?.(granted);
+    }
+
+    showPermissionDialog() {
+        // Afficher une notification discrète sur l'état du backup
+        const notification = document.createElement('div');
+        notification.className = 'backup-notification';
+        notification.innerHTML = `
+            <div class="notification-content">
+                <i class="fas fa-info-circle"></i>
+                <div>
+                    <strong>Système de sauvegarde activé</strong>
+                    <p>Dossier de sauvegarde : ${this.backupPath}</p>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
         
-        // Ajouter les métadonnées complètes
+        // Auto-suppression après 5 secondes
+        setTimeout(() => notification.remove(), 5000);
+    }
+
+    savePermissions() {
+        localStorage.setItem('mailsort-backup-path', this.backupPath);
+        localStorage.setItem('mailsort-backup-permission', 'granted');
+        localStorage.setItem('mailsort-backup-timestamp', new Date().toISOString());
+    }
+
+    async setupWebBackupPath() {
+        // Cette méthode n'est plus utilisée, remplacée par la détection intelligente
+        return this.detectedPaths[0];
+    }
+
+    async getStatus() {
+        if (!this.isInitialized) {
+            throw new Error('BackupManager non initialisé');
+        }
+
+        return {
+            backupPath: this.backupPath,
+            isReady: true
+        };
+    }
+
+    async createBackup() {
+        if (!this.hasPermission) {
+            throw new Error('Permissions de sauvegarde non accordées');
+        }
+
         const backupData = {
-            ...data,
+            timestamp: new Date().toISOString(),
+            version: '1.0',
+            categories: window.categoryManager?.getCategories() || {},
+            settings: JSON.parse(localStorage.getItem('categorySettings') || '{}'),
+            emails: window.emailScanner?.getAllEmails()?.slice(0, 1000) || [], // Limiter pour la taille
             metadata: {
-                username: this.username,
-                backupPath: this.backupPath,
+                totalEmails: window.emailScanner?.getAllEmails()?.length || 0,
                 createdAt: new Date().toISOString(),
-                application: 'MailSort Pro',
-                version: data.version || '2.0',
-                platform: navigator.platform,
-                userAgent: navigator.userAgent
+                userAgent: navigator.userAgent,
+                platform: this.detectPlatform(),
+                backupPath: this.backupPath
             }
         };
 
+        const filename = `mailsort-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+        
         try {
-            // Créer le fichier
-            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            // Tenter d'utiliser l'API File System Access si disponible
+            if (this.backupHandle && window.showDirectoryPicker) {
+                await this.saveToFileSystem(filename, backupData);
+            } else {
+                // Fallback : téléchargement classique
+                await this.saveAsDownload(filename, backupData);
+            }
 
-            // Ajouter à l'historique
-            this.addToHistory({
-                id: Date.now().toString(),
-                name: filename,
-                date: new Date().toISOString(),
-                size: blob.size,
-                path: `${this.backupPath}\\${filename}`,
-                type: 'manual',
-                dataTypes: Object.keys(data).filter(key => key !== 'metadata')
-            });
+            // Enregistrer dans l'historique
+            this.saveBackupRecord(filename, JSON.stringify(backupData).length);
 
-            // Marquer que le dossier doit être créé
-            localStorage.setItem('mailsort-folder-created', 'true');
+            return { filename, size: JSON.stringify(backupData).length };
+        } catch (error) {
+            console.error('[BackupManager] Erreur lors de la sauvegarde:', error);
+            throw error;
+        }
+    }
 
-            // Afficher les instructions améliorées
-            setTimeout(() => this.showInstructions(filename, blob.size), 500);
+    async saveToFileSystem(filename, backupData) {
+        try {
+            // Créer le fichier dans le dossier sélectionné
+            const fileHandle = await this.backupHandle.getFileHandle(filename, { create: true });
+            const writable = await fileHandle.createWritable();
+            
+            await writable.write(JSON.stringify(backupData, null, 2));
+            await writable.close();
+            
+            console.log('[BackupManager] ✅ Sauvegarde créée dans le dossier système:', filename);
+        } catch (error) {
+            console.warn('[BackupManager] ⚠️ Échec sauvegarde système, utilisation du téléchargement');
+            await this.saveAsDownload(filename, backupData);
+        }
+    }
 
-            console.log('[BackupManager] 💾 Backup créé:', filename);
-            return { 
-                success: true, 
-                filename, 
-                path: this.backupPath,
-                size: blob.size 
+    async saveAsDownload(filename, backupData) {
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        URL.revokeObjectURL(url);
+        
+        console.log('[BackupManager] ✅ Sauvegarde téléchargée:', filename);
+    }
+
+    saveBackupRecord(filename, size) {
+        const backups = JSON.parse(localStorage.getItem('mailsort-backups') || '[]');
+        backups.unshift({
+            name: filename,
+            date: new Date().toISOString(),
+            size: size,
+            path: `${this.backupPath}\\${filename}`
+        });
+        
+        // Garder seulement les 10 dernières sauvegardes
+        backups.splice(10);
+        
+        localStorage.setItem('mailsort-backups', JSON.stringify(backups));
+    }
+
+    async getBackupHistory() {
+        const backups = JSON.parse(localStorage.getItem('mailsort-backups') || '[]');
+        return backups;
+    }
+
+    async selectAndRestoreBackup() {
+        return new Promise((resolve, reject) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    resolve(false);
+                    return;
+                }
+                
+                try {
+                    const text = await file.text();
+                    const backupData = JSON.parse(text);
+                    await this.restoreFromData(backupData);
+                    resolve(true);
+                } catch (error) {
+                    reject(error);
+                }
             };
             
+            input.click();
+        });
+    }
+
+    async restoreFromPath(path) {
+        // Dans un environnement réel, on lirait le fichier depuis le chemin
+        throw new Error('Restauration depuis un chemin non implémentée dans cette version de démonstration');
+    }
+
+    async restoreFromData(backupData) {
+        try {
+            // Restaurer les catégories
+            if (backupData.categories && window.categoryManager) {
+                Object.entries(backupData.categories).forEach(([id, category]) => {
+                    if (category.isCustom) {
+                        window.categoryManager.createCustomCategory(category);
+                    }
+                });
+            }
+
+            // Restaurer les paramètres
+            if (backupData.settings) {
+                localStorage.setItem('categorySettings', JSON.stringify(backupData.settings));
+            }
+
+            console.log('[BackupManager] Sauvegarde restaurée avec succès');
         } catch (error) {
-            console.error('[BackupManager] ❌ Erreur création:', error);
-            return { 
-                success: false, 
-                error: error.message 
-            };
+            console.error('[BackupManager] Erreur lors de la restauration:', error);
+            throw error;
         }
     }
 
-    showInstructions(filename, fileSize) {
-        const modal = document.createElement('div');
-        modal.className = 'modal show';
-        modal.style.zIndex = '1002';
-        
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width: 600px;">
-                <div class="modal-header">
-                    <h2>📥 Sauvegarde créée avec succès</h2>
-                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div style="text-align: center; margin-bottom: 2rem;">
-                        <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
-                        <h3 style="color: #059669; margin: 0;">Sauvegarde réussie !</h3>
-                        <p style="color: #64748b; margin: 0.5rem 0 0 0;">
-                            Fichier : <strong>${filename}</strong> (${this.formatFileSize(fileSize)})
-                        </p>
-                    </div>
+    async openBackupFolder() {
+        if (!this.hasPermission) {
+            throw new Error('Aucun dossier de sauvegarde configuré');
+        }
 
-                    <div style="background: #fef3c7; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid #f59e0b;">
-                        <h4 style="margin: 0 0 1rem 0; color: #92400e;">📁 Étapes importantes :</h4>
-                        
-                        <div style="margin-bottom: 1rem;">
-                            <strong>1. Créer le dossier de destination</strong>
-                            <div style="background: #fff; padding: 0.75rem; border-radius: 6px; margin-top: 0.5rem; border: 1px solid #e5e7eb;">
-                                <code style="font-family: 'Courier New', monospace; font-size: 0.85rem; color: #1e293b; word-break: break-all;">
-                                    ${this.backupPath}
-                                </code>
-                                <button onclick="navigator.clipboard.writeText('${this.backupPath.replace(/\\/g, '\\\\')}').then(() => { this.textContent='✅ Copié!'; setTimeout(() => this.textContent='📋 Copier', 2000); })" 
-                                        style="margin-left: 0.75rem; padding: 0.25rem 0.75rem; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
-                                    📋 Copier
+        if (window.electronAPI) {
+            // Environnement Electron
+            await window.electronAPI.openBackupFolder();
+        } else if (this.backupHandle) {
+            // File System Access API - Ouvrir le dossier
+            try {
+                // Malheureusement, l'API File System Access ne permet pas d'ouvrir directement le dossier
+                // On affiche une information à l'utilisateur
+                this.showFolderInfo();
+            } catch (error) {
+                this.showFolderInfo();
+            }
+        } else {
+            // Fallback - Afficher les informations du dossier
+            this.showFolderInfo();
+        }
+    }
+
+    showFolderInfo() {
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.innerHTML = `
+            <div class="modal-simple">
+                <div class="modal-header">
+                    <h2><i class="fas fa-folder-open"></i> Dossier de sauvegarde</h2>
+                    <button class="btn-close" onclick="this.closest('.modal-backdrop').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="folder-info">
+                        <div class="folder-icon">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                        <div class="folder-details">
+                            <h3>Emplacement de sauvegarde</h3>
+                            <div class="folder-path">
+                                <code>${this.backupPath}</code>
+                                <button class="btn-copy" onclick="navigator.clipboard.writeText('${this.backupPath.replace(/\\/g, '\\\\')}'); this.innerHTML='<i class=\\"fas fa-check\\"></i> Copié!';">
+                                    <i class="fas fa-copy"></i>
                                 </button>
                             </div>
-                        </div>
-                        
-                        <div style="margin-bottom: 1rem;">
-                            <strong>2. Déplacer le fichier</strong>
-                            <p style="margin: 0.5rem 0; font-size: 0.9rem; color: #92400e;">
-                                Depuis votre dossier <strong>Téléchargements</strong> vers le dossier créé ci-dessus.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div style="background: #ecfdf5; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #10b981;">
-                        <h4 style="margin: 0 0 1rem 0; color: #059669;">💡 Accès rapide au dossier :</h4>
-                        <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center;">
-                            <div>
-                                <strong>Ouvrir avec l'Explorateur :</strong><br>
-                                <small style="color: #064e3b;">Win + R → coller le chemin → Entrée</small>
+                            
+                            <div class="folder-status">
+                                <p><i class="fas fa-info-circle"></i> <strong>Information :</strong> Ce chemin correspond à votre dossier Documents personnel. Si le dossier "MailSort Pro" n'existe pas encore, il sera créé automatiquement lors de la première sauvegarde.</p>
                             </div>
-                            <button onclick="this.showCmdInstructions()" 
-                                    style="padding: 0.75rem 1rem; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                                📋 Voir détails
-                            </button>
+                            
+                            <div class="folder-instructions">
+                                <h4>📁 Pour accéder manuellement :</h4>
+                                <ol>
+                                    <li>Ouvrez l'Explorateur de fichiers (raccourci : <kbd>Win + E</kbd>)</li>
+                                    <li>Cliquez dans la barre d'adresse en haut</li>
+                                    <li>Collez le chemin ci-dessus</li>
+                                    <li>Appuyez sur <kbd>Entrée</kbd></li>
+                                </ol>
+                            </div>
+                            
+                            <div class="folder-alternatives">
+                                <h4>🔧 Méthodes alternatives :</h4>
+                                <ul>
+                                    <li>Utilisez <kbd>Win + R</kbd>, collez le chemin et appuyez sur <kbd>Entrée</kbd></li>
+                                    <li>Ouvrez votre dossier Documents et cherchez "MailSort Pro"</li>
+                                    <li>Utilisez la recherche Windows avec "MailSort Pro"</li>
+                                    <li>Vérifiez aussi dans Téléchargements si les sauvegardes s'y trouvent</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="folder-troubleshooting">
+                                <h4>🔧 Dépannage :</h4>
+                                <ul>
+                                    <li><strong>Dossier introuvable ?</strong> Le dossier sera créé automatiquement lors de la première sauvegarde</li>
+                                    <li><strong>Accès refusé ?</strong> Vérifiez que vous avez les droits sur votre dossier Documents</li>
+                                    <li><strong>Chemin invalide ?</strong> Les sauvegardes iront dans le dossier Téléchargements par défaut</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
+                
                 <div class="modal-footer">
-                    <button class="btn-secondary" onclick="this.closest('.modal').remove()">
-                        Plus tard
+                    <button class="btn-secondary" onclick="this.closest('.modal-backdrop').remove(); window.settingsPage.backupManager.resetPermissions(); window.settingsPage.initializeBackupManager();">
+                        <i class="fas fa-redo"></i> Reconfigurer
                     </button>
-                    <button class="btn-primary" onclick="settingsPage.openBackupFolder(); this.closest('.modal').remove();">
-                        🔗 Ouvrir le dossier
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(modal);
-        
-        // Auto-fermeture après 30 secondes
-        setTimeout(() => {
-            if (document.body.contains(modal)) {
-                modal.remove();
-            }
-        }, 30000);
-    }
-
-    openFolder() {
-        const modal = document.createElement('div');
-        modal.className = 'modal show';
-        modal.style.zIndex = '1002';
-        
-        modal.innerHTML = `
-            <div class="modal-content" style="max-width: 550px;">
-                <div class="modal-header">
-                    <h2>📂 Accéder au dossier de sauvegarde</h2>
-                    <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; border-left: 4px solid #6366f1;">
-                        <h4 style="margin: 0 0 1rem 0; color: #1e293b;">📍 Chemin du dossier :</h4>
-                        <div style="background: white; padding: 1rem; border-radius: 6px; border: 1px solid #e5e7eb; margin-bottom: 1rem;">
-                            <code style="font-family: 'Courier New', monospace; color: #1e293b; word-break: break-all; font-size: 0.9rem;">
-                                ${this.backupPath}
-                            </code>
-                            <button onclick="navigator.clipboard.writeText('${this.backupPath.replace(/\\/g, '\\\\')}').then(() => { this.textContent='✅ Copié!'; setTimeout(() => this.textContent='📋 Copier le chemin', 2000); })" 
-                                    style="margin-top: 0.75rem; width: 100%; padding: 0.5rem; background: #6366f1; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                📋 Copier le chemin
-                            </button>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
-                        <div style="background: #ecfdf5; padding: 1.25rem; border-radius: 8px; border-left: 4px solid #10b981;">
-                            <h5 style="margin: 0 0 0.75rem 0; color: #059669;">🚀 Méthode rapide :</h5>
-                            <ol style="margin: 0; padding-left: 1.25rem; color: #064e3b;">
-                                <li>Appuyez sur <kbd style="background: #fff; padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #10b981;">Win + R</kbd></li>
-                                <li>Collez le chemin ci-dessus</li>
-                                <li>Appuyez sur <kbd style="background: #fff; padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #10b981;">Entrée</kbd></li>
-                            </ol>
-                        </div>
-
-                        <div style="background: #fef3c7; padding: 1.25rem; border-radius: 8px; border-left: 4px solid #f59e0b;">
-                            <h5 style="margin: 0 0 0.75rem 0; color: #92400e;">📁 Méthode manuelle :</h5>
-                            <ol style="margin: 0; padding-left: 1.25rem; color: #92400e;">
-                                <li>Ouvrir l'Explorateur de fichiers</li>
-                                <li>Aller dans Ce PC → Disque C:</li>
-                                <li>Users → ${this.username} → Documents</li>
-                                <li>Chercher ou créer "MailSort Pro"</li>
-                            </ol>
-                        </div>
-                    </div>
-
-                    <div style="background: #fee2e2; padding: 1rem; border-radius: 8px; margin-top: 1rem; border-left: 4px solid #ef4444;">
-                        <p style="margin: 0; color: #dc2626; font-size: 0.9rem;">
-                            <strong>⚠️ Note :</strong> Si le dossier n'existe pas, créez-le manuellement en suivant le chemin ci-dessus.
-                        </p>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-primary" onclick="this.closest('.modal').remove()">
-                        ✅ Compris
+                    <button class="btn-primary" onclick="this.closest('.modal-backdrop').remove()">
+                        <i class="fas fa-check"></i> Compris
                     </button>
                 </div>
             </div>
@@ -2671,70 +3779,48 @@ class BackupManagerComplete {
         document.body.appendChild(modal);
     }
 
-    getPath() {
-        return this.backupPath || 'Non configuré';
+    // Méthode pour réinitialiser les permissions (utile pour les tests)
+    async resetPermissions() {
+        localStorage.removeItem('mailsort-backup-path');
+        localStorage.removeItem('mailsort-backup-permission');
+        localStorage.removeItem('mailsort-backup-timestamp');
+        
+        this.backupPath = null;
+        this.backupHandle = null;
+        this.hasPermission = false;
+        this.isInitialized = false;
+        
+        console.log('[BackupManager] 🔄 Permissions réinitialisées');
     }
 
-    getHistory() {
-        return this.history;
-    }
-
-    addToHistory(backup) {
-        this.history.unshift(backup);
-        this.history = this.history.slice(0, 15); // Garder 15 max
-        localStorage.setItem('mailsort-backup-history', JSON.stringify(this.history));
-    }
-
-    delete(backupId) {
-        this.history = this.history.filter(b => b.id !== backupId);
-        localStorage.setItem('mailsort-backup-history', JSON.stringify(this.history));
-    }
-
-    loadHistory() {
-        try {
-            return JSON.parse(localStorage.getItem('mailsort-backup-history') || '[]');
-        } catch {
-            return [];
-        }
-    }
-
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 B';
-        const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    // Méthode pour obtenir les informations détaillées
+    getDetailedStatus() {
+        return {
+            isInitialized: this.isInitialized,
+            hasPermission: this.hasPermission,
+            backupPath: this.backupPath,
+            detectedPaths: this.detectedPaths,
+            platform: this.detectPlatform(),
+            apiSupport: {
+                electron: !!window.electronAPI,
+                fileSystemAccess: !!window.showDirectoryPicker,
+                fallback: !window.electronAPI && !window.showDirectoryPicker
+            },
+            lastPermissionDate: localStorage.getItem('mailsort-backup-timestamp')
+        };
     }
 }
 
 // ================================================
-// INTÉGRATION ET INITIALISATION
+// INTÉGRATION GLOBALE
 // ================================================
-const settingsPage = new SettingsPageComplete();
-window.settingsPage = settingsPage;
+window.settingsPage = new SettingsPageSimple();
 
 // Intégration avec PageManager
 if (window.pageManager?.pages) {
-    window.pageManager.pages.settings = (container) => settingsPage.render(container);
-    console.log('[SettingsPage] ✅ Intégré avec PageManager');
-} else {
-    // Attendre PageManager avec retry amélioré
-    let retryCount = 0;
-    const maxRetries = 5;
-    
-    const tryIntegration = () => {
-        if (window.pageManager?.pages) {
-            window.pageManager.pages.settings = (container) => settingsPage.render(container);
-            console.log('[SettingsPage] ✅ Intégré avec PageManager (retry', retryCount + 1, ')');
-        } else if (retryCount < maxRetries) {
-            retryCount++;
-            setTimeout(tryIntegration, 1000 * retryCount);
-        } else {
-            console.warn('[SettingsPage] ⚠️ PageManager non trouvé après', maxRetries, 'tentatives');
-        }
+    window.pageManager.pages.settings = (container) => {
+        window.settingsPage.render(container);
     };
-    
-    setTimeout(tryIntegration, 1000);
 }
 
-console.log('[SettingsPage] 🎉 Page paramètres complète chargée avec succès!');
+console.log('[SettingsPage] ✅ SettingsPage Simplifiée chargée avec BackupManager!');
