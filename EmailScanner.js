@@ -73,14 +73,43 @@ class EmailScanner {
     // INITIALISATION AVEC SYNCHRONISATION IMMÉDIATE
     // ================================================
     async initializeWithSync() {
-        await this.loadSettingsFromCategoryManager();
-        this.registerAsChangeListener();
-        this.startRealTimeSync();
-        this.setupEventListeners();
+        console.log('[EmailScanner] 🔗 Initialisation avec synchronisation...');
         
-        console.log('[EmailScanner] 🔗 Synchronisation initialisée');
-        console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
-        console.log('[EmailScanner] 🔍 Provider détecté:', this.detectProvider());
+        // Attendre que CategoryManager soit disponible
+        let retries = 0;
+        const maxRetries = 10;
+        
+        while (!window.categoryManager && retries < maxRetries) {
+            console.log(`[EmailScanner] ⏳ Attente CategoryManager (tentative ${retries + 1}/${maxRetries})...`);
+            await new Promise(resolve => setTimeout(resolve, 200));
+            retries++;
+        }
+        
+        if (!window.categoryManager && window.CategoryManager) {
+            console.log('[EmailScanner] 🔧 Création CategoryManager manquant...');
+            try {
+                window.categoryManager = new window.CategoryManager();
+                await new Promise(resolve => setTimeout(resolve, 300));
+            } catch (error) {
+                console.error('[EmailScanner] Erreur création CategoryManager:', error);
+            }
+        }
+        
+        try {
+            await this.loadSettingsFromCategoryManager();
+            this.registerAsChangeListener();
+            this.startRealTimeSync();
+            this.setupEventListeners();
+            
+            console.log('[EmailScanner] 🔗 Synchronisation initialisée');
+            console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+            console.log('[EmailScanner] 🔍 Provider détecté:', this.detectProvider());
+        } catch (error) {
+            console.error('[EmailScanner] Erreur initialisation sync:', error);
+            // Continuer avec des valeurs par défaut
+            this.settings = this.getDefaultSettings();
+            this.taskPreselectedCategories = [];
+        }
     }
 
     registerAsChangeListener() {
@@ -462,12 +491,30 @@ class EmailScanner {
             
             console.log('[EmailScanner] 🎯 Catégories actives:', window.categoryManager?.getActiveCategories());
 
+            // Vérifier la disponibilité des services avec tentative d'initialisation
             if (!window.mailService) {
                 throw new Error('MailService non disponible');
             }
 
+            // Essayer d'initialiser CategoryManager s'il n'est pas disponible
             if (!window.categoryManager) {
-                throw new Error('CategoryManager non disponible');
+                console.warn('[EmailScanner] ⚠️ CategoryManager non trouvé, tentative d\'initialisation...');
+                
+                // Attendre un peu que les modules se chargent
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                if (!window.categoryManager) {
+                    console.error('[EmailScanner] ❌ CategoryManager toujours non disponible après attente');
+                    
+                    // Créer une instance minimale pour continuer
+                    console.log('[EmailScanner] 🔧 Création instance CategoryManager de secours...');
+                    if (window.CategoryManager) {
+                        window.categoryManager = new window.CategoryManager();
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    } else {
+                        throw new Error('CategoryManager et sa classe non disponibles - Rechargez la page');
+                    }
+                }
             }
 
             const endDate = new Date();
