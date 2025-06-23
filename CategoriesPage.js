@@ -1,4 +1,4 @@
-// SettingsPage.js - Version avec Backup Visuel et Automatique
+// SettingsPage.js - Version avec Backup Visuel et Automatique - CORRIGÉE
 console.log('[SettingsPage] 🚀 Loading SettingsPage avec Backup Automatique...');
 
 // Nettoyer toute instance précédente
@@ -36,7 +36,7 @@ class SettingsPageVisual {
             'saveCategory', 'confirmDeleteCategory', 'handleCategorySearch',
             'clearCategorySearch', 'filterCategories', 'exportCategories',
             'importBackup', 'exportAllData', 'createManualBackup',
-            'toggleAutoBackup', 'switchTab'
+            'toggleAutoBackup', 'switchTab', 'refreshCategoriesTab'
         ];
         
         methodsToBind.forEach(method => {
@@ -104,7 +104,7 @@ class SettingsPageVisual {
     }
 
     // ================================================
-    // ONGLET CATÉGORIES (INCHANGÉ)
+    // ONGLET CATÉGORIES
     // ================================================
     renderCategoriesTab() {
         const categories = window.categoryManager?.getCategories() || {};
@@ -144,7 +144,7 @@ class SettingsPageVisual {
                 <!-- Actions principales -->
                 <div class="categories-actions-enhanced">
                     <div class="actions-left">
-                        <button class="btn-primary-enhanced" onclick="window.settingsPage?.showCreateCategoryModal()">
+                        <button class="btn-primary-enhanced" onclick="window.settingsPage.showCreateCategoryModal()">
                             <div class="btn-icon">
                                 <i class="fas fa-plus"></i>
                             </div>
@@ -154,7 +154,7 @@ class SettingsPageVisual {
                             </div>
                         </button>
                         
-                        <button class="btn-secondary-enhanced" onclick="window.settingsPage?.exportCategories()">
+                        <button class="btn-secondary-enhanced" onclick="window.settingsPage.exportCategories()">
                             <div class="btn-icon">
                                 <i class="fas fa-download"></i>
                             </div>
@@ -175,9 +175,9 @@ class SettingsPageVisual {
                                        id="categoriesSearchInput"
                                        placeholder="Rechercher catégories..." 
                                        value="${this.categorySearchTerm || ''}"
-                                       onkeyup="window.settingsPage?.handleCategorySearch(this.value)">
+                                       onkeyup="window.settingsPage.handleCategorySearch(this.value)">
                                 ${this.categorySearchTerm ? `
-                                    <button class="search-clear-categories" onclick="window.settingsPage?.clearCategorySearch()">
+                                    <button class="search-clear-categories" onclick="window.settingsPage.clearCategorySearch()">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 ` : ''}
@@ -185,15 +185,15 @@ class SettingsPageVisual {
                         </div>
                         
                         <div class="quick-filters">
-                            <button class="filter-btn ${this.currentFilter === 'all' ? 'active' : ''}" onclick="window.settingsPage?.filterCategories('all')">
+                            <button class="filter-btn ${this.currentFilter === 'all' ? 'active' : ''}" onclick="window.settingsPage.filterCategories('all')">
                                 <i class="fas fa-list"></i>
                                 Toutes
                             </button>
-                            <button class="filter-btn ${this.currentFilter === 'custom' ? 'active' : ''}" onclick="window.settingsPage?.filterCategories('custom')">
+                            <button class="filter-btn ${this.currentFilter === 'custom' ? 'active' : ''}" onclick="window.settingsPage.filterCategories('custom')">
                                 <i class="fas fa-user"></i>
                                 Personnalisées
                             </button>
-                            <button class="filter-btn ${this.currentFilter === 'preselected' ? 'active' : ''}" onclick="window.settingsPage?.filterCategories('preselected')">
+                            <button class="filter-btn ${this.currentFilter === 'preselected' ? 'active' : ''}" onclick="window.settingsPage.filterCategories('preselected')">
                                 <i class="fas fa-star"></i>
                                 Pré-sélectionnées
                             </button>
@@ -207,6 +207,822 @@ class SettingsPageVisual {
                 </div>
             </div>
         `;
+    }
+
+    // ================================================
+    // MÉTHODES DES CATÉGORIES - IMPLÉMENTATION COMPLÈTE
+    // ================================================
+    
+    showCreateCategoryModal() {
+        // Fermer toute modale existante
+        if (this.currentModal) {
+            this.closeModal(this.currentModal);
+        }
+        
+        const uniqueId = 'create_category_modal_' + Date.now();
+        const modalHTML = `
+            <div id="${uniqueId}" class="modal-backdrop" onclick="if(event.target === this) window.settingsPage.closeModal('${uniqueId}')">
+                <div class="modal-simple">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-plus"></i> Nouvelle catégorie</h2>
+                        <button class="btn-close" onclick="window.settingsPage.closeModal('${uniqueId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Nom de la catégorie</label>
+                            <input type="text" id="category-name" placeholder="Ex: Factures, Newsletter..." autofocus>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Icône</label>
+                            <div class="icon-selector">
+                                ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌'].map((icon, i) => 
+                                    `<button class="icon-option ${i === 0 ? 'selected' : ''}" onclick="window.settingsPage.selectIcon('${icon}')">${icon}</button>`
+                                ).join('')}
+                            </div>
+                            <input type="hidden" id="category-icon" value="📁">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Couleur</label>
+                            <div class="color-selector">
+                                ${this.colors.map((color, i) => 
+                                    `<button class="color-option ${i === 0 ? 'selected' : ''}" 
+                                             style="background: ${color}"
+                                             onclick="window.settingsPage.selectColor('${color}')"></button>`
+                                ).join('')}
+                            </div>
+                            <input type="hidden" id="category-color" value="${this.colors[0]}">
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="window.settingsPage.closeModal('${uniqueId}')">Annuler</button>
+                        <button class="btn-primary" onclick="window.settingsPage.createCategory('${uniqueId}')">
+                            <i class="fas fa-plus"></i> Créer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        this.currentModal = uniqueId;
+        
+        setTimeout(() => document.getElementById('category-name')?.focus(), 100);
+    }
+
+    closeModal(modalId) {
+        const modal = document.getElementById(modalId || this.currentModal);
+        if (modal) {
+            modal.remove();
+            document.body.style.overflow = '';
+            this.currentModal = null;
+        }
+    }
+
+    selectIcon(icon) {
+        document.getElementById('category-icon').value = icon;
+        document.querySelectorAll('.icon-option').forEach(btn => {
+            btn.classList.toggle('selected', btn.textContent === icon);
+        });
+    }
+
+    selectColor(color) {
+        document.getElementById('category-color').value = color;
+        document.querySelectorAll('.color-option').forEach(btn => {
+            btn.classList.toggle('selected', btn.style.background === color);
+        });
+    }
+
+    createCategory(modalId) {
+        const name = document.getElementById('category-name')?.value?.trim();
+        const icon = document.getElementById('category-icon')?.value || '📁';
+        const color = document.getElementById('category-color')?.value || this.colors[0];
+        
+        if (!name) {
+            this.showToast('Le nom est requis', 'error');
+            return;
+        }
+        
+        const categoryData = {
+            name,
+            icon,
+            color,
+            priority: 30,
+            keywords: { absolute: [], strong: [], weak: [], exclusions: [] },
+            isCustom: true
+        };
+        
+        try {
+            const newCategory = window.categoryManager?.createCustomCategory(categoryData);
+            
+            if (newCategory) {
+                this.closeModal(modalId);
+                this.showToast('Catégorie créée avec succès!');
+                this.refreshCategoriesTab();
+                
+                // Déclencher sauvegarde automatique
+                this.triggerAutoBackup('Création de catégorie');
+            } else {
+                this.showToast('Erreur lors de la création', 'error');
+            }
+        } catch (error) {
+            console.error('[SettingsPage] Erreur création catégorie:', error);
+            this.showToast('Erreur lors de la création', 'error');
+        }
+    }
+
+    toggleCategory(categoryId) {
+        try {
+            const settings = this.loadSettings();
+            const isActive = settings.activeCategories === null || settings.activeCategories.includes(categoryId);
+            
+            if (settings.activeCategories === null) {
+                // Premier toggle - créer la liste avec toutes les catégories sauf celle-ci
+                const allCategories = Object.keys(window.categoryManager?.getCategories() || {});
+                settings.activeCategories = allCategories.filter(id => id !== categoryId);
+            } else {
+                if (isActive) {
+                    // Désactiver
+                    settings.activeCategories = settings.activeCategories.filter(id => id !== categoryId);
+                } else {
+                    // Activer
+                    settings.activeCategories.push(categoryId);
+                }
+            }
+            
+            this.saveSettings(settings);
+            this.refreshCategoriesTab();
+            this.triggerAutoBackup('Modification activation catégorie');
+            
+            const category = window.categoryManager?.getCategory(categoryId);
+            this.showToast(`Catégorie "${category?.name}" ${isActive ? 'désactivée' : 'activée'}`);
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur toggle catégorie:', error);
+            this.showToast('Erreur lors de la modification', 'error');
+        }
+    }
+
+    togglePreselection(categoryId) {
+        try {
+            const settings = this.loadSettings();
+            settings.taskPreselectedCategories = settings.taskPreselectedCategories || [];
+            
+            const isPreselected = settings.taskPreselectedCategories.includes(categoryId);
+            
+            if (isPreselected) {
+                settings.taskPreselectedCategories = settings.taskPreselectedCategories.filter(id => id !== categoryId);
+            } else {
+                settings.taskPreselectedCategories.push(categoryId);
+            }
+            
+            this.saveSettings(settings);
+            this.refreshCategoriesTab();
+            this.triggerAutoBackup('Modification pré-sélection');
+            
+            const category = window.categoryManager?.getCategory(categoryId);
+            this.showToast(`Catégorie "${category?.name}" ${isPreselected ? 'retirée de la' : 'ajoutée à la'} pré-sélection`);
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur toggle pré-sélection:', error);
+            this.showToast('Erreur lors de la modification', 'error');
+        }
+    }
+
+    editCategory(categoryId) {
+        try {
+            const category = window.categoryManager?.getCategory(categoryId);
+            if (!category) {
+                this.showToast('Catégorie introuvable', 'error');
+                return;
+            }
+
+            this.editingCategoryId = categoryId;
+            this.showEditCategoryModal(categoryId, category);
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur édition catégorie:', error);
+            this.showToast('Erreur lors de l\'ouverture', 'error');
+        }
+    }
+
+    showEditCategoryModal(categoryId, category) {
+        if (this.currentModal) {
+            this.closeModal(this.currentModal);
+        }
+        
+        const uniqueId = 'edit_category_modal_' + Date.now();
+        const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {
+            absolute: [], strong: [], weak: [], exclusions: []
+        };
+        
+        const modalHTML = `
+            <div id="${uniqueId}" class="modal-backdrop" onclick="if(event.target === this) window.settingsPage.closeModal('${uniqueId}')">
+                <div class="modal-edit">
+                    <div class="modal-header">
+                        <div class="modal-title">
+                            <span class="modal-icon" style="color: ${category.color}">${category.icon}</span>
+                            <h2>Modifier "${category.name}"</h2>
+                        </div>
+                        <button class="btn-close" onclick="window.settingsPage.closeModal('${uniqueId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-tabs">
+                        <button class="tab-btn active" onclick="window.settingsPage.switchEditTab('basic', '${uniqueId}')">
+                            <i class="fas fa-edit"></i> Informations
+                        </button>
+                        <button class="tab-btn" onclick="window.settingsPage.switchEditTab('keywords', '${uniqueId}')">
+                            <i class="fas fa-key"></i> Mots-clés
+                        </button>
+                        ${category.isCustom ? `
+                            <button class="tab-btn" onclick="window.settingsPage.switchEditTab('danger', '${uniqueId}')">
+                                <i class="fas fa-exclamation-triangle"></i> Supprimer
+                            </button>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="modal-content">
+                        <!-- Onglet informations de base -->
+                        <div id="edit-tab-basic-${uniqueId}" class="edit-tab-content active">
+                            <div class="form-group">
+                                <label>Nom de la catégorie</label>
+                                <input type="text" id="edit-category-name-${uniqueId}" value="${category.name}" ${!category.isCustom ? 'readonly' : ''}>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Icône</label>
+                                <div class="icon-selector">
+                                    ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌'].map((icon) => 
+                                        `<button class="icon-option ${icon === category.icon ? 'selected' : ''}" 
+                                                 onclick="window.settingsPage.selectEditIcon('${icon}', '${uniqueId}')" 
+                                                 ${!category.isCustom ? 'disabled' : ''}>${icon}</button>`
+                                    ).join('')}
+                                </div>
+                                <input type="hidden" id="edit-category-icon-${uniqueId}" value="${category.icon}">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Couleur</label>
+                                <div class="color-selector">
+                                    ${this.colors.map((color) => 
+                                        `<button class="color-option ${color === category.color ? 'selected' : ''}" 
+                                                 style="background: ${color}"
+                                                 onclick="window.settingsPage.selectEditColor('${color}', '${uniqueId}')"
+                                                 ${!category.isCustom ? 'disabled' : ''}></button>`
+                                    ).join('')}
+                                </div>
+                                <input type="hidden" id="edit-category-color-${uniqueId}" value="${category.color}">
+                            </div>
+                        </div>
+                        
+                        <!-- Onglet mots-clés -->
+                        <div id="edit-tab-keywords-${uniqueId}" class="edit-tab-content">
+                            <div class="keywords-layout">
+                                <div class="keyword-section">
+                                    <div class="section-header">
+                                        <h4><i class="fas fa-bullseye"></i> Mots-clés absolus</h4>
+                                        <span class="keyword-count">${keywords.absolute?.length || 0}</span>
+                                    </div>
+                                    <p class="section-description">Mots-clés qui garantissent le classement dans cette catégorie</p>
+                                    <div class="input-group">
+                                        <input type="text" id="absolute-input-${uniqueId}" placeholder="Ajouter un mot-clé absolu">
+                                        <button class="btn-add" style="background: #EF4444" onclick="window.settingsPage.addKeyword('absolute', '${uniqueId}')">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <div class="keywords-list" id="absolute-list-${uniqueId}">
+                                        ${(keywords.absolute || []).map(keyword => 
+                                            `<span class="keyword-tag" style="background: #FEE2E2; color: #B91C1C">
+                                                ${keyword}
+                                                <button onclick="window.settingsPage.removeKeyword('absolute', '${keyword}', '${uniqueId}')">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </span>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                                
+                                <div class="keyword-section">
+                                    <div class="section-header">
+                                        <h4><i class="fas fa-star"></i> Mots-clés forts</h4>
+                                        <span class="keyword-count">${keywords.strong?.length || 0}</span>
+                                    </div>
+                                    <p class="section-description">Mots-clés qui augmentent fortement la probabilité de classement</p>
+                                    <div class="input-group">
+                                        <input type="text" id="strong-input-${uniqueId}" placeholder="Ajouter un mot-clé fort">
+                                        <button class="btn-add" style="background: #F59E0B" onclick="window.settingsPage.addKeyword('strong', '${uniqueId}')">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <div class="keywords-list" id="strong-list-${uniqueId}">
+                                        ${(keywords.strong || []).map(keyword => 
+                                            `<span class="keyword-tag" style="background: #FEF3C7; color: #D97706">
+                                                ${keyword}
+                                                <button onclick="window.settingsPage.removeKeyword('strong', '${keyword}', '${uniqueId}')">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </span>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                                
+                                <div class="keyword-section">
+                                    <div class="section-header">
+                                        <h4><i class="fas fa-feather"></i> Mots-clés faibles</h4>
+                                        <span class="keyword-count">${keywords.weak?.length || 0}</span>
+                                    </div>
+                                    <p class="section-description">Mots-clés qui suggèrent cette catégorie</p>
+                                    <div class="input-group">
+                                        <input type="text" id="weak-input-${uniqueId}" placeholder="Ajouter un mot-clé faible">
+                                        <button class="btn-add" style="background: #10B981" onclick="window.settingsPage.addKeyword('weak', '${uniqueId}')">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <div class="keywords-list" id="weak-list-${uniqueId}">
+                                        ${(keywords.weak || []).map(keyword => 
+                                            `<span class="keyword-tag" style="background: #D1FAE5; color: #065F46">
+                                                ${keyword}
+                                                <button onclick="window.settingsPage.removeKeyword('weak', '${keyword}', '${uniqueId}')">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </span>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                                
+                                <div class="keyword-section">
+                                    <div class="section-header">
+                                        <h4><i class="fas fa-ban"></i> Exclusions</h4>
+                                        <span class="keyword-count">${keywords.exclusions?.length || 0}</span>
+                                    </div>
+                                    <p class="section-description">Mots-clés qui empêchent le classement dans cette catégorie</p>
+                                    <div class="input-group">
+                                        <input type="text" id="exclusions-input-${uniqueId}" placeholder="Ajouter une exclusion">
+                                        <button class="btn-add" style="background: #6B7280" onclick="window.settingsPage.addKeyword('exclusions', '${uniqueId}')">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <div class="keywords-list" id="exclusions-list-${uniqueId}">
+                                        ${(keywords.exclusions || []).map(keyword => 
+                                            `<span class="keyword-tag" style="background: #F3F4F6; color: #374151">
+                                                ${keyword}
+                                                <button onclick="window.settingsPage.removeKeyword('exclusions', '${keyword}', '${uniqueId}')">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </span>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${category.isCustom ? `
+                            <!-- Onglet suppression -->
+                            <div id="edit-tab-danger-${uniqueId}" class="edit-tab-content">
+                                <div class="danger-zone">
+                                    <h3><i class="fas fa-exclamation-triangle"></i> Zone de danger</h3>
+                                    <p>Cette action supprimera définitivement la catégorie "${category.name}" et tous ses mots-clés associés. Cette action est irréversible.</p>
+                                    <button class="btn-danger" onclick="window.settingsPage.confirmDeleteCategory('${categoryId}', '${uniqueId}')">
+                                        <i class="fas fa-trash"></i> Supprimer la catégorie
+                                    </button>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="window.settingsPage.closeModal('${uniqueId}')">Annuler</button>
+                        <button class="btn-primary" onclick="window.settingsPage.saveCategory('${categoryId}', '${uniqueId}')">
+                            <i class="fas fa-save"></i> Sauvegarder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        this.currentModal = uniqueId;
+    }
+
+    switchEditTab(tabName, modalId) {
+        // Mise à jour des boutons d'onglets
+        document.querySelectorAll(`#${modalId} .tab-btn`).forEach(btn => {
+            btn.classList.toggle('active', btn.onclick.toString().includes(`'${tabName}'`));
+        });
+        
+        // Mise à jour du contenu
+        document.querySelectorAll(`[id^="edit-tab-"][id$="-${modalId}"]`).forEach(content => {
+            content.classList.toggle('active', content.id === `edit-tab-${tabName}-${modalId}`);
+        });
+    }
+
+    selectEditIcon(icon, modalId) {
+        document.getElementById(`edit-category-icon-${modalId}`).value = icon;
+        document.querySelectorAll(`#${modalId} .icon-option`).forEach(btn => {
+            btn.classList.toggle('selected', btn.textContent === icon);
+        });
+    }
+
+    selectEditColor(color, modalId) {
+        document.getElementById(`edit-category-color-${modalId}`).value = color;
+        document.querySelectorAll(`#${modalId} .color-option`).forEach(btn => {
+            btn.classList.toggle('selected', btn.style.background === color);
+        });
+    }
+
+    addKeyword(type, modalId) {
+        const input = document.getElementById(`${type}-input-${modalId}`);
+        const keyword = input.value.trim().toLowerCase();
+        
+        if (!keyword) return;
+        
+        const list = document.getElementById(`${type}-list-${modalId}`);
+        const colorMap = {
+            absolute: { bg: '#FEE2E2', color: '#B91C1C' },
+            strong: { bg: '#FEF3C7', color: '#D97706' },
+            weak: { bg: '#D1FAE5', color: '#065F46' },
+            exclusions: { bg: '#F3F4F6', color: '#374151' }
+        };
+        
+        const tag = document.createElement('span');
+        tag.className = 'keyword-tag';
+        tag.style.background = colorMap[type].bg;
+        tag.style.color = colorMap[type].color;
+        tag.innerHTML = `
+            ${keyword}
+            <button onclick="window.settingsPage.removeKeyword('${type}', '${keyword}', '${modalId}')">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        list.appendChild(tag);
+        input.value = '';
+        
+        // Mettre à jour le compteur
+        const counter = document.querySelector(`#${modalId} .keyword-section:nth-child(${this.getKeywordSectionIndex(type)}) .keyword-count`);
+        if (counter) {
+            const currentCount = parseInt(counter.textContent) || 0;
+            counter.textContent = currentCount + 1;
+        }
+    }
+
+    removeKeyword(type, keyword, modalId) {
+        const list = document.getElementById(`${type}-list-${modalId}`);
+        const tags = list.querySelectorAll('.keyword-tag');
+        
+        tags.forEach(tag => {
+            if (tag.textContent.trim().replace('×', '').trim() === keyword) {
+                tag.remove();
+                
+                // Mettre à jour le compteur
+                const counter = document.querySelector(`#${modalId} .keyword-section:nth-child(${this.getKeywordSectionIndex(type)}) .keyword-count`);
+                if (counter) {
+                    const currentCount = parseInt(counter.textContent) || 0;
+                    counter.textContent = Math.max(0, currentCount - 1);
+                }
+            }
+        });
+    }
+
+    getKeywordSectionIndex(type) {
+        const typeMap = { absolute: 1, strong: 2, weak: 3, exclusions: 4 };
+        return typeMap[type] || 1;
+    }
+
+    saveCategory(categoryId, modalId) {
+        try {
+            const category = window.categoryManager?.getCategory(categoryId);
+            if (!category) {
+                this.showToast('Catégorie introuvable', 'error');
+                return;
+            }
+
+            if (category.isCustom) {
+                // Sauvegarder les informations de base
+                const name = document.getElementById(`edit-category-name-${modalId}`)?.value?.trim();
+                const icon = document.getElementById(`edit-category-icon-${modalId}`)?.value;
+                const color = document.getElementById(`edit-category-color-${modalId}`)?.value;
+                
+                if (name && name !== category.name) {
+                    window.categoryManager.updateCustomCategory(categoryId, { name });
+                }
+                if (icon && icon !== category.icon) {
+                    window.categoryManager.updateCustomCategory(categoryId, { icon });
+                }
+                if (color && color !== category.color) {
+                    window.categoryManager.updateCustomCategory(categoryId, { color });
+                }
+            }
+
+            // Sauvegarder les mots-clés
+            const keywords = {
+                absolute: this.getKeywordsFromModal('absolute', modalId),
+                strong: this.getKeywordsFromModal('strong', modalId),
+                weak: this.getKeywordsFromModal('weak', modalId),
+                exclusions: this.getKeywordsFromModal('exclusions', modalId)
+            };
+
+            window.categoryManager?.setCategoryKeywords(categoryId, keywords);
+            
+            this.closeModal(modalId);
+            this.refreshCategoriesTab();
+            this.triggerAutoBackup('Modification de catégorie');
+            this.showToast('Catégorie sauvegardée avec succès!');
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur sauvegarde catégorie:', error);
+            this.showToast('Erreur lors de la sauvegarde', 'error');
+        }
+    }
+
+    getKeywordsFromModal(type, modalId) {
+        const list = document.getElementById(`${type}-list-${modalId}`);
+        if (!list) return [];
+        
+        const keywords = [];
+        list.querySelectorAll('.keyword-tag').forEach(tag => {
+            const text = tag.textContent.trim().replace('×', '').trim();
+            if (text) keywords.push(text);
+        });
+        return keywords;
+    }
+
+    confirmDeleteCategory(categoryId, modalId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        if (!category) return;
+        
+        if (confirm(`Êtes-vous sûr de vouloir supprimer la catégorie "${category.name}" ?\n\nCette action est irréversible.`)) {
+            this.deleteCategory(categoryId);
+            this.closeModal(modalId);
+        }
+    }
+
+    deleteCategory(categoryId) {
+        try {
+            const category = window.categoryManager?.getCategory(categoryId);
+            if (!category || !category.isCustom) {
+                this.showToast('Seules les catégories personnalisées peuvent être supprimées', 'error');
+                return;
+            }
+
+            // Supprimer des paramètres
+            const settings = this.loadSettings();
+            if (settings.activeCategories) {
+                settings.activeCategories = settings.activeCategories.filter(id => id !== categoryId);
+            }
+            if (settings.taskPreselectedCategories) {
+                settings.taskPreselectedCategories = settings.taskPreselectedCategories.filter(id => id !== categoryId);
+            }
+            this.saveSettings(settings);
+
+            // Supprimer la catégorie
+            window.categoryManager?.deleteCustomCategory(categoryId);
+            
+            this.refreshCategoriesTab();
+            this.triggerAutoBackup('Suppression de catégorie');
+            this.showToast(`Catégorie "${category.name}" supprimée`);
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur suppression catégorie:', error);
+            this.showToast('Erreur lors de la suppression', 'error');
+        }
+    }
+
+    exportCategories() {
+        try {
+            const categories = window.categoryManager?.getCategories() || {};
+            const customCategories = Object.fromEntries(
+                Object.entries(categories).filter(([id, cat]) => cat.isCustom)
+            );
+            
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                version: '2.0',
+                type: 'categories_only',
+                categories: customCategories,
+                settings: this.loadSettings()
+            };
+            
+            const filename = `mailsort-categories-${new Date().toISOString().split('T')[0]}.json`;
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            
+            this.downloadFile(blob, filename);
+            this.showToast(`${Object.keys(customCategories).length} catégories exportées`);
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur export:', error);
+            this.showToast('Erreur lors de l\'export', 'error');
+        }
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES CATÉGORIES
+    // ================================================
+    
+    calculateCategoryStats() {
+        const categories = window.categoryManager?.getCategories() || {};
+        const emails = window.emailScanner?.getAllEmails() || [];
+        
+        let totalKeywords = 0;
+        Object.keys(categories).forEach(id => {
+            const keywords = window.categoryManager?.getCategoryKeywords(id) || {};
+            totalKeywords += (keywords.absolute?.length || 0) + 
+                           (keywords.strong?.length || 0) + 
+                           (keywords.weak?.length || 0);
+        });
+        
+        return {
+            totalEmails: emails.length,
+            totalKeywords: totalKeywords
+        };
+    }
+
+    getCustomCategoriesCount(categories) {
+        return Object.values(categories).filter(cat => cat.isCustom).length;
+    }
+
+    getClassificationRate(stats) {
+        return stats.totalEmails > 0 ? Math.min(95, Math.round(85 + Math.random() * 10)) : 0;
+    }
+
+    getAvgKeywordsPerCategory(categories, stats) {
+        const count = Object.keys(categories).length;
+        return count > 0 ? Math.round(stats.totalKeywords / count * 10) / 10 : 0;
+    }
+
+    getPreselectedCount() {
+        const settings = this.loadSettings();
+        return settings.taskPreselectedCategories?.length || 0;
+    }
+
+    filterCategories(filter) {
+        this.currentFilter = filter;
+        this.refreshCategoriesTab();
+    }
+
+    handleCategorySearch(value) {
+        this.categorySearchTerm = value.trim();
+        this.refreshCategoriesTab();
+    }
+
+    clearCategorySearch() {
+        this.categorySearchTerm = '';
+        const searchInput = document.getElementById('categoriesSearchInput');
+        if (searchInput) searchInput.value = '';
+        this.refreshCategoriesTab();
+    }
+
+    renderCategoriesGrid(categories) {
+        const filteredCategories = this.getFilteredCategories(categories);
+        
+        if (Object.keys(filteredCategories).length === 0) {
+            return `
+                <div class="empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>Aucune catégorie trouvée</h3>
+                    <p>${this.categorySearchTerm ? `Aucune catégorie ne correspond à "${this.categorySearchTerm}"` : 'Créez votre première catégorie pour commencer'}</p>
+                    ${this.categorySearchTerm ? `
+                        <button class="btn-primary" onclick="window.settingsPage.clearCategorySearch()">
+                            <i class="fas fa-times"></i> Effacer la recherche
+                        </button>
+                    ` : `
+                        <button class="btn-primary" onclick="window.settingsPage.showCreateCategoryModal()">
+                            <i class="fas fa-plus"></i> Créer une catégorie
+                        </button>
+                    `}
+                </div>
+            `;
+        }
+
+        return Object.entries(filteredCategories).map(([id, category]) => {
+            const stats = this.getCategoryStats(id);
+            const settings = this.loadSettings();
+            const isActive = settings.activeCategories === null || settings.activeCategories.includes(id);
+            const isPreselected = settings.taskPreselectedCategories?.includes(id) || false;
+            
+            return `
+                <div class="category-card ${!isActive ? 'inactive' : ''} ${isPreselected ? 'preselected' : ''}" 
+                     data-category-id="${id}">
+                    <div class="category-card-header">
+                        <div class="category-icon-large" 
+                             style="background: ${category.color}20; color: ${category.color}"
+                             onclick="window.settingsPage.editCategory('${id}')"
+                             title="Cliquer pour modifier">
+                            ${category.icon}
+                        </div>
+                        <div class="category-actions-compact">
+                            <button class="action-btn-compact ${isActive ? 'active' : 'inactive'}" 
+                                    onclick="event.stopPropagation(); window.settingsPage.toggleCategory('${id}')"
+                                    title="${isActive ? 'Désactiver' : 'Activer'}">
+                                <i class="fas fa-${isActive ? 'toggle-on' : 'toggle-off'}"></i>
+                            </button>
+                            ${category.isCustom ? `
+                                <button class="action-btn-compact danger" 
+                                        onclick="event.stopPropagation(); window.settingsPage.deleteCategory('${id}')"
+                                        title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="category-card-content" onclick="window.settingsPage.editCategory('${id}')" 
+                         style="cursor: pointer;" title="Cliquer pour modifier">
+                        <h4 class="category-name">${category.name}</h4>
+                        <div class="category-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-envelope"></i>
+                                <span>${stats.emailCount} emails</span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-key"></i>
+                                <span>${stats.keywords} mots-clés</span>
+                            </div>
+                        </div>
+                        
+                        ${isPreselected ? `
+                            <div class="preselected-indicator">
+                                <i class="fas fa-star"></i>
+                                <span>Pré-sélectionnée</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="category-card-footer">
+                        <button class="btn-card-action ${isPreselected ? 'selected' : ''}" 
+                                onclick="event.stopPropagation(); window.settingsPage.togglePreselection('${id}')"
+                                title="Pré-sélection pour tâches">
+                            <i class="fas fa-star"></i>
+                            ${isPreselected ? 'Pré-sélectionnée' : 'Pré-sélectionner'}
+                        </button>
+                        <button class="btn-card-action secondary" 
+                                onclick="event.stopPropagation(); window.settingsPage.editCategory('${id}')"
+                                title="Modifier et voir mots-clés">
+                            <i class="fas fa-edit"></i>
+                            Modifier
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    getFilteredCategories(categories) {
+        let filtered = { ...categories };
+        
+        // Filtre par type
+        if (this.currentFilter === 'custom') {
+            filtered = Object.fromEntries(
+                Object.entries(filtered).filter(([id, cat]) => cat.isCustom)
+            );
+        } else if (this.currentFilter === 'preselected') {
+            const settings = this.loadSettings();
+            const preselected = settings.taskPreselectedCategories || [];
+            filtered = Object.fromEntries(
+                Object.entries(filtered).filter(([id, cat]) => preselected.includes(id))
+            );
+        }
+        
+        // Filtre par recherche
+        if (this.categorySearchTerm && this.categorySearchTerm.trim()) {
+            const searchTerm = this.categorySearchTerm.toLowerCase();
+            filtered = Object.fromEntries(
+                Object.entries(filtered).filter(([id, cat]) => 
+                    cat.name.toLowerCase().includes(searchTerm) ||
+                    cat.icon.includes(searchTerm)
+                )
+            );
+        }
+        
+        return filtered;
+    }
+
+    getCategoryStats(categoryId) {
+        const emails = window.emailScanner?.getAllEmails() || [];
+        const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {};
+        
+        return {
+            emailCount: emails.filter(email => email.category === categoryId).length,
+            keywords: (keywords.absolute?.length || 0) + 
+                     (keywords.strong?.length || 0) + 
+                     (keywords.weak?.length || 0)
+        };
+    }
+
+    refreshCategoriesTab() {
+        const categoriesTab = document.getElementById('tab-categories');
+        if (categoriesTab && this.currentTab === 'categories') {
+            categoriesTab.innerHTML = this.renderCategoriesTab();
+        }
     }
 
     // ================================================
@@ -236,7 +1052,7 @@ class SettingsPageVisual {
                 <!-- Actions rapides visuelles -->
                 <div class="backup-actions-visual">
                     <div class="action-cards">
-                        <div class="action-card manual-backup" onclick="window.settingsPage?.createManualBackup()">
+                        <div class="action-card manual-backup" onclick="window.settingsPage.createManualBackup()">
                             <div class="card-visual">
                                 <div class="card-icon-bg">
                                     <i class="fas fa-cloud-upload-alt"></i>
@@ -250,7 +1066,7 @@ class SettingsPageVisual {
                             </div>
                         </div>
                         
-                        <div class="action-card import-backup" onclick="window.settingsPage?.importBackup()">
+                        <div class="action-card import-backup" onclick="window.settingsPage.importBackup()">
                             <div class="card-visual">
                                 <div class="card-icon-bg import">
                                     <i class="fas fa-file-import"></i>
@@ -263,7 +1079,7 @@ class SettingsPageVisual {
                             </div>
                         </div>
                         
-                        <div class="action-card export-data" onclick="window.settingsPage?.exportAllData()">
+                        <div class="action-card export-data" onclick="window.settingsPage.exportAllData()">
                             <div class="card-visual">
                                 <div class="card-icon-bg export">
                                     <i class="fas fa-file-export"></i>
@@ -283,11 +1099,11 @@ class SettingsPageVisual {
                     <div class="timeline-header">
                         <h3><i class="fas fa-history"></i> Historique des sauvegardes</h3>
                         <div class="timeline-controls">
-                            <button class="btn-timeline-refresh" onclick="window.settingsPage?.refreshBackupTimeline()" title="Actualiser">
+                            <button class="btn-timeline-refresh" onclick="window.settingsPage.refreshBackupTimeline()" title="Actualiser">
                                 <i class="fas fa-sync-alt"></i>
                             </button>
                             <div class="timeline-filter">
-                                <select id="timeline-filter" onchange="window.settingsPage?.filterTimeline(this.value)">
+                                <select id="timeline-filter" onchange="window.settingsPage.filterTimeline(this.value)">
                                     <option value="all">Toutes les sauvegardes</option>
                                     <option value="manual">Manuelles uniquement</option>
                                     <option value="auto">Automatiques uniquement</option>
@@ -307,7 +1123,7 @@ class SettingsPageVisual {
                 
                 <!-- Paramètres avancés repliables -->
                 <div class="advanced-settings-section">
-                    <div class="advanced-toggle" onclick="window.settingsPage?.toggleAdvancedSettings()">
+                    <div class="advanced-toggle" onclick="window.settingsPage.toggleAdvancedSettings()">
                         <div class="toggle-content">
                             <i class="fas fa-cogs"></i>
                             <span>Paramètres avancés</span>
@@ -324,7 +1140,7 @@ class SettingsPageVisual {
                                 </div>
                                 <div class="setting-control">
                                     <label class="setting-switch">
-                                        <input type="checkbox" id="auto-backup-enabled" checked onchange="window.settingsPage?.toggleAutoBackup(this.checked)">
+                                        <input type="checkbox" id="auto-backup-enabled" checked onchange="window.settingsPage.toggleAutoBackup(this.checked)">
                                         <span class="switch-slider small"></span>
                                     </label>
                                 </div>
@@ -336,7 +1152,7 @@ class SettingsPageVisual {
                                     <h4>Fréquence automatique</h4>
                                 </div>
                                 <div class="setting-control">
-                                    <select id="auto-backup-frequency" onchange="window.settingsPage?.updateBackupFrequency(this.value)">
+                                    <select id="auto-backup-frequency" onchange="window.settingsPage.updateBackupFrequency(this.value)">
                                         <option value="immediate">Immédiate (recommandé)</option>
                                         <option value="5min">Toutes les 5 minutes</option>
                                         <option value="15min">Toutes les 15 minutes</option>
@@ -351,7 +1167,7 @@ class SettingsPageVisual {
                                     <h4>Rétention</h4>
                                 </div>
                                 <div class="setting-control">
-                                    <select id="backup-retention" onchange="window.settingsPage?.updateRetention(this.value)">
+                                    <select id="backup-retention" onchange="window.settingsPage.updateRetention(this.value)">
                                         <option value="20">20 sauvegardes</option>
                                         <option value="50">50 sauvegardes</option>
                                         <option value="100">100 sauvegardes</option>
@@ -398,7 +1214,7 @@ class SettingsPageVisual {
                                     <p>Supprimer toutes les données et sauvegardes</p>
                                 </div>
                                 <div class="danger-action">
-                                    <button class="btn-danger-visual" onclick="window.settingsPage?.resetAllSettings()">
+                                    <button class="btn-danger-visual" onclick="window.settingsPage.resetAllSettings()">
                                         <i class="fas fa-trash-alt"></i>
                                         Réinitialiser
                                     </button>
@@ -674,121 +1490,6 @@ class SettingsPageVisual {
         }
     }
 
-    // ================================================
-    // MODALES COMPLÈTES CATÉGORIES (Ajout des méthodes manquantes)
-    // ================================================
-    
-    showCreateCategoryModal() {
-        this.closeModal();
-        
-        const uniqueId = 'create_category_modal_' + Date.now();
-        const modalHTML = `
-            <div id="${uniqueId}" class="modal-backdrop" onclick="if(event.target === this) window.settingsPage.closeModal('${uniqueId}')">
-                <div class="modal-simple">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-plus"></i> Nouvelle catégorie</h2>
-                        <button class="btn-close" onclick="window.settingsPage?.closeModal('${uniqueId}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="modal-body">
-                        <div class="form-group">
-                            <label>Nom de la catégorie</label>
-                            <input type="text" id="category-name" placeholder="Ex: Factures, Newsletter..." autofocus>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Icône</label>
-                            <div class="icon-selector">
-                                ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌'].map((icon, i) => 
-                                    `<button class="icon-option ${i === 0 ? 'selected' : ''}" onclick="window.settingsPage?.selectIcon('${icon}')">${icon}</button>`
-                                ).join('')}
-                            </div>
-                            <input type="hidden" id="category-icon" value="📁">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Couleur</label>
-                            <div class="color-selector">
-                                ${this.colors.map((color, i) => 
-                                    `<button class="color-option ${i === 0 ? 'selected' : ''}" 
-                                             style="background: ${color}"
-                                             onclick="window.settingsPage?.selectColor('${color}')"></button>`
-                                ).join('')}
-                            </div>
-                            <input type="hidden" id="category-color" value="${this.colors[0]}">
-                        </div>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button class="btn-secondary" onclick="window.settingsPage?.closeModal('${uniqueId}')">Annuler</button>
-                        <button class="btn-primary" onclick="window.settingsPage?.createCategory('${uniqueId}')">
-                            <i class="fas fa-plus"></i> Créer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-        this.currentModal = uniqueId;
-        
-        setTimeout(() => document.getElementById('category-name')?.focus(), 100);
-    }
-
-    selectIcon(icon) {
-        document.getElementById('category-icon').value = icon;
-        document.querySelectorAll('.icon-option').forEach(btn => {
-            btn.classList.toggle('selected', btn.textContent === icon);
-        });
-    }
-
-    selectColor(color) {
-        document.getElementById('category-color').value = color;
-        document.querySelectorAll('.color-option').forEach(btn => {
-            btn.classList.toggle('selected', btn.style.background === color);
-        });
-    }
-
-    createCategory(modalId) {
-        const name = document.getElementById('category-name')?.value?.trim();
-        const icon = document.getElementById('category-icon')?.value || '📁';
-        const color = document.getElementById('category-color')?.value || this.colors[0];
-        
-        if (!name) {
-            this.showToast('Le nom est requis', 'error');
-            return;
-        }
-        
-        const categoryData = {
-            name,
-            icon,
-            color,
-            priority: 30,
-            keywords: { absolute: [], strong: [], weak: [], exclusions: [] },
-            isCustom: true
-        };
-        
-        try {
-            const newCategory = window.categoryManager?.createCustomCategory(categoryData);
-            
-            if (newCategory) {
-                this.closeModal(modalId);
-                this.showToast('Catégorie créée avec succès!');
-                this.refreshCategoriesTab();
-                
-                // Déclencher sauvegarde automatique
-                this.triggerAutoBackup('Création de catégorie');
-            } else {
-                this.showToast('Erreur lors de la création', 'error');
-            }
-        } catch (error) {
-            console.error('[SettingsPage] Erreur création catégorie:', error);
-            this.showToast('Erreur lors de la création', 'error');
-        }
-    }
     formatTimeAgo(timestamp) {
         const now = new Date();
         const time = new Date(timestamp);
@@ -819,282 +1520,9 @@ class SettingsPageVisual {
     }
 
     // ================================================
-    // MÉTHODES EXISTANTES (INCHANGÉES)
+    // MÉTHODES DE BACKUP
     // ================================================
-    
-    // Toutes les méthodes de catégories restent identiques...
-    calculateCategoryStats() {
-        const categories = window.categoryManager?.getCategories() || {};
-        const emails = window.emailScanner?.getAllEmails() || [];
-        
-        let totalKeywords = 0;
-        Object.keys(categories).forEach(id => {
-            const keywords = window.categoryManager?.getCategoryKeywords(id) || {};
-            totalKeywords += (keywords.absolute?.length || 0) + 
-                           (keywords.strong?.length || 0) + 
-                           (keywords.weak?.length || 0);
-        });
-        
-        return {
-            totalEmails: emails.length,
-            totalKeywords: totalKeywords
-        };
-    }
 
-    getCustomCategoriesCount(categories) {
-        return Object.values(categories).filter(cat => cat.isCustom).length;
-    }
-
-    getClassificationRate(stats) {
-        return stats.totalEmails > 0 ? Math.min(95, Math.round(85 + Math.random() * 10)) : 0;
-    }
-
-    getAvgKeywordsPerCategory(categories, stats) {
-        const count = Object.keys(categories).length;
-        return count > 0 ? Math.round(stats.totalKeywords / count * 10) / 10 : 0;
-    }
-
-    getPreselectedCount() {
-        const settings = this.loadSettings();
-        return settings.taskPreselectedCategories?.length || 0;
-    }
-
-    filterCategories(filter) {
-        this.currentFilter = filter;
-        this.refreshCategoriesTab();
-    }
-
-    renderCategoriesGrid(categories) {
-        const filteredCategories = this.getFilteredCategories(categories);
-        
-        if (Object.keys(filteredCategories).length === 0) {
-            return `
-                <div class="empty-state">
-                    <i class="fas fa-folder-open"></i>
-                    <h3>Aucune catégorie trouvée</h3>
-                    <p>${this.categorySearchTerm ? `Aucune catégorie ne correspond à "${this.categorySearchTerm}"` : 'Créez votre première catégorie pour commencer'}</p>
-                    ${this.categorySearchTerm ? `
-                        <button class="btn-primary" onclick="window.settingsPage?.clearCategorySearch()">
-                            <i class="fas fa-times"></i> Effacer la recherche
-                        </button>
-                    ` : `
-                        <button class="btn-primary" onclick="window.settingsPage?.showCreateCategoryModal()">
-                            <i class="fas fa-plus"></i> Créer une catégorie
-                        </button>
-                    `}
-                </div>
-            `;
-        }
-
-        return Object.entries(filteredCategories).map(([id, category]) => {
-            const stats = this.getCategoryStats(id);
-            const settings = this.loadSettings();
-            const isActive = settings.activeCategories === null || settings.activeCategories.includes(id);
-            const isPreselected = settings.taskPreselectedCategories?.includes(id) || false;
-            
-            return `
-                <div class="category-card ${!isActive ? 'inactive' : ''} ${isPreselected ? 'preselected' : ''}" 
-                     data-category-id="${id}">
-                    <div class="category-card-header">
-                        <div class="category-icon-large" 
-                             style="background: ${category.color}20; color: ${category.color}"
-                             onclick="window.settingsPage?.editCategory('${id}')"
-                             title="Cliquer pour modifier">
-                            ${category.icon}
-                        </div>
-                        <div class="category-actions-compact">
-                            <button class="action-btn-compact ${isActive ? 'active' : 'inactive'}" 
-                                    onclick="event.stopPropagation(); window.settingsPage?.toggleCategory('${id}')"
-                                    title="${isActive ? 'Désactiver' : 'Activer'}">
-                                <i class="fas fa-${isActive ? 'toggle-on' : 'toggle-off'}"></i>
-                            </button>
-                            ${category.isCustom ? `
-                                <button class="action-btn-compact danger" 
-                                        onclick="event.stopPropagation(); window.settingsPage?.deleteCategory('${id}')"
-                                        title="Supprimer">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="category-card-content" onclick="window.settingsPage?.editCategory('${id}')" 
-                         style="cursor: pointer;" title="Cliquer pour modifier">
-                        <h4 class="category-name">${category.name}</h4>
-                        <div class="category-stats">
-                            <div class="stat-item">
-                                <i class="fas fa-envelope"></i>
-                                <span>${stats.emailCount} emails</span>
-                            </div>
-                            <div class="stat-item">
-                                <i class="fas fa-key"></i>
-                                <span>${stats.keywords} mots-clés</span>
-                            </div>
-                        </div>
-                        
-                        ${isPreselected ? `
-                            <div class="preselected-indicator">
-                                <i class="fas fa-star"></i>
-                                <span>Pré-sélectionnée</span>
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="category-card-footer">
-                        <button class="btn-card-action ${isPreselected ? 'selected' : ''}" 
-                                onclick="event.stopPropagation(); window.settingsPage?.togglePreselection('${id}')"
-                                title="Pré-sélection pour tâches">
-                            <i class="fas fa-star"></i>
-                            ${isPreselected ? 'Pré-sélectionnée' : 'Pré-sélectionner'}
-                        </button>
-                        <button class="btn-card-action secondary" 
-                                onclick="event.stopPropagation(); window.settingsPage?.editCategory('${id}')"
-                                title="Modifier et voir mots-clés">
-                            <i class="fas fa-edit"></i>
-                            Modifier
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    getFilteredCategories(categories) {
-        let filtered = { ...categories };
-        
-        // Filtre par type
-        if (this.currentFilter === 'custom') {
-            filtered = Object.fromEntries(
-                Object.entries(filtered).filter(([id, cat]) => cat.isCustom)
-            );
-        } else if (this.currentFilter === 'preselected') {
-            const settings = this.loadSettings();
-            const preselected = settings.taskPreselectedCategories || [];
-            filtered = Object.fromEntries(
-                Object.entries(filtered).filter(([id, cat]) => preselected.includes(id))
-            );
-        }
-        
-        // Filtre par recherche
-        if (this.categorySearchTerm && this.categorySearchTerm.trim()) {
-            const searchTerm = this.categorySearchTerm.toLowerCase();
-            filtered = Object.fromEntries(
-                Object.entries(filtered).filter(([id, cat]) => 
-                    cat.name.toLowerCase().includes(searchTerm) ||
-                    cat.icon.includes(searchTerm)
-                )
-            );
-        }
-        
-        return filtered;
-    }
-
-    handleCategorySearch(value) {
-        this.categorySearchTerm = value.trim();
-        this.refreshCategoriesTab();
-    }
-
-    clearCategorySearch() {
-        this.categorySearchTerm = '';
-        const searchInput = document.getElementById('categoriesSearchInput');
-        if (searchInput) searchInput.value = '';
-        this.refreshCategoriesTab();
-    }
-
-    getCategoryStats(categoryId) {
-        const emails = window.emailScanner?.getAllEmails() || [];
-        const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {};
-        
-        return {
-            emailCount: emails.filter(email => email.category === categoryId).length,
-            keywords: (keywords.absolute?.length || 0) + 
-                     (keywords.strong?.length || 0) + 
-                     (keywords.weak?.length || 0)
-        };
-    }
-
-    // Navigation entre onglets
-    switchTab(tabName) {
-        document.querySelectorAll('.tab-button').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.tab === tabName);
-        });
-        
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.toggle('active', content.id === `tab-${tabName}`);
-        });
-        
-        this.currentTab = tabName;
-        
-        if (tabName === 'backup') {
-            this.updateBackupStatus();
-            this.loadBackupTimeline();
-        }
-    }
-
-    // Méthodes utilitaires
-    loadSettings() {
-        try {
-            const saved = localStorage.getItem('categorySettings');
-            return saved ? JSON.parse(saved) : { 
-                activeCategories: null,
-                taskPreselectedCategories: []
-            };
-        } catch (error) {
-            return { 
-                activeCategories: null,
-                taskPreselectedCategories: []
-            };
-        }
-    }
-
-    saveSettings(settings) {
-        try {
-            localStorage.setItem('categorySettings', JSON.stringify(settings));
-        } catch (error) {
-            console.error('[SettingsPage] Erreur sauvegarde:', error);
-        }
-    }
-
-    showToast(message, type = 'success') {
-        const toast = document.createElement('div');
-        toast.className = `toast-visual ${type}`;
-        toast.innerHTML = `
-            <div class="toast-content">
-                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'}"></i>
-                ${message}
-            </div>
-        `;
-        
-        document.body.appendChild(toast);
-        
-        setTimeout(() => toast.classList.add('show'), 10);
-        
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
-
-    refreshCategoriesTab() {
-        const categoriesTab = document.getElementById('tab-categories');
-        if (categoriesTab && this.currentTab === 'categories') {
-            categoriesTab.innerHTML = this.renderCategoriesTab();
-        }
-    }
-
-    renderError() {
-        return `
-            <div class="error-state">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Erreur de chargement</h3>
-                <button class="btn-primary" onclick="location.reload()">
-                    <i class="fas fa-redo"></i> Recharger
-                </button>
-            </div>
-        `;
-    }
-
-    // Ajouter les méthodes manquantes pour les actions
     async importBackup() {
         return new Promise((resolve, reject) => {
             const input = document.createElement('input');
@@ -1336,6 +1764,84 @@ Tapez "RESET" pour confirmer :`);
     }
 
     // ================================================
+    // NAVIGATION ET UTILITAIRES
+    // ================================================
+    
+    // Navigation entre onglets
+    switchTab(tabName) {
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabName);
+        });
+        
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.toggle('active', content.id === `tab-${tabName}`);
+        });
+        
+        this.currentTab = tabName;
+        
+        if (tabName === 'backup') {
+            this.updateBackupStatus();
+            this.loadBackupTimeline();
+        }
+    }
+
+    // Méthodes utilitaires
+    loadSettings() {
+        try {
+            const saved = localStorage.getItem('categorySettings');
+            return saved ? JSON.parse(saved) : { 
+                activeCategories: null,
+                taskPreselectedCategories: []
+            };
+        } catch (error) {
+            return { 
+                activeCategories: null,
+                taskPreselectedCategories: []
+            };
+        }
+    }
+
+    saveSettings(settings) {
+        try {
+            localStorage.setItem('categorySettings', JSON.stringify(settings));
+        } catch (error) {
+            console.error('[SettingsPage] Erreur sauvegarde:', error);
+        }
+    }
+
+    showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast-visual ${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'}"></i>
+                ${message}
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 10);
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    renderError() {
+        return `
+            <div class="error-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Erreur de chargement</h3>
+                <button class="btn-primary" onclick="location.reload()">
+                    <i class="fas fa-redo"></i> Recharger
+                </button>
+            </div>
+        `;
+    }
+
+    // ================================================
     // STYLES VISUELS AMÉLIORÉS
     // ================================================
     addStyles() {
@@ -1491,138 +1997,6 @@ Tapez "RESET" pour confirmer :`);
             .quick-stat .stat-label {
                 font-size: 14px;
                 opacity: 0.8;
-            }
-
-            /* Panel de protection automatique */
-            .auto-protection-panel {
-                background: white;
-                border-radius: var(--radius);
-                border: 1px solid var(--border);
-                overflow: hidden;
-                margin-bottom: 24px;
-                box-shadow: var(--shadow);
-            }
-
-            .panel-header {
-                display: flex;
-                align-items: center;
-                gap: 16px;
-                padding: 24px;
-                background: linear-gradient(135deg, #f093fb 0%, #f5576c 20%, #4facfe 100%);
-                color: white;
-            }
-
-            .panel-icon {
-                width: 48px;
-                height: 48px;
-                background: rgba(255, 255, 255, 0.2);
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 24px;
-            }
-
-            .panel-content {
-                flex: 1;
-            }
-
-            .panel-content h3 {
-                margin: 0 0 4px 0;
-                font-size: 18px;
-                font-weight: 600;
-            }
-
-            .panel-content p {
-                margin: 0;
-                opacity: 0.9;
-                font-size: 14px;
-            }
-
-            .auto-switch {
-                position: relative;
-                width: 60px;
-                height: 32px;
-            }
-
-            .auto-switch input {
-                opacity: 0;
-                width: 0;
-                height: 0;
-            }
-
-            .switch-slider {
-                position: absolute;
-                cursor: pointer;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(255, 255, 255, 0.3);
-                border-radius: 32px;
-                transition: 0.3s;
-            }
-
-            .switch-slider:before {
-                position: absolute;
-                content: "";
-                height: 24px;
-                width: 24px;
-                left: 4px;
-                bottom: 4px;
-                background: white;
-                border-radius: 50%;
-                transition: 0.3s;
-            }
-
-            input:checked + .switch-slider {
-                background: rgba(255, 255, 255, 0.5);
-            }
-
-            input:checked + .switch-slider:before {
-                transform: translateX(28px);
-            }
-
-            .protection-features {
-                padding: 24px;
-            }
-
-            .feature-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
-            }
-
-            .feature-item {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-                padding: 16px;
-                background: var(--bg);
-                border-radius: 8px;
-                transition: all 0.2s;
-            }
-
-            .feature-item:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            }
-
-            .feature-item i {
-                font-size: 24px;
-                color: var(--primary);
-                margin-bottom: 8px;
-            }
-
-            .feature-item span {
-                font-weight: 600;
-                margin-bottom: 4px;
-            }
-
-            .feature-item small {
-                color: var(--text-light);
-                font-size: 12px;
             }
 
             /* Actions visuelles */
@@ -2380,7 +2754,7 @@ Tapez "RESET" pour confirmer :`);
                 border-radius: 6px;
                 font-size: 13px;
                 background: white;
-                transition: var(--transition);
+                transition: all 0.2s;
                 outline: none;
             }
 
@@ -2411,7 +2785,7 @@ Tapez "RESET" pour confirmer :`);
                 align-items: center;
                 justify-content: center;
                 font-size: 10px;
-                transition: var(--transition);
+                transition: all 0.2s;
             }
 
             .search-clear-categories:hover {
@@ -2489,7 +2863,7 @@ Tapez "RESET" pour confirmer :`);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: var(--transition);
+                transition: all 0.2s;
                 color: var(--text-light);
                 font-size: 12px;
             }
@@ -2583,7 +2957,7 @@ Tapez "RESET" pour confirmer :`);
                 font-size: 11px;
                 font-weight: 600;
                 cursor: pointer;
-                transition: var(--transition);
+                transition: all 0.2s;
                 border: 1px solid var(--border);
                 background: white;
                 color: var(--text);
@@ -2634,15 +3008,6 @@ Tapez "RESET" pour confirmer :`);
                 gap: 16px;
             }
 
-            /* Actions catégories (styles existants) */
-            .categories-actions-enhanced {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 24px;
-                gap: 20px;
-            }
-            
             .actions-left {
                 display: flex;
                 gap: 12px;
@@ -2755,119 +3120,6 @@ Tapez "RESET" pour confirmer :`);
                 box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
             }
 
-            /* Liste des catégories */
-            .categories-list-enhanced {
-                display: grid;
-                gap: 12px;
-            }
-            
-            .category-item {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 16px;
-                background: var(--bg);
-                border-radius: var(--radius);
-                border: 1px solid var(--border);
-                transition: all 0.2s;
-            }
-            
-            .category-item:hover {
-                border-color: var(--primary);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            }
-            
-            .category-item.inactive {
-                opacity: 0.6;
-                background: #F5F5F5;
-            }
-            
-            .category-main {
-                display: flex;
-                align-items: center;
-                gap: 16px;
-            }
-            
-            .category-icon {
-                width: 48px;
-                height: 48px;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 24px;
-            }
-            
-            .category-info h3 {
-                margin: 0 0 4px 0;
-                font-size: 16px;
-                font-weight: 600;
-            }
-            
-            .category-meta {
-                display: flex;
-                gap: 12px;
-                font-size: 13px;
-                color: var(--text-light);
-            }
-            
-            .preselected-badge {
-                background: var(--warning);
-                color: white;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 11px;
-                font-weight: 600;
-            }
-            
-            .category-actions {
-                display: flex;
-                gap: 8px;
-            }
-            
-            .action-btn {
-                width: 36px;
-                height: 36px;
-                border: 1px solid var(--border);
-                background: white;
-                border-radius: 6px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s;
-                color: var(--text-light);
-            }
-            
-            .action-btn:hover {
-                border-color: var(--primary);
-                color: var(--primary);
-            }
-            
-            .action-btn.active {
-                background: var(--success);
-                color: white;
-                border-color: var(--success);
-            }
-            
-            .action-btn.inactive {
-                background: var(--danger);
-                color: white;
-                border-color: var(--danger);
-            }
-            
-            .action-btn.selected {
-                background: var(--warning);
-                color: white;
-                border-color: var(--warning);
-            }
-            
-            .action-btn.danger:hover {
-                background: var(--danger);
-                color: white;
-                border-color: var(--danger);
-            }
-
             /* États vides */
             .empty-state {
                 text-align: center;
@@ -2973,7 +3225,7 @@ Tapez "RESET" pour confirmer :`);
                 align-items: center;
                 justify-content: center;
                 color: var(--text-light);
-                transition: var(--transition);
+                transition: all 0.2s;
             }
             
             .btn-close:hover {
@@ -3288,52 +3540,7 @@ Tapez "RESET" pour confirmer :`);
                 background: rgba(255, 255, 255, 0.2);
             }
 
-            /* Filtres */
-            .filters-layout {
-                display: grid;
-                gap: 24px;
-            }
-            
-            .filter-group {
-                background: var(--bg);
-                border: 1px solid var(--border);
-                border-radius: var(--radius);
-                padding: 20px;
-            }
-            
-            .filter-group h3 {
-                margin: 0 0 20px 0;
-                font-size: 18px;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                color: var(--text);
-            }
-            
-            .filter-section {
-                margin-bottom: 20px;
-            }
-            
-            .filter-section:last-child {
-                margin-bottom: 0;
-            }
-            
-            .filter-section h4 {
-                margin: 0 0 12px 0;
-                font-size: 14px;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                color: var(--text);
-            }
-
             /* Zone de danger */
-            .settings-section {
-                max-width: 500px;
-            }
-            
             .danger-zone {
                 background: var(--danger)05;
                 border: 2px solid var(--danger)20;
@@ -3357,6 +3564,7 @@ Tapez "RESET" pour confirmer :`);
                 font-size: 14px;
                 line-height: 1.4;
             }
+
             @media (max-width: 1024px) {
                 .categories-grid-enhanced {
                     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
