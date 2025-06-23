@@ -2490,56 +2490,192 @@ class TasksView {
         const checklistProgress = this.getChecklistProgress(task.checklist);
         
         return `
-            <div class="task-details-content">
-                <div class="details-header">
-                    <h1 class="task-title-details">${this.escapeHtml(task.title)}</h1>
-                    <div class="task-meta-badges">
-                        <span class="priority-badge-details priority-${task.priority}">
+            <div class="task-details-modern">
+                <!-- EN-TÊTE PRINCIPAL -->
+                <div class="task-header-modern">
+                    <div class="task-title-section">
+                        <h1 class="task-title-main">${this.escapeHtml(task.title)}</h1>
+                        <div class="task-id-ref">ID: ${task.id}</div>
+                    </div>
+                    <div class="task-status-section">
+                        <span class="priority-badge-modern priority-${task.priority}">
                             ${priorityIcon} ${this.getPriorityLabel(task.priority)}
                         </span>
-                        <span class="status-badge-details status-${task.status}">
+                        <span class="status-badge-modern status-${task.status}">
                             ${this.getStatusIcon(task.status)} ${statusLabel}
                         </span>
-                        <span class="category-badge-details">
+                    </div>
+                </div>
+
+                <!-- GRILLE D'INFORMATIONS PRINCIPALES -->
+                <div class="task-info-grid">
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <i class="fas fa-building"></i>
+                            <span>Client/Projet</span>
+                        </div>
+                        <div class="info-card-content">
+                            ${this.getDisplayClient(task).icon} ${this.escapeHtml(task.client)}
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <i class="fas fa-folder"></i>
+                            <span>Catégorie</span>
+                        </div>
+                        <div class="info-card-content">
                             ${this.getCategoryIcon(task.category)} ${this.getCategoryName(task.category)}
-                        </span>
-                        <span class="deadline-badge-details ${dueDateInfo.className}">
-                            <i class="fas fa-calendar"></i>
-                            ${dueDateInfo.text || 'Pas d\'échéance définie'}
-                        </span>
-                        ${checklistProgress.total > 0 ? `
-                            <span class="checklist-badge-details">
-                                <i class="fas fa-check-square"></i>
-                                ${checklistProgress.completed}/${checklistProgress.total} tâches
-                            </span>
-                        ` : ''}
+                        </div>
+                    </div>
+
+                    <div class="info-card ${dueDateInfo.className}">
+                        <div class="info-card-header">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Échéance</span>
+                        </div>
+                        <div class="info-card-content">
+                            ${dueDateInfo.text || 'Aucune échéance définie'}
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-header">
+                            <i class="fas fa-clock"></i>
+                            <span>Dates</span>
+                        </div>
+                        <div class="info-card-content">
+                            <div class="date-item">Créé: ${new Date(task.createdAt).toLocaleString('fr-FR')}</div>
+                            <div class="date-item">Modifié: ${new Date(task.updatedAt).toLocaleString('fr-FR')}</div>
+                            ${task.completedAt ? `<div class="date-item">Terminé: ${new Date(task.completedAt).toLocaleString('fr-FR')}</div>` : ''}
+                        </div>
                     </div>
                 </div>
 
                 ${task.description ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-align-left"></i> Description</h3>
-                        <div class="description-content">
-                            ${this.formatDescription(task.description)}
+                    <!-- SECTION DESCRIPTION -->
+                    <div class="section-modern">
+                        <div class="section-header-modern">
+                            <i class="fas fa-align-left"></i>
+                            <span>Description</span>
+                        </div>
+                        <div class="section-content-modern">
+                            <div class="description-modern">
+                                ${this.formatDescription(task.description)}
+                            </div>
                         </div>
                     </div>
                 ` : ''}
 
                 ${task.checklist && task.checklist.length > 0 ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-check-square"></i> Liste de contrôle</h3>
-                        <div class="checklist-details">
-                            <div class="checklist-progress-bar">
-                                <div class="progress-track">
-                                    <div class="progress-fill" style="width: ${checklistProgress.total > 0 ? (checklistProgress.completed / checklistProgress.total) * 100 : 0}%"></div>
-                                </div>
-                                <span class="progress-label">${checklistProgress.completed}/${checklistProgress.total} terminées</span>
+                    <!-- SECTION CHECKLIST -->
+                    <div class="section-modern">
+                        <div class="section-header-modern">
+                            <i class="fas fa-check-square"></i>
+                            <span>Liste de contrôle</span>
+                            <div class="progress-indicator">
+                                ${checklistProgress.completed}/${checklistProgress.total} terminées
                             </div>
-                            <div class="checklist-items-readonly">
-                                ${task.checklist.map(item => `
-                                    <div class="checklist-item-readonly ${item.completed ? 'completed' : ''}">
-                                        <i class="fas ${item.completed ? 'fa-check-circle' : 'fa-circle'}"></i>
-                                        <span class="item-text">${this.escapeHtml(item.text)}</span>
+                        </div>
+                        <div class="section-content-modern">
+                            <div class="checklist-modern">
+                                <div class="progress-bar-modern">
+                                    <div class="progress-fill-modern" style="width: ${checklistProgress.total > 0 ? (checklistProgress.completed / checklistProgress.total) * 100 : 0}%"></div>
+                                </div>
+                                <div class="checklist-items-modern">
+                                    ${task.checklist.map(item => `
+                                        <div class="checklist-item-modern ${item.completed ? 'completed' : ''}">
+                                            <div class="check-indicator">
+                                                <i class="fas ${item.completed ? 'fa-check-circle' : 'fa-circle'}"></i>
+                                            </div>
+                                            <span class="item-text-modern">${this.escapeHtml(item.text)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.hasEmail ? `
+                    <!-- SECTION EMAIL COMPLÈTE -->
+                    <div class="section-modern email-section">
+                        <div class="section-header-modern">
+                            <i class="fas fa-envelope"></i>
+                            <span>Informations Email</span>
+                            ${task.needsReply ? '<span class="reply-required">Réponse requise</span>' : ''}
+                        </div>
+                        <div class="section-content-modern">
+                            <!-- En-tête email -->
+                            <div class="email-header-modern">
+                                <div class="email-meta-grid">
+                                    <div class="email-meta-item">
+                                        <strong>De:</strong>
+                                        <span>${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</span>
+                                    </div>
+                                    <div class="email-meta-item">
+                                        <strong>Email:</strong>
+                                        <span>${this.escapeHtml(task.emailFrom || 'Non disponible')}</span>
+                                    </div>
+                                    <div class="email-meta-item">
+                                        <strong>Sujet:</strong>
+                                        <span>${this.escapeHtml(task.emailSubject || 'Sans sujet')}</span>
+                                    </div>
+                                    <div class="email-meta-item">
+                                        <strong>Date:</strong>
+                                        <span>${task.emailDate ? new Date(task.emailDate).toLocaleString('fr-FR') : 'Non disponible'}</span>
+                                    </div>
+                                    <div class="email-meta-item">
+                                        <strong>Domaine:</strong>
+                                        <span>${task.emailDomain || 'Non disponible'}</span>
+                                    </div>
+                                    <div class="email-meta-item">
+                                        <strong>Répondu:</strong>
+                                        <span class="${task.emailReplied ? 'replied' : 'not-replied'}">
+                                            ${task.emailReplied ? '✅ Oui' : '❌ Non'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Contenu email -->
+                            ${task.emailContent || task.emailHtmlContent ? `
+                                <div class="email-content-modern">
+                                    <div class="email-content-header">
+                                        <i class="fas fa-file-alt"></i>
+                                        <span>Contenu de l'email</span>
+                                        <button class="btn-toggle-email" onclick="window.tasksView.toggleEmailContent('${task.id}')">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div class="email-content-body" id="emailContent_${task.id}">
+                                        ${task.emailHtmlContent || this.formatEmailContentModern(task.emailContent)}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.actions && task.actions.length > 0 ? `
+                    <!-- SECTION ACTIONS REQUISES -->
+                    <div class="section-modern">
+                        <div class="section-header-modern">
+                            <i class="fas fa-tasks"></i>
+                            <span>Actions Requises</span>
+                            <div class="actions-count">${task.actions.length} action(s)</div>
+                        </div>
+                        <div class="section-content-modern">
+                            <div class="actions-modern">
+                                ${task.actions.map((action, idx) => `
+                                    <div class="action-item-modern">
+                                        <div class="action-number">${idx + 1}</div>
+                                        <div class="action-content">
+                                            <div class="action-text">${this.escapeHtml(action.text)}</div>
+                                            ${action.deadline ? `
+                                                <div class="action-deadline">${this.formatDeadline(action.deadline)}</div>
+                                            ` : ''}
+                                        </div>
                                     </div>
                                 `).join('')}
                             </div>
@@ -2547,117 +2683,98 @@ class TasksView {
                     </div>
                 ` : ''}
 
-                <div class="details-section">
-                    <h3><i class="fas fa-info-circle"></i> Informations Générales</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <strong>Client/Projet:</strong>
-                            <span>${this.escapeHtml(task.client)}</span>
-                        </div>
-                        <div class="info-item">
-                            <strong>Catégorie:</strong>
-                            <span>${this.getCategoryIcon(task.category)} ${this.getCategoryName(task.category)}</span>
-                        </div>
-                        <div class="info-item">
-                            <strong>Créé le:</strong>
-                            <span>${new Date(task.createdAt).toLocaleString('fr-FR')}</span>
-                        </div>
-                        <div class="info-item">
-                            <strong>Dernière modification:</strong>
-                            <span>${new Date(task.updatedAt).toLocaleString('fr-FR')}</span>
-                        </div>
-                        ${task.completedAt ? `
-                            <div class="info-item">
-                                <strong>Terminé le:</strong>
-                                <span>${new Date(task.completedAt).toLocaleString('fr-FR')}</span>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-
-                ${task.hasEmail ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-envelope"></i> Informations Email</h3>
-                        <div class="email-details-grid">
-                            <div class="email-detail-item">
-                                <strong>Expéditeur:</strong>
-                                <span>${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</span>
-                            </div>
-                            ${task.emailFrom ? `
-                                <div class="email-detail-item">
-                                    <strong>Email:</strong>
-                                    <span>${this.escapeHtml(task.emailFrom)}</span>
-                                </div>
-                            ` : ''}
-                            ${task.emailSubject ? `
-                                <div class="email-detail-item">
-                                    <strong>Sujet:</strong>
-                                    <span>${this.escapeHtml(task.emailSubject)}</span>
-                                </div>
-                            ` : ''}
-                            <div class="email-detail-item">
-                                <strong>Réponse requise:</strong>
-                                <span>${task.needsReply ? '✅ Oui' : '❌ Non'}</span>
-                            </div>
-                        </div>
-                        
-                        ${task.emailContent && task.emailContent.length > 100 ? `
-                            <div class="email-content-section">
-                                <h4>Contenu de l'email</h4>
-                                <div class="email-content-box">
-                                    ${task.emailHtmlContent || this.formatEmailContent(task.emailContent)}
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                ` : ''}
-
-                ${task.actions && task.actions.length > 0 ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-tasks"></i> Actions Requises</h3>
-                        <div class="actions-list-details">
-                            ${task.actions.map((action, idx) => `
-                                <div class="action-item-details">
-                                    <span class="action-number">${idx + 1}</span>
-                                    <span class="action-text">${this.escapeHtml(action.text)}</span>
-                                    ${action.deadline ? `
-                                        <span class="action-deadline">${this.formatDeadline(action.deadline)}</span>
-                                    ` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
                 ${task.keyInfo && task.keyInfo.length > 0 ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-lightbulb"></i> Informations Clés</h3>
-                        <div class="key-info-grid">
-                            ${task.keyInfo.map(info => `
-                                <div class="key-info-item">
-                                    <i class="fas fa-chevron-right"></i>
-                                    <span>${this.escapeHtml(info)}</span>
-                                </div>
-                            `).join('')}
+                    <!-- SECTION INFORMATIONS CLÉS -->
+                    <div class="section-modern">
+                        <div class="section-header-modern">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Informations Clés</span>
+                            <div class="info-count">${task.keyInfo.length} élément(s)</div>
+                        </div>
+                        <div class="section-content-modern">
+                            <div class="key-info-modern">
+                                ${task.keyInfo.map(info => `
+                                    <div class="key-info-item-modern">
+                                        <i class="fas fa-chevron-right"></i>
+                                        <span>${this.escapeHtml(info)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
                         </div>
                     </div>
                 ` : ''}
 
                 ${task.risks && task.risks.length > 0 ? `
-                    <div class="details-section attention-section">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Points d'Attention</h3>
-                        <div class="attention-list">
-                            ${task.risks.map(risk => `
-                                <div class="attention-item">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    <span>${this.escapeHtml(risk)}</span>
-                                </div>
-                            `).join('')}
+                    <!-- SECTION POINTS D'ATTENTION -->
+                    <div class="section-modern attention-section-modern">
+                        <div class="section-header-modern">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>Points d'Attention</span>
+                            <div class="risks-count">${task.risks.length} risque(s)</div>
+                        </div>
+                        <div class="section-content-modern">
+                            <div class="attention-modern">
+                                ${task.risks.map(risk => `
+                                    <div class="attention-item-modern">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        <span>${this.escapeHtml(risk)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                    <!-- SECTION SUGGESTIONS DE RÉPONSE -->
+                    <div class="section-modern">
+                        <div class="section-header-modern">
+                            <i class="fas fa-reply"></i>
+                            <span>Suggestions de Réponse</span>
+                            <div class="replies-count">${task.suggestedReplies.length} suggestion(s)</div>
+                        </div>
+                        <div class="section-content-modern">
+                            <div class="replies-preview">
+                                ${task.suggestedReplies.slice(0, 2).map(reply => `
+                                    <div class="reply-preview-card">
+                                        <div class="reply-tone">${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}</div>
+                                        <div class="reply-subject">${this.escapeHtml(reply.subject)}</div>
+                                    </div>
+                                `).join('')}
+                                <button class="btn-view-all-replies" onclick="window.tasksView.showSuggestedReplies('${task.id}')">
+                                    <i class="fas fa-eye"></i>
+                                    Voir toutes les suggestions
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ` : ''}
             </div>
         `;
+    }
+
+    toggleEmailContent(taskId) {
+        const content = document.getElementById(`emailContent_${taskId}`);
+        const toggle = document.querySelector(`[onclick="window.tasksView.toggleEmailContent('${taskId}')"] i`);
+        
+        if (content && toggle) {
+            const isVisible = content.style.display !== 'none';
+            content.style.display = isVisible ? 'none' : 'block';
+            toggle.classList.toggle('fa-chevron-down', isVisible);
+            toggle.classList.toggle('fa-chevron-up', !isVisible);
+        }
+    }
+
+    formatEmailContentModern(content) {
+        if (!content) return '<p>Contenu non disponible</p>';
+        
+        const cleanContent = content
+            .replace(/\n/g, '<br>')
+            .replace(/Email de:/g, '<strong>Email de:</strong>')
+            .replace(/Date:/g, '<strong>Date:</strong>')
+            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
+            
+        return `<div class="email-content-display">${cleanContent}</div>`;
     }
 
     getCategoryIcon(category) {
@@ -4784,42 +4901,583 @@ class TasksView {
                 }
             }
 
-            @media (max-width: 480px) {
-                .tasks-page-v12 {
-                    padding: 8px;
-                }
+            /* ================================================ */
+            /* VUE DÉTAILLÉE MODERNE DES TÂCHES */
+            /* ================================================ */
+            .task-details-modern {
+                max-width: none;
+                padding: 0;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
 
-                .main-controls-section {
-                    padding: 12px;
-                    gap: 12px;
-                }
+            /* En-tête principal moderne */
+            .task-header-modern {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                padding: 24px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border-radius: 12px 12px 0 0;
+                margin-bottom: 0;
+            }
 
-                .status-filters-panel.show,
-                .category-filters-panel.show,
-                .advanced-filters-panel.show {
-                    padding: 12px;
-                }
+            .task-title-section h1.task-title-main {
+                font-size: 28px;
+                font-weight: 700;
+                margin: 0 0 8px 0;
+                line-height: 1.2;
+                color: white;
+            }
 
-                .btn-action {
-                    height: 40px;
-                    font-size: 12px;
-                    padding: 0 12px;
-                }
+            .task-id-ref {
+                font-size: 13px;
+                opacity: 0.8;
+                font-family: 'Monaco', monospace;
+                background: rgba(255, 255, 255, 0.1);
+                padding: 4px 8px;
+                border-radius: 4px;
+                display: inline-block;
+            }
 
-                .task-content-line {
-                    padding: 8px;
-                    gap: 8px;
-                }
+            .task-status-section {
+                display: flex;
+                gap: 12px;
+                flex-direction: column;
+                align-items: flex-end;
+            }
 
-                .task-actions {
+            .priority-badge-modern,
+            .status-badge-modern {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 600;
+                background: rgba(255, 255, 255, 0.9);
+                color: var(--text-primary);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            /* Grille d'informations principales */
+            .task-info-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 16px;
+                padding: 24px;
+                background: #f8fafc;
+            }
+
+            .info-card {
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                padding: 20px;
+                transition: var(--transition);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+
+            .info-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+                border-color: var(--primary-color);
+            }
+
+            .info-card.deadline-overdue {
+                border-left: 4px solid var(--danger-color);
+                background: linear-gradient(135deg, #fef2f2 0%, white 100%);
+            }
+
+            .info-card.deadline-today {
+                border-left: 4px solid var(--warning-color);
+                background: linear-gradient(135deg, #fffbeb 0%, white 100%);
+            }
+
+            .info-card-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 12px;
+                color: var(--text-secondary);
+                font-size: 14px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .info-card-header i {
+                color: var(--primary-color);
+                font-size: 16px;
+            }
+
+            .info-card-content {
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--text-primary);
+                line-height: 1.4;
+            }
+
+            .date-item {
+                font-size: 14px;
+                margin-bottom: 6px;
+                display: flex;
+                justify-content: space-between;
+            }
+
+            .date-item:before {
+                content: "•";
+                color: var(--primary-color);
+                margin-right: 8px;
+            }
+
+            /* Sections modernes */
+            .section-modern {
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                margin-bottom: 20px;
+                overflow: hidden;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+
+            .section-header-modern {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px 24px;
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                border-bottom: 1px solid var(--border-color);
+                font-weight: 700;
+                color: var(--text-primary);
+            }
+
+            .section-header-modern i {
+                color: var(--primary-color);
+                margin-right: 8px;
+                font-size: 16px;
+            }
+
+            .section-content-modern {
+                padding: 24px;
+            }
+
+            .progress-indicator,
+            .actions-count,
+            .info-count,
+            .risks-count,
+            .replies-count {
+                background: var(--primary-color);
+                color: white;
+                padding: 4px 12px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+
+            .reply-required {
+                background: var(--danger-color);
+                color: white;
+                padding: 4px 12px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.7; }
+            }
+
+            /* Description moderne */
+            .description-modern {
+                background: #f8fafc;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 20px;
+                font-size: 15px;
+                line-height: 1.6;
+                color: var(--text-primary);
+            }
+
+            /* Checklist moderne */
+            .checklist-modern {
+                background: #f8fafc;
+                border-radius: 8px;
+                padding: 20px;
+            }
+
+            .progress-bar-modern {
+                width: 100%;
+                height: 8px;
+                background: #e2e8f0;
+                border-radius: 4px;
+                overflow: hidden;
+                margin-bottom: 20px;
+            }
+
+            .progress-fill-modern {
+                height: 100%;
+                background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+                transition: width 0.3s ease;
+            }
+
+            .checklist-items-modern {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .checklist-item-modern {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                transition: var(--transition);
+            }
+
+            .checklist-item-modern:hover {
+                border-color: var(--primary-color);
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+            }
+
+            .checklist-item-modern.completed {
+                background: #f0fdf4;
+                border-color: var(--success-color);
+            }
+
+            .check-indicator i {
+                font-size: 16px;
+                color: #9ca3af;
+            }
+
+            .checklist-item-modern.completed .check-indicator i {
+                color: var(--success-color);
+            }
+
+            .item-text-modern {
+                flex: 1;
+                font-size: 15px;
+                color: var(--text-primary);
+            }
+
+            .checklist-item-modern.completed .item-text-modern {
+                text-decoration: line-through;
+                color: var(--text-secondary);
+            }
+
+            /* Section email moderne */
+            .email-section {
+                border-left: 4px solid var(--primary-color);
+            }
+
+            .email-header-modern {
+                background: #f8fafc;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+
+            .email-meta-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 16px;
+            }
+
+            .email-meta-item {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .email-meta-item strong {
+                font-size: 12px;
+                color: var(--text-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .email-meta-item span {
+                font-size: 14px;
+                color: var(--text-primary);
+                font-weight: 500;
+            }
+
+            .email-meta-item .replied {
+                color: var(--success-color);
+                font-weight: 600;
+            }
+
+            .email-meta-item .not-replied {
+                color: var(--danger-color);
+                font-weight: 600;
+            }
+
+            .email-content-modern {
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .email-content-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 12px 16px;
+                background: #f8fafc;
+                border-bottom: 1px solid var(--border-color);
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+
+            .btn-toggle-email {
+                background: none;
+                border: none;
+                color: var(--primary-color);
+                cursor: pointer;
+                padding: 4px;
+                border-radius: 4px;
+                transition: var(--transition);
+            }
+
+            .btn-toggle-email:hover {
+                background: var(--primary-color);
+                color: white;
+            }
+
+            .email-content-body {
+                padding: 20px;
+                background: white;
+                max-height: 400px;
+                overflow-y: auto;
+            }
+
+            .email-content-display {
+                font-size: 14px;
+                line-height: 1.6;
+                color: var(--text-primary);
+            }
+
+            /* Actions modernes */
+            .actions-modern {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .action-item-modern {
+                display: flex;
+                align-items: flex-start;
+                gap: 16px;
+                padding: 16px;
+                background: #f8fafc;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                transition: var(--transition);
+            }
+
+            .action-item-modern:hover {
+                border-color: var(--primary-color);
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+            }
+
+            .action-number {
+                width: 32px;
+                height: 32px;
+                background: var(--primary-color);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                font-weight: 700;
+                flex-shrink: 0;
+            }
+
+            .action-content {
+                flex: 1;
+            }
+
+            .action-text {
+                font-size: 15px;
+                color: var(--text-primary);
+                font-weight: 500;
+                margin-bottom: 8px;
+                line-height: 1.4;
+            }
+
+            .action-deadline {
+                font-size: 12px;
+                color: var(--danger-color);
+                font-weight: 600;
+                background: #fef2f2;
+                padding: 4px 8px;
+                border-radius: 4px;
+                display: inline-block;
+            }
+
+            /* Informations clés modernes */
+            .key-info-modern {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .key-info-item-modern {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 12px;
+                background: #f8fafc;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                transition: var(--transition);
+            }
+
+            .key-info-item-modern:hover {
+                border-color: var(--primary-color);
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+            }
+
+            .key-info-item-modern i {
+                color: var(--primary-color);
+                margin-top: 2px;
+                flex-shrink: 0;
+            }
+
+            .key-info-item-modern span {
+                font-size: 14px;
+                color: var(--text-primary);
+                line-height: 1.4;
+            }
+
+            /* Points d'attention modernes */
+            .attention-section-modern {
+                border-left: 4px solid var(--warning-color);
+            }
+
+            .attention-modern {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .attention-item-modern {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 12px;
+                background: #fffbeb;
+                border: 1px solid #fde68a;
+                border-radius: 8px;
+                transition: var(--transition);
+            }
+
+            .attention-item-modern:hover {
+                border-color: var(--warning-color);
+                box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+            }
+
+            .attention-item-modern i {
+                color: var(--warning-color);
+                margin-top: 2px;
+                flex-shrink: 0;
+            }
+
+            .attention-item-modern span {
+                font-size: 14px;
+                color: #92400e;
+                line-height: 1.4;
+                font-weight: 500;
+            }
+
+            /* Aperçu des réponses */
+            .replies-preview {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .reply-preview-card {
+                padding: 12px;
+                background: #f8fafc;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                transition: var(--transition);
+            }
+
+            .reply-preview-card:hover {
+                border-color: var(--primary-color);
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+            }
+
+            .reply-tone {
+                font-size: 12px;
+                color: var(--primary-color);
+                font-weight: 600;
+                margin-bottom: 8px;
+            }
+
+            .reply-subject {
+                font-size: 14px;
+                color: var(--text-primary);
+                font-weight: 500;
+            }
+
+            .btn-view-all-replies {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 12px;
+                background: var(--primary-color);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: var(--transition);
+                margin-top: 8px;
+            }
+
+            .btn-view-all-replies:hover {
+                background: var(--primary-hover);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            }
+
+            /* Responsive pour vue détaillée moderne */
+            @media (max-width: 768px) {
+                .task-header-modern {
                     flex-direction: column;
-                    gap: 2px;
+                    gap: 16px;
+                    align-items: flex-start;
                 }
 
-                .action-btn {
-                    width: 28px;
-                    height: 28px;
-                    font-size: 11px;
+                .task-status-section {
+                    flex-direction: row;
+                    align-items: flex-start;
+                }
+
+                .task-info-grid {
+                    grid-template-columns: 1fr;
+                    padding: 16px;
+                }
+
+                .section-content-modern {
+                    padding: 16px;
+                }
+
+                .email-meta-grid {
+                    grid-template-columns: 1fr;
                 }
             }
 
