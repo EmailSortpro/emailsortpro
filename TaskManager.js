@@ -853,7 +853,7 @@ class TasksView {
             <div class="tasks-page-v12">
                 <!-- SECTION CONTRÔLES PRINCIPALE -->
                 <div class="main-controls-section">
-                    <!-- Ligne 1 : Recherche + Actions principales -->
+                    <!-- Ligne 1 : Recherche + Actions principales + Nouvelle tâche + Date -->
                     <div class="search-and-actions-line">
                         <!-- Recherche -->
                         <div class="search-section">
@@ -872,8 +872,8 @@ class TasksView {
                             </div>
                         </div>
 
-                        <!-- Actions principales -->
-                        <div class="main-actions">
+                        <!-- Actions principales + Nouvelle tâche + Date sur une seule ligne -->
+                        <div class="all-actions-line">
                             <!-- Sélection info et actions -->
                             ${selectedCount > 0 ? `
                                 <div class="selection-panel">
@@ -894,12 +894,13 @@ class TasksView {
                                 Tout sélectionner
                             </button>
 
-                            <!-- Actions standard -->
+                            <!-- Actualiser -->
                             <button class="btn-action btn-refresh" onclick="window.tasksView.refreshTasks()" title="Actualiser">
                                 <i class="fas fa-sync-alt"></i>
                                 Actualiser
                             </button>
                             
+                            <!-- Nouvelle (bouton standard) -->
                             <button class="btn-action btn-new" onclick="window.tasksView.showCreateModal()" title="Nouvelle tâche">
                                 <i class="fas fa-plus"></i>
                                 Nouvelle
@@ -3034,7 +3035,7 @@ class TasksView {
                 gap: 16px;
             }
 
-            /* Ligne 1 : Recherche + Actions principales */
+            /* Ligne 1 : Recherche + Actions principales sur une seule ligne */
             .search-and-actions-line {
                 display: flex;
                 align-items: center;
@@ -3044,7 +3045,18 @@ class TasksView {
 
             .search-section {
                 flex: 1;
-                max-width: 400px;
+                max-width: 300px;
+                flex-shrink: 0;
+            }
+
+            /* NOUVELLE CLASSE : Toutes les actions sur une ligne horizontale */
+            .all-actions-line {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: nowrap;
+                flex: 1;
+                justify-content: flex-end;
             }
 
             .search-box {
@@ -3107,6 +3119,14 @@ class TasksView {
                 gap: 12px;
                 flex-wrap: wrap;
                 flex: 1;
+            }
+
+            /* CORRECTION : Style pour la ligne d'actions horizontale */
+            .all-actions-line .selection-panel,
+            .all-actions-line .btn-action,
+            .all-actions-line .btn-new-task,
+            .all-actions-line .current-date {
+                flex-shrink: 0;
             }
 
             .selection-panel {
