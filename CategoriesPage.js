@@ -206,50 +206,6 @@ class SettingsPageVisual {
                     </div>
                 </div>
                 
-                <!-- Panel de protection automatique -->
-                <div class="auto-protection-panel">
-                    <div class="panel-header">
-                        <div class="panel-icon">
-                            <i class="fas fa-magic"></i>
-                        </div>
-                        <div class="panel-content">
-                            <h3>Sauvegarde automatique</h3>
-                            <p>Vos données sont sauvegardées automatiquement à chaque modification importante</p>
-                        </div>
-                        <div class="panel-toggle">
-                            <label class="auto-switch">
-                                <input type="checkbox" id="auto-backup-toggle" checked onchange="window.settingsPage.toggleAutoBackup(this.checked)">
-                                <span class="switch-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="protection-features">
-                        <div class="feature-grid">
-                            <div class="feature-item">
-                                <i class="fas fa-clock"></i>
-                                <span>Sauvegarde continue</span>
-                                <small>À chaque changement</small>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-database"></i>
-                                <span>Données complètes</span>
-                                <small>Catégories + paramètres</small>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-history"></i>
-                                <span>Historique intelligent</span>
-                                <small>20 dernières versions</small>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-lock"></i>
-                                <span>100% local</span>
-                                <small>Sécurité maximale</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Actions rapides visuelles -->
                 <div class="backup-actions-visual">
                     <div class="action-cards">
@@ -334,6 +290,19 @@ class SettingsPageVisual {
                     
                     <div class="advanced-content" id="advanced-settings-content">
                         <div class="advanced-grid">
+                            <div class="setting-card">
+                                <div class="setting-header">
+                                    <i class="fas fa-magic"></i>
+                                    <h4>Sauvegarde automatique</h4>
+                                </div>
+                                <div class="setting-control">
+                                    <label class="setting-switch">
+                                        <input type="checkbox" id="auto-backup-enabled" checked onchange="window.settingsPage.toggleAutoBackup(this.checked)">
+                                        <span class="switch-slider small"></span>
+                                    </label>
+                                </div>
+                            </div>
+
                             <div class="setting-card">
                                 <div class="setting-header">
                                     <i class="fas fa-clock"></i>
@@ -449,7 +418,7 @@ class SettingsPageVisual {
             case 'active':
                 circle.classList.add('status-active');
                 icon.className = 'fas fa-shield-alt';
-                title.textContent = 'Système opérationnel';
+                title.textContent = 'Sauvegarde active';
                 description.textContent = message || 'Vos données sont automatiquement protégées';
                 break;
                 
@@ -575,20 +544,28 @@ class SettingsPageVisual {
             });
         }
 
+        // Surveiller les changements dans les tâches
+        if (window.taskManager) {
+            window.addEventListener('taskUpdate', () => {
+                this.triggerAutoBackup('Modification de tâche');
+            });
+        }
+
         // Surveiller les changements dans les paramètres
         const originalSetItem = localStorage.setItem;
         localStorage.setItem = function(key, value) {
             originalSetItem.apply(this, arguments);
-            if (key === 'categorySettings') {
-                window.settingsPage?.triggerAutoBackup('Modification des paramètres');
+            if (key === 'categorySettings' || key === 'emailsort_tasks') {
+                window.settingsPage?.triggerAutoBackup('Modification des données');
             }
         };
 
-        console.log('[SettingsPage] 🔄 Surveillance automatique démarrée');
+        console.log('[SettingsPage] 🔄 Surveillance automatique démarrée (catégories + tâches)');
     }
 
     async triggerAutoBackup(reason = 'Modification automatique') {
-        if (!document.getElementById('auto-backup-toggle')?.checked) return;
+        const autoBackupEnabled = document.getElementById('auto-backup-enabled')?.checked ?? true;
+        if (!autoBackupEnabled) return;
 
         try {
             this.updateBackupStatus('saving', 'Sauvegarde en cours...');
@@ -1440,14 +1417,14 @@ Tapez "RESET" pour confirmer :`);
 
             .action-cards {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                gap: 12px;
             }
 
             .action-card {
                 background: white;
                 border-radius: var(--radius);
-                padding: 20px;
+                padding: 16px;
                 border: 1px solid var(--border);
                 cursor: pointer;
                 transition: all 0.3s ease;
@@ -1465,19 +1442,19 @@ Tapez "RESET" pour confirmer :`);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                height: 60px;
-                margin-bottom: 12px;
+                height: 50px;
+                margin-bottom: 10px;
                 position: relative;
             }
 
             .card-icon-bg {
-                width: 48px;
-                height: 48px;
-                border-radius: 12px;
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 20px;
+                font-size: 18px;
                 color: white;
                 background: var(--gradient-primary);
                 position: relative;
@@ -1505,21 +1482,21 @@ Tapez "RESET" pour confirmer :`);
             }
 
             .card-info h4 {
-                margin: 0 0 6px 0;
-                font-size: 16px;
+                margin: 0 0 4px 0;
+                font-size: 14px;
                 font-weight: 600;
                 color: var(--text);
             }
 
             .card-info p {
-                margin: 0 0 8px 0;
+                margin: 0 0 6px 0;
                 color: var(--text-light);
-                font-size: 13px;
+                font-size: 12px;
                 line-height: 1.4;
             }
 
             .card-action {
-                font-size: 12px;
+                font-size: 11px;
                 color: var(--primary);
                 font-weight: 500;
             }
@@ -2671,6 +2648,7 @@ class AutoBackupManager {
                 userAgent: navigator.userAgent,
                 url: window.location.href,
                 totalEmails: window.emailScanner?.getAllEmails()?.length || 0,
+                totalTasks: window.taskManager?.getAllTasks()?.length || 0,
                 createdBy: 'AutoBackupManager',
                 application: 'MailSort Pro'
             }
