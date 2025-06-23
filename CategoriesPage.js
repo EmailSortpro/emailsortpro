@@ -83,51 +83,31 @@ class SettingsPageVisual {
         
         return `
             <div class="categories-section">
-                <!-- Dashboard de statistiques amélioré -->
-                <div class="stats-dashboard">
-                    <div class="stats-grid">
-                        <div class="stat-card primary">
-                            <div class="stat-icon">
-                                <i class="fas fa-tags"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-number">${Object.keys(categories).length}</div>
-                                <div class="stat-label">Catégories totales</div>
-                                <div class="stat-detail">${this.getCustomCategoriesCount(categories)} personnalisées</div>
-                            </div>
+                <!-- Dashboard de statistiques compact -->
+                <div class="stats-dashboard-compact">
+                    <div class="stats-grid-compact">
+                        <div class="stat-card-compact primary">
+                            <div class="stat-number">${Object.keys(categories).length}</div>
+                            <div class="stat-label">Catégories totales</div>
+                            <div class="stat-detail">${this.getCustomCategoriesCount(categories)} personnalisées</div>
                         </div>
                         
-                        <div class="stat-card success">
-                            <div class="stat-icon">
-                                <i class="fas fa-envelope"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-number">${stats.totalEmails.toLocaleString()}</div>
-                                <div class="stat-label">Emails classés</div>
-                                <div class="stat-detail">${this.getClassificationRate(stats)}% de réussite</div>
-                            </div>
+                        <div class="stat-card-compact success">
+                            <div class="stat-number">${stats.totalEmails.toLocaleString()}</div>
+                            <div class="stat-label">Emails classés</div>
+                            <div class="stat-detail">${this.getClassificationRate(stats)}% de réussite</div>
                         </div>
                         
-                        <div class="stat-card warning">
-                            <div class="stat-icon">
-                                <i class="fas fa-key"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-number">${stats.totalKeywords}</div>
-                                <div class="stat-label">Mots-clés définis</div>
-                                <div class="stat-detail">${this.getAvgKeywordsPerCategory(categories, stats)} par catégorie</div>
-                            </div>
+                        <div class="stat-card-compact warning">
+                            <div class="stat-number">${stats.totalKeywords}</div>
+                            <div class="stat-label">Mots-clés définis</div>
+                            <div class="stat-detail">${this.getAvgKeywordsPerCategory(categories, stats)} par catégorie</div>
                         </div>
                         
-                        <div class="stat-card info">
-                            <div class="stat-icon">
-                                <i class="fas fa-star"></i>
-                            </div>
-                            <div class="stat-content">
-                                <div class="stat-number">${this.getPreselectedCount()}</div>
-                                <div class="stat-label">Pré-sélectionnées</div>
-                                <div class="stat-detail">Pour les tâches</div>
-                            </div>
+                        <div class="stat-card-compact info">
+                            <div class="stat-number">${this.getPreselectedCount()}</div>
+                            <div class="stat-label">Pré-sélectionnées</div>
+                            <div class="stat-detail">Pour les tâches</div>
                         </div>
                     </div>
                 </div>
@@ -157,6 +137,24 @@ class SettingsPageVisual {
                     </div>
                     
                     <div class="actions-right">
+                        <!-- Barre de recherche catégories -->
+                        <div class="categories-search">
+                            <div class="search-box-categories">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" 
+                                       class="search-input-categories" 
+                                       id="categoriesSearchInput"
+                                       placeholder="Rechercher catégories..." 
+                                       value="${this.categorySearchTerm || ''}"
+                                       onkeyup="window.settingsPage.handleCategorySearch(this.value)">
+                                ${this.categorySearchTerm ? `
+                                    <button class="search-clear-categories" onclick="window.settingsPage.clearCategorySearch()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
                         <div class="quick-filters">
                             <button class="filter-btn ${this.currentFilter === 'all' ? 'active' : ''}" onclick="window.settingsPage.filterCategories('all')">
                                 <i class="fas fa-list"></i>
@@ -174,9 +172,9 @@ class SettingsPageVisual {
                     </div>
                 </div>
                 
-                <!-- Liste des catégories -->
-                <div class="categories-list-enhanced">
-                    ${this.renderCategoriesList(categories)}
+                <!-- Liste des catégories en grille -->
+                <div class="categories-grid-enhanced">
+                    ${this.renderCategoriesGrid(categories)}
                 </div>
             </div>
         `;
@@ -725,65 +723,136 @@ class SettingsPageVisual {
         this.refreshCategoriesTab();
     }
 
-    renderCategoriesList(categories) {
-        if (Object.keys(categories).length === 0) {
+    renderCategoriesGrid(categories) {
+        const filteredCategories = this.getFilteredCategories(categories);
+        
+        if (Object.keys(filteredCategories).length === 0) {
             return `
                 <div class="empty-state">
                     <i class="fas fa-folder-open"></i>
-                    <h3>Aucune catégorie</h3>
-                    <p>Créez votre première catégorie pour commencer</p>
+                    <h3>Aucune catégorie trouvée</h3>
+                    <p>${this.categorySearchTerm ? `Aucune catégorie ne correspond à "${this.categorySearchTerm}"` : 'Créez votre première catégorie pour commencer'}</p>
+                    ${this.categorySearchTerm ? `
+                        <button class="btn-primary" onclick="window.settingsPage.clearCategorySearch()">
+                            <i class="fas fa-times"></i> Effacer la recherche
+                        </button>
+                    ` : `
+                        <button class="btn-primary" onclick="window.settingsPage.showCreateCategoryModal()">
+                            <i class="fas fa-plus"></i> Créer une catégorie
+                        </button>
+                    `}
                 </div>
             `;
         }
 
-        return Object.entries(categories).map(([id, category]) => {
+        return Object.entries(filteredCategories).map(([id, category]) => {
             const stats = this.getCategoryStats(id);
             const settings = this.loadSettings();
             const isActive = settings.activeCategories === null || settings.activeCategories.includes(id);
             const isPreselected = settings.taskPreselectedCategories?.includes(id) || false;
             
             return `
-                <div class="category-item ${!isActive ? 'inactive' : ''}">
-                    <div class="category-main">
-                        <div class="category-icon" style="background: ${category.color}20; color: ${category.color}">
+                <div class="category-card ${!isActive ? 'inactive' : ''} ${isPreselected ? 'preselected' : ''}" data-category-id="${id}">
+                    <div class="category-card-header">
+                        <div class="category-icon-large" style="background: ${category.color}20; color: ${category.color}">
                             ${category.icon}
                         </div>
-                        <div class="category-info">
-                            <h3>${category.name}</h3>
-                            <div class="category-meta">
-                                <span>${stats.emailCount} emails</span>
-                                <span>${stats.keywords} mots-clés</span>
-                                ${isPreselected ? '<span class="preselected-badge">⭐ Pré-sélectionnée</span>' : ''}
-                            </div>
+                        <div class="category-actions-compact">
+                            <button class="action-btn-compact ${isActive ? 'active' : 'inactive'}" 
+                                    onclick="window.settingsPage.toggleCategory('${id}')"
+                                    title="${isActive ? 'Désactiver' : 'Activer'}">
+                                <i class="fas fa-${isActive ? 'toggle-on' : 'toggle-off'}"></i>
+                            </button>
+                            ${category.isCustom ? `
+                                <button class="action-btn-compact danger" 
+                                        onclick="window.settingsPage.deleteCategory('${id}')"
+                                        title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
-                    <div class="category-actions">
-                        <button class="action-btn ${isActive ? 'active' : 'inactive'}" 
-                                onclick="window.settingsPage.toggleCategory('${id}')"
-                                title="${isActive ? 'Désactiver' : 'Activer'}">
-                            <i class="fas fa-${isActive ? 'toggle-on' : 'toggle-off'}"></i>
-                        </button>
-                        <button class="action-btn ${isPreselected ? 'selected' : ''}" 
+                    
+                    <div class="category-card-content">
+                        <h4 class="category-name">${category.name}</h4>
+                        <div class="category-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-envelope"></i>
+                                <span>${stats.emailCount}</span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-key"></i>
+                                <span>${stats.keywords}</span>
+                            </div>
+                        </div>
+                        
+                        ${isPreselected ? `
+                            <div class="preselected-indicator">
+                                <i class="fas fa-star"></i>
+                                <span>Pré-sélectionnée</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="category-card-footer">
+                        <button class="btn-card-action ${isPreselected ? 'selected' : ''}" 
                                 onclick="window.settingsPage.togglePreselection('${id}')"
                                 title="Pré-sélection pour tâches">
                             <i class="fas fa-star"></i>
+                            ${isPreselected ? 'Pré-sélectionnée' : 'Pré-sélectionner'}
                         </button>
-                        <button class="action-btn" 
+                        <button class="btn-card-action secondary" 
                                 onclick="window.settingsPage.editCategory('${id}')"
                                 title="Modifier">
                             <i class="fas fa-edit"></i>
+                            Modifier
                         </button>
-                        ${category.isCustom ? `
-                            <button class="action-btn danger" 
-                                    onclick="window.settingsPage.deleteCategory('${id}')"
-                                    title="Supprimer">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        ` : ''}
                     </div>
                 </div>
             `;
         }).join('');
+    }
+
+    getFilteredCategories(categories) {
+        let filtered = { ...categories };
+        
+        // Filtre par type
+        if (this.currentFilter === 'custom') {
+            filtered = Object.fromEntries(
+                Object.entries(filtered).filter(([id, cat]) => cat.isCustom)
+            );
+        } else if (this.currentFilter === 'preselected') {
+            const settings = this.loadSettings();
+            const preselected = settings.taskPreselectedCategories || [];
+            filtered = Object.fromEntries(
+                Object.entries(filtered).filter(([id, cat]) => preselected.includes(id))
+            );
+        }
+        
+        // Filtre par recherche
+        if (this.categorySearchTerm && this.categorySearchTerm.trim()) {
+            const searchTerm = this.categorySearchTerm.toLowerCase();
+            filtered = Object.fromEntries(
+                Object.entries(filtered).filter(([id, cat]) => 
+                    cat.name.toLowerCase().includes(searchTerm) ||
+                    cat.icon.includes(searchTerm)
+                )
+            );
+        }
+        
+        return filtered;
+    }
+
+    handleCategorySearch(value) {
+        this.categorySearchTerm = value.trim();
+        this.refreshCategoriesTab();
+    }
+
+    clearCategorySearch() {
+        this.categorySearchTerm = '';
+        const searchInput = document.getElementById('categoriesSearchInput');
+        if (searchInput) searchInput.value = '';
+        this.refreshCategoriesTab();
     }
 
     getCategoryStats(categoryId) {
@@ -2064,31 +2133,29 @@ Tapez "RESET" pour confirmer :`);
                 display: block;
             }
 
-            /* Stats dashboard (styles existants) */
-            .stats-dashboard {
-                margin-bottom: 32px;
+            /* Stats dashboard compact */
+            .stats-dashboard-compact {
+                margin-bottom: 24px;
             }
             
-            .stats-grid {
+            .stats-grid-compact {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 12px;
             }
             
-            .stat-card {
+            .stat-card-compact {
                 background: var(--surface);
                 border: 1px solid var(--border);
-                border-radius: var(--radius);
-                padding: 20px;
-                display: flex;
-                align-items: center;
-                gap: 16px;
+                border-radius: 8px;
+                padding: 16px;
+                text-align: center;
                 transition: all 0.2s;
                 position: relative;
                 overflow: hidden;
             }
             
-            .stat-card::before {
+            .stat-card-compact::before {
                 content: '';
                 position: absolute;
                 top: 0;
@@ -2100,51 +2167,33 @@ Tapez "RESET" pour confirmer :`);
                 transition: opacity 0.3s;
             }
             
-            .stat-card:hover {
+            .stat-card-compact:hover {
                 border-color: var(--accent);
                 transform: translateY(-2px);
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             }
             
-            .stat-card:hover::before {
+            .stat-card-compact:hover::before {
                 opacity: 1;
             }
             
-            .stat-card.primary {
+            .stat-card-compact.primary {
                 --accent: var(--primary);
             }
             
-            .stat-card.success {
+            .stat-card-compact.success {
                 --accent: var(--success);
             }
             
-            .stat-card.warning {
+            .stat-card-compact.warning {
                 --accent: var(--warning);
             }
             
-            .stat-card.info {
+            .stat-card-compact.info {
                 --accent: #3B82F6;
             }
             
-            .stat-icon {
-                width: 48px;
-                height: 48px;
-                border-radius: 12px;
-                background: var(--accent)15;
-                color: var(--accent);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 20px;
-                flex-shrink: 0;
-            }
-            
-            .stat-content {
-                flex: 1;
-                min-width: 0;
-            }
-            
-            .stat-number {
+            .stat-card-compact .stat-number {
                 font-size: 24px;
                 font-weight: 700;
                 color: var(--accent);
@@ -2152,17 +2201,291 @@ Tapez "RESET" pour confirmer :`);
                 margin-bottom: 4px;
             }
             
-            .stat-label {
+            .stat-card-compact .stat-label {
                 font-size: 13px;
                 font-weight: 600;
                 color: var(--text);
                 margin-bottom: 2px;
             }
             
-            .stat-detail {
+            .stat-card-compact .stat-detail {
                 font-size: 11px;
                 color: var(--text-light);
                 font-weight: 500;
+            }
+
+            /* Barre de recherche catégories */
+            .categories-search {
+                margin-right: 16px;
+            }
+
+            .search-box-categories {
+                position: relative;
+                display: flex;
+                align-items: center;
+                width: 200px;
+            }
+
+            .search-input-categories {
+                width: 100%;
+                height: 36px;
+                padding: 0 12px 0 36px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-size: 13px;
+                background: white;
+                transition: var(--transition);
+                outline: none;
+            }
+
+            .search-input-categories:focus {
+                border-color: var(--primary);
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+            }
+
+            .search-box-categories .search-icon {
+                position: absolute;
+                left: 12px;
+                color: var(--text-light);
+                pointer-events: none;
+                font-size: 12px;
+            }
+
+            .search-clear-categories {
+                position: absolute;
+                right: 8px;
+                background: var(--danger);
+                color: white;
+                border: none;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                transition: var(--transition);
+            }
+
+            .search-clear-categories:hover {
+                background: #dc2626;
+                transform: scale(1.1);
+            }
+
+            /* Grille de catégories */
+            .categories-grid-enhanced {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                gap: 16px;
+            }
+
+            .category-card {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                padding: 16px;
+                transition: all 0.2s;
+                position: relative;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                min-height: 160px;
+            }
+
+            .category-card:hover {
+                border-color: var(--primary);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
+            .category-card.inactive {
+                opacity: 0.6;
+                background: #f5f5f5;
+            }
+
+            .category-card.preselected {
+                border-left: 4px solid var(--warning);
+                background: linear-gradient(135deg, #fffbeb 0%, white 100%);
+            }
+
+            .category-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 12px;
+            }
+
+            .category-icon-large {
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                flex-shrink: 0;
+            }
+
+            .category-actions-compact {
+                display: flex;
+                gap: 4px;
+                flex-direction: column;
+            }
+
+            .action-btn-compact {
+                width: 28px;
+                height: 28px;
+                border: 1px solid var(--border);
+                background: white;
+                border-radius: 4px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: var(--transition);
+                color: var(--text-light);
+                font-size: 12px;
+            }
+
+            .action-btn-compact:hover {
+                border-color: var(--primary);
+                color: var(--primary);
+            }
+
+            .action-btn-compact.active {
+                background: var(--success);
+                color: white;
+                border-color: var(--success);
+            }
+
+            .action-btn-compact.inactive {
+                background: var(--danger);
+                color: white;
+                border-color: var(--danger);
+            }
+
+            .action-btn-compact.danger:hover {
+                background: var(--danger);
+                color: white;
+                border-color: var(--danger);
+            }
+
+            .category-card-content {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .category-name {
+                margin: 0;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text);
+                line-height: 1.2;
+            }
+
+            .category-stats {
+                display: flex;
+                gap: 12px;
+                margin-bottom: 8px;
+            }
+
+            .stat-item {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 12px;
+                color: var(--text-light);
+            }
+
+            .stat-item i {
+                font-size: 10px;
+                color: var(--primary);
+            }
+
+            .preselected-indicator {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                padding: 4px 8px;
+                background: var(--warning);
+                color: white;
+                border-radius: 12px;
+                font-size: 10px;
+                font-weight: 600;
+                align-self: flex-start;
+            }
+
+            .category-card-footer {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                margin-top: auto;
+                border-top: 1px solid var(--border);
+                padding-top: 12px;
+            }
+
+            .btn-card-action {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 4px;
+                padding: 6px 8px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: var(--transition);
+                border: 1px solid var(--border);
+                background: white;
+                color: var(--text);
+                text-align: center;
+            }
+
+            .btn-card-action:hover {
+                background: var(--bg);
+                border-color: var(--primary);
+                color: var(--primary);
+            }
+
+            .btn-card-action.selected {
+                background: var(--warning);
+                color: white;
+                border-color: var(--warning);
+            }
+
+            .btn-card-action.selected:hover {
+                background: #d97706;
+                border-color: #d97706;
+            }
+
+            .btn-card-action.secondary {
+                background: var(--primary);
+                color: white;
+                border-color: var(--primary);
+            }
+
+            .btn-card-action.secondary:hover {
+                background: #2563eb;
+                border-color: #2563eb;
+            }
+
+            /* Actions enhanced */
+            .categories-actions-enhanced {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 24px;
+                gap: 20px;
+                flex-wrap: wrap;
+            }
+
+            .actions-right {
+                display: flex;
+                align-items: center;
+                gap: 16px;
             }
 
             /* Actions catégories (styles existants) */
@@ -2429,60 +2752,86 @@ Tapez "RESET" pour confirmer :`);
                 display: block;
             }
 
-            /* Responsive */
-            @media (max-width: 768px) {
-                .settings-page {
-                    padding: 16px;
+            /* Responsive pour grille de catégories */
+            @media (max-width: 1024px) {
+                .categories-grid-enhanced {
+                    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                    gap: 12px;
                 }
-                
-                .tab-content {
-                    padding: 20px;
-                }
-                
-                .stats-grid {
-                    grid-template-columns: 1fr;
-                }
-                
+
                 .categories-actions-enhanced {
                     flex-direction: column;
                     align-items: stretch;
+                    gap: 16px;
                 }
-                
-                .actions-left, .actions-right {
+
+                .actions-right {
+                    justify-content: space-between;
                     width: 100%;
                 }
-                
-                .category-item {
-                    flex-direction: column;
-                    align-items: stretch;
-                    gap: 16px;
+
+                .search-box-categories {
+                    width: 180px;
                 }
-                
-                .category-actions {
+            }
+            
+            @media (max-width: 768px) {
+                .stats-grid-compact {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 8px;
+                }
+
+                .categories-grid-enhanced {
+                    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                    gap: 8px;
+                }
+
+                .category-card {
+                    padding: 12px;
+                    min-height: 140px;
+                }
+
+                .actions-right {
+                    flex-direction: column;
+                    gap: 12px;
+                    align-items: stretch;
+                }
+
+                .search-box-categories {
+                    width: 100%;
+                }
+
+                .quick-filters {
                     justify-content: center;
                 }
-                
-                .action-cards {
+            }
+
+            @media (max-width: 480px) {
+                .stats-grid-compact {
                     grid-template-columns: 1fr;
                 }
-                
-                .advanced-grid {
+
+                .categories-grid-enhanced {
                     grid-template-columns: 1fr;
                 }
-                
-                .backup-quick-stats {
-                    flex-direction: column;
-                    gap: 16px;
+
+                .stat-card-compact .stat-number {
+                    font-size: 20px;
                 }
-                
-                .backup-header-visual {
-                    padding: 24px 20px;
+
+                .category-card {
+                    min-height: 120px;
                 }
-                
-                .backup-status-indicator {
-                    flex-direction: column;
-                    text-align: center;
-                    gap: 16px;
+
+                .category-card-footer {
+                    flex-direction: row;
+                    gap: 4px;
+                }
+
+                .btn-card-action {
+                    flex: 1;
+                    font-size: 10px;
+                    padding: 4px 6px;
                 }
             }
         `;
