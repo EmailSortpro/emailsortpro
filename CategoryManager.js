@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 21.0 - CATALOGUE UNIFIÉ ET CORRIGÉ
+// CategoryManager.js - Version 22.0 - DÉTECTION PRIORITAIRE MARKETING/NEWSLETTER
 
 class CategoryManager {
     constructor() {
@@ -18,19 +18,20 @@ class CategoryManager {
         this.setupEventListeners();
         
         this.isInitialized = true;
-        console.log('[CategoryManager] ✅ Version 21.0 - Catalogue unifié initialisé');
+        console.log('[CategoryManager] ✅ Version 22.0 - Détection prioritaire marketing/newsletter initialisée');
     }
 
     // ================================================
-    // CATALOGUE DE MOTS-CLÉS UNIFIÉ - SOURCE UNIQUE
+    // CATALOGUE DE MOTS-CLÉS - MARKETING EN PRIORITÉ ABSOLUE
     // ================================================
     initializeKeywordCatalog() {
-        console.log('[CategoryManager] 🔍 Initialisation du catalogue unifié...');
+        console.log('[CategoryManager] 🔍 Initialisation du catalogue avec priorité marketing...');
         
         this.keywordCatalog = {
-            // PRIORITÉ MAXIMALE - MARKETING & NEWS
+            // PRIORITÉ MAXIMALE - MARKETING & NEWS - DÉTECTION EN PREMIER
             marketing_news: {
                 absolute: [
+                    // Mots-clés de désabonnement - PRIORITÉ ABSOLUE
                     'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
                     'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
                     'gérer vos préférences', 'gérer la réception', 'gérer mes préférences',
@@ -38,28 +39,106 @@ class CategoryManager {
                     'ne plus recevoir', 'stop emails', 'arreter les emails',
                     'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
                     'paramétrez vos choix', 'parametrez vos choix',
-                    'newsletter', 'mailing list', 'mailing',
-                    'this email was sent to', 'you are receiving this',
-                    'limited offer', 'offre limitée', 'special offer',
-                    'promotion', 'promo', 'soldes', 'vente privée',
-                    'ventes en ligne', 'vente en ligne', 'shopping',
                     'disable these notifications', 'turn off notifications',
                     'manage notifications', 'notification settings',
                     'email settings', 'communication preferences',
-                    'update your preferences', 'modify your subscription'
+                    'update your preferences', 'modify your subscription',
+                    'this email was sent to', 'you are receiving this',
+                    'cet email vous a été envoyé', 'vous recevez cet email',
+                    
+                    // Newsletter explicites
+                    'newsletter', 'mailing list', 'mailing', 'e-mailing',
+                    'bulletin d\'information', 'lettre d\'information',
+                    'our newsletter', 'notre newsletter', 'subscribe to',
+                    
+                    // Marketing explicite
+                    'limited offer', 'offre limitée', 'special offer', 'offre spéciale',
+                    'promotion', 'promo', 'soldes', 'vente privée', 'private sale',
+                    'discount', 'réduction', 'remise', 'code promo',
+                    'exclusive offer', 'offre exclusive', 'new arrivals', 'nouveautés',
+                    'flash sale', 'vente flash', 'deal of the day',
+                    'shop now', 'acheter maintenant', 'buy now',
+                    'limited time', 'temps limité', 'expires soon', 'expire bientôt',
+                    
+                    // Retail et e-commerce
+                    'your order', 'votre commande', 'order confirmation',
+                    'confirmation de commande', 'tracking number', 'numéro de suivi',
+                    'shipped', 'expédié', 'delivered', 'livré',
+                    'cart reminder', 'rappel panier', 'abandoned cart',
+                    'panier abandonné', 'complete your order',
+                    
+                    // Notifications commerciales
+                    'product recommendation', 'recommandation produit',
+                    'you might like', 'cela pourrait vous plaire',
+                    'personalized for you', 'personnalisé pour vous',
+                    'based on your purchase', 'selon vos achats'
                 ],
                 strong: [
-                    'promo', 'deal', 'offer', 'sale', 'discount', 'réduction',
-                    'newsletter', 'mailing', 'campaign', 'marketing',
-                    'exclusive', 'special', 'limited', 'new', 'nouveau',
-                    'boutique', 'shopping', 'acheter', 'commander',
-                    'offre', 'promotion', 'remise', 'solde',
-                    'notifications', 'alerts', 'updates', 'subscribe'
+                    // Marketing général
+                    'marketing', 'publicity', 'publicité', 'advertising',
+                    'campaign', 'campagne', 'promotion', 'promo',
+                    'deal', 'offer', 'offre', 'sale', 'vente',
+                    'discount', 'réduction', 'special', 'exclusive',
+                    'limited', 'new', 'nouveau', 'latest', 'dernier',
+                    
+                    // E-commerce
+                    'shop', 'boutique', 'store', 'magasin',
+                    'shopping', 'acheter', 'buy', 'purchase',
+                    'order', 'commander', 'cart', 'panier',
+                    'checkout', 'payment', 'paiement',
+                    
+                    // Communication marketing
+                    'newsletter', 'mailing', 'updates', 'news',
+                    'alerts', 'notifications', 'subscribe', 'abonner',
+                    'follow us', 'suivez-nous', 'social media',
+                    'facebook', 'twitter', 'instagram', 'linkedin',
+                    
+                    // Retail
+                    'brand', 'marque', 'collection', 'catalog',
+                    'catalogue', 'lookbook', 'trend', 'tendance',
+                    'fashion', 'mode', 'style', 'design'
                 ],
-                weak: ['update', 'discover', 'new', 'nouveauté', 'découvrir'],
-                exclusions: []
+                weak: [
+                    'update', 'discover', 'découvrir', 'explore',
+                    'learn more', 'en savoir plus', 'read more',
+                    'download', 'télécharger', 'free', 'gratuit'
+                ],
+                exclusions: [
+                    // Éviter les faux positifs
+                    'task', 'tâche', 'meeting', 'réunion', 'urgent',
+                    'action required', 'facture', 'invoice', 'payment due',
+                    'security alert', 'alerte sécurité', 'password',
+                    'verification', 'support ticket', 'help desk'
+                ]
             },
 
+            // NOTIFICATIONS SYSTÈME - Après marketing
+            notifications: {
+                absolute: [
+                    'do not reply', 'ne pas répondre', 'noreply@',
+                    'automated message', 'notification automatique',
+                    'system notification', 'ceci est un message automatique',
+                    'no-reply@', 'donotreply@', 'auto-reply',
+                    'automatic reply', 'réponse automatique',
+                    'system alert', 'alerte système'
+                ],
+                strong: [
+                    'automated', 'automatic', 'automatique', 'system',
+                    'notification', 'alert', 'alerte', 'reminder',
+                    'rappel', 'update', 'mise à jour', 'status'
+                ],
+                weak: [
+                    'info', 'information', 'notice', 'avis'
+                ],
+                exclusions: [
+                    // Éviter les marketing déguisés
+                    'newsletter', 'unsubscribe', 'promotion', 'offer',
+                    'shop', 'buy', 'purchase', 'sale', 'deal',
+                    'marketing', 'campaign', 'advertising'
+                ]
+            },
+
+            // SÉCURITÉ
             security: {
                 absolute: [
                     'alerte de connexion', 'alert connexion', 'nouvelle connexion',
@@ -67,112 +146,151 @@ class CategoryManager {
                     'new sign-in', 'sign in detected', 'connexion détectée',
                     'code de vérification', 'verification code', 'security code',
                     'two-factor', '2fa', 'authentification', 'authentication',
-                    'password reset', 'réinitialisation mot de passe'
+                    'password reset', 'réinitialisation mot de passe',
+                    'compte compromis', 'account compromised',
+                    'unusual activity', 'activité inhabituelle'
                 ],
                 strong: [
                     'sécurité', 'security', 'vérification', 'verify',
-                    'authentification', 'password', 'mot de passe'
+                    'authentification', 'password', 'mot de passe',
+                    'login', 'connexion', 'access', 'accès'
                 ],
-                weak: ['compte', 'account', 'accès'],
-                exclusions: ['newsletter', 'unsubscribe', 'promotion']
+                weak: [
+                    'compte', 'account', 'user', 'utilisateur'
+                ],
+                exclusions: [
+                    'newsletter', 'unsubscribe', 'promotion', 'marketing',
+                    'shop', 'buy', 'order', 'purchase'
+                ]
             },
 
+            // TÂCHES ET ACTIONS
             tasks: {
                 absolute: [
                     'action required', 'action requise', 'action needed',
                     'please complete', 'veuillez compléter', 'to do',
                     'task assigned', 'tâche assignée', 'deadline',
-                    'due date', 'échéance', 'livrable',
-                    'urgence', 'urgent', 'très urgent',
+                    'due date', 'échéance', 'livrable', 'deliverable',
+                    'urgence', 'urgent', 'très urgent', 'priority',
                     'demande update', 'update request', 'mise à jour demandée',
-                    'demande de mise à jour', 'update needed', 'mise a jour requise',
+                    'demande de mise à jour', 'update needed',
                     'correction requise', 'à corriger', 'please review',
-                    'merci de valider', 'validation requise', 'approval needed'
+                    'merci de valider', 'validation requise', 'approval needed',
+                    'please confirm', 'veuillez confirmer'
                 ],
                 strong: [
                     'urgent', 'asap', 'priority', 'priorité',
                     'complete', 'compléter', 'action', 'faire',
                     'update', 'mise à jour', 'demande', 'request',
                     'task', 'tâche', 'todo', 'à faire',
-                    'correction', 'corriger', 'modifier', 'révision'
+                    'correction', 'corriger', 'modifier', 'révision',
+                    'deadline', 'échéance', 'due', 'livrable'
                 ],
-                weak: ['demande', 'besoin', 'attente', 'request', 'need', 'waiting'],
-                exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe', 'papa', 'maman', 'famille']
+                weak: [
+                    'demande', 'besoin', 'attente', 'need', 'waiting'
+                ],
+                exclusions: [
+                    'newsletter', 'marketing', 'promotion', 'unsubscribe',
+                    'shop', 'buy', 'order', 'sale'
+                ]
             },
 
-            meetings: {
-                absolute: [
-                    'demande de réunion', 'meeting request', 'réunion',
-                    'schedule a meeting', 'planifier une réunion',
-                    'invitation réunion', 'meeting invitation',
-                    'teams meeting', 'zoom meeting', 'google meet',
-                    'rendez-vous', 'appointment', 'rdv'
-                ],
-                strong: [
-                    'meeting', 'réunion', 'schedule', 'planifier',
-                    'calendar', 'calendrier', 'appointment', 'agenda',
-                    'conférence', 'conference', 'call'
-                ],
-                weak: ['présentation', 'agenda', 'disponible', 'available'],
-                exclusions: ['newsletter', 'promotion', 'marketing', 'papa', 'maman', 'famille']
-            },
-
-            commercial: {
-                absolute: [
-                    'devis', 'quotation', 'proposal', 'proposition',
-                    'contrat', 'contract', 'bon de commande',
-                    'purchase order', 'offre commerciale',
-                    'opportunity', 'opportunité', 'lead'
-                ],
-                strong: [
-                    'client', 'customer', 'prospect', 'opportunity',
-                    'commercial', 'business', 'marché', 'deal',
-                    'vente', 'sales', 'négociation'
-                ],
-                weak: ['offre', 'négociation', 'discussion', 'projet'],
-                exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe', 'ventes en ligne']
-            },
-
+            // FINANCE
             finance: {
                 absolute: [
                     'facture', 'invoice', 'payment', 'paiement',
                     'virement', 'transfer', 'remboursement', 'refund',
                     'relevé bancaire', 'bank statement',
                     'déclaration fiscale', 'tax declaration',
-                    'n°commande', 'numéro commande', 'order number',
-                    'numéro de commande', 'commande n°', 'commande numéro',
-                    'livraison commande', 'commande expédiée',
-                    'confirmation commande', 'order confirmation'
+                    'payment due', 'échéance paiement',
+                    'overdue', 'en retard', 'unpaid', 'impayé',
+                    'credit card', 'carte de crédit',
+                    'bank notification', 'notification bancaire'
                 ],
                 strong: [
-                    'montant', 'amount', 'total', 'facture',
+                    'montant', 'amount', 'total', 'price', 'prix',
                     'fiscal', 'bancaire', 'bank', 'finance',
-                    'commande', 'order', 'achat', 'vente',
-                    'livraison', 'delivery', 'expédition', 'shipping',
-                    'prix', 'price', 'coût', 'cost'
+                    'euro', 'dollar', 'currency', 'devise',
+                    'transaction', 'debit', 'credit', 'solde'
                 ],
-                weak: ['euro', 'dollar', 'prix', 'payment', 'transaction'],
-                exclusions: ['newsletter', 'marketing', 'spam', 'promotion', 'soldes', 'ventes en ligne']
+                weak: [
+                    'money', 'argent', 'cost', 'coût', 'fee'
+                ],
+                exclusions: [
+                    'newsletter', 'marketing', 'promotion', 'shop',
+                    'order confirmation', 'shipping', 'delivery'
+                ]
             },
 
-            project: {
+            // RÉUNIONS
+            meetings: {
                 absolute: [
-                    'projet xx', 'project update', 'milestone',
-                    'sprint', 'livrable projet', 'gantt',
-                    'avancement projet', 'project status',
-                    'kickoff', 'retrospective', 'roadmap',
-                    'document corrigé', 'version corrigée', 'corrections apportées'
+                    'demande de réunion', 'meeting request', 'réunion',
+                    'schedule a meeting', 'planifier une réunion',
+                    'invitation réunion', 'meeting invitation',
+                    'teams meeting', 'zoom meeting', 'google meet',
+                    'rendez-vous', 'appointment', 'rdv',
+                    'calendar invitation', 'invitation calendrier'
                 ],
                 strong: [
-                    'projet', 'project', 'milestone', 'sprint',
-                    'agile', 'scrum', 'kanban', 'jira',
-                    'development', 'développement',
-                    'document', 'présentation', 'correction'
+                    'meeting', 'réunion', 'schedule', 'planifier',
+                    'calendar', 'calendrier', 'appointment',
+                    'agenda', 'conférence', 'conference', 'call',
+                    'webinar', 'présentation'
                 ],
-                weak: ['development', 'phase', 'étape', 'planning', 'présentation'],
-                exclusions: ['newsletter', 'marketing', 'promotion', 'papa', 'maman', 'famille', 'bises']
+                weak: [
+                    'disponible', 'available', 'time', 'temps'
+                ],
+                exclusions: [
+                    'newsletter', 'promotion', 'marketing', 'shop'
+                ]
             },
 
+            // COMMERCIAL
+            commercial: {
+                absolute: [
+                    'devis', 'quotation', 'proposal', 'proposition',
+                    'contrat', 'contract', 'bon de commande',
+                    'purchase order', 'offre commerciale',
+                    'opportunity', 'opportunité', 'lead',
+                    'négociation', 'negotiation'
+                ],
+                strong: [
+                    'client', 'customer', 'prospect', 'opportunity',
+                    'commercial', 'business', 'marché', 'deal',
+                    'vente', 'sales', 'négociation', 'contract'
+                ],
+                weak: [
+                    'offre', 'discussion', 'projet', 'partnership'
+                ],
+                exclusions: [
+                    'newsletter', 'marketing', 'promotion', 'unsubscribe'
+                ]
+            },
+
+            // SUPPORT
+            support: {
+                absolute: [
+                    'ticket #', 'ticket number', 'numéro de ticket',
+                    'case #', 'case number', 'incident #',
+                    'problème résolu', 'issue resolved',
+                    'support ticket', 'demande de support',
+                    'help desk', 'service client'
+                ],
+                strong: [
+                    'support', 'assistance', 'help', 'aide',
+                    'technical support', 'ticket', 'incident',
+                    'problème', 'problem', 'issue', 'bug'
+                ],
+                weak: [
+                    'question', 'help', 'assistance'
+                ],
+                exclusions: [
+                    'newsletter', 'marketing', 'promotion'
+                ]
+            },
+
+            // RELANCES
             reminders: {
                 absolute: [
                     'reminder:', 'rappel:', 'follow up', 'relance',
@@ -184,26 +302,36 @@ class CategoryManager {
                     'reminder', 'rappel', 'follow', 'relance',
                     'suite', 'convenu', 'discussed', 'pending'
                 ],
-                weak: ['previous', 'discussed', 'encore', 'still'],
-                exclusions: ['newsletter', 'marketing', 'promotion']
+                weak: [
+                    'previous', 'encore', 'still', 'toujours'
+                ],
+                exclusions: [
+                    'newsletter', 'marketing', 'promotion'
+                ]
             },
 
-            support: {
+            // PROJETS
+            project: {
                 absolute: [
-                    'ticket #', 'ticket number', 'numéro de ticket',
-                    'case #', 'case number', 'incident #',
-                    'problème résolu', 'issue resolved',
-                    'support ticket', 'demande de support'
+                    'projet', 'project update', 'milestone',
+                    'sprint', 'livrable projet', 'gantt',
+                    'avancement projet', 'project status',
+                    'kickoff', 'retrospective', 'roadmap'
                 ],
                 strong: [
-                    'support', 'assistance', 'help desk',
-                    'technical support', 'ticket', 'incident',
-                    'problème', 'problem', 'issue'
+                    'projet', 'project', 'milestone', 'sprint',
+                    'agile', 'scrum', 'kanban', 'jira',
+                    'development', 'développement'
                 ],
-                weak: ['help', 'aide', 'issue', 'question'],
-                exclusions: ['newsletter', 'marketing', 'promotion']
+                weak: [
+                    'phase', 'étape', 'planning'
+                ],
+                exclusions: [
+                    'newsletter', 'marketing', 'promotion'
+                ]
             },
 
+            // RH
             hr: {
                 absolute: [
                     'bulletin de paie', 'payslip', 'contrat de travail',
@@ -218,15 +346,15 @@ class CategoryManager {
                     'contrat', 'paie', 'congés', 'vacation',
                     'emploi', 'job', 'recruitment'
                 ],
-                weak: ['employee', 'staff', 'personnel', 'équipe'],
+                weak: [
+                    'employee', 'staff', 'personnel', 'équipe'
+                ],
                 exclusions: [
-                    'newsletter', 'marketing', 'famille', 'family', 
-                    'personnel', 'personal', 'papa', 'maman',
-                    'présentation', 'document', 'correction',
-                    'bises', 'bisous', 'familial'
+                    'newsletter', 'marketing', 'promotion'
                 ]
             },
 
+            // COMMUNICATION INTERNE
             internal: {
                 absolute: [
                     'all staff', 'tout le personnel', 'annonce interne',
@@ -239,174 +367,38 @@ class CategoryManager {
                     'personnel', 'staff', 'équipe',
                     'annonce', 'announcement'
                 ],
-                weak: ['annonce', 'announcement', 'information', 'update'],
-                exclusions: ['newsletter', 'marketing', 'external', 'client', 'papa', 'maman', 'famille', 'bises']
+                weak: [
+                    'information', 'update', 'news'
+                ],
+                exclusions: [
+                    'newsletter', 'marketing', 'external', 'client'
+                ]
             },
 
-            notifications: {
-                absolute: [
-                    'do not reply', 'ne pas répondre', 'noreply@',
-                    'automated message', 'notification automatique',
-                    'system notification', 'ceci est un message automatique',
-                    'no-reply@', 'donotreply@'
-                ],
-                strong: [
-                    'automated', 'automatic', 'system',
-                    'notification', 'automatique', 'alert'
-                ],
-                weak: ['notification', 'alert', 'info'],
-                exclusions: ['newsletter', 'marketing', 'urgent']
-            },
-
+            // EN COPIE
             cc: {
                 absolute: [
                     'copie pour information', 'for your information', 'fyi',
                     'en copie', 'in copy', 'cc:', 'courtesy copy',
                     'pour info', 'pour information'
                 ],
-                strong: ['information', 'copie', 'copy', 'cc'],
-                weak: ['fyi', 'info'],
+                strong: [
+                    'information', 'copie', 'copy', 'cc', 'fyi'
+                ],
+                weak: [
+                    'info'
+                ],
                 exclusions: [
-                    'commande', 'order', 'facture', 'invoice',
                     'urgent', 'action required', 'payment'
                 ]
             }
         };
 
-        console.log('[CategoryManager] ✅ Catalogue unifié initialisé pour', Object.keys(this.keywordCatalog).length, 'catégories');
+        console.log('[CategoryManager] ✅ Catalogue initialisé avec priorité marketing pour', Object.keys(this.keywordCatalog).length, 'catégories');
     }
 
     // ================================================
-    // INITIALISATION DES CATÉGORIES - SIMPLIFIÉ
-    // ================================================
-    initializeCategories() {
-        this.categories = {
-            // PRIORITÉ MAXIMALE - MARKETING & NEWS
-            marketing_news: {
-                name: 'Marketing & News',
-                icon: '📰',
-                color: '#8b5cf6',
-                description: 'Newsletters et promotions',
-                priority: 100,
-                isCustom: false
-            },
-            
-            // CATÉGORIE CC - PRIORITÉ ÉLEVÉE
-            cc: {
-                name: 'En Copie',
-                icon: '📋',
-                color: '#64748b',
-                description: 'Emails où vous êtes en copie',
-                priority: 90,
-                isCustom: false
-            },
-            
-            // PRIORITÉ NORMALE
-            security: {
-                name: 'Sécurité',
-                icon: '🔒',
-                color: '#991b1b',
-                description: 'Alertes de sécurité, connexions et authentification',
-                priority: 50,
-                isCustom: false
-            },
-            
-            finance: {
-                name: 'Finance',
-                icon: '💰',
-                color: '#dc2626',
-                description: 'Factures et paiements',
-                priority: 50,
-                isCustom: false
-            },
-            
-            tasks: {
-                name: 'Actions Requises',
-                icon: '✅',
-                color: '#ef4444',
-                description: 'Tâches à faire et demandes d\'action',
-                priority: 50,
-                isCustom: false
-            },
-            
-            commercial: {
-                name: 'Commercial',
-                icon: '💼',
-                color: '#059669',
-                description: 'Opportunités, devis et contrats',
-                priority: 50,
-                isCustom: false
-            },
-            
-            meetings: {
-                name: 'Réunions',
-                icon: '📅',
-                color: '#f59e0b',
-                description: 'Invitations et demandes de réunion',
-                priority: 50,
-                isCustom: false
-            },
-            
-            support: {
-                name: 'Support',
-                icon: '🛠️',
-                color: '#f59e0b',
-                description: 'Tickets et assistance',
-                priority: 50,
-                isCustom: false
-            },
-            
-            reminders: {
-                name: 'Relances',
-                icon: '🔄',
-                color: '#10b981',
-                description: 'Rappels et suivis',
-                priority: 50,
-                isCustom: false
-            },
-            
-            project: {
-                name: 'Projets',
-                icon: '📊',
-                color: '#3b82f6',
-                description: 'Gestion de projet',
-                priority: 50,
-                isCustom: false
-            },
-            
-            hr: {
-                name: 'RH',
-                icon: '👥',
-                color: '#10b981',
-                description: 'Ressources humaines',
-                priority: 50,
-                isCustom: false
-            },
-            
-            internal: {
-                name: 'Communication Interne',
-                icon: '📢',
-                color: '#0ea5e9',
-                description: 'Annonces internes',
-                priority: 50,
-                isCustom: false
-            },
-            
-            notifications: {
-                name: 'Notifications',
-                icon: '🔔',
-                color: '#94a3b8',
-                description: 'Notifications automatiques',
-                priority: 50,
-                isCustom: false
-            }
-        };
-        
-        console.log('[CategoryManager] 📚 Catégories par défaut initialisées:', Object.keys(this.categories).length);
-    }
-
-    // ================================================
-    // ANALYSE EMAIL - MÉTHODE UNIQUE ET STABLE
+    // ANALYSE EMAIL - MARKETING EN PRIORITÉ ABSOLUE
     // ================================================
     analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
@@ -422,41 +414,30 @@ class CategoryManager {
             return { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
         }
         
-        // Détecter les emails familiaux/personnels AVANT tout
-        if (this.isPersonalEmail(content, email)) {
-            if (this.categories.personal || this.customCategories.personal) {
-                return {
-                    category: 'personal',
-                    score: 100,
-                    confidence: 0.95,
-                    matchedPatterns: [{ keyword: 'personal_email_detected', type: 'absolute', score: 100 }],
-                    hasAbsolute: true,
-                    isPersonal: true
-                };
-            } else {
-                return { category: 'excluded', score: 0, confidence: 0, isExcluded: true, reason: 'personal' };
-            }
+        // PRIORITÉ 1: MARKETING/NEWSLETTER - TOUJOURS EN PREMIER
+        const marketingAnalysis = this.analyzeCategory(content, this.keywordCatalog.marketing_news);
+        
+        // Si détection marketing forte, retourner immédiatement
+        if (marketingAnalysis.hasAbsolute || marketingAnalysis.total >= 80) {
+            console.log(`[CategoryManager] ✅ Marketing détecté: ${email.subject?.substring(0, 50)} (${marketingAnalysis.total}pts)`);
+            return {
+                category: 'marketing_news',
+                score: marketingAnalysis.total,
+                confidence: this.calculateConfidence(marketingAnalysis),
+                matchedPatterns: marketingAnalysis.matches,
+                hasAbsolute: marketingAnalysis.hasAbsolute,
+                priorityDetection: 'marketing_first'
+            };
         }
         
         // Vérifier si on est destinataire principal ou en CC
         const isMainRecipient = this.isMainRecipient(email);
         const isInCC = this.isInCC(email);
         
-        // Si on est en CC, vérifier d'abord si c'est du marketing
+        // Si on est en CC ET pas de marketing fort détecté
         if (this.shouldDetectCC() && isInCC && !isMainRecipient) {
-            const marketingCheck = this.analyzeCategory(content, this.keywordCatalog.marketing_news);
-            if (marketingCheck.score >= 80) {
-                return {
-                    category: 'marketing_news',
-                    score: marketingCheck.total,
-                    confidence: this.calculateConfidence(marketingCheck),
-                    matchedPatterns: marketingCheck.matches,
-                    hasAbsolute: marketingCheck.hasAbsolute,
-                    originallyCC: true
-                };
-            }
-            
-            const allResults = this.analyzeAllCategories(content);
+            // Analyser toutes les autres catégories sauf marketing
+            const allResults = this.analyzeAllCategoriesExceptMarketing(content);
             const bestNonCC = Object.values(allResults)
                 .filter(r => r.category !== 'cc')
                 .sort((a, b) => b.score - a.score)[0];
@@ -482,10 +463,21 @@ class CategoryManager {
             };
         }
         
-        const allResults = this.analyzeAllCategories(content);
+        // Analyser toutes les catégories (sauf marketing déjà fait)
+        const allResults = this.analyzeAllCategoriesExceptMarketing(content);
+        
+        // Ajouter le résultat marketing
+        allResults.marketing_news = {
+            category: 'marketing_news',
+            score: marketingAnalysis.total,
+            hasAbsolute: marketingAnalysis.hasAbsolute,
+            matches: marketingAnalysis.matches,
+            confidence: this.calculateConfidence(marketingAnalysis),
+            priority: 100 // Priorité maximale
+        };
+        
         const selectedResult = this.selectByPriorityWithThreshold(allResults);
         
-        // Si aucune catégorie trouvée, retourner explicitement 'other'
         if (!selectedResult || selectedResult.category === 'other' || selectedResult.score === 0) {
             return {
                 category: 'other',
@@ -500,39 +492,32 @@ class CategoryManager {
         return selectedResult;
     }
 
-    analyzeAllCategories(content) {
+    analyzeAllCategoriesExceptMarketing(content) {
         const results = {};
         const activeCategories = this.getActiveCategories();
         const customCategoryIds = Object.keys(this.customCategories);
         
-        console.log('[CategoryManager] 🎯 Analyse avec catégories actives:', activeCategories.length);
-        
-        // Analyser toutes les catégories (standard + personnalisées)
+        // Analyser toutes les catégories SAUF marketing_news
         const allCategoriesToAnalyze = new Set([
-            ...Object.keys(this.keywordCatalog),
+            ...Object.keys(this.keywordCatalog).filter(cat => cat !== 'marketing_news'),
             ...customCategoryIds
         ]);
         
         for (const categoryId of allCategoriesToAnalyze) {
-            // Vérifier si la catégorie est active OU personnalisée OU spéciale
             const isActive = activeCategories.includes(categoryId);
             const isCustom = customCategoryIds.includes(categoryId);
-            const isSpecial = ['marketing_news', 'cc'].includes(categoryId);
+            const isSpecial = ['cc'].includes(categoryId);
             
             if (!isActive && !isCustom && !isSpecial) {
                 continue;
             }
             
-            // Vérifier que la catégorie existe
             if (!this.categories[categoryId] && !this.customCategories[categoryId]) {
-                console.warn(`[CategoryManager] ⚠️ Catégorie ${categoryId} non trouvée`);
                 continue;
             }
             
-            // Obtenir les mots-clés depuis le catalogue unifié
             let keywords = this.keywordCatalog[categoryId];
             
-            // Pour les catégories personnalisées, charger depuis customCategories si nécessaire
             if (isCustom && (!keywords || this.isEmptyKeywords(keywords))) {
                 const customCat = this.customCategories[categoryId];
                 if (customCat && customCat.keywords) {
@@ -540,15 +525,10 @@ class CategoryManager {
                 }
             }
             
-            // Vérifier si la catégorie a des mots-clés
             if (!keywords || this.isEmptyKeywords(keywords)) {
-                if (isCustom) {
-                    console.warn(`[CategoryManager] ⚠️ Catégorie personnalisée ${categoryId} sans mots-clés`);
-                }
                 continue;
             }
             
-            // Calculer le score
             const score = this.calculateScore(content, keywords, categoryId);
             
             results[categoryId] = {
@@ -571,44 +551,63 @@ class CategoryManager {
         const matches = [];
         const text = content.text;
         
-        // Détection spéciale pour les emails personnels
-        const personalIndicators = ['papa', 'maman', 'bises', 'bisous', 'famille'];
-        const hasPersonalContent = personalIndicators.some(indicator => text.includes(indicator));
+        // Pénalité pour contenu marketing dans autres catégories
+        const marketingKeywords = [
+            'newsletter', 'unsubscribe', 'promotion', 'marketing',
+            'shop', 'buy', 'purchase', 'sale', 'deal', 'offer'
+        ];
         
-        if (hasPersonalContent && ['internal', 'hr', 'meetings', 'commercial'].includes(categoryId)) {
-            totalScore -= 50;
-            matches.push({ keyword: 'personal_content_penalty', type: 'penalty', score: -50 });
+        let marketingContent = 0;
+        marketingKeywords.forEach(keyword => {
+            if (this.findInText(text, keyword)) {
+                marketingContent += 20;
+            }
+        });
+        
+        // Si contenu marketing détecté et on n'est pas dans marketing_news
+        if (marketingContent >= 40 && categoryId !== 'marketing_news') {
+            totalScore -= marketingContent;
+            matches.push({ 
+                keyword: 'marketing_content_penalty', 
+                type: 'penalty', 
+                score: -marketingContent 
+            });
         }
         
         // Bonus de base pour certaines catégories
         const categoryBonus = {
-            'project': 10,
-            'cc': 5,
-            'security': 10,
-            'hr': 10,
+            'security': 15,
+            'finance': 15,
             'tasks': 15,
-            'finance': 10,
-            'marketing_news': 5
+            'meetings': 10,
+            'support': 10,
+            'hr': 10,
+            'commercial': 10,
+            'project': 5,
+            'notifications': 5,
+            'cc': 5
         };
         
         if (categoryBonus[categoryId]) {
             totalScore += categoryBonus[categoryId];
-            matches.push({ keyword: 'category_bonus', type: 'bonus', score: categoryBonus[categoryId] });
+            matches.push({ 
+                keyword: 'category_bonus', 
+                type: 'bonus', 
+                score: categoryBonus[categoryId] 
+            });
         }
         
         // Test des exclusions en premier
         if (keywords.exclusions && keywords.exclusions.length > 0) {
             for (const exclusion of keywords.exclusions) {
                 if (this.findInText(text, exclusion)) {
-                    let penalty = 50;
-                    
-                    if (personalIndicators.includes(exclusion) && 
-                        ['internal', 'hr', 'meetings', 'commercial'].includes(categoryId)) {
-                        penalty = 100;
-                    }
-                    
+                    const penalty = 50;
                     totalScore -= penalty;
-                    matches.push({ keyword: exclusion, type: 'exclusion', score: -penalty });
+                    matches.push({ 
+                        keyword: exclusion, 
+                        type: 'exclusion', 
+                        score: -penalty 
+                    });
                 }
             }
         }
@@ -624,7 +623,11 @@ class CategoryManager {
                     // Bonus supplémentaire si dans le sujet
                     if (content.subject && this.findInText(content.subject, keyword)) {
                         totalScore += 50;
-                        matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 50 });
+                        matches.push({ 
+                            keyword: keyword + ' (in subject)', 
+                            type: 'bonus', 
+                            score: 50 
+                        });
                     }
                 }
             }
@@ -641,14 +644,22 @@ class CategoryManager {
                     
                     if (content.subject && this.findInText(content.subject, keyword)) {
                         totalScore += 20;
-                        matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 20 });
+                        matches.push({ 
+                            keyword: keyword + ' (in subject)', 
+                            type: 'bonus', 
+                            score: 20 
+                        });
                     }
                 }
             }
             
             if (strongMatches >= 2) {
                 totalScore += 30;
-                matches.push({ keyword: 'multiple_strong_matches', type: 'bonus', score: 30 });
+                matches.push({ 
+                    keyword: 'multiple_strong_matches', 
+                    type: 'bonus', 
+                    score: 30 
+                });
             }
         }
         
@@ -665,7 +676,11 @@ class CategoryManager {
             
             if (weakMatches >= 3) {
                 totalScore += 20;
-                matches.push({ keyword: 'multiple_weak_matches', type: 'bonus', score: 20 });
+                matches.push({ 
+                    keyword: 'multiple_weak_matches', 
+                    type: 'bonus', 
+                    score: 20 
+                });
             }
         }
         
@@ -680,9 +695,27 @@ class CategoryManager {
         const MIN_SCORE_THRESHOLD = 30;
         const MIN_CONFIDENCE_THRESHOLD = 0.5;
         
+        // Priorité spéciale pour marketing
+        const marketingResult = results.marketing_news;
+        if (marketingResult && marketingResult.score >= 40) {
+            console.log(`[CategoryManager] ✅ Marketing prioritaire: ${marketingResult.score}pts`);
+            return {
+                category: 'marketing_news',
+                score: marketingResult.score,
+                confidence: marketingResult.confidence,
+                matchedPatterns: marketingResult.matches,
+                hasAbsolute: marketingResult.hasAbsolute,
+                prioritySelection: true
+            };
+        }
+        
         const sortedResults = Object.values(results)
             .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
             .sort((a, b) => {
+                // Marketing toujours en premier
+                if (a.category === 'marketing_news' && b.category !== 'marketing_news') return -1;
+                if (b.category === 'marketing_news' && a.category !== 'marketing_news') return 1;
+                
                 if (a.hasAbsolute && !b.hasAbsolute) return -1;
                 if (!a.hasAbsolute && b.hasAbsolute) return 1;
                 
@@ -708,7 +741,11 @@ class CategoryManager {
         
         const allSorted = Object.values(results)
             .filter(r => r.score > 0)
-            .sort((a, b) => b.score - a.score);
+            .sort((a, b) => {
+                if (a.category === 'marketing_news') return -1;
+                if (b.category === 'marketing_news') return 1;
+                return b.score - a.score;
+            });
         
         if (allSorted.length > 0 && allSorted[0].score >= 20 && allSorted[0].confidence >= 0.4) {
             const fallback = allSorted[0];
@@ -734,7 +771,137 @@ class CategoryManager {
     }
 
     // ================================================
-    // MÉTHODES UTILITAIRES SIMPLIFIÉES
+    // INITIALISATION DES CATÉGORIES
+    // ================================================
+    initializeCategories() {
+        this.categories = {
+            // PRIORITÉ MAXIMALE - MARKETING & NEWS
+            marketing_news: {
+                name: 'Marketing & News',
+                icon: '📰',
+                color: '#8b5cf6',
+                description: 'Newsletters, promotions et marketing',
+                priority: 100, // PRIORITÉ MAXIMALE
+                isCustom: false
+            },
+            
+            // PRIORITÉ ÉLEVÉE - SYSTÈMES
+            security: {
+                name: 'Sécurité',
+                icon: '🔒',
+                color: '#991b1b',
+                description: 'Alertes de sécurité et authentification',
+                priority: 90,
+                isCustom: false
+            },
+            
+            finance: {
+                name: 'Finance',
+                icon: '💰',
+                color: '#dc2626',
+                description: 'Factures et paiements',
+                priority: 85,
+                isCustom: false
+            },
+            
+            tasks: {
+                name: 'Actions Requises',
+                icon: '✅',
+                color: '#ef4444',
+                description: 'Tâches à faire et demandes d\'action',
+                priority: 80,
+                isCustom: false
+            },
+            
+            // PRIORITÉ NORMALE
+            meetings: {
+                name: 'Réunions',
+                icon: '📅',
+                color: '#f59e0b',
+                description: 'Invitations et demandes de réunion',
+                priority: 70,
+                isCustom: false
+            },
+            
+            commercial: {
+                name: 'Commercial',
+                icon: '💼',
+                color: '#059669',
+                description: 'Opportunités, devis et contrats',
+                priority: 65,
+                isCustom: false
+            },
+            
+            support: {
+                name: 'Support',
+                icon: '🛠️',
+                color: '#f59e0b',
+                description: 'Tickets et assistance',
+                priority: 60,
+                isCustom: false
+            },
+            
+            hr: {
+                name: 'RH',
+                icon: '👥',
+                color: '#10b981',
+                description: 'Ressources humaines',
+                priority: 55,
+                isCustom: false
+            },
+            
+            // PRIORITÉ FAIBLE
+            reminders: {
+                name: 'Relances',
+                icon: '🔄',
+                color: '#10b981',
+                description: 'Rappels et suivis',
+                priority: 50,
+                isCustom: false
+            },
+            
+            project: {
+                name: 'Projets',
+                icon: '📊',
+                color: '#3b82f6',
+                description: 'Gestion de projet',
+                priority: 45,
+                isCustom: false
+            },
+            
+            internal: {
+                name: 'Communication Interne',
+                icon: '📢',
+                color: '#0ea5e9',
+                description: 'Annonces internes',
+                priority: 40,
+                isCustom: false
+            },
+            
+            notifications: {
+                name: 'Notifications',
+                icon: '🔔',
+                color: '#94a3b8',
+                description: 'Notifications automatiques système',
+                priority: 35,
+                isCustom: false
+            },
+            
+            cc: {
+                name: 'En Copie',
+                icon: '📋',
+                color: '#64748b',
+                description: 'Emails où vous êtes en copie',
+                priority: 30,
+                isCustom: false
+            }
+        };
+        
+        console.log('[CategoryManager] 📚 Catégories initialisées avec priorité marketing:', Object.keys(this.categories).length);
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES - INCHANGÉES
     // ================================================
     analyzeCategory(content, keywords) {
         return this.calculateScore(content, keywords, 'single');
@@ -746,17 +913,17 @@ class CategoryManager {
         
         if (email.subject && email.subject.trim()) {
             subject = email.subject;
-            allText += (email.subject + ' ').repeat(10);
+            allText += (email.subject + ' ').repeat(15); // Augmenté pour le sujet
         } else {
             subject = '[SANS_SUJET]';
             allText += 'sans sujet email sans objet ';
         }
         
         if (email.from?.emailAddress?.address) {
-            allText += (email.from.emailAddress.address + ' ').repeat(3);
+            allText += (email.from.emailAddress.address + ' ').repeat(5);
         }
         if (email.from?.emailAddress?.name) {
-            allText += (email.from.emailAddress.name + ' ').repeat(3);
+            allText += (email.from.emailAddress.name + ' ').repeat(5);
         }
         
         if (email.toRecipients && Array.isArray(email.toRecipients)) {
@@ -782,7 +949,7 @@ class CategoryManager {
         }
         
         if (email.bodyPreview) {
-            allText += email.bodyPreview + ' ';
+            allText += (email.bodyPreview + ' ').repeat(3); // Augmenté pour le preview
         }
         
         if (email.body?.content) {
@@ -859,39 +1026,6 @@ class CategoryManager {
             (!keywords.strong || keywords.strong.length === 0) &&
             (!keywords.weak || keywords.weak.length === 0)
         );
-    }
-
-    isPersonalEmail(content, email) {
-        const personalIndicators = [
-            'papa', 'maman', 'mamie', 'papy', 'papi',
-            'chéri', 'chérie', 'mon amour', 'ma chérie',
-            'bises', 'bisous', 'gros bisous', 'je t\'embrasse',
-            'famille', 'familial', 'personnel', 'personal'
-        ];
-        
-        const professionalCounterIndicators = [
-            'ressources humaines', 'human resources', 'rh',
-            'contrat', 'contract', 'entreprise', 'company',
-            'professionnel', 'professional', 'business'
-        ];
-        
-        const text = content.text.toLowerCase();
-        
-        let personalScore = 0;
-        personalIndicators.forEach(indicator => {
-            if (text.includes(indicator)) {
-                personalScore += 10;
-            }
-        });
-        
-        let professionalScore = 0;
-        professionalCounterIndicators.forEach(indicator => {
-            if (text.includes(indicator)) {
-                professionalScore += 10;
-            }
-        });
-        
-        return personalScore > 20 && professionalScore < 10;
     }
 
     isMainRecipient(email) {
@@ -1033,7 +1167,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // GESTION PARAMÈTRES SIMPLIFIÉE
+    // GESTION PARAMÈTRES
     // ================================================
     loadSettings() {
         try {
@@ -1148,12 +1282,8 @@ class CategoryManager {
         return this.categories[categoryId] || this.customCategories[categoryId] || null;
     }
 
-    getCustomCategories() {
-        return { ...this.customCategories };
-    }
-
     // ================================================
-    // CATÉGORIES PERSONNALISÉES
+    // CATÉGORIES PERSONNALISÉES ET ÉVÉNEMENTS
     // ================================================
     loadCustomCategories() {
         try {
@@ -1207,18 +1337,6 @@ class CategoryManager {
                (keywords.exclusions?.length || 0);
     }
 
-    saveCustomCategories() {
-        try {
-            localStorage.setItem('customCategories', JSON.stringify(this.customCategories));
-            console.log('[CategoryManager] Catégories personnalisées sauvegardées');
-        } catch (error) {
-            console.error('[CategoryManager] Erreur sauvegarde catégories personnalisées:', error);
-        }
-    }
-
-    // ================================================
-    // ÉVÉNEMENTS SIMPLIFIÉS
-    // ================================================
     setupEventListeners() {
         window.addEventListener('storage', (e) => {
             if (e.key === 'categorySettings') {
@@ -1350,7 +1468,7 @@ class CategoryManager {
     }
 
     runDiagnostics() {
-        console.group('🏥 DIAGNOSTIC CategoryManager v21.0');
+        console.group('🏥 DIAGNOSTIC CategoryManager v22.0 - Marketing Priority');
         
         console.group('📂 Catégories');
         const allCategories = Object.keys(this.categories);
@@ -1367,7 +1485,13 @@ class CategoryManager {
         const catalogEntries = Object.keys(this.keywordCatalog);
         console.log('Entrées dans le catalogue:', catalogEntries.length);
         
-        catalogEntries.forEach(catId => {
+        // Afficher marketing en premier
+        if (this.keywordCatalog.marketing_news) {
+            const marketingKeywords = this.getTotalKeywordsCount('marketing_news');
+            console.log(`📰 Marketing & News (PRIORITÉ): ${marketingKeywords} mots-clés`);
+        }
+        
+        catalogEntries.filter(cat => cat !== 'marketing_news').forEach(catId => {
             const totalKeywords = this.getTotalKeywordsCount(catId);
             if (totalKeywords > 0) {
                 const category = this.getCategory(catId);
@@ -1390,7 +1514,8 @@ class CategoryManager {
             customCategories: customCategories.length,
             activeCategories: activeCategories.length,
             catalogEntries: catalogEntries.length,
-            preselectedCategories: this.getTaskPreselectedCategories().length
+            preselectedCategories: this.getTaskPreselectedCategories().length,
+            marketingPriority: true
         };
     }
 }
@@ -1403,19 +1528,22 @@ if (window.categoryManager) {
     window.categoryManager.destroy?.();
 }
 
-console.log('[CategoryManager] 🚀 Création nouvelle instance v21.0...');
+console.log('[CategoryManager] 🚀 Création nouvelle instance v22.0...');
 window.categoryManager = new CategoryManager();
 
 // Export des méthodes de test globales
 window.testCategoryManager = function() {
-    console.group('🧪 TEST CategoryManager v21.0');
+    console.group('🧪 TEST CategoryManager v22.0 - Marketing Priority');
     
     const tests = [
         { subject: "Newsletter hebdomadaire - Désabonnez-vous ici", expected: "marketing_news" },
+        { subject: "Promotion spéciale - 50% de réduction - unsubscribe", expected: "marketing_news" },
+        { subject: "Votre commande a été expédiée - tracking disponible", expected: "marketing_news" },
         { subject: "Action requise: Confirmer votre commande", expected: "tasks" },
         { subject: "Nouvelle connexion détectée sur votre compte", expected: "security" },
         { subject: "Facture #12345 - Échéance dans 3 jours", expected: "finance" },
-        { subject: "Réunion équipe prévue pour demain", expected: "meetings" }
+        { subject: "Réunion équipe prévue pour demain", expected: "meetings" },
+        { subject: "Do not reply - système automatique", expected: "notifications" }
     ];
     
     tests.forEach(test => {
@@ -1429,24 +1557,39 @@ window.testCategoryManager = function() {
 };
 
 window.debugCategoryKeywords = function() {
-    console.group('🔍 DEBUG Mots-clés v21.0');
+    console.group('🔍 DEBUG Mots-clés v22.0 - Marketing Priority');
     const catalog = window.categoryManager.keywordCatalog;
     
+    // Afficher marketing en premier
+    if (catalog.marketing_news) {
+        const keywords = catalog.marketing_news;
+        const total = (keywords.absolute?.length || 0) + (keywords.strong?.length || 0) + 
+                     (keywords.weak?.length || 0) + (keywords.exclusions?.length || 0);
+        
+        console.log(`📰 Marketing & News (PRIORITÉ ABSOLUE): ${total} mots-clés`);
+        if (keywords.absolute?.length) console.log(`  Absolus: ${keywords.absolute.slice(0, 10).join(', ')}...`);
+        if (keywords.strong?.length) console.log(`  Forts: ${keywords.strong.slice(0, 10).join(', ')}...`);
+        if (keywords.weak?.length) console.log(`  Faibles: ${keywords.weak.slice(0, 5).join(', ')}...`);
+        if (keywords.exclusions?.length) console.log(`  Exclusions: ${keywords.exclusions.slice(0, 5).join(', ')}...`);
+    }
+    
     Object.entries(catalog).forEach(([categoryId, keywords]) => {
+        if (categoryId === 'marketing_news') return; // Déjà affiché
+        
         const category = window.categoryManager.getCategory(categoryId);
         const total = (keywords.absolute?.length || 0) + (keywords.strong?.length || 0) + 
                      (keywords.weak?.length || 0) + (keywords.exclusions?.length || 0);
         
         if (total > 0) {
             console.log(`${category?.icon || '📂'} ${category?.name || categoryId}: ${total} mots-clés`);
-            if (keywords.absolute?.length) console.log(`  Absolus: ${keywords.absolute.join(', ')}`);
-            if (keywords.strong?.length) console.log(`  Forts: ${keywords.strong.join(', ')}`);
-            if (keywords.weak?.length) console.log(`  Faibles: ${keywords.weak.join(', ')}`);
-            if (keywords.exclusions?.length) console.log(`  Exclusions: ${keywords.exclusions.join(', ')}`);
+            if (keywords.absolute?.length) console.log(`  Absolus: ${keywords.absolute.slice(0, 5).join(', ')}...`);
+            if (keywords.strong?.length) console.log(`  Forts: ${keywords.strong.slice(0, 5).join(', ')}...`);
+            if (keywords.weak?.length) console.log(`  Faibles: ${keywords.weak.slice(0, 3).join(', ')}...`);
+            if (keywords.exclusions?.length) console.log(`  Exclusions: ${keywords.exclusions.slice(0, 3).join(', ')}...`);
         }
     });
     
     console.groupEnd();
 };
 
-console.log('✅ CategoryManager v21.0 loaded - Catalogue unifié et corrigé');
+console.log('✅ CategoryManager v22.0 loaded - Détection prioritaire marketing/newsletter');
