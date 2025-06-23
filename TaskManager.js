@@ -904,6 +904,22 @@ class TasksView {
                                 <i class="fas fa-plus"></i>
                                 Nouvelle
                             </button>
+                            
+                            <!-- Nouvelle tâche (bouton proéminent) -->
+                            <button class="btn-new-task" onclick="window.tasksView.showCreateModal()" title="Créer une nouvelle tâche">
+                                <i class="fas fa-plus"></i>
+                                Nouvelle tâche
+                            </button>
+                            
+                            <!-- Date actuelle -->
+                            <div class="current-date">
+                                <i class="fas fa-calendar-day"></i>
+                                <span id="currentDateDisplay">${new Date().toLocaleDateString('fr-FR', { 
+                                    weekday: 'short', 
+                                    day: 'numeric', 
+                                    month: 'short' 
+                                })}</span>
+                            </div>
                         </div>
                     </div>
                     
@@ -957,11 +973,6 @@ class TasksView {
                         
                         <!-- Nouvelle tâche + Tri -->
                         <div class="new-and-sort">
-                            <button class="btn-new-task" onclick="window.tasksView.showCreateModal()" title="Créer une nouvelle tâche">
-                                <i class="fas fa-plus"></i>
-                                Nouvelle tâche
-                            </button>
-                            
                             <div class="sort-quick">
                                 <label class="sort-label">
                                     <i class="fas fa-sort"></i> Trier :
@@ -3095,6 +3106,7 @@ class TasksView {
                 align-items: center;
                 gap: 12px;
                 flex-wrap: wrap;
+                flex: 1;
             }
 
             .selection-panel {
@@ -3148,6 +3160,53 @@ class TasksView {
 
             .btn-action.btn-new:hover {
                 background: linear-gradient(135deg, var(--primary-hover) 0%, #5856eb 100%);
+            }
+
+            .btn-new-task {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 20px;
+                background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: var(--transition);
+                box-shadow: var(--shadow-sm);
+                white-space: nowrap;
+            }
+
+            .btn-new-task:hover {
+                background: linear-gradient(135deg, #059669 0%, #047857 100%);
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+            }
+
+            .btn-new-task i {
+                font-size: 16px;
+            }
+
+            .current-date {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                color: var(--text-primary);
+                font-size: 13px;
+                font-weight: 600;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+
+            .current-date i {
+                color: var(--primary-color);
+                font-size: 14px;
             }
 
             .btn-action.btn-bulk {
@@ -3283,33 +3342,6 @@ class TasksView {
                 align-items: center;
                 gap: 16px;
                 flex-shrink: 0;
-            }
-
-            .btn-new-task {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 10px 20px;
-                background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: 700;
-                cursor: pointer;
-                transition: var(--transition);
-                box-shadow: var(--shadow-sm);
-                white-space: nowrap;
-            }
-
-            .btn-new-task:hover {
-                background: linear-gradient(135deg, #059669 0%, #047857 100%);
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-md);
-            }
-
-            .btn-new-task i {
-                font-size: 16px;
             }
 
             .sort-quick {
