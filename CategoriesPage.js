@@ -1,21 +1,4 @@
-.note-section p {
-                margin: 0;
-                font-size: 0.875rem;
-                color: var(--success);
-                line-height: 1.4;
-            }
-
-            kbd {
-                background: var(--bg-tertiary);
-                border: 1px solid var(--border);
-                border-radius: 0.25rem;
-                padding: 0.125rem 0.25rem;
-                font-size: 0.75rem;
-                font-family: monospace;
-                color: var(--text-primary);
-            }
-
-            /* Header compact */
+/* Header compact */
             .settings-header {
                 margin-bottom: 2rem;
             }
@@ -150,6 +133,120 @@
                 display: block;
             }
 
+            /* Toolbar compact */
+            .categories-toolbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .section-title {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: var(--text-primary);
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .filter-tabs {
+                display: flex;
+                gap: 0.25rem;
+                background: var(--bg-tertiary);
+                padding: 0.25rem;
+                border-radius: var(--radius);
+            }
+
+            .filter-tab {
+                padding: 0.5rem 0.75rem;
+                border: none;
+                background: none;
+                border-radius: 0.25rem;
+                cursor: pointer;
+                font-size: 0.75rem;
+                font-weight: 500;
+                color: var(--text-secondary);
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+
+            .filter-tab:hover {
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+            }
+
+            .filter-tab.active {
+                background: var(--primary);
+                color: white;
+            }
+
+            .btn-modern {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                padding: 0.5rem 1rem;
+                border: none;
+                border-radius: var(--radius);
+                font-weight: 600;
+                font-size: 0.75rem;
+                cursor: pointer;
+                transition: all 0.2s;
+                text-decoration: none;
+            }
+
+            .btn-primary {
+                background: var(--primary);
+                color: white;
+                box-shadow: var(--shadow);
+            }
+
+            .btn-primary:hover {
+                background: var(--primary-dark);
+                transform: translateY(-1px);
+            }
+
+            .btn-secondary {
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+                border: 1px solid var(--border);
+            }
+
+            .btn-secondary:hover {
+                background: var(--bg-secondary);
+                border-color: var(--primary);
+                color: var(--primary);
+            }
+
+            /* États vides compacts */
+            .empty-state-compact {
+                text-align: center;
+                padding: 2rem;
+                color: var(--text-secondary);
+                background: var(--bg-tertiary);
+                border-radius: var(--radius);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            .empty-state-mini {
+                text-align: center;
+                padding: 1rem;
+                color: var(--text-secondary);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                font-size: 0.875rem;
+            }
+
             /* Responsive */
             @media (max-width: 1024px) {
                 .categories-grid {
@@ -158,10 +255,6 @@
 
                 .stats-grid {
                     grid-template-columns: repeat(2, 1fr);
-                }
-
-                .backup-actions-compact {
-                    grid-template-columns: 1fr;
                 }
             }
 
@@ -202,15 +295,6 @@
                     grid-template-columns: repeat(2, 1fr);
                 }
 
-                .status-row {
-                    flex-direction: column;
-                    align-items: stretch;
-                }
-
-                .details-compact {
-                    justify-content: center;
-                }
-
                 .category-card-compact {
                     padding: 1rem;
                 }
@@ -236,31 +320,6 @@
 
                 .filter-tabs {
                     justify-content: center;
-                }
-
-                .history-name-mini {
-                    max-width: 120px;
-                }
-
-                .details-compact {
-                    flex-direction: column;
-                    gap: 0.5rem;
-                }
-
-                .modal-modern {
-                    margin: 0.5rem;
-                    max-width: none;
-                }
-
-                .step-card {
-                    flex-direction: column;
-                    gap: 0.75rem;
-                }
-
-                .path-display {
-                    flex-direction: column;
-                    align-items: stretch;
-                    gap: 0.5rem;
                 }
             }
         `;
