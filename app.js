@@ -1,4 +1,4 @@
-// app.js - Application EmailSortPro avec authentification dual provider (Microsoft + Google) v4.0
+// app.js - Application EmailSortPro avec authentification dual provider (Microsoft + Google) v4.1
 
 class App {
     constructor() {
@@ -11,7 +11,12 @@ class App {
         this.initializationPromise = null;
         this.currentPage = 'dashboard';
         
-        console.log('[App] Constructor - EmailSortPro starting with dual provider support...');
+        // Système de gestion des dépendances
+        this.moduleInitPromises = new Map();
+        this.moduleInitialized = new Set();
+        this.moduleQueue = [];
+        
+        console.log('[App] Constructor - EmailSortPro v4.1 starting with robust dependency management...');
     }
 
     async init() {
@@ -81,8 +86,8 @@ class App {
             
             console.log('[App] Auth services initialization results:', initResults);
             
-            // INITIALISER LES MODULES CRITIQUES
-            await this.initializeCriticalModules();
+            // INITIALISER LES MODULES CRITIQUES AVEC GESTION ROBUSTE DES DÉPENDANCES
+            await this.initializeCriticalModulesWithDependencies();
             
             await this.checkAuthenticationStatus();
             
@@ -95,34 +100,298 @@ class App {
     }
 
     // =====================================
-    // INITIALISATION DES MODULES CRITIQUES
+    // INITIALISATION ROBUSTE DES MODULES CRITIQUES
     // =====================================
-    async initializeCriticalModules() {
-        console.log('[App] Initializing critical modules...');
+    async initializeCriticalModulesWithDependencies() {
+        console.log('[App] Initializing critical modules with dependency management...');
         
-        // 1. Vérifier TaskManager
+        // 1. CategoryManager en PREMIER (dépendance critique pour tous les autres)
+        await this.ensureCategoryManagerReady();
+        
+        // 2. TaskManager (dépend de CategoryManager)
         await this.ensureTaskManagerReady();
         
-        // 2. Vérifier PageManager
+        // 3. PageManager
         await this.ensurePageManagerReady();
         
-        // 3. Vérifier TasksView
+        // 4. EmailScanner (dépend de CategoryManager et TaskManager)
+        await this.ensureEmailScannerReady();
+        
+        // 5. TasksView
         await this.ensureTasksViewReady();
         
-        // 4. Vérifier DashboardModule
+        // 6. DashboardModule
         await this.ensureDashboardModuleReady();
         
-        // 5. Bind methods
+        // 7. Bind methods et configuration finale
         this.bindModuleMethods();
-        
-        // 6. Initialiser la gestion du scroll
         this.initializeScrollManager();
         
-        console.log('[App] Critical modules initialized');
+        console.log('[App] Critical modules initialized with dependencies resolved');
+    }
+
+    async ensureCategoryManagerReady() {
+        console.log('[App] Ensuring CategoryManager is ready (CRITICAL DEPENDENCY)...');
+        
+        // Si déjà prêt, retourner immédiatement
+        if (window.categoryManager && window.categoryManager.isInitialized) {
+            console.log('[App] ✅ CategoryManager already ready');
+            this.moduleInitialized.add('CategoryManager');
+            return true;
+        }
+        
+        // Attendre que CategoryManager soit disponible
+        let attempts = 0;
+        const maxAttempts = 100; // Plus de tentatives pour module critique
+        
+        while (!window.categoryManager && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            attempts++;
+            
+            if (attempts % 20 === 0) {
+                console.log(`[App] ⏳ Waiting for CategoryManager... (${attempts}/${maxAttempts})`);
+            }
+        }
+        
+        if (!window.categoryManager) {
+            // CRÉER CategoryManager s'il n'existe pas
+            console.log('[App] 🔧 Creating CategoryManager manually...');
+            try {
+                if (window.CategoryManager) {
+                    window.categoryManager = new window.CategoryManager();
+                    await new Promise(resolve => setTimeout(resolve, 500)); // Laisser temps d'initialiser
+                } else {
+                    throw new Error('CategoryManager class not available');
+                }
+            } catch (error) {
+                console.error('[App] ❌ Failed to create CategoryManager:', error);
+                return false;
+            }
+        }
+        
+        // Attendre que CategoryManager soit initialisé
+        attempts = 0;
+        while ((!window.categoryManager.isInitialized) && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            attempts++;
+        }
+        
+        if (!window.categoryManager.isInitialized) {
+            console.error('[App] ❌ CategoryManager failed to initialize after creation');
+            return false;
+        }
+        
+        // Vérifier les méthodes essentielles
+        const essentialMethods = [
+            'getCategories', 'analyzeEmail', 'getTaskPreselectedCategories',
+            'getSettings', 'updateTaskPreselectedCategories'
+        ];
+        
+        for (const method of essentialMethods) {
+            if (typeof window.categoryManager[method] !== 'function') {
+                console.error(`[App] ❌ CategoryManager missing essential method: ${method}`);
+                return false;
+            }
+        }
+        
+        console.log('[App] ✅ CategoryManager ready and verified');
+        this.moduleInitialized.add('CategoryManager');
+        
+        // Signaler aux modules en attente que CategoryManager est prêt
+        this.notifyModuleDependencyReady('CategoryManager');
+        
+        return true;
+    }
+
+    async ensureEmailScannerReady() {
+        console.log('[App] Ensuring EmailScanner is ready...');
+        
+        // Attendre que CategoryManager soit prêt d'abord
+        if (!this.moduleInitialized.has('CategoryManager')) {
+            console.log('[App] ⏳ Waiting for CategoryManager before initializing EmailScanner...');
+            await this.ensureCategoryManagerReady();
+        }
+        
+        if (window.emailScanner && window.emailScanner.isInitialized) {
+            console.log('[App] ✅ EmailScanner already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while (!window.emailScanner && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.emailScanner) {
+            console.warn('[App] EmailScanner not available yet');
+            return false;
+        }
+        
+        // Vérifier que EmailScanner a accès à CategoryManager
+        if (!window.emailScanner.categoryManager && window.categoryManager) {
+            console.log('[App] 🔗 Linking CategoryManager to EmailScanner...');
+            window.emailScanner.categoryManager = window.categoryManager;
+        }
+        
+        console.log('[App] ✅ EmailScanner ready');
+        return true;
+    }
+
+    async ensureTaskManagerReady() {
+        console.log('[App] Ensuring TaskManager is ready...');
+        
+        // Attendre que CategoryManager soit prêt d'abord
+        if (!this.moduleInitialized.has('CategoryManager')) {
+            console.log('[App] ⏳ Waiting for CategoryManager before initializing TaskManager...');
+            await this.ensureCategoryManagerReady();
+        }
+        
+        if (window.taskManager && window.taskManager.initialized) {
+            console.log('[App] ✅ TaskManager already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while ((!window.taskManager || !window.taskManager.initialized) && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.taskManager || !window.taskManager.initialized) {
+            console.error('[App] TaskManager not ready after waiting');
+            return false;
+        }
+        
+        const essentialMethods = ['createTaskFromEmail', 'createTask', 'updateTask', 'deleteTask', 'getStats'];
+        for (const method of essentialMethods) {
+            if (typeof window.taskManager[method] !== 'function') {
+                console.error(`[App] TaskManager missing essential method: ${method}`);
+                return false;
+            }
+        }
+        
+        console.log('[App] ✅ TaskManager ready with', window.taskManager.getAllTasks().length, 'tasks');
+        return true;
+    }
+
+    async ensurePageManagerReady() {
+        console.log('[App] Ensuring PageManager is ready...');
+        
+        if (window.pageManager) {
+            console.log('[App] ✅ PageManager already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.pageManager && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.pageManager) {
+            console.error('[App] PageManager not ready after 3 seconds');
+            return false;
+        }
+        
+        console.log('[App] ✅ PageManager ready');
+        return true;
+    }
+
+    async ensureTasksViewReady() {
+        console.log('[App] Ensuring TasksView is ready...');
+        
+        if (window.tasksView) {
+            console.log('[App] ✅ TasksView already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.tasksView && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.tasksView) {
+            console.warn('[App] TasksView not ready after 3 seconds - will work without it');
+            return false;
+        }
+        
+        console.log('[App] ✅ TasksView ready');
+        return true;
+    }
+
+    async ensureDashboardModuleReady() {
+        console.log('[App] Ensuring DashboardModule is ready...');
+        
+        if (window.dashboardModule) {
+            console.log('[App] ✅ DashboardModule already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.dashboardModule && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.dashboardModule) {
+            console.error('[App] DashboardModule not ready after 3 seconds');
+            return false;
+        }
+        
+        console.log('[App] ✅ DashboardModule ready');
+        return true;
+    }
+
+    // Méthode pour notifier les modules que leurs dépendances sont prêtes
+    notifyModuleDependencyReady(moduleName) {
+        console.log(`[App] 📢 Notifying modules that ${moduleName} is ready`);
+        
+        // Dispatcher un événement global
+        try {
+            window.dispatchEvent(new CustomEvent('moduleReady', {
+                detail: {
+                    moduleName: moduleName,
+                    timestamp: Date.now(),
+                    source: 'App'
+                }
+            }));
+        } catch (error) {
+            console.error('[App] Error dispatching moduleReady event:', error);
+        }
+        
+        // Traiter la queue des modules en attente
+        this.processModuleQueue();
+    }
+
+    processModuleQueue() {
+        console.log('[App] Processing module queue...');
+        
+        while (this.moduleQueue.length > 0) {
+            const queuedModule = this.moduleQueue.shift();
+            console.log(`[App] Processing queued module: ${queuedModule.name}`);
+            
+            try {
+                queuedModule.initFunction();
+            } catch (error) {
+                console.error(`[App] Error initializing queued module ${queuedModule.name}:`, error);
+            }
+        }
     }
 
     // =====================================
-    // GESTION INTELLIGENTE DU SCROLL
+    // GESTION INTELLIGENTE DU SCROLL (inchangée)
     // =====================================
     initializeScrollManager() {
         console.log('[App] Initializing scroll manager...');
@@ -322,114 +591,6 @@ class App {
         console.log('[App] ✅ Scroll manager initialized');
     }
 
-    async ensureTaskManagerReady() {
-        console.log('[App] Ensuring TaskManager is ready...');
-        
-        if (window.taskManager && window.taskManager.initialized) {
-            console.log('[App] ✅ TaskManager already ready');
-            return true;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 50;
-        
-        while ((!window.taskManager || !window.taskManager.initialized) && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.taskManager || !window.taskManager.initialized) {
-            console.error('[App] TaskManager not ready after 5 seconds');
-            return false;
-        }
-        
-        const essentialMethods = ['createTaskFromEmail', 'createTask', 'updateTask', 'deleteTask', 'getStats'];
-        for (const method of essentialMethods) {
-            if (typeof window.taskManager[method] !== 'function') {
-                console.error(`[App] TaskManager missing essential method: ${method}`);
-                return false;
-            }
-        }
-        
-        console.log('[App] ✅ TaskManager ready with', window.taskManager.getAllTasks().length, 'tasks');
-        return true;
-    }
-
-    async ensurePageManagerReady() {
-        console.log('[App] Ensuring PageManager is ready...');
-        
-        if (window.pageManager) {
-            console.log('[App] ✅ PageManager already ready');
-            return true;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while (!window.pageManager && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.pageManager) {
-            console.error('[App] PageManager not ready after 3 seconds');
-            return false;
-        }
-        
-        console.log('[App] ✅ PageManager ready');
-        return true;
-    }
-
-    async ensureTasksViewReady() {
-        console.log('[App] Ensuring TasksView is ready...');
-        
-        if (window.tasksView) {
-            console.log('[App] ✅ TasksView already ready');
-            return true;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while (!window.tasksView && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.tasksView) {
-            console.warn('[App] TasksView not ready after 3 seconds - will work without it');
-            return false;
-        }
-        
-        console.log('[App] ✅ TasksView ready');
-        return true;
-    }
-
-    async ensureDashboardModuleReady() {
-        console.log('[App] Ensuring DashboardModule is ready...');
-        
-        if (window.dashboardModule) {
-            console.log('[App] ✅ DashboardModule already ready');
-            return true;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while (!window.dashboardModule && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.dashboardModule) {
-            console.error('[App] DashboardModule not ready after 3 seconds');
-            return false;
-        }
-        
-        console.log('[App] ✅ DashboardModule ready');
-        return true;
-    }
-
     bindModuleMethods() {
         // Bind TaskManager methods
         if (window.taskManager) {
@@ -490,7 +651,7 @@ class App {
     }
 
     // =====================================
-    // VÉRIFICATION DE L'AUTHENTIFICATION DUAL PROVIDER
+    // VÉRIFICATION DE L'AUTHENTIFICATION DUAL PROVIDER (inchangée)
     // =====================================
     async checkAuthenticationStatus() {
         console.log('[App] Checking authentication status for both providers...');
@@ -551,7 +712,7 @@ class App {
     }
 
     // =====================================
-    // GESTION DU CALLBACK GOOGLE OAuth2
+    // GESTION DU CALLBACK GOOGLE OAuth2 (inchangée)
     // =====================================
     async handleGoogleCallback() {
         console.log('[App] Handling Google OAuth2 callback...');
@@ -700,7 +861,7 @@ class App {
     }
 
     // =====================================
-    // MÉTHODES DE CONNEXION DUAL PROVIDER
+    // MÉTHODES DE CONNEXION DUAL PROVIDER (inchangées)
     // =====================================
 
     // Méthode de connexion unifiée (backward compatibility)
@@ -853,6 +1014,11 @@ class App {
         this.isInitializing = false;
         this.initializationPromise = null;
         this.currentPage = 'dashboard';
+        
+        // Réinitialiser système de dépendances
+        this.moduleInitPromises.clear();
+        this.moduleInitialized.clear();
+        this.moduleQueue = [];
         
         // Nettoyer les deux services d'authentification
         if (window.authService) {
@@ -1141,6 +1307,8 @@ class App {
             } : null,
             currentPage: this.currentPage,
             isInitialized: !this.isInitializing,
+            moduleInitialized: Array.from(this.moduleInitialized),
+            moduleQueueLength: this.moduleQueue.length,
             microsoftAuthService: window.authService ? {
                 isInitialized: window.authService.isInitialized,
                 isAuthenticated: window.authService.isAuthenticated()
@@ -1157,6 +1325,13 @@ class App {
                 googleCallback: !!sessionStorage.getItem('google_callback_data'),
                 googleToken: !!localStorage.getItem('google_token_emailsortpro'),
                 directToken: !!sessionStorage.getItem('direct_token_data')
+            },
+            moduleAvailability: {
+                CategoryManager: !!window.categoryManager,
+                TaskManager: !!window.taskManager,
+                EmailScanner: !!window.emailScanner,
+                PageManager: !!window.pageManager,
+                DashboardModule: !!window.dashboardModule
             }
         };
     }
@@ -1213,15 +1388,17 @@ window.forceShowApp = function() {
 };
 
 // =====================================
-// VÉRIFICATION DES SERVICES DUAL PROVIDER
+// VÉRIFICATION DES SERVICES DUAL PROVIDER AMÉLIORÉE
 // =====================================
 function checkServicesReady() {
     const requiredServices = ['uiManager'];
     const authServices = ['authService', 'googleAuthService'];
-    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule'];
+    const criticalModules = ['CategoryManager']; // CategoryManager est critique
+    const optionalServices = ['mailService', 'emailScanner', 'dashboardModule'];
     
     const missingRequired = requiredServices.filter(service => !window[service]);
     const availableAuthServices = authServices.filter(service => window[service]);
+    const missingCritical = criticalModules.filter(module => !window[module.toLowerCase()]);
     const missingOptional = optionalServices.filter(service => !window[service]);
     
     if (missingRequired.length > 0) {
@@ -1234,6 +1411,11 @@ function checkServicesReady() {
         return false;
     }
     
+    if (missingCritical.length > 0) {
+        console.warn('[App] Missing CRITICAL modules (will try to create):', missingCritical);
+        // Ne pas retourner false, mais noter qu'il faut créer ces modules
+    }
+    
     if (missingOptional.length > 0) {
         console.warn('[App] Missing optional services:', missingOptional);
     }
@@ -1244,11 +1426,16 @@ function checkServicesReady() {
     }
     
     console.log('[App] Available auth services:', availableAuthServices);
+    console.log('[App] Critical modules status:', criticalModules.map(m => ({
+        module: m,
+        available: !!window[m.toLowerCase()]
+    })));
+    
     return true;
 }
 
 // =====================================
-// INITIALISATION PRINCIPALE DUAL PROVIDER
+// INITIALISATION PRINCIPALE DUAL PROVIDER ROBUSTE
 // =====================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1259,7 +1446,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.app = new App();
     
     const waitForServices = (attempts = 0) => {
-        const maxAttempts = 50;
+        const maxAttempts = 100; // Plus de tentatives pour système robuste
         
         if (checkServicesReady()) {
             console.log('[App] All required services ready, initializing dual provider app...');
@@ -1268,8 +1455,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.app.init();
             }, 100);
         } else if (attempts < maxAttempts) {
-            console.log(`[App] Waiting for services... (${attempts + 1}/${maxAttempts})`);
-            setTimeout(() => waitForServices(attempts + 1), 100);
+            if (attempts % 25 === 0) { // Log moins fréquent
+                console.log(`[App] Waiting for services... (${attempts + 1}/${maxAttempts})`);
+            }
+            setTimeout(() => waitForServices(attempts + 1), 50); // Check plus fréquent
         } else {
             console.error('[App] Timeout waiting for services, initializing anyway...');
             setTimeout(() => {
@@ -1304,7 +1493,7 @@ window.addEventListener('load', () => {
 // DIAGNOSTIC GLOBAL DUAL PROVIDER
 // =====================================
 window.diagnoseApp = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER - EmailSortPro');
+    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER v4.1 - EmailSortPro');
     
     try {
         if (window.app) {
@@ -1331,6 +1520,11 @@ window.diagnoseApp = function() {
                 console.log('💾 Session Data:', appDiag.sessionData);
             }
             
+            // Module Availability
+            console.log('🧩 Module Availability:', appDiag.moduleAvailability);
+            console.log('✅ Modules Initialized:', appDiag.moduleInitialized);
+            console.log('⏳ Module Queue Length:', appDiag.moduleQueueLength);
+            
             return appDiag;
         } else {
             console.log('❌ App instance not available');
@@ -1344,4 +1538,38 @@ window.diagnoseApp = function() {
     }
 };
 
-console.log('✅ App v4.0 loaded - DUAL PROVIDER (Microsoft + Google) with direct OAuth2 - NO IFRAME ERRORS');
+window.testCategoryManager = function() {
+    console.group('🧪 TEST CategoryManager v4.1 - Robust Dependency');
+    
+    const provider = window.app?.detectProvider?.() || 'unknown';
+    console.log('Provider détecté:', provider);
+    
+    if (!window.categoryManager) {
+        console.error('❌ CategoryManager not available');
+        return { error: 'CategoryManager not available', provider: provider };
+    }
+    
+    const tests = [
+        { subject: "Newsletter hebdomadaire - Désabonnez-vous ici", expected: "marketing_news" },
+        { subject: "Action requise: Confirmer votre commande", expected: "tasks" },
+        { subject: "Nouvelle connexion détectée sur votre compte", expected: "security" },
+        { subject: "Facture #12345 - Échéance dans 3 jours", expected: "finance" },
+        { subject: "Réunion équipe prévue pour demain", expected: "meetings" }
+    ];
+    
+    tests.forEach(test => {
+        if (window.categoryManager.testEmail) {
+            window.categoryManager.testEmail(test.subject, '', 'test@example.com', test.expected);
+        } else {
+            console.warn('testEmail method not available');
+        }
+    });
+    
+    const stats = window.categoryManager.getCategoryStats?.() || {};
+    console.log('Stats:', stats);
+    
+    console.groupEnd();
+    return { success: true, testsRun: tests.length, provider: provider, stats: stats };
+};
+
+console.log('✅ App v4.1 loaded - DUAL PROVIDER with ROBUST DEPENDENCY MANAGEMENT');
