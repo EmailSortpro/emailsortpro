@@ -1,6 +1,6 @@
-// StartScan.js - Version 9.0 - Mise en évidence des catégories pré-sélectionnées
+// StartScan.js - Version 9.1 - Support dual provider (Microsoft + Google)
 
-console.log('[StartScan] 🚀 Loading StartScan.js v9.0...');
+console.log('[StartScan] 🚀 Loading StartScan.js v9.1...');
 
 class MinimalScanModule {
     constructor() {
@@ -15,9 +15,45 @@ class MinimalScanModule {
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        console.log('[MinimalScan] Scanner v9.0 initialized - Mise en évidence des catégories');
+        console.log('[MinimalScan] Scanner v9.1 initialized - Support dual provider');
         this.loadSettingsFromCategoryManager();
         this.addMinimalStyles();
+    }
+
+    // ================================================
+    // VÉRIFICATION D'AUTHENTIFICATION DUAL PROVIDER
+    // ================================================
+    isUserAuthenticated() {
+        // Vérifier Microsoft d'abord
+        if (window.authService && typeof window.authService.isAuthenticated === 'function') {
+            const msAuth = window.authService.isAuthenticated();
+            if (msAuth) {
+                console.log('[MinimalScan] ✅ Utilisateur authentifié via Microsoft');
+                return true;
+            }
+        }
+        
+        // Vérifier Google ensuite
+        if (window.googleAuthService && typeof window.googleAuthService.isAuthenticated === 'function') {
+            const googleAuth = window.googleAuthService.isAuthenticated();
+            if (googleAuth) {
+                console.log('[MinimalScan] ✅ Utilisateur authentifié via Google');
+                return true;
+            }
+        }
+        
+        console.log('[MinimalScan] ❌ Aucune authentification trouvée');
+        return false;
+    }
+
+    getAuthenticatedProvider() {
+        if (window.authService && window.authService.isAuthenticated()) {
+            return 'microsoft';
+        }
+        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            return 'google';
+        }
+        return null;
     }
 
     // ================================================
@@ -153,7 +189,7 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Minimaliste v9.0 */
+            /* Scanner Ultra-Minimaliste v9.1 */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -544,17 +580,18 @@ class MinimalScanModule {
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[MinimalScan] ✅ Styles v9.0 ajoutés');
+        console.log('[MinimalScan] ✅ Styles v9.1 ajoutés');
     }
 
     async render(container) {
-        console.log('[MinimalScan] 🎯 Rendu du scanner v9.0...');
+        console.log('[MinimalScan] 🎯 Rendu du scanner v9.1...');
         
         try {
             this.addMinimalStyles();
             this.checkSettingsUpdate();
             
-            if (!window.authService?.isAuthenticated()) {
+            // CORRECTION : Vérification dual provider
+            if (!this.isUserAuthenticated()) {
                 container.innerHTML = this.renderNotAuthenticated();
                 return;
             }
@@ -565,7 +602,7 @@ class MinimalScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[MinimalScan] ✅ Scanner v9.0 rendu avec succès');
+            console.log('[MinimalScan] ✅ Scanner v9.1 rendu avec succès');
             
         } catch (error) {
             console.error('[MinimalScan] ❌ Erreur lors du rendu:', error);
@@ -707,7 +744,10 @@ class MinimalScanModule {
             '<div class="scan-info-details">Configuration par défaut</div>';
     }
 
+    // CORRECTION : Page de connexion dual provider
     renderNotAuthenticated() {
+        const provider = this.getAuthenticatedProvider();
+        
         return `
             <div class="minimal-scanner">
                 <div class="scanner-card-minimal">
@@ -717,10 +757,18 @@ class MinimalScanModule {
                     <h1 class="scanner-title">Connexion requise</h1>
                     <p class="scanner-subtitle">Connectez-vous pour analyser vos emails</p>
                     
-                    <button class="scan-button-minimal" onclick="window.authService.login()">
-                        <i class="fab fa-microsoft"></i>
-                        <span>Se connecter</span>
-                    </button>
+                    <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 30px;">
+                        <button class="scan-button-minimal" onclick="window.authService && window.authService.login()">
+                            <i class="fab fa-microsoft"></i>
+                            <span>Se connecter avec Microsoft</span>
+                        </button>
+                        
+                        <button class="scan-button-minimal" onclick="window.googleAuthService && window.googleAuthService.login()" 
+                                style="background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);">
+                            <i class="fab fa-google"></i>
+                            <span>Se connecter avec Google</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -745,8 +793,9 @@ class MinimalScanModule {
         `;
     }
 
+    // CORRECTION : Vérification des services dual provider
     async checkServices() {
-        if (!window.authService?.isAuthenticated()) {
+        if (!this.isUserAuthenticated()) {
             throw new Error('Authentification requise');
         }
         
@@ -1029,7 +1078,10 @@ class MinimalScanModule {
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             settings: this.settings,
             lastSettingsSync: this.lastSettingsSync,
-            scanResults: this.scanResults
+            scanResults: this.scanResults,
+            authenticatedProvider: this.getAuthenticatedProvider(),
+            isAuthenticated: this.isUserAuthenticated(),
+            version: '9.1'
         };
     }
 
@@ -1062,4 +1114,4 @@ window.MinimalScanModule = MinimalScanModule;
 window.minimalScanModule = new MinimalScanModule();
 window.scanStartModule = window.minimalScanModule;
 
-console.log('[StartScan] ✅ Scanner v9.0 chargé - Mise en évidence des catégories pré-sélectionnées!');
+console.log('[StartScan] ✅ Scanner v9.1 chargé - Support dual provider (Microsoft + Google)!');
