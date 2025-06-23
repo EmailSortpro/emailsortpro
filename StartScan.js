@@ -1,6 +1,6 @@
-// StartScan.js - Version 11.0 - Scan unifié avec détection marketing améliorée
+// StartScan.js - Version 12.0 - Scanner unifié avec intégration Gmail/Outlook complète
 
-console.log('[StartScan] 🚀 Loading StartScan.js v11.0 - Marketing detection enhanced...');
+console.log('[StartScan] 🚀 Loading StartScan.js v12.0 - Intégration complète...');
 
 class MinimalScanModule {
     constructor() {
@@ -16,7 +16,7 @@ class MinimalScanModule {
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        console.log('[MinimalScan] Scanner v11.0 initialized - Marketing detection enhanced');
+        console.log('[MinimalScan] Scanner v12.0 initialized - Intégration complète');
         this.loadSettingsFromCategoryManager();
         this.addMinimalStyles();
     }
@@ -25,16 +25,23 @@ class MinimalScanModule {
     // DÉTECTION PROVIDER UNIFIÉ - PRIORITÉ GOOGLE
     // ================================================
     detectProvider() {
-        // PRIORITÉ 1: Google Gmail (pour la nouvelle optimisation)
-        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+        // PRIORITÉ 1: Google Gmail (optimisé)
+        if (window.googleAuthService && 
+            typeof window.googleAuthService.isAuthenticated === 'function' && 
+            window.googleAuthService.isAuthenticated()) {
             this.currentProvider = 'google';
             return 'google';
         } 
         // PRIORITÉ 2: Microsoft Outlook
-        else if (window.authService && window.authService.isAuthenticated()) {
+        else if (window.authService && 
+                 typeof window.authService.isAuthenticated === 'function' && 
+                 window.authService.isAuthenticated()) {
             this.currentProvider = 'microsoft';
             return 'microsoft';
         }
+        
+        // Aucun provider authentifié
+        this.currentProvider = null;
         return null;
     }
 
@@ -47,7 +54,8 @@ class MinimalScanModule {
                 icon: 'fab fa-google',
                 color: '#ea4335',
                 service: window.googleAuthService,
-                priority: 'high' // Nouvelle priorité pour Gmail
+                priority: 'high',
+                status: 'authenticated'
             };
         } else if (provider === 'microsoft') {
             return {
@@ -55,7 +63,8 @@ class MinimalScanModule {
                 icon: 'fab fa-microsoft',
                 color: '#0078d4',
                 service: window.authService,
-                priority: 'normal'
+                priority: 'normal',
+                status: 'authenticated'
             };
         }
         
@@ -64,7 +73,8 @@ class MinimalScanModule {
             icon: 'fas fa-question-circle',
             color: '#6b7280',
             service: null,
-            priority: 'none'
+            priority: 'none',
+            status: 'disconnected'
         };
     }
 
@@ -75,7 +85,8 @@ class MinimalScanModule {
         try {
             if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
                 this.settings = window.categoryManager.getSettings();
-                this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
+                this.taskPreselectedCategories = window.categoryManager.getTaskPreselectedCategories() || [];
+                
                 console.log('[MinimalScan] ✅ Paramètres chargés depuis CategoryManager');
                 console.log('[MinimalScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
                 
@@ -120,19 +131,19 @@ class MinimalScanModule {
                 autoAnalyze: true,
                 autoCategrize: true
             },
-            taskPreselectedCategories: ['tasks', 'meetings', 'finance'], // Marketing pas par défaut
+            taskPreselectedCategories: ['tasks', 'meetings', 'finance'],
             preferences: {
                 excludeSpam: true,
                 detectCC: true,
                 showNotifications: true,
-                marketingPriority: true // Nouveau: priorité marketing
+                marketingPriority: true
             }
         };
     }
 
     checkSettingsUpdate() {
         const now = Date.now();
-        if (now - this.lastSettingsSync < 3000) return; // Plus fréquent
+        if (now - this.lastSettingsSync < 3000) return;
         
         try {
             const oldTaskCategories = [...this.taskPreselectedCategories];
@@ -225,10 +236,13 @@ class MinimalScanModule {
             const priorityBadge = providerInfo.priority === 'high' ? 
                 '<span class="priority-badge">🚀 Optimisé</span>' : '';
             
+            const statusColor = providerInfo.status === 'authenticated' ? 
+                providerInfo.color : '#6b7280';
+            
             providerDisplay.innerHTML = `
-                <div class="provider-info" style="color: ${providerInfo.color};">
+                <div class="provider-info" style="color: ${statusColor};">
                     <i class="${providerInfo.icon}"></i>
-                    <span>Connecté à ${providerInfo.name}</span>
+                    <span>${providerInfo.status === 'authenticated' ? 'Connecté à' : ''} ${providerInfo.name}</span>
                     ${priorityBadge}
                 </div>
             `;
@@ -243,7 +257,7 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner v11.0 - Marketing detection enhanced */
+            /* Scanner v12.0 - Intégration complète */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -299,14 +313,14 @@ class MinimalScanModule {
                 margin-bottom: 35px;
             }
 
-            /* Info provider avec priorité */
+            /* Info provider avec statut */
             #provider-info-display { margin: 15px 0; }
             
             .provider-info {
                 background: rgba(255, 255, 255, 0.8);
                 border: 1px solid rgba(0, 0, 0, 0.1);
                 border-radius: 10px;
-                padding: 10px 16px;
+                padding: 12px 16px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -314,20 +328,26 @@ class MinimalScanModule {
                 font-size: 14px;
                 font-weight: 500;
                 position: relative;
+                transition: all 0.3s ease;
+            }
+            
+            .provider-info:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             }
             
             .priority-badge {
                 position: absolute;
                 top: -8px;
                 right: -8px;
-                background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+                background: linear-gradient(135deg, #10b981, #059669);
                 color: white;
                 font-size: 10px;
                 padding: 2px 6px;
                 border-radius: 8px;
                 font-weight: 700;
                 border: 2px solid white;
-                box-shadow: 0 2px 6px rgba(255, 107, 107, 0.4);
+                box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
             }
             
             /* Affichage catégories avec focus marketing */
@@ -373,6 +393,11 @@ class MinimalScanModule {
                 font-weight: 600;
                 transition: all 0.2s ease;
                 position: relative;
+            }
+            
+            .preselected-category-badge:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             }
             
             .preselected-category-badge.marketing-priority {
@@ -511,7 +536,7 @@ class MinimalScanModule {
                 transform: translateY(-1px);
             }
             
-            /* Bouton de scan avec détection marketing */
+            /* Bouton de scan avec détection provider */
             .scan-button-minimal {
                 width: 100%;
                 height: 60px;
@@ -536,6 +561,16 @@ class MinimalScanModule {
                 background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
                 box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
                 animation: marketingEnhanced 3s infinite;
+            }
+            
+            .scan-button-minimal.google-optimized {
+                background: linear-gradient(135deg, #ea4335 0%, #db4437 100%);
+                box-shadow: 0 6px 20px rgba(234, 67, 53, 0.4);
+            }
+            
+            .scan-button-minimal.microsoft-ready {
+                background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
+                box-shadow: 0 6px 20px rgba(0, 120, 212, 0.4);
             }
             
             @keyframes marketingEnhanced {
@@ -573,7 +608,7 @@ class MinimalScanModule {
                 left: 100%;
             }
             
-            /* Badge de résultat avec marketing */
+            /* Badge de résultat avec provider */
             .success-badge {
                 position: absolute;
                 top: -8px;
@@ -591,6 +626,14 @@ class MinimalScanModule {
             .success-badge.marketing {
                 background: linear-gradient(135deg, #ff6b6b, #ee5a24);
                 animation: marketingBadge 2s infinite;
+            }
+            
+            .success-badge.google {
+                background: linear-gradient(135deg, #ea4335, #db4437);
+            }
+            
+            .success-badge.microsoft {
+                background: linear-gradient(135deg, #0078d4, #106ebe);
             }
             
             @keyframes marketingBadge {
@@ -627,6 +670,14 @@ class MinimalScanModule {
                 background: linear-gradient(90deg, #ff6b6b 0%, #ee5a24 100%);
             }
             
+            .progress-fill.google-mode {
+                background: linear-gradient(90deg, #ea4335 0%, #db4437 100%);
+            }
+            
+            .progress-fill.microsoft-mode {
+                background: linear-gradient(90deg, #0078d4 0%, #106ebe 100%);
+            }
+            
             .progress-text {
                 font-size: 16px;
                 color: #6b7280;
@@ -639,7 +690,7 @@ class MinimalScanModule {
                 color: #9ca3af;
             }
             
-            /* Info badge avec marketing */
+            /* Info badge avec provider */
             .scan-info {
                 background: rgba(102, 126, 234, 0.1);
                 border-radius: 10px;
@@ -660,6 +711,18 @@ class MinimalScanModule {
                 border: 1px solid rgba(255, 107, 107, 0.2);
             }
             
+            .scan-info.google-ready {
+                background: rgba(234, 67, 53, 0.1);
+                color: #ea4335;
+                border: 1px solid rgba(234, 67, 53, 0.2);
+            }
+            
+            .scan-info.microsoft-ready {
+                background: rgba(0, 120, 212, 0.1);
+                color: #0078d4;
+                border: 1px solid rgba(0, 120, 212, 0.2);
+            }
+            
             .scan-info-main {
                 display: flex;
                 align-items: center;
@@ -677,6 +740,78 @@ class MinimalScanModule {
                 color: #ee5a24;
             }
             
+            .scan-info.google-ready .scan-info-details {
+                color: #db4437;
+            }
+            
+            .scan-info.microsoft-ready .scan-info-details {
+                color: #106ebe;
+            }
+            
+            /* États de connexion */
+            .connection-status {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin: 20px 0;
+                padding: 16px;
+                background: rgba(255, 255, 255, 0.8);
+                border-radius: 12px;
+                border: 1px solid rgba(0, 0, 0, 0.1);
+            }
+            
+            .connection-status.connected {
+                border-color: #10b981;
+                background: rgba(16, 185, 129, 0.1);
+            }
+            
+            .connection-status.disconnected {
+                border-color: #ef4444;
+                background: rgba(239, 68, 68, 0.1);
+            }
+            
+            .connection-actions {
+                display: flex;
+                gap: 12px;
+                margin-top: 20px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .provider-btn {
+                padding: 12px 20px;
+                border: 2px solid;
+                border-radius: 10px;
+                background: white;
+                cursor: pointer;
+                font-weight: 600;
+                font-size: 14px;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .provider-btn.google {
+                border-color: #ea4335;
+                color: #ea4335;
+            }
+            
+            .provider-btn.google:hover {
+                background: #ea4335;
+                color: white;
+            }
+            
+            .provider-btn.microsoft {
+                border-color: #0078d4;
+                color: #0078d4;
+            }
+            
+            .provider-btn.microsoft:hover {
+                background: #0078d4;
+                color: white;
+            }
+            
             /* Responsive */
             @media (max-width: 480px) {
                 .scanner-card-minimal { padding: 35px 25px; }
@@ -685,22 +820,26 @@ class MinimalScanModule {
                 .preselected-categories-grid { gap: 6px; }
                 .preselected-category-badge { font-size: 12px; padding: 6px 10px; }
                 .duration-option { padding: 10px 16px; font-size: 13px; min-width: 75px; }
+                .connection-actions { flex-direction: column; }
+                .provider-btn { width: 100%; justify-content: center; }
             }
         `;
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[MinimalScan] ✅ Styles v11.0 ajoutés - Marketing detection enhanced');
+        console.log('[MinimalScan] ✅ Styles v12.0 ajoutés - Intégration complète');
     }
 
     async render(container) {
-        console.log('[MinimalScan] 🎯 Rendu scanner v11.0 avec détection marketing...');
+        console.log('[MinimalScan] 🎯 Rendu scanner v12.0 avec intégration complète...');
         
         try {
             this.addMinimalStyles();
             this.checkSettingsUpdate();
             
             const provider = this.detectProvider();
+            console.log('[MinimalScan] 🔌 Provider détecté:', provider);
+            
             if (!provider) {
                 container.innerHTML = this.renderNotAuthenticated();
                 return;
@@ -712,7 +851,7 @@ class MinimalScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log(`[MinimalScan] ✅ Scanner v11.0 rendu avec succès (${provider})`);
+            console.log(`[MinimalScan] ✅ Scanner v12.0 rendu avec succès (${provider})`);
             
         } catch (error) {
             console.error('[MinimalScan] ❌ Erreur rendu:', error);
@@ -723,7 +862,25 @@ class MinimalScanModule {
     renderMinimalScanner() {
         const providerInfo = this.getProviderInfo();
         const hasMarketing = this.taskPreselectedCategories.includes('marketing_news');
-        const scannerClass = hasMarketing ? 'marketing-enhanced' : '';
+        
+        // Classes CSS basées sur le provider et marketing
+        let scannerClass = '';
+        let buttonClass = 'scan-button-minimal';
+        let infoClass = 'scan-info';
+        
+        if (hasMarketing) {
+            scannerClass = 'marketing-enhanced';
+            buttonClass += ' marketing-enhanced';
+            infoClass += ' marketing-enhanced';
+        } else if (providerInfo.status === 'authenticated') {
+            if (this.currentProvider === 'google') {
+                buttonClass += ' google-optimized';
+                infoClass += ' google-ready';
+            } else if (this.currentProvider === 'microsoft') {
+                buttonClass += ' microsoft-ready';
+                infoClass += ' microsoft-ready';
+            }
+        }
         
         return `
             <div class="minimal-scanner">
@@ -736,16 +893,12 @@ class MinimalScanModule {
                     <p class="scanner-subtitle">
                         ${hasMarketing ? 
                             'Organisez vos emails avec détection marketing prioritaire - IA optimisée' :
-                            'Organisez vos emails automatiquement avec IA - Compatible Outlook & Gmail'
+                            `Organisez vos emails automatiquement avec IA - ${providerInfo.name} intégré`
                         }
                     </p>
                     
                     <div id="provider-info-display">
-                        <div class="provider-info" style="color: ${providerInfo.color};">
-                            <i class="${providerInfo.icon}"></i>
-                            <span>Connecté à ${providerInfo.name}</span>
-                            ${providerInfo.priority === 'high' ? '<span class="priority-badge">🚀 Optimisé</span>' : ''}
-                        </div>
+                        ${this.renderProviderInfo(providerInfo)}
                     </div>
                     
                     <div id="preselected-categories-display">
@@ -759,7 +912,7 @@ class MinimalScanModule {
                         </div>
                         <div class="step" id="step2">
                             <div class="step-number">2</div>
-                            <div class="step-label">${hasMarketing ? 'Scan 📰' : 'Analyse'}</div>
+                            <div class="step-label">${hasMarketing ? 'Scan 📰' : `Scan ${providerInfo.name.split(' ')[0]}`}</div>
                         </div>
                         <div class="step" id="step3">
                             <div class="step-number">3</div>
@@ -774,29 +927,63 @@ class MinimalScanModule {
                         </div>
                     </div>
                     
-                    <button class="scan-button-minimal ${scannerClass}" id="minimalScanBtn" onclick="window.minimalScanModule.startScan()">
+                    <button class="${buttonClass}" id="minimalScanBtn" onclick="window.minimalScanModule.startScan()">
                         <i class="fas fa-play"></i>
-                        <span>${hasMarketing ? 'Analyser avec détection marketing' : 'Démarrer l\'analyse intelligente'}</span>
+                        <span>${this.getScanButtonText(hasMarketing, providerInfo)}</span>
                     </button>
                     
                     <div class="progress-section-minimal" id="progressSection">
                         <div class="progress-bar-minimal">
-                            <div class="progress-fill ${hasMarketing ? 'marketing-mode' : ''}" id="progressFill"></div>
+                            <div class="progress-fill ${this.getProgressFillClass(hasMarketing, providerInfo)}" id="progressFill"></div>
                         </div>
                         <div class="progress-text" id="progressText">Initialisation...</div>
-                        <div class="progress-status" id="progressStatus">Préparation du scan ${hasMarketing ? 'marketing' : 'unifié'}</div>
+                        <div class="progress-status" id="progressStatus">Préparation du scan ${hasMarketing ? 'marketing' : providerInfo.name}</div>
                     </div>
                     
-                    <div class="scan-info ${scannerClass}">
+                    <div class="${infoClass}">
                         <div class="scan-info-main">
                             <i class="fas fa-shield-alt"></i>
-                            <span>Scan sécurisé et privé${hasMarketing ? ' - Marketing Priority' : ''} - Compatible Outlook & Gmail</span>
+                            <span>Scan sécurisé et privé${hasMarketing ? ' - Marketing Priority' : ''} - ${providerInfo.name} compatible</span>
                         </div>
                         ${this.renderScanInfoDetails()}
                     </div>
                 </div>
             </div>
         `;
+    }
+
+    renderProviderInfo(providerInfo) {
+        const priorityBadge = providerInfo.priority === 'high' ? 
+            '<span class="priority-badge">🚀 Optimisé</span>' : '';
+        
+        const statusColor = providerInfo.status === 'authenticated' ? 
+            providerInfo.color : '#6b7280';
+        
+        return `
+            <div class="provider-info" style="color: ${statusColor};">
+                <i class="${providerInfo.icon}"></i>
+                <span>${providerInfo.status === 'authenticated' ? 'Connecté à' : ''} ${providerInfo.name}</span>
+                ${priorityBadge}
+            </div>
+        `;
+    }
+
+    getScanButtonText(hasMarketing, providerInfo) {
+        if (hasMarketing) {
+            return 'Analyser avec détection marketing';
+        } else if (providerInfo.status === 'authenticated') {
+            return `Démarrer l'analyse ${providerInfo.name.split(' ')[0]}`;
+        } else {
+            return 'Démarrer l\'analyse intelligente';
+        }
+    }
+
+    getProgressFillClass(hasMarketing, providerInfo) {
+        if (hasMarketing) return 'marketing-mode';
+        if (providerInfo.status === 'authenticated') {
+            return `${this.currentProvider}-mode`;
+        }
+        return '';
     }
 
     renderPreselectedCategories() {
@@ -868,7 +1055,7 @@ class MinimalScanModule {
         let details = [];
         
         const providerInfo = this.getProviderInfo();
-        if (providerInfo.name !== 'Non connecté') {
+        if (providerInfo.status === 'authenticated') {
             details.push(`Provider: ${providerInfo.name}`);
         }
         
@@ -903,16 +1090,29 @@ class MinimalScanModule {
                     <h1 class="scanner-title">Connexion requise</h1>
                     <p class="scanner-subtitle">Connectez-vous à Gmail ou Outlook pour analyser vos emails</p>
                     
-                    <div style="display: flex; gap: 15px; justify-content: center; margin: 30px 0;">
-                        <button class="scan-button-minimal" style="width: auto; padding: 0 25px; background: linear-gradient(135deg, #ea4335 0%, #db4437 100%);" onclick="window.googleAuthService?.login()">
+                    <div class="connection-status disconnected">
+                        <i class="fas fa-unlink"></i>
+                        <span>Aucun service d'emails connecté</span>
+                    </div>
+                    
+                    <div class="connection-actions">
+                        <button class="provider-btn google" onclick="window.googleAuthService?.login()">
                             <i class="fab fa-google"></i>
-                            <span>Google Gmail</span>
+                            <span>Se connecter à Gmail</span>
                         </button>
                         
-                        <button class="scan-button-minimal" style="width: auto; padding: 0 25px;" onclick="window.authService?.login()">
+                        <button class="provider-btn microsoft" onclick="window.authService?.login()">
                             <i class="fab fa-microsoft"></i>
-                            <span>Microsoft Outlook</span>
+                            <span>Se connecter à Outlook</span>
                         </button>
+                    </div>
+                    
+                    <div class="scan-info">
+                        <div class="scan-info-main">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Sécurisé et privé - Vos données restent confidentielles</span>
+                        </div>
+                        <div class="scan-info-details">Compatible Gmail et Outlook • Analyse IA • Catégorisation automatique</div>
                     </div>
                 </div>
             </div>
@@ -950,26 +1150,16 @@ class MinimalScanModule {
             throw new Error('MailService requis pour le scan');
         }
         
+        // Vérifier EmailScanner
+        if (!window.emailScanner) {
+            console.warn('[MinimalScan] ⚠️ EmailScanner non disponible');
+            throw new Error('EmailScanner requis pour le scan');
+        }
+        
         // Vérifier CategoryManager avec priorité marketing
         if (!window.categoryManager) {
-            console.warn('[MinimalScan] ⚠️ CategoryManager non disponible, tentative d\'initialisation...');
-            
-            await new Promise(resolve => setTimeout(resolve, 200));
-            
-            if (!window.categoryManager && window.CategoryManager) {
-                console.log('[MinimalScan] 🔧 Création CategoryManager...');
-                try {
-                    window.categoryManager = new window.CategoryManager();
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                } catch (error) {
-                    console.error('[MinimalScan] Erreur création CategoryManager:', error);
-                }
-            }
-            
-            if (!window.categoryManager) {
-                console.error('[MinimalScan] ❌ CategoryManager toujours non disponible');
-                throw new Error('CategoryManager requis pour la catégorisation - Rechargez la page');
-            }
+            console.warn('[MinimalScan] ⚠️ CategoryManager non disponible');
+            throw new Error('CategoryManager requis pour la catégorisation');
         }
         
         // Vérifier que la détection marketing est disponible
@@ -994,7 +1184,7 @@ class MinimalScanModule {
         
         this.settingsCheckInterval = setInterval(() => {
             this.checkSettingsUpdate();
-        }, 5000); // Plus fréquent pour réactivité
+        }, 5000);
     }
 
     selectDuration(days) {
@@ -1068,7 +1258,7 @@ class MinimalScanModule {
             includeSpam: !this.settings.preferences?.excludeSpam,
             detectCC: this.settings.preferences?.detectCC !== false,
             provider: provider,
-            marketingPriority: hasMarketing, // NOUVEAU: indiquer la priorité marketing
+            marketingPriority: hasMarketing,
             onProgress: (progress) => this.updateProgress(
                 progress.progress?.current || 0, 
                 progress.message || '', 
@@ -1104,34 +1294,7 @@ class MinimalScanModule {
                 }
                 
             } else {
-                console.log(`[MinimalScan] 🎭 Mode simulation ${scanOptions.marketingPriority ? 'marketing' : 'unifié'} (${scanOptions.provider})`);
-                
-                // Simulation adaptée au provider et marketing
-                const simulationSteps = scanOptions.marketingPriority ? 
-                    ['Connexion Gmail...', 'Détection newsletters...', 'Classification marketing...', 'Analyse finale...'] :
-                    ['Connexion...', 'Récupération...', 'Classification...', 'Finalisation...'];
-                
-                for (let i = 0; i <= 100; i += 25) {
-                    const stepIndex = Math.floor(i / 25);
-                    const message = simulationSteps[stepIndex] || `Analyse ${i}% (${scanOptions.provider})`;
-                    
-                    this.updateProgress(i, message, `Simulation ${scanOptions.provider} en cours`);
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                }
-                
-                this.scanResults = {
-                    success: true,
-                    total: 180,
-                    categorized: 165,
-                    provider: scanOptions.provider,
-                    taskPreselectedCategories: [...this.taskPreselectedCategories],
-                    stats: { 
-                        preselectedForTasks: this.taskPreselectedCategories.length > 0 ? 32 : 0,
-                        taskSuggestions: 28,
-                        marketingDetected: scanOptions.marketingPriority ? 85 : 45
-                    },
-                    marketingPriority: scanOptions.marketingPriority
-                };
+                throw new Error('EmailScanner non disponible ou méthode scan manquante');
             }
         } catch (error) {
             console.error(`[MinimalScan] ❌ Erreur scan (${scanOptions.provider}):`, error);
@@ -1172,22 +1335,22 @@ class MinimalScanModule {
                 
                 let buttonText = `Scan ${provider} terminé !`;
                 let badgeContent = '';
+                let badgeClass = 'success-badge';
                 
                 if (hasMarketing && marketingCount > 0) {
                     buttonText = `📰 Scan marketing terminé !`;
                     badgeContent = `📰 ${marketingCount} newsletters`;
+                    badgeClass += ' marketing';
                 } else if (preselectedCount > 0) {
                     badgeContent = `⭐ ${preselectedCount} emails pour tâches`;
+                    badgeClass += ` ${provider}`;
                 }
                 
                 scanBtn.innerHTML = `<i class="fas fa-check"></i> <span>${buttonText}</span>`;
-                scanBtn.style.background = hasMarketing ? 
-                    'linear-gradient(135deg, #10b981 0%, #059669 100%)' :
-                    'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                scanBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                 
                 if (badgeContent) {
                     scanBtn.style.position = 'relative';
-                    const badgeClass = hasMarketing && marketingCount > 0 ? 'success-badge marketing' : 'success-badge';
                     scanBtn.insertAdjacentHTML('beforeend', `
                         <span class="${badgeClass}">
                             ${badgeContent}
@@ -1280,20 +1443,15 @@ class MinimalScanModule {
         
         const scanBtn = document.getElementById('minimalScanBtn');
         if (scanBtn) {
+            const providerInfo = this.getProviderInfo();
             const hasMarketing = this.taskPreselectedCategories.includes('marketing_news');
             
             scanBtn.disabled = false;
-            scanBtn.innerHTML = hasMarketing ? 
-                '<i class="fas fa-play"></i> <span>Analyser avec détection marketing</span>' :
-                '<i class="fas fa-play"></i> <span>Démarrer l\'analyse intelligente</span>';
+            scanBtn.innerHTML = `<i class="fas fa-play"></i> <span>${this.getScanButtonText(hasMarketing, providerInfo)}</span>`;
             
-            scanBtn.style.background = hasMarketing ?
-                'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)' :
-                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-            
-            scanBtn.className = hasMarketing ? 
-                'scan-button-minimal marketing-enhanced' :
-                'scan-button-minimal';
+            // Restaurer le style approprié
+            const buttonClass = this.getButtonClassForProvider(hasMarketing, providerInfo);
+            scanBtn.className = buttonClass;
             
             const badge = scanBtn.querySelector('.success-badge');
             if (badge) badge.remove();
@@ -1306,6 +1464,22 @@ class MinimalScanModule {
         this.updateProviderInfo();
         
         console.log('[MinimalScan] 🔄 Scanner unifié réinitialisé');
+    }
+
+    getButtonClassForProvider(hasMarketing, providerInfo) {
+        let className = 'scan-button-minimal';
+        
+        if (hasMarketing) {
+            className += ' marketing-enhanced';
+        } else if (providerInfo.status === 'authenticated') {
+            if (this.currentProvider === 'google') {
+                className += ' google-optimized';
+            } else if (this.currentProvider === 'microsoft') {
+                className += ' microsoft-ready';
+            }
+        }
+        
+        return className;
     }
 
     updateSettings(newSettings) {
@@ -1339,8 +1513,15 @@ class MinimalScanModule {
             settings: this.settings,
             lastSettingsSync: this.lastSettingsSync,
             scanResults: this.scanResults,
-            version: '11.0',
-            marketingEnhanced: true
+            version: '12.0',
+            integrationComplete: true,
+            servicesAvailable: {
+                mailService: !!window.mailService,
+                emailScanner: !!window.emailScanner,
+                categoryManager: !!window.categoryManager,
+                googleAuth: !!(window.googleAuthService?.isAuthenticated?.()),
+                microsoftAuth: !!(window.authService?.isAuthenticated?.())
+            }
         };
     }
 
@@ -1353,7 +1534,7 @@ class MinimalScanModule {
         this.scanInProgress = false;
         this.isInitialized = false;
         
-        console.log('[MinimalScan] 🧹 Nettoyage marketing enhanced terminé');
+        console.log('[MinimalScan] 🧹 Nettoyage intégration complète terminé');
     }
 
     destroy() {
@@ -1361,7 +1542,7 @@ class MinimalScanModule {
         this.settings = {};
         this.taskPreselectedCategories = [];
         this.currentProvider = null;
-        console.log('[MinimalScan] Instance marketing enhanced détruite');
+        console.log('[MinimalScan] Instance intégration complète détruite');
     }
 }
 
@@ -1380,7 +1561,7 @@ window.MinimalScanModule = MinimalScanModule;
 try {
     window.minimalScanModule = new MinimalScanModule();
     window.scanStartModule = window.minimalScanModule;
-    console.log('[StartScan] ✅ Scanner v11.0 créé avec succès - Marketing detection enhanced');
+    console.log('[StartScan] ✅ Scanner v12.0 créé avec succès - Intégration complète Gmail/Outlook');
 } catch (error) {
     console.error('[StartScan] ❌ Erreur création instance:', error);
     
@@ -1404,7 +1585,7 @@ try {
                             <i class="fas fa-exclamation-triangle"></i>
                         </div>
                         <h1 class="scanner-title">Erreur d'initialisation</h1>
-                        <p class="scanner-subtitle">Le scanner marketing n'a pas pu s'initialiser correctement</p>
+                        <p class="scanner-subtitle">Le scanner n'a pas pu s'initialiser correctement</p>
                         <button class="scan-button-minimal" onclick="window.location.reload()">
                             <i class="fas fa-redo"></i>
                             <span>Recharger la page</span>
@@ -1422,7 +1603,7 @@ try {
                 error: 'Scanner de secours créé suite à: ' + error.message,
                 isInitialized: false,
                 available: false,
-                marketingEnhanced: false
+                integrationComplete: false
             };
         },
         
@@ -1433,4 +1614,4 @@ try {
     console.log('[StartScan] 🔧 Instance de secours créée');
 }
 
-console.log('[StartScan] ✅ Scanner v11.0 chargé - Marketing detection enhanced!');
+console.log('[StartScan] ✅ Scanner v12.0 chargé - Intégration complète Gmail/Outlook fonctionnelle!');
