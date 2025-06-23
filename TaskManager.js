@@ -900,12 +900,6 @@ class TasksView {
                                 Actualiser
                             </button>
                             
-                            <!-- Nouvelle (bouton standard) -->
-                            <button class="btn-action btn-new" onclick="window.tasksView.showCreateModal()" title="Nouvelle tâche">
-                                <i class="fas fa-plus"></i>
-                                Nouvelle
-                            </button>
-                            
                             <!-- Nouvelle tâche (bouton proéminent) -->
                             <button class="btn-new-task" onclick="window.tasksView.showCreateModal()" title="Créer une nouvelle tâche">
                                 <i class="fas fa-plus"></i>
@@ -1613,6 +1607,17 @@ class TasksView {
         this.refreshView();
     }
 
+    updateCurrentDate() {
+        const dateDisplay = document.getElementById('currentDateDisplay');
+        if (dateDisplay) {
+            dateDisplay.textContent = new Date().toLocaleDateString('fr-FR', { 
+                weekday: 'short', 
+                day: 'numeric', 
+                month: 'short' 
+            });
+        }
+    }
+
     resetAllFilters() {
         this.currentFilters = {
             status: 'all',
@@ -1753,15 +1758,18 @@ class TasksView {
         
         // Mettre à jour l'état des panneaux de filtres
         this.updateFilterPanels();
+        
+        // Mettre à jour la date affichée
+        this.updateCurrentDate();
     }
 
     updateSelectionUI() {
         const selectedCount = this.selectedTasks.size;
-        const mainActionsDiv = document.querySelector('.main-actions');
+        const allActionsDiv = document.querySelector('.all-actions-line');
         
-        if (mainActionsDiv) {
+        if (allActionsDiv) {
             // Rechercher le panneau de sélection existant
-            const existingPanel = mainActionsDiv.querySelector('.selection-panel');
+            const existingPanel = allActionsDiv.querySelector('.selection-panel');
             
             if (selectedCount > 0) {
                 const selectionHTML = `
@@ -1780,7 +1788,7 @@ class TasksView {
                 if (existingPanel) {
                     existingPanel.outerHTML = selectionHTML;
                 } else {
-                    mainActionsDiv.insertAdjacentHTML('afterbegin', selectionHTML);
+                    allActionsDiv.insertAdjacentHTML('afterbegin', selectionHTML);
                 }
             } else {
                 if (existingPanel) {
@@ -3113,14 +3121,6 @@ class TasksView {
                 transform: scale(1.1);
             }
 
-            .main-actions {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                flex-wrap: wrap;
-                flex: 1;
-            }
-
             /* CORRECTION : Style pour la ligne d'actions horizontale */
             .all-actions-line .selection-panel,
             .all-actions-line .btn-action,
@@ -3172,14 +3172,26 @@ class TasksView {
                 box-shadow: var(--shadow-md);
             }
 
-            .btn-action.btn-new {
-                background: linear-gradient(135deg, var(--primary-color) 0%, #6366f1 100%);
+            .btn-action.btn-bulk {
+                background: var(--success-color);
                 color: white;
                 border-color: transparent;
             }
 
-            .btn-action.btn-new:hover {
-                background: linear-gradient(135deg, var(--primary-hover) 0%, #5856eb 100%);
+            .btn-action.btn-bulk:hover {
+                background: #059669;
+            }
+
+            .btn-action.btn-clear {
+                width: 44px;
+                padding: 0;
+                background: var(--bg-secondary);
+                color: var(--text-secondary);
+            }
+
+            .btn-action.btn-clear:hover {
+                background: var(--danger-color);
+                color: white;
             }
 
             .btn-new-task {
@@ -3227,28 +3239,6 @@ class TasksView {
             .current-date i {
                 color: var(--primary-color);
                 font-size: 14px;
-            }
-
-            .btn-action.btn-bulk {
-                background: var(--success-color);
-                color: white;
-                border-color: transparent;
-            }
-
-            .btn-action.btn-bulk:hover {
-                background: #059669;
-            }
-
-            .btn-action.btn-clear {
-                width: 44px;
-                padding: 0;
-                background: var(--bg-secondary);
-                color: var(--text-secondary);
-            }
-
-            .btn-action.btn-clear:hover {
-                background: var(--danger-color);
-                color: white;
             }
 
             .count-badge {
