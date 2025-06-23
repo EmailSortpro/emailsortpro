@@ -811,7 +811,11 @@ class TasksView {
         this.selectedTasks = new Set();
         this.currentViewMode = 'normal'; // normal, minimal, detailed
         this.showCompleted = false;
-        this.showAdvancedFilters = false; // NOUVEAU: Filtres fixés par défaut
+        
+        // NOUVEAU: État des filtres conditionnels
+        this.showStatusFilters = false;
+        this.showCategoryFilters = false;
+        this.showAdvancedFilters = false;
         
         window.addEventListener('taskUpdate', () => {
             this.refreshView();
@@ -903,8 +907,8 @@ class TasksView {
                         </div>
                     </div>
                     
-                    <!-- Ligne 2 : Modes de vue + Tri -->
-                    <div class="view-and-sort-line">
+                    <!-- Ligne 2 : Modes de vue + Nouvelle tâche + Filtres -->
+                    <div class="view-and-controls-line">
                         <!-- Modes de vue -->
                         <div class="view-modes">
                             <button class="view-mode ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
@@ -924,55 +928,107 @@ class TasksView {
                             </button>
                         </div>
                         
-                        <!-- Tri rapide -->
-                        <div class="sort-quick">
-                            <label class="sort-label">
-                                <i class="fas fa-sort"></i> Trier :
-                            </label>
-                            <select class="sort-select" id="quickSortSelect" 
-                                    onchange="window.tasksView.updateFilter('sortBy', this.value)">
-                                <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
-                                <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
-                                <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
-                                <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
-                                <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
-                            </select>
+                        <!-- Boutons de filtres groupés -->
+                        <div class="filter-toggles">
+                            <button class="filter-toggle ${this.showStatusFilters ? 'active' : ''}" 
+                                    onclick="window.tasksView.toggleStatusFilters()"
+                                    title="Afficher/Masquer filtres statuts">
+                                <i class="fas fa-tasks"></i>
+                                Statuts
+                                <i class="fas fa-chevron-${this.showStatusFilters ? 'up' : 'down'}"></i>
+                            </button>
+                            
+                            <button class="filter-toggle ${this.showCategoryFilters ? 'active' : ''}" 
+                                    onclick="window.tasksView.toggleCategoryFilters()"
+                                    title="Afficher/Masquer filtres catégories">
+                                <i class="fas fa-folder"></i>
+                                Catégories
+                                <i class="fas fa-chevron-${this.showCategoryFilters ? 'up' : 'down'}"></i>
+                            </button>
+                            
+                            <button class="filter-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
+                                    onclick="window.tasksView.toggleAdvancedFilters()"
+                                    title="Afficher/Masquer filtres avancés">
+                                <i class="fas fa-filter"></i>
+                                Filtres
+                                <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Nouvelle tâche + Tri -->
+                        <div class="new-and-sort">
+                            <button class="btn-new-task" onclick="window.tasksView.showCreateModal()" title="Créer une nouvelle tâche">
+                                <i class="fas fa-plus"></i>
+                                Nouvelle tâche
+                            </button>
+                            
+                            <div class="sort-quick">
+                                <label class="sort-label">
+                                    <i class="fas fa-sort"></i> Trier :
+                                </label>
+                                <select class="sort-select" id="quickSortSelect" 
+                                        onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                                    <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
+                                    <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                                    <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
+                                    <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
+                                    <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- SECTION FILTRES FIXÉS -->
-                <div class="filters-fixed-section">
-                    <!-- Ligne 1 : Filtres de statut -->
-                    <div class="status-filters-line">
-                        <div class="filter-group-title">
-                            <i class="fas fa-tasks"></i>
-                            <span>Statuts</span>
+                <!-- SECTION FILTRES CONDITIONNELS -->
+                <div class="filters-conditional-section">
+                    <!-- Filtres de statut (conditionnels) -->
+                    <div class="status-filters-panel ${this.showStatusFilters ? 'show' : ''}" id="statusFiltersPanel">
+                        <div class="filter-section-header">
+                            <div class="filter-group-title">
+                                <i class="fas fa-tasks"></i>
+                                <span>Filtres par Statut</span>
+                            </div>
+                            <button class="btn-reset-section" onclick="window.tasksView.resetStatusFilters()" title="Réinitialiser filtres statuts">
+                                <i class="fas fa-undo"></i>
+                            </button>
                         </div>
                         <div class="status-filters">
                             ${this.buildStatusPills(stats)}
                         </div>
                     </div>
                     
-                    <!-- Ligne 2 : Filtres de catégories -->
-                    <div class="category-filters-line">
-                        <div class="filter-group-title">
-                            <i class="fas fa-folder"></i>
-                            <span>Catégories</span>
+                    <!-- Filtres de catégories (conditionnels) -->
+                    <div class="category-filters-panel ${this.showCategoryFilters ? 'show' : ''}" id="categoryFiltersPanel">
+                        <div class="filter-section-header">
+                            <div class="filter-group-title">
+                                <i class="fas fa-folder"></i>
+                                <span>Filtres par Catégorie</span>
+                            </div>
+                            <button class="btn-reset-section" onclick="window.tasksView.resetCategoryFilters()" title="Réinitialiser filtres catégories">
+                                <i class="fas fa-undo"></i>
+                            </button>
                         </div>
                         <div class="category-filters">
                             ${this.buildCategoryPills(stats)}
                         </div>
                     </div>
                     
-                    <!-- Ligne 3 : Filtres supplémentaires -->
-                    <div class="additional-filters-line">
-                        <div class="filter-group-title">
-                            <i class="fas fa-filter"></i>
-                            <span>Filtres</span>
+                    <!-- Filtres supplémentaires (conditionnels) -->
+                    <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
+                        <div class="filter-section-header">
+                            <div class="filter-group-title">
+                                <i class="fas fa-filter"></i>
+                                <span>Filtres Avancés</span>
+                            </div>
+                            <button class="btn-reset-section" onclick="window.tasksView.resetAdvancedFilters()" title="Réinitialiser filtres avancés">
+                                <i class="fas fa-undo"></i>
+                            </button>
                         </div>
-                        <div class="additional-filters">
+                        <div class="advanced-filters-grid">
                             <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="fas fa-flag"></i> Priorité
+                                </label>
                                 <select class="filter-select" id="priorityFilter" 
                                         onchange="window.tasksView.updateFilter('priority', this.value)">
                                     <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>🏳️ Toutes priorités</option>
@@ -984,6 +1040,9 @@ class TasksView {
                             </div>
 
                             <div class="filter-group">
+                                <label class="filter-label">
+                                    <i class="fas fa-building"></i> Client
+                                </label>
                                 <select class="filter-select" id="clientFilter" 
                                         onchange="window.tasksView.updateFilter('client', this.value)">
                                     ${this.buildClientFilterOptions()}
@@ -993,7 +1052,7 @@ class TasksView {
                             <div class="filter-actions">
                                 <button class="btn-reset" onclick="window.tasksView.resetAllFilters()" title="Réinitialiser tous les filtres">
                                     <i class="fas fa-undo"></i>
-                                    Reset
+                                    Reset Global
                                 </button>
                             </div>
                         </div>
@@ -1564,7 +1623,95 @@ class TasksView {
         });
         
         this.refreshView();
-        this.showToast('Filtres réinitialisés', 'info');
+        this.showToast('Tous les filtres réinitialisés', 'info');
+    }
+
+    // NOUVELLES MÉTHODES: Gestion des filtres conditionnels
+    toggleStatusFilters() {
+        this.showStatusFilters = !this.showStatusFilters;
+        this.updateFilterPanels();
+    }
+
+    toggleCategoryFilters() {
+        this.showCategoryFilters = !this.showCategoryFilters;
+        this.updateFilterPanels();
+    }
+
+    toggleAdvancedFilters() {
+        this.showAdvancedFilters = !this.showAdvancedFilters;
+        this.updateFilterPanels();
+    }
+
+    updateFilterPanels() {
+        const statusPanel = document.getElementById('statusFiltersPanel');
+        const categoryPanel = document.getElementById('categoryFiltersPanel');
+        const advancedPanel = document.getElementById('advancedFiltersPanel');
+        
+        if (statusPanel) {
+            statusPanel.classList.toggle('show', this.showStatusFilters);
+        }
+        
+        if (categoryPanel) {
+            categoryPanel.classList.toggle('show', this.showCategoryFilters);
+        }
+        
+        if (advancedPanel) {
+            advancedPanel.classList.toggle('show', this.showAdvancedFilters);
+        }
+        
+        // Mettre à jour les boutons toggle
+        document.querySelectorAll('.filter-toggle').forEach(btn => {
+            const chevron = btn.querySelector('.fa-chevron-down, .fa-chevron-up');
+            if (btn.onclick.toString().includes('toggleStatusFilters')) {
+                btn.classList.toggle('active', this.showStatusFilters);
+                if (chevron) {
+                    chevron.classList.toggle('fa-chevron-down', !this.showStatusFilters);
+                    chevron.classList.toggle('fa-chevron-up', this.showStatusFilters);
+                }
+            } else if (btn.onclick.toString().includes('toggleCategoryFilters')) {
+                btn.classList.toggle('active', this.showCategoryFilters);
+                if (chevron) {
+                    chevron.classList.toggle('fa-chevron-down', !this.showCategoryFilters);
+                    chevron.classList.toggle('fa-chevron-up', this.showCategoryFilters);
+                }
+            } else if (btn.onclick.toString().includes('toggleAdvancedFilters')) {
+                btn.classList.toggle('active', this.showAdvancedFilters);
+                if (chevron) {
+                    chevron.classList.toggle('fa-chevron-down', !this.showAdvancedFilters);
+                    chevron.classList.toggle('fa-chevron-up', this.showAdvancedFilters);
+                }
+            }
+        });
+    }
+
+    // NOUVELLES MÉTHODES: Reset spécifiques
+    resetStatusFilters() {
+        this.currentFilters.status = 'all';
+        this.currentFilters.overdue = false;
+        this.currentFilters.needsReply = false;
+        this.refreshView();
+        this.showToast('Filtres statuts réinitialisés', 'info');
+    }
+
+    resetCategoryFilters() {
+        this.currentFilters.category = 'all';
+        this.refreshView();
+        this.showToast('Filtres catégories réinitialisés', 'info');
+    }
+
+    resetAdvancedFilters() {
+        this.currentFilters.priority = 'all';
+        this.currentFilters.client = 'all';
+        
+        // Mettre à jour les selects
+        const priorityFilter = document.getElementById('priorityFilter');
+        const clientFilter = document.getElementById('clientFilter');
+        
+        if (priorityFilter) priorityFilter.value = 'all';
+        if (clientFilter) clientFilter.value = 'all';
+        
+        this.refreshView();
+        this.showToast('Filtres avancés réinitialisés', 'info');
     }
 
     refreshView() {
@@ -1591,6 +1738,9 @@ class TasksView {
         
         // Mettre à jour l'affichage des actions de sélection
         this.updateSelectionUI();
+        
+        // Mettre à jour l'état des panneaux de filtres
+        this.updateFilterPanels();
     }
 
     updateSelectionUI() {
@@ -3037,13 +3187,14 @@ class TasksView {
                 border: 2px solid white;
             }
 
-            /* Ligne 2 : Modes de vue + Tri */
-            .view-and-sort-line {
+            /* Ligne 2 : Modes de vue + Filtres + Nouvelle + Tri */
+            .view-and-controls-line {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 gap: 20px;
                 width: 100%;
+                flex-wrap: wrap;
             }
 
             .view-modes {
@@ -3078,6 +3229,87 @@ class TasksView {
                 background: white;
                 color: var(--text-primary);
                 box-shadow: var(--shadow-sm);
+            }
+
+            /* Boutons de filtres groupés */
+            .filter-toggles {
+                display: flex;
+                gap: 8px;
+                flex-shrink: 0;
+            }
+
+            .filter-toggle {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 12px;
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                cursor: pointer;
+                transition: var(--transition);
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--text-primary);
+                white-space: nowrap;
+            }
+
+            .filter-toggle:hover {
+                border-color: var(--primary-color);
+                background: #f0f9ff;
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-sm);
+            }
+
+            .filter-toggle.active {
+                background: linear-gradient(135deg, var(--primary-color) 0%, #6366f1 100%);
+                color: white;
+                border-color: var(--primary-color);
+                box-shadow: var(--shadow-md);
+            }
+
+            .filter-toggle i:first-child {
+                font-size: 14px;
+            }
+
+            .filter-toggle i:last-child {
+                font-size: 10px;
+                margin-left: 4px;
+            }
+
+            /* Nouvelle tâche + Tri */
+            .new-and-sort {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                flex-shrink: 0;
+            }
+
+            .btn-new-task {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 20px;
+                background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: var(--transition);
+                box-shadow: var(--shadow-sm);
+                white-space: nowrap;
+            }
+
+            .btn-new-task:hover {
+                background: linear-gradient(135deg, #059669 0%, #047857 100%);
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+            }
+
+            .btn-new-task i {
+                font-size: 16px;
             }
 
             .sort-quick {
@@ -3117,27 +3349,46 @@ class TasksView {
             }
 
             /* ================================================ */
-            /* SECTION FILTRES FIXÉS */
+            /* SECTION FILTRES CONDITIONNELS */
             /* ================================================ */
-            .filters-fixed-section {
+            .filters-conditional-section {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+                margin-bottom: 16px;
+            }
+
+            .status-filters-panel,
+            .category-filters-panel,
+            .advanced-filters-panel {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 16px;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
+                max-height: 0;
+                overflow: hidden;
+                transition: all 0.3s ease;
+                opacity: 0;
+                margin-bottom: 0;
             }
 
-            .status-filters-line,
-            .category-filters-line,
-            .additional-filters-line {
+            .status-filters-panel.show,
+            .category-filters-panel.show,
+            .advanced-filters-panel.show {
+                max-height: 200px;
+                opacity: 1;
+                padding: 20px;
+                margin-bottom: 12px;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            }
+
+            .filter-section-header {
                 display: flex;
+                justify-content: space-between;
                 align-items: center;
-                gap: 16px;
+                margin-bottom: 16px;
+                padding-bottom: 12px;
+                border-bottom: 1px solid var(--border-color);
             }
 
             .filter-group-title {
@@ -3147,13 +3398,116 @@ class TasksView {
                 font-weight: 700;
                 color: var(--text-primary);
                 font-size: 14px;
-                min-width: 100px;
-                flex-shrink: 0;
             }
 
             .filter-group-title i {
                 font-size: 16px;
                 color: var(--primary-color);
+            }
+
+            .btn-reset-section {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                padding: 6px 12px;
+                background: var(--bg-secondary);
+                color: var(--text-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: var(--transition);
+            }
+
+            .btn-reset-section:hover {
+                background: var(--border-color);
+                color: var(--text-primary);
+                transform: translateY(-1px);
+            }
+
+            /* Filtres de statut dans panel conditionnel */
+            .status-filters-panel .status-filters {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            /* Filtres de catégories dans panel conditionnel */
+            .category-filters-panel .category-filters {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            /* Filtres avancés dans panel conditionnel */
+            .advanced-filters-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+                align-items: end;
+            }
+
+            .filter-group {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .filter-label {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-weight: 600;
+                font-size: 12px;
+                color: var(--text-primary);
+            }
+
+            .filter-select {
+                height: 36px;
+                padding: 0 12px;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                background: white;
+                font-size: 12px;
+                color: var(--text-primary);
+                cursor: pointer;
+                transition: var(--transition);
+                min-width: 160px;
+            }
+
+            .filter-select:focus {
+                outline: none;
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+            }
+
+            .filter-actions {
+                display: flex;
+                align-items: end;
+            }
+
+            .btn-reset {
+                height: 36px;
+                padding: 0 12px;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                background: var(--bg-secondary);
+                color: var(--text-secondary);
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: var(--transition);
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                white-space: nowrap;
+            }
+
+            .btn-reset:hover {
+                background: var(--border-color);
+                color: var(--text-primary);
+                transform: translateY(-1px);
             }
 
             /* Filtres de statut */
@@ -3269,67 +3623,6 @@ class TasksView {
             .category-pill.active .pill-count {
                 background: rgba(255, 255, 255, 0.3);
                 color: white;
-            }
-
-            /* Filtres supplémentaires */
-            .additional-filters {
-                display: flex;
-                gap: 16px;
-                flex: 1;
-                flex-wrap: wrap;
-                align-items: center;
-            }
-
-            .filter-group {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-
-            .filter-select {
-                height: 36px;
-                padding: 0 12px;
-                border: 1px solid var(--border-color);
-                border-radius: 6px;
-                background: white;
-                font-size: 12px;
-                color: var(--text-primary);
-                cursor: pointer;
-                transition: var(--transition);
-                min-width: 160px;
-            }
-
-            .filter-select:focus {
-                outline: none;
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-            }
-
-            .filter-actions {
-                display: flex;
-                align-items: end;
-            }
-
-            .btn-reset {
-                height: 36px;
-                padding: 0 12px;
-                border: 1px solid var(--border-color);
-                border-radius: 6px;
-                background: var(--bg-secondary);
-                color: var(--text-secondary);
-                font-size: 12px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: var(--transition);
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-
-            .btn-reset:hover {
-                background: var(--border-color);
-                color: var(--text-primary);
-                transform: translateY(-1px);
             }
 
             /* ================================================ */
@@ -4332,7 +4625,7 @@ class TasksView {
                     width: 100%;
                 }
 
-                .view-and-sort-line {
+                .view-and-controls-line {
                     flex-direction: column;
                     gap: 12px;
                     align-items: stretch;
@@ -4342,36 +4635,12 @@ class TasksView {
                     align-self: center;
                 }
 
-                .sort-quick {
+                .filter-toggles {
                     justify-content: center;
                 }
 
-                .status-filters-line,
-                .category-filters-line,
-                .additional-filters-line {
-                    flex-direction: column;
-                    gap: 8px;
-                    align-items: stretch;
-                }
-
-                .filter-group-title {
-                    min-width: auto;
-                    text-align: center;
-                }
-
-                .status-filters,
-                .category-filters {
+                .new-and-sort {
                     justify-content: center;
-                }
-
-                .additional-filters {
-                    flex-direction: column;
-                    align-items: stretch;
-                    gap: 8px;
-                }
-
-                .filter-select {
-                    min-width: auto;
                 }
 
                 .tasks-detailed-grid {
@@ -4381,8 +4650,46 @@ class TasksView {
 
             @media (max-width: 768px) {
                 .main-controls-section,
-                .filters-fixed-section {
+                .filters-conditional-section {
                     padding: 16px;
+                }
+
+                .view-and-controls-line {
+                    gap: 8px;
+                }
+
+                .filter-toggles {
+                    flex-direction: column;
+                    width: 100%;
+                }
+
+                .filter-toggle {
+                    justify-content: center;
+                }
+
+                .new-and-sort {
+                    flex-direction: column;
+                    gap: 8px;
+                    width: 100%;
+                }
+
+                .btn-new-task {
+                    width: 100%;
+                    justify-content: center;
+                }
+
+                .sort-quick {
+                    justify-content: center;
+                    width: 100%;
+                }
+
+                .sort-select {
+                    min-width: auto;
+                    flex: 1;
+                }
+
+                .advanced-filters-grid {
+                    grid-template-columns: 1fr;
                 }
 
                 .task-content-line {
@@ -4440,10 +4747,77 @@ class TasksView {
                     padding: 8px;
                 }
 
-                .main-controls-section,
-                .filters-fixed-section {
+                .main-controls-section {
                     padding: 12px;
                     gap: 12px;
+                }
+
+                .status-filters-panel.show,
+                .category-filters-panel.show,
+                .advanced-filters-panel.show {
+                    padding: 12px;
+                }
+
+                .btn-action {
+                    height: 40px;
+                    font-size: 12px;
+                    padding: 0 12px;
+                }
+
+                .task-content-line {
+                    padding: 8px;
+                    gap: 8px;
+                }
+
+                .task-actions {
+                    flex-direction: column;
+                    gap: 2px;
+                }
+
+                .action-btn {
+                    width: 28px;
+                    height: 28px;
+                    font-size: 11px;
+                }
+            }
+
+                .main-actions {
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
+                .selection-panel {
+                    justify-content: center;
+                }
+
+                .status-filters,
+                .category-filters {
+                    flex-direction: column;
+                    gap: 6px;
+                }
+
+                .status-pill,
+                .category-pill {
+                    min-width: auto;
+                    width: 100%;
+                    justify-content: space-between;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .tasks-page-v12 {
+                    padding: 8px;
+                }
+
+                .main-controls-section {
+                    padding: 12px;
+                    gap: 12px;
+                }
+
+                .status-filters-panel.show,
+                .category-filters-panel.show,
+                .advanced-filters-panel.show {
+                    padding: 12px;
                 }
 
                 .btn-action {
@@ -4479,7 +4853,7 @@ class TasksView {
 // =====================================
 
 function initializeTaskManagerV12() {
-    console.log('[TaskManager] Initializing v12.0 - Interface réorganisée...');
+    console.log('[TaskManager] Initializing v12.0 - Interface avec boutons filtres...');
     
     if (!window.taskManager || !window.taskManager.initialized) {
         window.taskManager = new TaskManager();
@@ -4502,7 +4876,7 @@ function initializeTaskManagerV12() {
         }
     });
     
-    console.log('✅ TaskManager v12.0 loaded - Interface réorganisée avec filtres fixés');
+    console.log('✅ TaskManager v12.0 loaded - Interface avec boutons filtres conditionnels');
 }
 
 // Initialisation immédiate ET sur DOMContentLoaded
