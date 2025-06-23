@@ -1,4 +1,4 @@
-// GoogleAuthService.js - Service Google UNIFIÉ pour EmailSortPro v5.0
+// GoogleAuthService.js - Service Google UNIFIÉ pour EmailSortPro v6.0
 // Compatible avec MailService unifié - Structure identique à AuthService Microsoft
 
 class GoogleAuthService {
@@ -25,7 +25,7 @@ class GoogleAuthService {
             accessType: 'online'
         };
         
-        console.log('[GoogleAuthService] Constructor v5.0 - Structure unifiée Outlook/Gmail');
+        console.log('[GoogleAuthService] Constructor v6.0 - Structure unifiée Outlook/Gmail');
         this.verifyDomain();
     }
 
@@ -243,6 +243,18 @@ class GoogleAuthService {
         this.profileCache = userInfo;
         this.profileCacheTime = Date.now();
         
+        // Sauvegarder pour compatibilité avec les autres services
+        try {
+            localStorage.setItem('currentUserInfo', JSON.stringify({
+                email: userInfo.email,
+                name: userInfo.name,
+                userPrincipalName: userInfo.email,
+                provider: 'google'
+            }));
+        } catch (error) {
+            console.warn('[GoogleAuthService] Erreur sauvegarde userInfo:', error);
+        }
+        
         console.log('[GoogleAuthService] ✅ Infos utilisateur Gmail chargées:', userInfo.email);
         
         return userInfo;
@@ -349,6 +361,7 @@ class GoogleAuthService {
             this.profileCacheTime = 0;
             
             localStorage.removeItem('google_token_emailsortpro');
+            localStorage.removeItem('currentUserInfo');
             sessionStorage.removeItem('google_oauth_state');
             
             // Révoquer token
@@ -386,6 +399,7 @@ class GoogleAuthService {
         
         try {
             localStorage.removeItem('google_token_emailsortpro');
+            localStorage.removeItem('currentUserInfo');
             sessionStorage.removeItem('google_oauth_state');
             
             // Nettoyer autres clés Google
@@ -467,7 +481,8 @@ class GoogleAuthService {
                 isValid: this.isTokenValid(cachedToken),
                 expiresAt: cachedToken.expires_at ? new Date(cachedToken.expires_at).toISOString() : null,
                 provider: cachedToken.provider
-            } : null
+            } : null,
+            version: '6.0'
         };
     }
 }
@@ -475,7 +490,7 @@ class GoogleAuthService {
 // Créer l'instance globale
 try {
     window.googleAuthService = new GoogleAuthService();
-    console.log('[GoogleAuthService] ✅ Instance Gmail unifiée créée v5.0');
+    console.log('[GoogleAuthService] ✅ Instance Gmail unifiée créée v6.0');
 } catch (error) {
     console.error('[GoogleAuthService] ❌ Erreur création instance:', error);
     
@@ -490,9 +505,10 @@ try {
         getDiagnosticInfo: () => ({ 
             error: 'GoogleAuthService indisponible: ' + error.message,
             provider: 'google',
-            expectedDomain: 'emailsortpro.netlify.app'
+            expectedDomain: 'emailsortpro.netlify.app',
+            version: '6.0'
         })
     };
 }
 
-console.log('✅ GoogleAuthService v5.0 - Structure unifiée Outlook/Gmail compatible');
+console.log('✅ GoogleAuthService v6.0 - Structure unifiée Outlook/Gmail compatible complète');
