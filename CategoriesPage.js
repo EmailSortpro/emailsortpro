@@ -213,7 +213,7 @@ class SettingsPageVisual {
                             <i class="fas fa-magic"></i>
                         </div>
                         <div class="panel-content">
-                            <h3>Protection automatique activée</h3>
+                            <h3>Sauvegarde automatique</h3>
                             <p>Vos données sont sauvegardées automatiquement à chaque modification importante</p>
                         </div>
                         <div class="panel-toggle">
@@ -352,7 +352,7 @@ class SettingsPageVisual {
                             <div class="setting-card">
                                 <div class="setting-header">
                                     <i class="fas fa-hdd"></i>
-                                    <h4>Rétention des données</h4>
+                                    <h4>Rétention</h4>
                                 </div>
                                 <div class="setting-control">
                                     <select id="backup-retention" onchange="window.settingsPage.updateRetention(this.value)">
@@ -367,7 +367,7 @@ class SettingsPageVisual {
                             <div class="setting-card">
                                 <div class="setting-header">
                                     <i class="fas fa-envelope"></i>
-                                    <h4>Inclure échantillon emails</h4>
+                                    <h4>Inclure emails</h4>
                                 </div>
                                 <div class="setting-control">
                                     <label class="setting-switch">
@@ -380,7 +380,7 @@ class SettingsPageVisual {
                             <div class="setting-card">
                                 <div class="setting-header">
                                     <i class="fas fa-tasks"></i>
-                                    <h4>Inclure les tâches</h4>
+                                    <h4>Inclure tâches</h4>
                                 </div>
                                 <div class="setting-control">
                                     <label class="setting-switch">
@@ -449,7 +449,7 @@ class SettingsPageVisual {
             case 'active':
                 circle.classList.add('status-active');
                 icon.className = 'fas fa-shield-alt';
-                title.textContent = 'Protection active';
+                title.textContent = 'Système opérationnel';
                 description.textContent = message || 'Vos données sont automatiquement protégées';
                 break;
                 
@@ -470,7 +470,7 @@ class SettingsPageVisual {
             case 'disabled':
                 circle.classList.add('status-disabled');
                 icon.className = 'fas fa-shield-alt';
-                title.textContent = 'Protection désactivée';
+                title.textContent = 'Sauvegarde désactivée';
                 description.textContent = message || 'Sauvegarde automatique désactivée';
                 break;
         }
@@ -649,11 +649,11 @@ class SettingsPageVisual {
 
     toggleAutoBackup(enabled) {
         if (enabled) {
-            this.updateBackupStatus('active', 'Protection automatique activée');
-            this.showToast('🛡️ Protection automatique activée', 'success');
+            this.updateBackupStatus('active', 'Sauvegarde automatique activée');
+            this.showToast('🛡️ Sauvegarde automatique activée', 'success');
         } else {
-            this.updateBackupStatus('disabled', 'Protection automatique désactivée');
-            this.showToast('⚠️ Protection automatique désactivée', 'warning');
+            this.updateBackupStatus('disabled', 'Sauvegarde automatique désactivée');
+            this.showToast('⚠️ Sauvegarde automatique désactivée', 'warning');
         }
     }
 
@@ -902,7 +902,246 @@ class SettingsPageVisual {
         `;
     }
 
-    // ... [Toutes les autres méthodes de catégories restent inchangées] ...
+    // Ajouter les méthodes manquantes pour les actions
+    async importBackup() {
+        return new Promise((resolve, reject) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.style.display = 'none';
+            
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    resolve(false);
+                    return;
+                }
+                
+                try {
+                    const text = await file.text();
+                    const backupData = JSON.parse(text);
+                    
+                    // Validation du fichier
+                    if (!this.validateBackupFile(backupData)) {
+                        this.showToast('Fichier de sauvegarde invalide ou corrompu', 'error');
+                        resolve(false);
+                        return;
+                    }
+                    
+                    // Restaurer les données
+                    await this.restoreFromData(backupData);
+                    this.showToast('Import réussi ! Rechargement de la page...', 'success');
+                    
+                    // Recharger la page après 2 secondes
+                    setTimeout(() => location.reload(), 2000);
+                    resolve(true);
+                    
+                } catch (error) {
+                    console.error('[SettingsPage] Erreur import:', error);
+                    this.showToast('Erreur lors de l\'import : ' + error.message, 'error');
+                    reject(error);
+                }
+            };
+            
+            document.body.appendChild(input);
+            input.click();
+            document.body.removeChild(input);
+        });
+    }
+
+    validateBackupFile(data) {
+        if (!data || typeof data !== 'object') return false;
+        if (!data.timestamp || !data.version) return false;
+        if (!data.categories && !data.settings) return false;
+        return true;
+    }
+
+    async restoreFromData(backupData) {
+        try {
+            console.log('[SettingsPage] 🔄 Restauration des données...');
+            
+            // Restaurer les catégories personnalisées
+            if (backupData.categories) {
+                Object.entries(backupData.categories).forEach(([id, category]) => {
+                    if (category.isCustom && window.categoryManager) {
+                        try {
+                            window.categoryManager.deleteCustomCategory(id);
+                            window.categoryManager.createCustomCategory(category);
+                            console.log('[SettingsPage] ✅ Catégorie restaurée:', category.name);
+                        } catch (error) {
+                            console.warn('[SettingsPage] Erreur restauration catégorie:', category.name, error);
+                        }
+                    }
+                });
+            }
+
+            // Restaurer les paramètres
+            if (backupData.settings) {
+                localStorage.setItem('categorySettings', JSON.stringify(backupData.settings));
+                console.log('[SettingsPage] ✅ Paramètres restaurés');
+            }
+
+            console.log('[SettingsPage] ✅ Restauration terminée avec succès');
+        } catch (error) {
+            console.error('[SettingsPage] ❌ Erreur lors de la restauration:', error);
+            throw error;
+        }
+    }
+
+    async exportAllData() {
+        console.log('[SettingsPage] 📤 Export de toutes les données...');
+        
+        try {
+            const categories = window.categoryManager?.getCategories() || {};
+            
+            const exportData = {
+                timestamp: new Date().toISOString(),
+                version: '2.0',
+                type: 'complete_export',
+                categories: categories,
+                settings: JSON.parse(localStorage.getItem('categorySettings') || '{}'),
+                emails: (window.emailScanner?.getAllEmails() || []).slice(0, 1000),
+                tasks: this.getTasks(),
+                metadata: {
+                    exportedAt: new Date().toISOString(),
+                    totalCategories: Object.keys(categories).length,
+                    application: 'MailSort Pro'
+                }
+            };
+            
+            const filename = `mailsort-export-complete-${new Date().toISOString().split('T')[0]}.json`;
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            
+            this.downloadFile(blob, filename);
+            this.showToast(`Données complètes exportées avec succès!`);
+            
+        } catch (error) {
+            console.error('[SettingsPage] Erreur export:', error);
+            this.showToast('Erreur lors de l\'export', 'error');
+        }
+    }
+
+    getTasks() {
+        try {
+            if (window.taskManager && typeof window.taskManager.getAllTasks === 'function') {
+                return window.taskManager.getAllTasks();
+            }
+            return [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    downloadFile(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    async restoreBackup(backupId) {
+        try {
+            await this.backupManager.restoreBackup(backupId);
+            this.showToast('Sauvegarde restaurée avec succès!', 'success');
+            this.loadBackupTimeline();
+            this.refreshCategoriesTab();
+        } catch (error) {
+            console.error('[SettingsPage] Erreur restauration:', error);
+            this.showToast('Erreur lors de la restauration', 'error');
+        }
+    }
+
+    async downloadBackup(backupId) {
+        try {
+            await this.backupManager.downloadBackup(backupId);
+            this.showToast('Sauvegarde téléchargée', 'success');
+        } catch (error) {
+            console.error('[SettingsPage] Erreur téléchargement:', error);
+            this.showToast('Erreur lors du téléchargement', 'error');
+        }
+    }
+
+    async deleteBackup(backupId) {
+        if (!confirm('Supprimer cette sauvegarde de l\'historique ?')) return;
+        
+        try {
+            await this.backupManager.deleteBackup(backupId);
+            this.loadBackupTimeline();
+            this.showToast('Sauvegarde supprimée de l\'historique', 'success');
+        } catch (error) {
+            console.error('[SettingsPage] Erreur suppression:', error);
+            this.showToast('Erreur lors de la suppression', 'error');
+        }
+    }
+
+    refreshBackupTimeline() {
+        this.loadBackupTimeline();
+    }
+
+    filterTimeline(filter) {
+        // Implémentation du filtrage de la timeline
+        console.log('[SettingsPage] Filtre timeline:', filter);
+        this.loadBackupTimeline();
+    }
+
+    updateBackupFrequency(frequency) {
+        this.backupManager.updateSettings({ frequency });
+        this.showToast('Fréquence de sauvegarde mise à jour', 'success');
+    }
+
+    updateRetention(retention) {
+        this.backupManager.updateSettings({ retention });
+        this.showToast('Rétention des sauvegardes mise à jour', 'success');
+    }
+
+    async resetAllSettings() {
+        const confirmation = confirm(`⚠️ ATTENTION ⚠️
+
+Cette action va SUPPRIMER DÉFINITIVEMENT :
+• Toutes vos catégories personnalisées
+• Tous vos paramètres de configuration
+• Toutes vos sauvegardes locales
+• Tous vos mots-clés personnalisés
+
+Cette action est IRRÉVERSIBLE !
+
+Tapez "RESET" pour confirmer :`);
+        
+        if (confirmation) {
+            const finalConfirm = prompt('Tapez "RESET" en majuscules pour confirmer la suppression complète :');
+            if (finalConfirm === 'RESET') {
+                try {
+                    // Supprimer toutes les données locales
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    
+                    // Supprimer les catégories personnalisées
+                    if (window.categoryManager) {
+                        const categories = window.categoryManager.getCategories();
+                        Object.entries(categories).forEach(([id, category]) => {
+                            if (category.isCustom) {
+                                window.categoryManager.deleteCustomCategory(id);
+                            }
+                        });
+                    }
+                    
+                    this.showToast('Réinitialisation terminée. Rechargement...', 'success');
+                    setTimeout(() => location.reload(), 2000);
+                    
+                } catch (error) {
+                    console.error('[SettingsPage] Erreur réinitialisation:', error);
+                    this.showToast('Erreur lors de la réinitialisation', 'error');
+                }
+            } else {
+                this.showToast('Réinitialisation annulée', 'info');
+            }
+        }
+    }
 
     // ================================================
     // STYLES VISUELS AMÉLIORÉS
@@ -1201,14 +1440,14 @@ class SettingsPageVisual {
 
             .action-cards {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 20px;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
             }
 
             .action-card {
                 background: white;
                 border-radius: var(--radius);
-                padding: 24px;
+                padding: 20px;
                 border: 1px solid var(--border);
                 cursor: pointer;
                 transition: all 0.3s ease;
@@ -1217,8 +1456,8 @@ class SettingsPageVisual {
             }
 
             .action-card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
                 border-color: var(--primary);
             }
 
@@ -1226,19 +1465,19 @@ class SettingsPageVisual {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                height: 80px;
-                margin-bottom: 16px;
+                height: 60px;
+                margin-bottom: 12px;
                 position: relative;
             }
 
             .card-icon-bg {
-                width: 64px;
-                height: 64px;
-                border-radius: 16px;
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 28px;
+                font-size: 20px;
                 color: white;
                 background: var(--gradient-primary);
                 position: relative;
@@ -1266,21 +1505,21 @@ class SettingsPageVisual {
             }
 
             .card-info h4 {
-                margin: 0 0 8px 0;
-                font-size: 18px;
+                margin: 0 0 6px 0;
+                font-size: 16px;
                 font-weight: 600;
                 color: var(--text);
             }
 
             .card-info p {
-                margin: 0 0 12px 0;
+                margin: 0 0 8px 0;
                 color: var(--text-light);
-                font-size: 14px;
+                font-size: 13px;
                 line-height: 1.4;
             }
 
             .card-action {
-                font-size: 13px;
+                font-size: 12px;
                 color: var(--primary);
                 font-weight: 500;
             }
