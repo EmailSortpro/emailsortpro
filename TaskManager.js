@@ -803,18 +803,18 @@ class TasksView {
         
         container.innerHTML = `
             <div class="tasks-page-corrected">
-                <!-- RECTANGLE BLANC HARMONISÉ - TOUS LES BOUTONS SUR DEUX LIGNES -->
+                <!-- RECTANGLE BLANC HARMONISÉ - EXACTEMENT DEUX LIGNES -->
                 <div class="controls-section-corrected">
-                    <!-- Ligne 1 : Recherche + Actions principales -->
+                    <!-- LIGNE 1 : Recherche réduite + TOUS les boutons principaux -->
                     <div class="controls-line-1">
-                        <!-- Recherche -->
-                        <div class="search-section">
+                        <!-- Recherche compacte -->
+                        <div class="search-section-compact">
                             <div class="search-box-corrected">
                                 <i class="fas fa-search search-icon"></i>
                                 <input type="text" 
                                        class="search-input-corrected" 
                                        id="taskSearchInput"
-                                       placeholder="Rechercher tâches..." 
+                                       placeholder="Rechercher..." 
                                        value="${this.currentFilters.search}">
                                 ${this.currentFilters.search ? `
                                     <button class="search-clear" onclick="window.tasksView.clearSearch()">
@@ -824,83 +824,79 @@ class TasksView {
                             </div>
                         </div>
 
-                        <!-- Actions principales -->
-                        <div class="main-actions-line1">
-                            <!-- Sélection info et actions -->
+                        <!-- Modes de vue compacts -->
+                        <div class="view-modes-compact">
+                            <button class="view-mode-compact ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
+                                    onclick="window.tasksView.changeViewMode('minimal')"
+                                    title="Vue minimaliste">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <button class="view-mode-compact ${this.currentViewMode === 'normal' ? 'active' : ''}" 
+                                    onclick="window.tasksView.changeViewMode('normal')"
+                                    title="Vue normale">
+                                <i class="fas fa-th-list"></i>
+                            </button>
+                            <button class="view-mode-compact ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
+                                    onclick="window.tasksView.changeViewMode('detailed')"
+                                    title="Vue détaillée">
+                                <i class="fas fa-th-large"></i>
+                            </button>
+                        </div>
+
+                        <!-- Tous les boutons d'action sur la même ligne -->
+                        <div class="all-actions-line1">
+                            <!-- Sélection info -->
                             ${selectedCount > 0 ? `
-                                <div class="selection-panel">
-                                    <span class="selection-count">${selectedCount} sélectionné(s)</span>
-                                    <button class="btn-action btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer sélection">
+                                <div class="selection-panel-compact">
+                                    <span class="selection-count">${selectedCount}</span>
+                                    <button class="btn-action-compact btn-clear" onclick="window.tasksView.clearSelection()" title="Effacer sélection">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </div>
                             ` : ''}
                             
                             <!-- Bouton Sélectionner tout -->
-                            <button class="btn-action btn-select-all" onclick="window.tasksView.selectAllVisible()" title="Sélectionner toutes les tâches visibles">
+                            <button class="btn-action-compact btn-select-all" onclick="window.tasksView.selectAllVisible()" title="Sélectionner toutes les tâches visibles">
                                 <i class="fas fa-check-square"></i>
-                                Tout sélectionner
+                                <span class="btn-text-compact">Tout</span>
                             </button>
 
+                            <!-- Actions groupées -->
+                            ${selectedCount > 0 ? `
+                                <button class="btn-action-compact btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions groupées">
+                                    <i class="fas fa-cog"></i>
+                                    <span class="btn-text-compact">Actions</span>
+                                    <span class="count-badge">${selectedCount}</span>
+                                </button>
+                            ` : ''}
+
                             <!-- Bouton Nouvelle tâche -->
-                            <button class="btn-action btn-new" onclick="window.tasksView.showCreateModal()" title="Nouvelle tâche">
+                            <button class="btn-action-compact btn-new" onclick="window.tasksView.showCreateModal()" title="Nouvelle tâche">
                                 <i class="fas fa-plus"></i>
-                                Nouvelle
+                                <span class="btn-text-compact">Nouvelle</span>
+                            </button>
+                            
+                            <!-- Bouton Actualiser -->
+                            <button class="btn-action-compact btn-refresh" onclick="window.tasksView.refreshTasks()" title="Actualiser">
+                                <i class="fas fa-sync-alt"></i>
+                                <span class="btn-text-compact">Actualiser</span>
+                            </button>
+                            
+                            <!-- Bouton Filtres -->
+                            <button class="btn-action-compact btn-filters ${this.showAdvancedFilters ? 'active' : ''}" 
+                                    onclick="window.tasksView.toggleAdvancedFilters()" 
+                                    title="Afficher/Masquer les filtres avancés">
+                                <i class="fas fa-filter"></i>
+                                <span class="btn-text-compact">Filtres</span>
+                                <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
                             </button>
                         </div>
                     </div>
                     
-                    <!-- Ligne 2 : Modes de vue + Actions secondaires + Filtres rapides -->
+                    <!-- LIGNE 2 : UNIQUEMENT les filtres de statut restaurés et lisibles -->
                     <div class="controls-line-2">
-                        <!-- Modes de vue -->
-                        <div class="view-modes">
-                            <button class="view-mode ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('minimal')"
-                                    title="Vue minimaliste">
-                                <i class="fas fa-list"></i>
-                                Minimal
-                            </button>
-                            <button class="view-mode ${this.currentViewMode === 'normal' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('normal')"
-                                    title="Vue normale">
-                                <i class="fas fa-th-list"></i>
-                                Normal
-                            </button>
-                            <button class="view-mode ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('detailed')"
-                                    title="Vue détaillée">
-                                <i class="fas fa-th-large"></i>
-                                Détaillé
-                            </button>
-                        </div>
-
-                        <!-- Actions secondaires -->
-                        <div class="secondary-actions">
-                            ${selectedCount > 0 ? `
-                                <button class="btn-action btn-bulk" onclick="window.tasksView.bulkActions()" title="Actions groupées">
-                                    <i class="fas fa-cog"></i>
-                                    Actions
-                                    <span class="count-badge">${selectedCount}</span>
-                                </button>
-                            ` : ''}
-                            
-                            <button class="btn-action btn-refresh" onclick="window.tasksView.refreshTasks()" title="Actualiser">
-                                <i class="fas fa-sync-alt"></i>
-                                Actualiser
-                            </button>
-                            
-                            <button class="btn-action btn-filters ${this.showAdvancedFilters ? 'active' : ''}" 
-                                    onclick="window.tasksView.toggleAdvancedFilters()" 
-                                    title="Afficher/Masquer les filtres avancés">
-                                <i class="fas fa-filter"></i>
-                                Filtres
-                                <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
-                            </button>
-                        </div>
-                        
-                        <!-- Filtres de statut rapides -->
-                        <div class="status-filters-compact">
-                            ${this.buildStatusPills(stats)}
+                        <div class="status-filters-restored">
+                            ${this.buildStatusPillsRestored(stats)}
                         </div>
                     </div>
                 </div>
@@ -980,7 +976,8 @@ class TasksView {
         console.log('[TasksView] Interface harmonisée avec filtres dynamiques rendue');
     }
 
-    buildStatusPills(stats) {
+    // NOUVELLE MÉTHODE: Filtres de statut restaurés et lisibles
+    buildStatusPillsRestored(stats) {
         const pills = [
             { id: 'all', name: 'Tous', icon: '📋', count: stats.total },
             { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
@@ -994,19 +991,13 @@ class TasksView {
         ];
 
         return pills.map(pill => `
-            <button class="status-pill-compact ${this.isFilterActive(pill.id) ? 'active' : ''}" 
+            <button class="status-pill-restored ${this.isFilterActive(pill.id) ? 'active' : ''}" 
                     data-filter="${pill.id}"
                     onclick="window.tasksView.quickFilter('${pill.id}')"
                     title="${pill.name}: ${pill.count} tâche(s)">
-                <div class="pill-content">
-                    <div class="pill-top">
-                        <span class="pill-icon">${pill.icon}</span>
-                        <span class="pill-count">${pill.count}</span>
-                    </div>
-                    <div class="pill-bottom">
-                        <span class="pill-text">${pill.name}</span>
-                    </div>
-                </div>
+                <span class="pill-icon-restored">${pill.icon}</span>
+                <span class="pill-text-restored">${pill.name}</span>
+                <span class="pill-count-restored">${pill.count}</span>
             </button>
         `).join('');
     }
@@ -4653,41 +4644,42 @@ class TasksView {
 
             @media (max-width: 1024px) {
                 .controls-line-1 {
-                    flex-direction: column;
+                    flex-wrap: wrap;
                     gap: 12px;
-                    align-items: stretch;
                 }
 
-                .controls-line-2 {
-                    flex-direction: column;
-                    gap: 12px;
-                    align-items: stretch;
+                .search-section-compact {
+                    flex: 1 1 150px;
+                    min-width: 150px;
+                    max-width: 200px;
                 }
 
-                .search-section {
-                    max-width: none;
-                }
-
-                .main-actions-line1,
-                .secondary-actions {
+                .all-actions-line1 {
+                    flex: 1 1 100%;
                     justify-content: center;
-                    width: 100%;
                 }
 
-                .view-modes {
-                    align-self: center;
-                    width: 100%;
-                    justify-content: space-around;
+                .btn-text-compact {
+                    display: none;
                 }
 
-                .status-filters-compact {
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 6px;
+                .btn-action-compact {
+                    min-width: 36px;
+                    padding: 0 8px;
                 }
 
-                .status-pill-compact {
-                    min-width: auto;
-                    height: 45px;
+                .status-filters-restored {
+                    gap: 4px;
+                }
+
+                .status-pill-restored {
+                    min-width: 80px;
+                    max-width: 110px;
+                    padding: 6px 8px;
+                }
+
+                .pill-text-restored {
+                    font-size: 10px;
                 }
 
                 .tasks-detailed-grid {
@@ -4700,44 +4692,43 @@ class TasksView {
                     padding: 16px;
                 }
 
-                .controls-line-1,
-                .controls-line-2 {
-                    gap: 10px;
-                }
-
-                .main-actions-line1,
-                .secondary-actions {
+                .controls-line-1 {
                     flex-direction: column;
-                    gap: 8px;
+                    gap: 10px;
                     align-items: stretch;
                 }
 
-                .view-mode {
+                .search-section-compact {
+                    flex: none;
+                    max-width: none;
+                }
+
+                .view-modes-compact {
+                    align-self: center;
+                }
+
+                .all-actions-line1 {
+                    justify-content: center;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+
+                .btn-action-compact {
+                    height: 32px;
+                    min-width: 32px;
+                    padding: 0 6px;
+                }
+
+                .status-filters-restored {
+                    flex-direction: column;
+                    gap: 3px;
+                }
+
+                .status-pill-restored {
                     min-width: auto;
-                    flex: 1;
-                    padding: 8px 6px;
-                }
-
-                .view-mode span {
-                    display: none;
-                }
-
-                .status-filters-compact {
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 4px;
-                }
-
-                .status-pill-compact {
-                    height: 40px;
-                    min-width: auto;
-                }
-
-                .pill-text {
-                    font-size: 9px;
-                }
-
-                .pill-icon {
-                    font-size: 11px;
+                    max-width: none;
+                    width: 100%;
+                    justify-content: space-between;
                 }
 
                 .advanced-filters-grid {
@@ -4772,7 +4763,7 @@ class TasksView {
                     align-self: flex-end;
                 }
 
-                .selection-panel {
+                .selection-panel-compact {
                     justify-content: center;
                 }
             }
@@ -4787,40 +4778,39 @@ class TasksView {
                     gap: 12px;
                 }
 
-                .btn-action {
-                    height: 40px;
-                    font-size: 12px;
-                    padding: 0 12px;
+                .all-actions-line1 {
+                    flex-direction: column;
+                    gap: 6px;
+                    align-items: stretch;
                 }
 
-                .btn-action span {
-                    display: none;
+                .btn-action-compact {
+                    height: 36px;
+                    justify-content: center;
+                    width: 100%;
                 }
 
-                .status-filters-compact {
-                    grid-template-columns: 1fr;
-                    gap: 3px;
+                .view-modes-compact {
+                    width: 100%;
+                    justify-content: space-around;
                 }
 
-                .status-pill-compact {
-                    height: 35px;
-                    padding: 4px;
-                }
-
-                .pill-content {
-                    flex-direction: row;
-                    gap: 8px;
-                    justify-content: space-between;
-                }
-
-                .pill-top {
-                    order: 2;
-                }
-
-                .pill-bottom {
-                    order: 1;
+                .view-mode-compact {
                     flex: 1;
-                    justify-content: flex-start;
+                }
+
+                .status-pill-restored {
+                    padding: 10px;
+                    font-size: 13px;
+                }
+
+                .pill-text-restored {
+                    font-size: 11px;
+                }
+
+                .pill-count-restored {
+                    font-size: 11px;
+                    padding: 3px 6px;
                 }
 
                 .task-content-line {
