@@ -1,4 +1,4 @@
-// MailService.js - Service unifié de récupération des emails Microsoft Graph et Gmail API v4.0
+// MailService.js - Service unifié de récupération des emails Microsoft Graph et Gmail API v4.1
 
 class MailService {
     constructor() {
@@ -14,32 +14,90 @@ class MailService {
             'archive': 'archive'
         };
         
-        console.log('[MailService] Constructor - Service unifié Outlook/Gmail');
+        console.log('[MailService] Constructor - Service unifié Outlook/Gmail v4.1');
+        
+        // Initialisation automatique différée
+        this.autoInitialize();
+    }
+
+    // ================================================
+    // INITIALISATION AUTOMATIQUE RENFORCÉE
+    // ================================================
+    async autoInitialize() {
+        console.log('[MailService] 🔄 Auto-initialisation...');
+        
+        // Attendre que les services d'auth soient prêts
+        const maxWait = 10000; // 10 secondes max
+        const startTime = Date.now();
+        
+        while ((Date.now() - startTime) < maxWait) {
+            if (this.hasAuthenticatedProvider()) {
+                console.log('[MailService] ✅ Provider d\'authentification trouvé, initialisation...');
+                try {
+                    await this.initialize();
+                    return;
+                } catch (error) {
+                    console.warn('[MailService] ⚠️ Erreur auto-initialisation:', error);
+                }
+            }
+            
+            // Attendre 500ms avant de réessayer
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        console.log('[MailService] ⏰ Timeout auto-initialisation - en attente de connexion manuelle');
+    }
+
+    hasAuthenticatedProvider() {
+        // Vérifier Microsoft
+        if (window.authService && 
+            typeof window.authService.isAuthenticated === 'function' && 
+            window.authService.isAuthenticated()) {
+            return true;
+        }
+        
+        // Vérifier Google
+        if (window.googleAuthService && 
+            typeof window.googleAuthService.isAuthenticated === 'function' && 
+            window.googleAuthService.isAuthenticated()) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    detectAuthenticatedProvider() {
+        // Détecter le provider actif
+        if (window.authService && window.authService.isAuthenticated()) {
+            return 'microsoft';
+        } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            return 'google';
+        }
+        return null;
     }
 
     async initialize() {
-        console.log('[MailService] Initializing...');
+        console.log('[MailService] 🚀 Initializing...');
         
         if (this.isInitialized) {
-            console.log('[MailService] Already initialized');
+            console.log('[MailService] ✅ Already initialized');
             return;
         }
 
         try {
             // Détecter le provider utilisé
-            if (window.authService && window.authService.isAuthenticated()) {
-                this.provider = 'microsoft';
-                console.log('[MailService] Using Microsoft provider');
-            } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-                this.provider = 'google';
-                console.log('[MailService] Using Google provider');
-            } else {
-                console.warn('[MailService] No authentication service available');
+            this.provider = this.detectAuthenticatedProvider();
+            
+            if (!this.provider) {
+                console.warn('[MailService] ⚠️ No authentication service available');
+                // Ne pas jeter d'erreur, juste attendre
                 return;
             }
 
+            console.log(`[MailService] 🔗 Using ${this.provider} provider`);
+
             // Charger les dossiers selon le provider
-            console.log('[MailService] Loading mail folders...');
+            console.log('[MailService] 📂 Loading mail folders...');
             await this.loadMailFolders();
 
             console.log('[MailService] ✅ Initialization complete');
@@ -47,7 +105,8 @@ class MailService {
 
         } catch (error) {
             console.error('[MailService] ❌ Initialization failed:', error);
-            throw error;
+            // Ne pas jeter l'erreur pour permettre la réinitialisation ultérieure
+            this.reset();
         }
     }
 
@@ -161,12 +220,17 @@ class MailService {
     // MÉTHODE PRINCIPALE : RÉCUPÉRATION DES EMAILS UNIFIÉE
     // ================================================
     async getEmailsFromFolder(folderName, options = {}) {
-        console.log(`[MailService] Getting emails from folder: ${folderName}`);
+        console.log(`[MailService] 📧 Getting emails from folder: ${folderName}`);
         
         try {
-            // Initialiser si nécessaire
-            if (!this.isInitialized) {
+            // Vérifier l'authentification et initialiser si nécessaire
+            if (!this.isInitialized || !this.provider) {
+                console.log('[MailService] 🔄 Service non initialisé, tentative d\'initialisation...');
                 await this.initialize();
+                
+                if (!this.isInitialized) {
+                    throw new Error('MailService non initialisé - Authentification requise');
+                }
             }
 
             if (this.provider === 'microsoft') {
@@ -179,20 +243,37 @@ class MailService {
 
         } catch (error) {
             console.error(`[MailService] ❌ Error getting emails from ${folderName}:`, error);
+            
+            // Si erreur d'authentification, essayer de réinitialiser
+            if (error.message.includes('401') || error.message.includes('access token')) {
+                console.log('[MailService] 🔄 Erreur d\'auth, tentative de réinitialisation...');
+                this.reset();
+                await this.initialize();
+                
+                if (this.isInitialized) {
+                    // Réessayer une fois
+                    if (this.provider === 'microsoft') {
+                        return await this.getMicrosoftEmails(folderName, options);
+                    } else if (this.provider === 'google') {
+                        return await this.getGmailEmails(folderName, options);
+                    }
+                }
+            }
+            
             throw error;
         }
     }
 
     async getMicrosoftEmails(folderName, options = {}) {
         // Vérifier l'authentification Microsoft
-        if (!window.authService.isAuthenticated()) {
-            throw new Error('User not authenticated');
+        if (!window.authService || !window.authService.isAuthenticated()) {
+            throw new Error('User not authenticated with Microsoft');
         }
 
         // Obtenir le token d'accès
         const accessToken = await window.authService.getAccessToken();
         if (!accessToken) {
-            throw new Error('Unable to get access token');
+            throw new Error('Unable to get Microsoft access token');
         }
 
         // Obtenir l'ID réel du dossier
@@ -200,7 +281,7 @@ class MailService {
         
         // Construire l'URL de l'API Microsoft Graph
         const graphUrl = this.buildMicrosoftGraphUrl(folderId, options);
-        console.log(`[MailService] Microsoft query endpoint: ${graphUrl}`);
+        console.log(`[MailService] 📡 Microsoft query endpoint: ${graphUrl}`);
 
         // Effectuer la requête
         const response = await fetch(graphUrl, {
@@ -231,7 +312,7 @@ class MailService {
 
     async getGmailEmails(folderName, options = {}) {
         // Vérifier l'authentification Google
-        if (!window.googleAuthService.isAuthenticated()) {
+        if (!window.googleAuthService || !window.googleAuthService.isAuthenticated()) {
             throw new Error('User not authenticated with Google');
         }
 
@@ -243,7 +324,7 @@ class MailService {
 
         // Construire la requête Gmail
         const gmailUrl = this.buildGmailUrl(folderName, options);
-        console.log(`[MailService] Gmail query endpoint: ${gmailUrl}`);
+        console.log(`[MailService] 📡 Gmail query endpoint: ${gmailUrl}`);
 
         // Effectuer la requête pour obtenir la liste des messages
         const response = await fetch(gmailUrl, {
@@ -693,7 +774,7 @@ class MailService {
         // Chercher dans le cache des dossiers
         const folder = this.folders.get(folderName.toLowerCase());
         if (folder) {
-            console.log(`[MailService] Resolved folder ${folderName} to ID: ${folder.id}`);
+            console.log(`[MailService] 📂 Resolved folder ${folderName} to ID: ${folder.id}`);
             return folder.id;
         }
 
@@ -702,14 +783,19 @@ class MailService {
             return 'inbox';
         }
 
-        console.warn(`[MailService] Folder ${folderName} not found in cache, using as-is`);
+        console.warn(`[MailService] ⚠️ Folder ${folderName} not found in cache, using as-is`);
         return folderName;
     }
 
     async getEmailById(emailId) {
-        console.log(`[MailService] Getting email by ID: ${emailId}`);
+        console.log(`[MailService] 📧 Getting email by ID: ${emailId}`);
         
         try {
+            // Initialiser si nécessaire
+            if (!this.isInitialized) {
+                await this.initialize();
+            }
+            
             if (this.provider === 'microsoft') {
                 return await this.getMicrosoftEmailById(emailId);
             } else if (this.provider === 'google') {
@@ -764,9 +850,14 @@ class MailService {
     }
 
     async getFolders() {
-        console.log('[MailService] Getting mail folders');
+        console.log('[MailService] 📂 Getting mail folders');
         
         try {
+            // Initialiser si nécessaire
+            if (!this.isInitialized) {
+                await this.initialize();
+            }
+            
             if (this.provider === 'microsoft') {
                 return await this.loadMicrosoftFolders();
             } else if (this.provider === 'google') {
@@ -781,9 +872,14 @@ class MailService {
     }
 
     async testConnection() {
-        console.log('[MailService] Testing API connection...');
+        console.log('[MailService] 🔍 Testing API connection...');
         
         try {
+            // Initialiser si nécessaire
+            if (!this.isInitialized) {
+                await this.initialize();
+            }
+            
             if (this.provider === 'microsoft') {
                 return await this.testMicrosoftConnection();
             } else if (this.provider === 'google') {
@@ -857,10 +953,39 @@ class MailService {
     }
 
     // ================================================
+    // MÉTHODES COMPLÉMENTAIRES POUR COMPATIBILITÉ
+    // ================================================
+    
+    // Méthode getEmails pour rétrocompatibilité 
+    async getEmails(options = {}) {
+        console.log('[MailService] 📧 getEmails called (legacy method)');
+        
+        const folder = options.folder || 'inbox';
+        const days = options.days || 7;
+        const maxEmails = options.maxEmails || 100;
+        
+        // Convertir les options au nouveau format
+        const newOptions = {
+            top: maxEmails
+        };
+        
+        if (days) {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - days);
+            
+            newOptions.startDate = startDate.toISOString().split('T')[0];
+            newOptions.endDate = endDate.toISOString().split('T')[0];
+        }
+        
+        return await this.getEmailsFromFolder(folder, newOptions);
+    }
+
+    // ================================================
     // NETTOYAGE ET RESET
     // ================================================
     reset() {
-        console.log('[MailService] Resetting service...');
+        console.log('[MailService] 🔄 Resetting service...');
         this.isInitialized = false;
         this.provider = null;
         this.cache.clear();
@@ -879,6 +1004,17 @@ class MailService {
             hasToken: authService ? !!authService.getAccessToken : false,
             foldersCount: this.folders.size,
             cacheSize: this.cache.size,
+            version: '4.1',
+            authServices: {
+                microsoft: {
+                    available: !!window.authService,
+                    authenticated: window.authService ? window.authService.isAuthenticated() : false
+                },
+                google: {
+                    available: !!window.googleAuthService,
+                    authenticated: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false
+                }
+            },
             folders: Array.from(this.folders.entries()).map(([name, folder]) => ({
                 name,
                 id: folder.id,
@@ -888,29 +1024,55 @@ class MailService {
     }
 }
 
-// Créer l'instance globale
+// Créer l'instance globale avec gestion d'erreur renforcée
 try {
     window.mailService = new MailService();
-    console.log('[MailService] ✅ Global unified instance created successfully');
+    console.log('[MailService] ✅ Global unified instance created successfully v4.1');
 } catch (error) {
     console.error('[MailService] ❌ Failed to create global instance:', error);
     
+    // Fallback robuste
     window.mailService = {
         isInitialized: false,
-        getEmailsFromFolder: async () => {
-            throw new Error('MailService not available - Check console for errors');
+        provider: null,
+        
+        async getEmailsFromFolder(folderName, options = {}) {
+            throw new Error('MailService not available - Check console for initialization errors');
         },
-        initialize: async () => {
+        
+        async getEmails(options = {}) {
+            throw new Error('MailService not available - Check console for initialization errors');
+        },
+        
+        async initialize() {
             throw new Error('MailService failed to initialize - Check AuthService');
         },
-        getDiagnosticInfo: () => ({ 
-            error: 'MailService failed to create',
-            microsoftAuthServiceAvailable: !!window.authService,
-            googleAuthServiceAvailable: !!window.googleAuthService,
-            userAuthenticated: (window.authService ? window.authService.isAuthenticated() : false) || 
-                              (window.googleAuthService ? window.googleAuthService.isAuthenticated() : false)
-        })
+        
+        hasAuthenticatedProvider() {
+            return (window.authService && window.authService.isAuthenticated()) ||
+                   (window.googleAuthService && window.googleAuthService.isAuthenticated());
+        },
+        
+        detectAuthenticatedProvider() {
+            if (window.authService && window.authService.isAuthenticated()) {
+                return 'microsoft';
+            } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+                return 'google';
+            }
+            return null;
+        },
+        
+        getDiagnosticInfo() { 
+            return { 
+                error: 'MailService failed to create',
+                version: '4.1-fallback',
+                microsoftAuthServiceAvailable: !!window.authService,
+                googleAuthServiceAvailable: !!window.googleAuthService,
+                userAuthenticated: this.hasAuthenticatedProvider(),
+                authenticatedProvider: this.detectAuthenticatedProvider()
+            };
+        }
     };
 }
 
-console.log('✅ MailService v4.0 loaded - Unified Outlook/Gmail support');
+console.log('✅ MailService v4.1 loaded - Auto-initialization with dual provider support');
