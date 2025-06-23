@@ -1236,12 +1236,13 @@ class PageManager {
         const styles = document.createElement('style');
         styles.id = 'expandedEmailStyles';
         styles.textContent = `
-            /* Styles optimisés pour PageManager v13.0 */
+            /* Styles PageManager v13.0 - Compatible avec affichage original */
             .tasks-page-modern {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
                 min-height: 100vh;
                 padding: 16px;
+                color: #1f2937;
             }
 
             .controls-bar-single-line {
@@ -1882,7 +1883,163 @@ class PageManager {
                 color: #b91c1c;
             }
 
-            /* Responsive optimisé */
+            /* Vue groupée - Style original préservé */
+            .tasks-grouped-harmonized {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+                background: transparent;
+            }
+            
+            .task-group-harmonized {
+                background: transparent;
+                border: none;
+                border-radius: 0;
+                overflow: visible;
+                margin: 0;
+                padding: 0;
+            }
+            
+            .group-header-harmonized {
+                display: flex;
+                align-items: center;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 16px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                min-height: 80px;
+                margin-bottom: 2px;
+                gap: 16px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+            
+            .group-header-harmonized:hover {
+                background: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                border-color: #3b82f6;
+            }
+            
+            .group-avatar-harmonized {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+                font-size: 18px;
+                flex-shrink: 0;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+                border: 2px solid rgba(255, 255, 255, 0.8);
+            }
+            
+            .group-info-harmonized {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: 6px;
+            }
+            
+            .group-name-harmonized {
+                font-weight: 700;
+                color: #1f2937;
+                font-size: 18px;
+                margin: 0;
+                line-height: 1.3;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .group-meta-harmonized {
+                color: #6b7280;
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 1.2;
+            }
+            
+            .group-expand-harmonized {
+                width: 40px;
+                height: 40px;
+                border: 2px solid #e5e7eb;
+                border-radius: 10px;
+                background: rgba(255, 255, 255, 0.9);
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                font-size: 14px;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+                flex-shrink: 0;
+            }
+            
+            .group-expand-harmonized:hover {
+                background: white;
+                border-color: #3b82f6;
+                color: #3b82f6;
+                transform: scale(1.05);
+            }
+            
+            .group-content-harmonized {
+                background: transparent;
+                margin: 0;
+                padding: 0;
+                display: none;
+                margin-left: 64px;
+                margin-right: 0;
+                border-left: 2px solid #e5e7eb;
+                padding-left: 16px;
+                margin-top: 8px;
+                margin-bottom: 16px;
+            }
+            
+            .task-group-harmonized.expanded .group-content-harmonized {
+                display: block;
+            }
+            
+            .task-group-harmonized.expanded .group-header-harmonized {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border-color: #3b82f6;
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+            }
+            
+            .task-group-harmonized.expanded .group-expand-harmonized {
+                background: #3b82f6;
+                border-color: #3b82f6;
+                color: white;
+            }
+            
+            /* Emails dans les groupes - Style préservé */
+            .group-content-harmonized .task-harmonized-card {
+                margin-bottom: 8px;
+                border-radius: 12px;
+                border: 1px solid #e5e7eb;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+            }
+            
+            .group-content-harmonized .task-harmonized-card:hover {
+                border-radius: 12px;
+                border-left: 3px solid #6366f1;
+            }
+            
+            .group-content-harmonized .task-harmonized-card.selected {
+                border-radius: 12px;
+                border-left: 4px solid #3b82f6;
+            }
+
+            
+            /* Responsive optimisé - Compatible affichage original */
             @media (max-width: 1024px) {
                 .controls-bar-single-line {
                     flex-direction: column;
@@ -1903,6 +2060,11 @@ class PageManager {
                     width: 100%;
                     justify-content: center;
                     flex-wrap: wrap;
+                }
+                
+                .group-content-harmonized {
+                    margin-left: 16px;
+                    padding-left: 12px;
                 }
             }
 
@@ -1934,6 +2096,26 @@ class PageManager {
                     min-width: 44px;
                     justify-content: center;
                 }
+                
+                .group-header-harmonized {
+                    padding: 12px;
+                    min-height: 70px;
+                }
+                
+                .group-avatar-harmonized {
+                    width: 40px;
+                    height: 40px;
+                    font-size: 16px;
+                }
+                
+                .group-name-harmonized {
+                    font-size: 16px;
+                }
+                
+                .group-content-harmonized {
+                    margin-left: 8px;
+                    padding-left: 8px;
+                }
             }
 
             @media (max-width: 480px) {
@@ -1959,6 +2141,38 @@ class PageManager {
 
                 .sticky-controls-container {
                     padding: 8px;
+                }
+                
+                .group-header-harmonized {
+                    padding: 10px;
+                    min-height: 60px;
+                    gap: 12px;
+                }
+                
+                .group-avatar-harmonized {
+                    width: 36px;
+                    height: 36px;
+                    font-size: 14px;
+                }
+                
+                .group-name-harmonized {
+                    font-size: 15px;
+                }
+                
+                .group-meta-harmonized {
+                    font-size: 13px;
+                }
+                
+                .group-expand-harmonized {
+                    width: 36px;
+                    height: 36px;
+                    font-size: 12px;
+                }
+                
+                .group-content-harmonized {
+                    margin-left: 4px;
+                    padding-left: 4px;
+                    border-left-width: 1px;
                 }
             }
         `;
