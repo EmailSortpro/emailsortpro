@@ -1003,13 +1003,16 @@ class SettingsPageV2 {
             return;
         }
 
+        console.log('[SettingsPage] 🎨 Rendu de la page de paramètres...');
+
         try {
             container.innerHTML = this.renderMainStructure();
             this.addModernStyles();
             this.initializeComponents();
+            console.log('[SettingsPage] ✅ Page de paramètres rendue avec succès');
             
         } catch (error) {
-            console.error('[SettingsPage] Erreur:', error);
+            console.error('[SettingsPage] ❌ Erreur lors du rendu:', error);
             container.innerHTML = this.renderError();
         }
     }
@@ -2040,16 +2043,23 @@ class SettingsPageV2 {
 
     renderError() {
         return `
-            <div class="error-state">
-                <div class="error-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
+            <div style="padding: 3rem; text-align: center; color: #ef4444; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 0.75rem; padding: 2rem; max-width: 500px; margin: 0 auto;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                    <h2 style="margin: 0 0 1rem 0; color: #dc2626; font-size: 1.5rem;">Erreur de chargement</h2>
+                    <p style="margin: 0 0 1.5rem 0; color: #7f1d1d; line-height: 1.6;">
+                        Une erreur est survenue lors du chargement de la page de paramètres. 
+                        Cela peut être dû à un problème de compatibilité ou de ressources.
+                    </p>
+                    <button onclick="location.reload()" 
+                            style="background: #dc2626; color: white; border: none; padding: 0.75rem 1.5rem; 
+                                   border-radius: 0.5rem; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+                        🔄 Recharger la page
+                    </button>
+                    <div style="margin-top: 1rem; font-size: 0.75rem; color: #991b1b;">
+                        Si le problème persiste, vérifiez la console pour plus de détails.
+                    </div>
                 </div>
-                <h3>Erreur de chargement</h3>
-                <p>Une erreur est survenue lors du chargement de la page.</p>
-                <button class="btn-modern btn-primary" onclick="location.reload()">
-                    <i class="fas fa-redo"></i>
-                    Recharger la page
-                </button>
             </div>
         `;
     }
@@ -3846,15 +3856,73 @@ Nom d'utilisateur Windows :`);
 }
 
 // ================================================
-// INTÉGRATION GLOBALE
+// INTÉGRATION GLOBALE - CORRECTION
 // ================================================
 window.settingsPage = new SettingsPageV2();
 
-// Intégration avec PageManager
-if (window.pageManager?.pages) {
+// Intégration avec PageManager - Version corrigée
+if (window.pageManager && window.pageManager.pages) {
+    console.log('[SettingsPage] 🔗 Intégration avec PageManager...');
     window.pageManager.pages.settings = (container) => {
-        window.settingsPage.render(container);
+        console.log('[SettingsPage] 📄 Rendu demandé par PageManager, container:', container);
+        try {
+            window.settingsPage.render(container);
+        } catch (error) {
+            console.error('[SettingsPage] ❌ Erreur lors du rendu via PageManager:', error);
+            container.innerHTML = `
+                <div style="padding: 2rem; text-align: center; color: #ef4444;">
+                    <h2>❌ Erreur de chargement</h2>
+                    <p>Impossible de charger la page de paramètres</p>
+                    <p style="font-size: 0.875rem; color: #666;">${error.message}</p>
+                    <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #6366f1; color: white; border: none; border-radius: 0.5rem; cursor: pointer;">
+                        🔄 Recharger la page
+                    </button>
+                </div>
+            `;
+        }
     };
+    console.log('[SettingsPage] ✅ Intégration PageManager réussie');
+} else {
+    console.warn('[SettingsPage] ⚠️ PageManager non disponible, attente...');
+    
+    // Attendre que PageManager soit disponible
+    let retryCount = 0;
+    const maxRetries = 50;
+    
+    const waitForPageManager = () => {
+        retryCount++;
+        if (window.pageManager && window.pageManager.pages) {
+            console.log('[SettingsPage] 🔗 PageManager trouvé, intégration...');
+            window.pageManager.pages.settings = (container) => {
+                console.log('[SettingsPage] 📄 Rendu demandé par PageManager (retry), container:', container);
+                window.settingsPage.render(container);
+            };
+            console.log('[SettingsPage] ✅ Intégration PageManager réussie (après attente)');
+        } else if (retryCount < maxRetries) {
+            setTimeout(waitForPageManager, 100);
+        } else {
+            console.error('[SettingsPage] ❌ PageManager non trouvé après', maxRetries, 'tentatives');
+        }
+    };
+    
+    setTimeout(waitForPageManager, 100);
 }
 
-console.log('[SettingsPage] ✅ SettingsPage v2.0 chargée!');
+// Méthode alternative d'accès direct
+window.loadSettingsPage = (container) => {
+    console.log('[SettingsPage] 🎯 Accès direct demandé');
+    if (window.settingsPage) {
+        window.settingsPage.render(container);
+    } else {
+        console.error('[SettingsPage] Instance non trouvée');
+    }
+};
+
+console.log('[SettingsPage] ✅ SettingsPage v2.0 chargée et intégrée!');
+
+// Debug pour vérifier l'état
+console.log('[SettingsPage] 🔍 État du système:');
+console.log('- window.settingsPage:', !!window.settingsPage);
+console.log('- window.pageManager:', !!window.pageManager);
+console.log('- window.pageManager.pages:', !!window.pageManager?.pages);
+console.log('- window.pageManager.pages.settings:', !!window.pageManager?.pages?.settings);
