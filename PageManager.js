@@ -1,8 +1,1465 @@
-// PageManager.js - Version 12.2 - Avec position fixe et sélection tout
+.emails-container-unified {
+                background: white;
+                border-radius: var(--border-radius);
+                box-shadow: var(--shadow);
+                overflow: hidden;
+            }
+
+            .emails-list-unified {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .email-card-unified {
+                display: flex;
+                align-items: center;
+                padding: 16px;
+                border-bottom: 1px solid #f1f5f9;
+                cursor: pointer;
+                transition: var(--transition);
+                position: relative;
+                min-height: 80px;
+            }
+
+            .email-card-unified:hover {
+                background: #f8fafc;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
+            .email-card-unified.selected {
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border-left: 4px solid var(--primary-color);
+            }
+
+            .email-card-unified.preselected {
+                background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
+                border-left: 4px solid var(--secondary-color);
+            }
+
+            .email-card-unified.preselected.selected {
+                background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
+                border-left: 4px solid var(--secondary-color);
+            }
+
+            .email-card-unified.has-task {
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                border-left: 4px solid var(--success-color);
+            }
+
+            .email-checkbox-unified {
+                margin-right: 16px;
+                width: 20px;
+                height: 20px;
+                border-radius: 6px;
+                border: 2px solid #d1d5db;
+                background: white;
+                cursor: pointer;
+                appearance: none;
+                position: relative;
+                transition: var(--transition);
+            }
+
+            .email-checkbox-unified:checked {
+                background: var(--primary-color);
+                border-color: var(--primary-color);
+            }
+
+            .email-card-unified.preselected .email-checkbox-unified:checked {
+                background: var(--secondary-color);
+                border-color: var(--secondary-color);
+            }
+
+            .email-checkbox-unified:checked::after {
+                content: '✓';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .priority-bar-unified {
+                width: 4px;
+                height: 60px;
+                border-radius: 2px;
+                margin-right: 16px;
+                transition: var(--transition);
+            }
+
+            .priority-bar-unified.google {
+                background: linear-gradient(135deg, var(--google-color), #34a853);
+            }
+
+            .priority-bar-unified.microsoft {
+                background: linear-gradient(135deg, var(--microsoft-color), #00bcf2);
+            }
+
+            .email-content-unified {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .email-header-unified {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .email-subject-unified {
+                font-size: 16px;
+                font-weight: 700;
+                color: #1f2937;
+                margin: 0;
+                line-height: 1.3;
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .email-meta-unified {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .email-type-badge-unified,
+            .email-date-badge-unified,
+            .confidence-badge-unified,
+            .preselected-badge-unified {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+
+            .email-type-badge-unified {
+                background: #f8fafc;
+                color: #64748b;
+                border: 1px solid #e2e8f0;
+            }
+
+            .email-type-badge-unified.google {
+                background: rgba(66, 133, 244, 0.1);
+                color: var(--google-color);
+                border-color: rgba(66, 133, 244, 0.3);
+            }
+
+            .email-type-badge-unified.microsoft {
+                background: rgba(0, 120, 215, 0.1);
+                color: var(--microsoft-color);
+                border-color: rgba(0, 120, 215, 0.3);
+            }
+
+            .email-date-badge-unified {
+                background: #f1f5f9;
+                color: #475569;
+                border: 1px solid #cbd5e1;
+            }
+
+            .confidence-badge-unified {
+                background: #f0fdf4;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+
+            .preselected-badge-unified {
+                background: linear-gradient(135deg, var(--secondary-color), #7c3aed);
+                color: white;
+                border: none;
+                box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.8; }
+            }
+
+            .email-sender-unified {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+            .sender-avatar-unified {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+                font-size: 14px;
+                flex-shrink: 0;
+            }
+
+            .sender-info-unified {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+                flex: 1;
+            }
+
+            .sender-name-unified {
+                font-size: 14px;
+                font-weight: 600;
+                color: #374151;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .sender-email-unified {
+                font-size: 12px;
+                color: #6b7280;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .attachment-indicator-unified {
+                color: #f59e0b;
+                font-size: 14px;
+            }
+
+            .category-badge-unified {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                border: 1px solid;
+                white-space: nowrap;
+            }
+
+            .category-badge-unified.preselected {
+                box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+                animation: glow 2s infinite;
+            }
+
+            @keyframes glow {
+                0%, 100% { box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3); }
+                50% { box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5); }
+            }
+
+            .email-preview-unified {
+                font-size: 13px;
+                color: #6b7280;
+                line-height: 1.4;
+                margin-top: 4px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .email-actions-unified {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin-left: 16px;
+                flex-shrink: 0;
+            }
+
+            .action-btn-unified {
+                width: 36px;
+                height: 36px;
+                border: 2px solid transparent;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.9);
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: var(--transition);
+                font-size: 14px;
+                backdrop-filter: blur(10px);
+            }
+
+            .action-btn-unified:hover {
+                background: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+
+            .action-btn-unified.create-task {
+                color: var(--primary-color);
+            }
+
+            .action-btn-unified.create-task:hover {
+                background: rgba(99, 102, 241, 0.1);
+                border-color: var(--primary-color);
+            }
+
+            .action-btn-unified.create-task.preselected {
+                color: var(--secondary-color);
+                background: rgba(139, 92, 246, 0.1);
+            }
+
+            .action-btn-unified.create-task.preselected:hover {
+                background: rgba(139, 92, 246, 0.2);
+                border-color: var(--secondary-color);
+            }
+
+            .action-btn-unified.view-task {
+                color: var(--success-color);
+                background: rgba(16, 185, 129, 0.1);
+            }
+
+            .action-btn-unified.view-task:hover {
+                background: rgba(16, 185, 129, 0.2);
+                border-color: var(--success-color);
+            }
+
+            .action-btn-unified.details {
+                color: #8b5cf6;
+            }
+
+            .action-btn-unified.details:hover {
+                background: rgba(139, 92, 246, 0.1);
+                border-color: #8b5cf6;
+            }
+
+            /* Vue groupée */
+            .emails-grouped-unified {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .email-group-unified {
+                border-bottom: 1px solid #f1f5f9;
+            }
+
+            .group-header-unified {
+                display: flex;
+                align-items: center;
+                padding: 16px;
+                cursor: pointer;
+                transition: var(--transition);
+                background: #fafbfc;
+                gap: 16px;
+            }
+
+            .group-header-unified:hover {
+                background: #f1f5f9;
+            }
+
+            .email-group-unified.expanded .group-header-unified {
+                background: #e2e8f0;
+                border-bottom: 1px solid #cbd5e1;
+            }
+
+            .group-avatar-unified {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+                font-size: 18px;
+                flex-shrink: 0;
+            }
+
+            .group-info-unified {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .group-name-unified {
+                font-size: 16px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 4px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .group-meta-unified {
+                font-size: 13px;
+                color: #6b7280;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .group-expand-unified {
+                width: 36px;
+                height: 36px;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #6b7280;
+                transition: var(--transition);
+                cursor: pointer;
+            }
+
+            .group-expand-unified:hover {
+                background: #f9fafb;
+                border-color: #d1d5db;
+            }
+
+            .group-content-unified {
+                background: white;
+            }
+
+            /* État vide */
+            .empty-state-unified {
+                text-align: center;
+                padding: 80px 40px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .empty-icon-unified {
+                width: 80px;
+                height: 80px;
+                background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+                border-radius: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #9ca3af;
+                font-size: 36px;
+                margin-bottom: 24px;
+            }
+
+            .empty-title-unified {
+                font-size: 24px;
+                font-weight: 700;
+                color: #374151;
+                margin-bottom: 12px;
+            }
+
+            .empty-text-unified {
+                font-size: 16px;
+                color: #6b7280;
+                margin-bottom: 32px;
+                max-width: 400px;
+                line-height: 1.6;
+            }
+
+            /* Menu dropdown */
+            .dropdown-unified {
+                position: relative;
+            }
+
+            .dropdown-menu-unified {
+                position: absolute;
+                top: calc(100% + 8px);
+                right: 0;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 10px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+                min-width: 200px;
+                padding: 8px 0;
+                opacity: 0;
+                visibility: hidden;
+                transform: translateY(-10px);
+                transition: all 0.2s ease;
+                z-index: 1000;
+            }
+
+            .dropdown-menu-unified.show {
+                opacity: 1;
+                visibility: visible;
+                transform: translateY(0);
+            }
+
+            .dropdown-item-unified {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 16px;
+                background: none;
+                border: none;
+                width: 100%;
+                text-align: left;
+                color: #374151;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: var(--transition);
+            }
+
+            .dropdown-item-unified:hover {
+                background: #f8fafc;
+                color: #1f2937;
+            }
+
+            .dropdown-item-unified.danger {
+                color: var(--danger-color);
+            }
+
+            .dropdown-item-unified.danger:hover {
+                background: #fef2f2;
+                color: #dc2626;
+            }
+
+            .dropdown-divider-unified {
+                height: 1px;
+                background: #e5e7eb;
+                margin: 8px 0;
+            }
+
+            /* Responsive amélioré */
+            @media (max-width: 1024px) {
+                .controls-bar-unified {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 12px;
+                }
+
+                .search-section-unified {
+                    order: 1;
+                    min-width: auto;
+                }
+
+                .view-modes-unified {
+                    order: 2;
+                    justify-content: space-around;
+                }
+
+                .actions-section-unified {
+                    order: 3;
+                    justify-content: center;
+                }
+
+                .filters-bar-unified {
+                    gap: 4px;
+                }
+
+                .filter-tab-unified {
+                    min-width: 80px;
+                    padding: 8px;
+                }
+
+                .email-header-unified {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 8px;
+                }
+
+                .email-meta-unified {
+                    align-self: stretch;
+                    justify-content: flex-start;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .emails-page-unified {
+                    padding: 12px;
+                }
+
+                .btn-unified .btn-text {
+                    display: none;
+                }
+
+                .view-mode-unified span {
+                    display: none;
+                }
+
+                .actions-section-unified {
+                    flex-wrap: wrap;
+                    gap: 4px;
+                }
+
+                .btn-unified {
+                    min-width: 44px;
+                    padding: 0 8px;
+                    justify-content: center;
+                }
+
+                .email-card-unified {
+                    padding: 12px;
+                    min-height: auto;
+                }
+
+                .priority-bar-unified {
+                    height: 40px;
+                    margin-right: 12px;
+                }
+
+                .sender-avatar-unified {
+                    width: 32px;
+                    height: 32px;
+                    font-size: 12px;
+                }
+
+                .email-sender-unified {
+                    gap: 8px;
+                }
+
+                .email-actions-unified {
+                    margin-left: 8px;
+                    gap: 4px;
+                }
+
+                .action-btn-unified {
+                    width: 32px;
+                    height: 32px;
+                    font-size: 12px;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .email-card-unified {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 12px;
+                }
+
+                .email-checkbox-unified {
+                    margin-right: 0;
+                    margin-bottom: 8px;
+                }
+
+                .priority-bar-unified {
+                    display: none;
+                }
+
+                .email-content-unified {
+                    width: 100%;
+                }
+
+                .email-actions-unified {
+                    margin-left: 0;
+                    width: 100%;
+                    justify-content: flex-end;
+                }
+
+                .empty-state-unified {
+                    padding: 40px 20px;
+                }
+
+                .empty-icon-unified {
+                    width: 60px;
+                    height: 60px;
+                    font-size: 28px;
+                }
+
+                .empty-title-unified {
+                    font-size: 20px;
+                }
+
+                .empty-text-unified {
+                    font-size: 14px;
+                }
+            }
+
+            /* Animations améliorées */
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .email-card-unified {
+                animation: slideIn 0.3s ease-out;
+            }
+
+            .email-card-unified:nth-child(even) {
+                animation-delay: 0.05s;
+            }
+
+            .email-card-unified:nth-child(odd) {
+                animation-delay: 0.1s;
+            }
+
+            /* Améliorations pour l'accessibilité */
+            .email-card-unified:focus-within {
+                outline: 2px solid var(--primary-color);
+                outline-offset: 2px;
+            }
+
+            .btn-unified:focus,
+            .action-btn-unified:focus {
+                outline: 2px solid var(--primary-color);
+                outline-offset: 2px;
+            }
+
+            /* États de chargement */
+            .loading-skeleton {
+                background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+                background-size: 200% 100%;
+                animation: loading 1.5s infinite;
+            }
+
+            @keyframes loading {
+                0% {
+                    background-position: 200% 0;
+                }
+                100% {
+                    background-position: -200% 0;
+                }
+            }
+
+            /* Indicateurs de statut */
+            .status-indicator {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                z-index: 10;
+            }
+
+            .status-indicator.unread {
+                background: var(--primary-color);
+            }
+
+            .status-indicator.important {
+                background: var(--warning-color);
+            }
+
+            .status-indicator.urgent {
+                background: var(--danger-color);
+                animation: pulse 1s infinite;
+            }
+
+            /* Transitions fluides */
+            * {
+                scrollbar-width: thin;
+                scrollbar-color: #cbd5e1 #f1f5f9;
+            }
+
+            *::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+
+            *::-webkit-scrollbar-track {
+                background: #f1f5f9;
+                border-radius: 3px;
+            }
+
+            *::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 3px;
+            }
+
+            /* Styles pour les modales unifiées */
+            .modal-overlay-unified {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.75);
+                z-index: 99999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                backdrop-filter: blur(4px);
+                animation: fadeIn 0.3s ease;
+            }
+
+            .modal-container-unified {
+                background: white;
+                border-radius: 16px;
+                max-width: 900px;
+                width: 100%;
+                max-height: 90vh;
+                display: flex;
+                flex-direction: column;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                animation: slideUp 0.3s ease;
+            }
+
+            .modal-container-unified.large {
+                max-width: 1200px;
+            }
+
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+
+            @keyframes slideUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .modal-header-unified {
+                padding: 24px;
+                border-bottom: 1px solid #e5e7eb;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-shrink: 0;
+            }
+
+            .modal-title-section {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+
+            .modal-title {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1f2937;
+                margin: 0;
+            }
+
+            .modal-provider-badge {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                border: 1px solid currentColor;
+            }
+
+            .modal-close-btn {
+                background: none;
+                border: none;
+                font-size: 24px;
+                cursor: pointer;
+                color: #6b7280;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: var(--transition);
+            }
+
+            .modal-close-btn:hover {
+                background: #f3f4f6;
+                color: #374151;
+            }
+
+            .modal-content-unified {
+                padding: 24px;
+                overflow-y: auto;
+                flex: 1;
+            }
+
+            .modal-footer-unified {
+                padding: 24px;
+                border-top: 1px solid #e5e7eb;
+                display: flex;
+                justify-content: flex-end;
+                gap: 12px;
+                flex-shrink: 0;
+            }
+
+            /* Styles pour le formulaire de tâche */
+            .task-form-unified {
+                display: flex;
+                flex-direction: column;
+                gap: 24px;
+            }
+
+            .ai-analysis-badge {
+                background: #f0f9ff;
+                border: 1px solid #0ea5e9;
+                border-radius: 12px;
+                padding: 16px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                color: #0c4a6e;
+                font-weight: 600;
+            }
+
+            .email-source-card {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 16px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+
+            .source-avatar {
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+                font-size: 18px;
+                flex-shrink: 0;
+            }
+
+            .source-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .source-name {
+                font-size: 16px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 4px;
+            }
+
+            .source-email {
+                font-size: 14px;
+                color: #6b7280;
+                margin-bottom: 4px;
+            }
+
+            .source-subject {
+                font-size: 13px;
+                color: #9ca3af;
+                font-style: italic;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .source-provider {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                background: white;
+                padding: 8px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                border: 1px solid #e5e7eb;
+                flex-shrink: 0;
+            }
+
+            .form-grid-unified {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .form-field-unified {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .form-row-unified {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+
+            .form-label-unified {
+                font-size: 14px;
+                font-weight: 600;
+                color: #374151;
+            }
+
+            .form-input-unified,
+            .form-textarea-unified,
+            .form-select-unified {
+                width: 100%;
+                padding: 12px 16px;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 14px;
+                transition: var(--transition);
+                outline: none;
+                font-family: inherit;
+            }
+
+            .form-input-unified:focus,
+            .form-textarea-unified:focus,
+            .form-select-unified:focus {
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            }
+
+            .form-textarea-unified {
+                resize: vertical;
+                min-height: 100px;
+            }
+
+            .email-preview-section {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                overflow: hidden;
+            }
+
+            .preview-toggle-btn {
+                width: 100%;
+                background: #f8fafc;
+                border: none;
+                padding: 16px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                color: #475569;
+                transition: var(--transition);
+            }
+
+            .preview-toggle-btn:hover {
+                background: #f1f5f9;
+                color: #334155;
+            }
+
+            .email-preview-content {
+                background: white;
+                border-top: 1px solid #e5e7eb;
+            }
+
+            .preview-header {
+                padding: 16px;
+                border-bottom: 1px solid #f1f5f9;
+                background: #fafbfc;
+                font-size: 13px;
+                line-height: 1.6;
+            }
+
+            .preview-header div {
+                margin-bottom: 4px;
+            }
+
+            .preview-body {
+                padding: 16px;
+                max-height: 300px;
+                overflow-y: auto;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+            }
+
+            /* Styles pour la modale d'email */
+            .email-details-card {
+                display: flex;
+                flex-direction: column;
+                gap: 24px;
+            }
+
+            .email-header-details {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 24px;
+                padding: 20px;
+                background: #f8fafc;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+            }
+
+            .sender-section {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+
+            .sender-avatar-large {
+                width: 60px;
+                height: 60px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+                font-size: 24px;
+                flex-shrink: 0;
+            }
+
+            .sender-details {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .sender-name-large {
+                font-size: 18px;
+                font-weight: 700;
+                color: #1f2937;
+            }
+
+            .sender-email-large {
+                font-size: 14px;
+                color: #6b7280;
+            }
+
+            .email-date-large {
+                font-size: 13px;
+                color: #9ca3af;
+            }
+
+            .email-meta-details {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-end;
+            }
+
+            .meta-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+            }
+
+            .meta-label {
+                font-weight: 600;
+                color: #6b7280;
+                min-width: 80px;
+            }
+
+            .category-badge-large,
+            .provider-badge-small,
+            .attachment-badge {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+
+            .provider-badge-small {
+                border: 1px solid currentColor;
+            }
+
+            .attachment-badge {
+                background: #fef3c7;
+                color: #d97706;
+                border: 1px solid #fbbf24;
+            }
+
+            .email-subject-large {
+                font-size: 20px;
+                font-weight: 700;
+                color: #1f2937;
+                line-height: 1.4;
+                padding: 16px 20px;
+                background: white;
+                border-radius: 12px;
+                border: 1px solid #e5e7eb;
+            }
+
+            .email-body-container {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 20px;
+                max-height: 500px;
+                overflow-y: auto;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+            }
+
+            /* Styles pour les autres pages */
+            .page-container-unified {
+                min-height: calc(100vh - 120px);
+                padding: 20px;
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            }
+
+            .page-header-unified {
+                text-align: center;
+                margin-bottom: 40px;
+            }
+
+            .page-header-unified h1 {
+                font-size: 32px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 8px;
+            }
+
+            .page-header-unified p {
+                font-size: 16px;
+                color: #6b7280;
+                margin: 0;
+            }
+
+            .scanner-fallback-card {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border-radius: 20px;
+                padding: 50px;
+                text-align: center;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                max-width: 600px;
+                width: 100%;
+                margin: 0 auto;
+            }
+
+            .scanner-icon {
+                width: 80px;
+                height: 80px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 25px;
+                color: white;
+                font-size: 32px;
+            }
+
+            .provider-status {
+                background: rgba(34, 197, 94, 0.1);
+                color: #16a34a;
+                padding: 12px 20px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                font-weight: 600;
+                margin-top: 20px;
+            }
+
+            .auth-required {
+                margin-top: 30px;
+            }
+
+            .auth-buttons {
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+                margin-top: 20px;
+            }
+
+            .categories-grid-unified {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 20px;
+            }
+
+            .category-card-unified {
+                background: white;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                transition: var(--transition);
+                border: 1px solid #e5e7eb;
+            }
+
+            .category-card-unified:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            }
+
+            .category-icon-large {
+                width: 60px;
+                height: 60px;
+                border-radius: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                margin-bottom: 16px;
+            }
+
+            .category-name {
+                font-size: 18px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 8px;
+            }
+
+            .category-description {
+                font-size: 14px;
+                color: #6b7280;
+                margin-bottom: 16px;
+                line-height: 1.5;
+            }
+
+            .category-status {
+                display: flex;
+                justify-content: flex-end;
+            }
+
+            .status-badge {
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+
+            .status-badge.custom {
+                background: #fef3c7;
+                color: #d97706;
+            }
+
+            .status-badge.system {
+                background: #dbeafe;
+                color: #2563eb;
+            }
+
+            .settings-sections {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+                gap: 24px;
+            }
+
+            .settings-card {
+                background: white;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                border: 1px solid #e5e7eb;
+            }
+
+            .settings-card h3 {
+                font-size: 18px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 8px;
+            }
+
+            .settings-card p {
+                font-size: 14px;
+                color: #6b7280;
+                margin-bottom: 20px;
+                line-height: 1.5;
+            }
+
+            .provider-status-list {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .provider-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                background: #f8fafc;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+            }
+
+            .provider-item i {
+                font-size: 18px;
+                width: 24px;
+                text-align: center;
+            }
+
+            .provider-item span:nth-child(2) {
+                flex: 1;
+                font-weight: 600;
+                color: #374151;
+            }
+
+            .status.connected {
+                color: #16a34a;
+                font-weight: 600;
+            }
+
+            .status.disconnected {
+                color: #dc2626;
+                font-weight: 600;
+            }
+
+            /* Responsive pour les modales */
+            @media (max-width: 768px) {
+                .modal-overlay-unified {
+                    padding: 12px;
+                }
+
+                .modal-container-unified {
+                    max-width: 100%;
+                    max-height: 95vh;
+                }
+
+                .modal-header-unified,
+                .modal-content-unified,
+                .modal-footer-unified {
+                    padding: 16px;
+                }
+
+                .modal-title-section {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 8px;
+                }
+
+                .email-header-details {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 16px;
+                }
+
+                .email-meta-details {
+                    align-items: flex-start;
+                    width: 100%;
+                }
+
+                .form-row-unified {
+                    grid-template-columns: 1fr;
+                }
+
+                .modal-footer-unified {
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
+                .modal-footer-unified button {
+                    width: 100%;
+                    justify-content: center;
+                }
+            }
+        `;
+        
+        document.head.appendChild(styles);
+    }// PageManager.js - Version 13.0 - Intégration Gmail/Outlook Unifiée et Robuste
 
 class PageManager {
     constructor() {
-        // Core state
+        // Core state unifié
         this.currentPage = null;
         this.selectedEmails = new Set();
         this.aiAnalysisResults = new Map();
@@ -16,7 +1473,25 @@ class PageManager {
         this.currentViewMode = 'grouped-domain';
         this.currentCategory = null;
         
-        // Page renderers - DASHBOARD SUPPRIMÉ
+        // NOUVEAU: Gestion provider unifié
+        this.currentProvider = null;
+        this.providerState = {
+            google: { lastUpdate: 0, isAuthenticated: false },
+            microsoft: { lastUpdate: 0, isAuthenticated: false }
+        };
+        
+        // Synchronisation renforcée avec CategoryManager
+        this.settings = {};
+        this.taskPreselectedCategories = [];
+        this.lastSettingsSync = 0;
+        this.syncListeners = new Set();
+        
+        // Cache performance
+        this.emailsCache = new Map();
+        this.categoriesCache = new Map();
+        this.lastCacheUpdate = 0;
+        
+        // Page renderers
         this.pages = {
             scanner: (container) => this.renderScanner(container),
             emails: (container) => this.renderEmails(container),
@@ -27,32 +1502,341 @@ class PageManager {
         };
         
         this.setupEventListeners();
+        this.initializeProviderMonitoring();
         this.init();
     }
 
     init() {
-        console.log('[PageManager] ✅ Version 12.2 - Position fixe et sélection tout');
+        console.log('[PageManager] ✅ Version 13.0 - Intégration Gmail/Outlook Unifiée');
+        this.loadUnifiedSettings();
+        this.startProviderSync();
     }
 
     // ================================================
-    // ÉVÉNEMENTS GLOBAUX - SYNCHRONISATION FIXÉE
+    // GESTION PROVIDER UNIFIÉ ROBUSTE
+    // ================================================
+    initializeProviderMonitoring() {
+        // Surveiller les changements d'authentification
+        setInterval(() => {
+            this.checkProviderChanges();
+        }, 2000);
+        
+        // Écouter les événements d'authentification
+        this.setupProviderEventListeners();
+    }
+
+    setupProviderEventListeners() {
+        // Écouter l'initialisation de MailService
+        window.addEventListener('mailServiceInitialized', (event) => {
+            const { provider } = event.detail;
+            console.log(`[PageManager] 📧 MailService initialisé: ${provider}`);
+            
+            this.currentProvider = provider;
+            this.updateProviderUI(provider);
+            
+            // Mettre à jour l'affichage si on est sur la page emails
+            if (this.currentPage === 'emails') {
+                setTimeout(() => {
+                    this.refreshEmailsView();
+                }, 200);
+            }
+        });
+
+        // Écouter les changements de connexion
+        window.addEventListener('userAuthenticated', (event) => {
+            const { provider } = event.detail || {};
+            console.log(`[PageManager] 🔐 Utilisateur connecté: ${provider}`);
+            
+            if (provider) {
+                this.currentProvider = provider;
+                this.providerState[provider].isAuthenticated = true;
+                this.providerState[provider].lastUpdate = Date.now();
+            }
+            
+            this.refreshCurrentPage();
+        });
+
+        window.addEventListener('userLoggedOut', (event) => {
+            const { provider } = event.detail || {};
+            console.log(`[PageManager] 🚪 Utilisateur déconnecté: ${provider}`);
+            
+            if (provider) {
+                this.providerState[provider].isAuthenticated = false;
+                this.providerState[provider].lastUpdate = Date.now();
+            }
+            
+            this.clearEmailsCache();
+            this.refreshCurrentPage();
+        });
+    }
+
+    checkProviderChanges() {
+        const previousProvider = this.currentProvider;
+        const newProvider = this.detectCurrentProvider();
+        
+        if (newProvider !== previousProvider) {
+            console.log(`[PageManager] 🔄 Changement provider: ${previousProvider} → ${newProvider}`);
+            
+            this.currentProvider = newProvider;
+            this.clearEmailsCache();
+            
+            if (newProvider) {
+                this.updateProviderUI(newProvider);
+            }
+            
+            // Rafraîchir la page courante si nécessaire
+            if (this.currentPage === 'emails' || this.currentPage === 'scanner') {
+                this.refreshCurrentPage();
+            }
+        }
+    }
+
+    detectCurrentProvider() {
+        // Vérifier Google en premier (priorité Gmail)
+        if (window.googleAuthService && 
+            typeof window.googleAuthService.isAuthenticated === 'function') {
+            try {
+                if (window.googleAuthService.isAuthenticated()) {
+                    return 'google';
+                }
+            } catch (error) {
+                console.warn('[PageManager] Erreur vérification Google:', error);
+            }
+        }
+        
+        // Puis Microsoft
+        if (window.authService && 
+            typeof window.authService.isAuthenticated === 'function') {
+            try {
+                if (window.authService.isAuthenticated()) {
+                    return 'microsoft';
+                }
+            } catch (error) {
+                console.warn('[PageManager] Erreur vérification Microsoft:', error);
+            }
+        }
+        
+        return null;
+    }
+
+    updateProviderUI(provider) {
+        // Mettre à jour les badges de provider dans l'interface
+        const providerBadges = document.querySelectorAll('.provider-badge-unified');
+        
+        providerBadges.forEach(badge => {
+            if (provider === 'google') {
+                badge.innerHTML = `
+                    <i class="fab fa-google"></i>
+                    <span>Gmail</span>
+                `;
+                badge.className = 'provider-badge-unified google';
+            } else if (provider === 'microsoft') {
+                badge.innerHTML = `
+                    <i class="fab fa-microsoft"></i>
+                    <span>Outlook</span>
+                `;
+                badge.className = 'provider-badge-unified microsoft';
+            }
+        });
+        
+        // Mettre à jour les textes spécifiques au provider
+        const providerTexts = document.querySelectorAll('.provider-text');
+        const providerName = provider === 'google' ? 'Gmail' : 'Outlook';
+        
+        providerTexts.forEach(text => {
+            text.textContent = text.textContent.replace(/Gmail|Outlook|Google|Microsoft/g, providerName);
+        });
+    }
+
+    // ================================================
+    // SYNCHRONISATION SETTINGS UNIFIÉE RENFORCÉE
+    // ================================================
+    loadUnifiedSettings() {
+        console.log('[PageManager] 📊 Chargement settings unifié...');
+        
+        try {
+            // Priorité au CategoryManager
+            if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
+                this.settings = window.categoryManager.getSettings();
+                this.taskPreselectedCategories = window.categoryManager.getTaskPreselectedCategories();
+                
+                console.log('[PageManager] ✅ Settings depuis CategoryManager');
+                console.log('[PageManager] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+            } else {
+                // Fallback localStorage
+                const saved = localStorage.getItem('categorySettings');
+                if (saved) {
+                    this.settings = JSON.parse(saved);
+                    this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
+                } else {
+                    this.settings = this.getDefaultSettings();
+                    this.taskPreselectedCategories = [];
+                }
+                
+                console.log('[PageManager] 📦 Settings depuis localStorage/défaut');
+            }
+            
+            this.lastSettingsSync = Date.now();
+            
+        } catch (error) {
+            console.error('[PageManager] ❌ Erreur chargement settings:', error);
+            this.settings = this.getDefaultSettings();
+            this.taskPreselectedCategories = [];
+        }
+    }
+
+    getDefaultSettings() {
+        return {
+            activeCategories: null,
+            excludedDomains: [],
+            excludedKeywords: [],
+            taskPreselectedCategories: [],
+            categoryExclusions: {
+                domains: [],
+                emails: []
+            },
+            scanSettings: {
+                defaultPeriod: 7,
+                defaultFolder: 'inbox',
+                autoAnalyze: true,
+                autoCategrize: true
+            },
+            automationSettings: {
+                autoCreateTasks: false,
+                groupTasksByDomain: false,
+                skipDuplicates: true,
+                autoAssignPriority: false
+            },
+            preferences: {
+                darkMode: false,
+                compactView: false,
+                showNotifications: true,
+                excludeSpam: true,
+                detectCC: true
+            }
+        };
+    }
+
+    startProviderSync() {
+        // Synchronisation périodique
+        setInterval(() => {
+            this.syncWithCategoryManager();
+        }, 5000);
+    }
+
+    syncWithCategoryManager() {
+        if (!window.categoryManager) return;
+        
+        try {
+            const freshCategories = window.categoryManager.getTaskPreselectedCategories();
+            const freshSettings = window.categoryManager.getSettings();
+            
+            // Vérifier les changements
+            const categoriesChanged = JSON.stringify([...this.taskPreselectedCategories].sort()) !== 
+                                    JSON.stringify([...freshCategories].sort());
+            
+            if (categoriesChanged) {
+                console.log('[PageManager] 🔄 Catégories pré-sélectionnées changées');
+                console.log('  - Avant:', this.taskPreselectedCategories);
+                console.log('  - Après:', freshCategories);
+                
+                this.taskPreselectedCategories = [...freshCategories];
+                this.settings = { ...this.settings, ...freshSettings };
+                
+                // Mettre à jour les emails si ils sont chargés
+                if (this.currentPage === 'emails') {
+                    this.updateEmailPreselection();
+                }
+            }
+            
+        } catch (error) {
+            console.error('[PageManager] Erreur sync CategoryManager:', error);
+        }
+    }
+
+    updateEmailPreselection() {
+        console.log('[PageManager] 🔄 Mise à jour pré-sélection emails...');
+        
+        const emails = this.getAllEmails();
+        let updated = 0;
+        
+        emails.forEach(email => {
+            const shouldBePreselected = this.taskPreselectedCategories.includes(email.category);
+            const wasPreselected = email.isPreselectedForTasks === true;
+            
+            if (shouldBePreselected !== wasPreselected) {
+                email.isPreselectedForTasks = shouldBePreselected;
+                updated++;
+                
+                if (shouldBePreselected) {
+                    this.selectedEmails.add(email.id);
+                } else {
+                    this.selectedEmails.delete(email.id);
+                }
+            }
+        });
+        
+        if (updated > 0) {
+            console.log(`[PageManager] ✅ ${updated} emails mis à jour`);
+            this.refreshEmailsView();
+        }
+    }
+
+    // ================================================
+    // GESTION CACHE EMAILS UNIFIÉE
+    // ================================================
+    getAllEmails() {
+        // Utiliser le cache si récent
+        if (this.emailsCache.has('all') && 
+            (Date.now() - this.lastCacheUpdate) < 30000) {
+            return this.emailsCache.get('all');
+        }
+        
+        // Récupérer depuis EmailScanner
+        const emails = window.emailScanner?.getAllEmails() || [];
+        
+        // Mettre à jour le cache
+        this.emailsCache.set('all', emails);
+        this.lastCacheUpdate = Date.now();
+        
+        return emails;
+    }
+
+    clearEmailsCache() {
+        this.emailsCache.clear();
+        this.lastCacheUpdate = 0;
+        console.log('[PageManager] 🗑️ Cache emails effacé');
+    }
+
+    // ================================================
+    // ÉVÉNEMENTS GLOBAUX UNIFIÉS
     // ================================================
     setupEventListeners() {
-        // Écouter les changements de paramètres depuis CategoriesPage
+        // Écouter les changements CategoryManager
         window.addEventListener('categorySettingsChanged', (event) => {
-            console.log('[PageManager] 📨 Paramètres changés reçus:', event.detail);
-            this.handleSettingsChanged(event.detail);
+            console.log('[PageManager] 📨 Settings CategoryManager changés:', event.detail);
+            this.handleCategoryManagerChange(event.detail);
         });
 
-        // Écouter les changements génériques de paramètres
+        // Écouter les changements génériques
         window.addEventListener('settingsChanged', (event) => {
-            console.log('[PageManager] 📨 Changement générique reçu:', event.detail);
-            this.handleGenericSettingsChanged(event.detail);
+            if (event.detail?.source === 'PageManager') return; // Éviter les boucles
+            
+            console.log('[PageManager] 📨 Settings génériques changés:', event.detail);
+            this.handleGenericSettingsChange(event.detail);
         });
 
-        // Écouter la recatégorisation des emails
+        // Écouter la fin des scans
+        window.addEventListener('scanCompleted', (event) => {
+            console.log('[PageManager] 📧 Scan terminé:', event.detail);
+            this.handleScanCompleted(event.detail);
+        });
+
+        // Écouter la recatégorisation
         window.addEventListener('emailsRecategorized', (event) => {
-            console.log('[PageManager] Emails recatégorisés, mise à jour interface');
+            console.log('[PageManager] 🏷️ Emails recatégorisés');
+            this.clearEmailsCache();
+            
             if (this.currentPage === 'emails') {
                 setTimeout(() => {
                     this.refreshEmailsView();
@@ -60,24 +1844,93 @@ class PageManager {
             }
         });
 
-        // Écouter les fins de scan
-        window.addEventListener('scanCompleted', (event) => {
-            console.log('[PageManager] Scan terminé, données mises à jour');
-            this.lastScanData = event.detail;
-            if (this.currentPage === 'emails') {
-                this.loadPage('emails');
-            }
-        });
-
-        // Écouter le scroll pour gérer la position fixe
+        // Scroll pour sticky
         window.addEventListener('scroll', () => {
             this.handleScrollForSticky();
         });
+
+        // Resize pour responsive
+        window.addEventListener('resize', () => {
+            this.handleResize();
+        });
     }
 
-    // ================================================
-    // GESTION POSITION FIXE POUR SCROLL
-    // ================================================
+    handleCategoryManagerChange(detail) {
+        const { settings, type, value } = detail;
+        
+        if (type === 'taskPreselectedCategories') {
+            console.log('[PageManager] 📋 Catégories pré-sélectionnées changées:', value);
+            this.taskPreselectedCategories = Array.isArray(value) ? [...value] : [];
+            
+            // Mettre à jour immédiatement
+            if (this.currentPage === 'emails') {
+                this.updateEmailPreselection();
+            }
+        }
+        
+        if (settings) {
+            this.settings = { ...this.settings, ...settings };
+        }
+        
+        // Déclencher re-catégorisation si nécessaire
+        if (['activeCategories', 'categoryExclusions', 'preferences'].includes(type)) {
+            this.triggerRecategorization();
+        }
+    }
+
+    handleGenericSettingsChange(detail) {
+        const { type, value } = detail;
+        
+        switch (type) {
+            case 'taskPreselectedCategories':
+                this.taskPreselectedCategories = Array.isArray(value) ? [...value] : [];
+                this.updateEmailPreselection();
+                break;
+                
+            case 'activeCategories':
+                this.settings.activeCategories = value;
+                this.triggerRecategorization();
+                break;
+                
+            case 'preferences':
+                this.settings.preferences = { ...this.settings.preferences, ...value };
+                this.refreshEmailsView();
+                break;
+        }
+    }
+
+    handleScanCompleted(detail) {
+        this.lastScanData = detail;
+        this.clearEmailsCache();
+        
+        // Rediriger vers emails si pas déjà dessus
+        if (this.currentPage !== 'emails') {
+            this.loadPage('emails');
+        } else {
+            this.refreshEmailsView();
+        }
+        
+        // Afficher notification avec provider
+        const provider = detail.provider || this.currentProvider;
+        const providerName = provider === 'google' ? 'Gmail' : 'Outlook';
+        const message = detail.preselectedCount > 0 ?
+            `✅ ${detail.results?.total || 0} emails ${providerName} • ⭐ ${detail.preselectedCount} pré-sélectionnés` :
+            `✅ ${detail.results?.total || 0} emails ${providerName} analysés`;
+        
+        if (window.uiManager?.showToast) {
+            window.uiManager.showToast(message, 'success', 4000);
+        }
+    }
+
+    triggerRecategorization() {
+        if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
+            console.log('[PageManager] 🔄 Déclenchement recatégorisation...');
+            setTimeout(() => {
+                window.emailScanner.recategorizeEmails?.();
+            }, 150);
+        }
+    }
+
     handleScrollForSticky() {
         if (this.currentPage !== 'emails') return;
 
@@ -91,99 +1944,41 @@ class PageManager {
         
         if (scrollY > containerTop - 20) {
             stickyContainer.classList.add('sticky-active');
-            // Ajouter un padding-top au contenu pour compenser
-            const content = document.querySelector('.tasks-container-harmonized');
-            if (content) {
-                content.style.paddingTop = stickyContainer.offsetHeight + 'px';
-            }
         } else {
             stickyContainer.classList.remove('sticky-active');
-            const content = document.querySelector('.tasks-container-harmonized');
-            if (content) {
-                content.style.paddingTop = '0';
-            }
         }
     }
 
-    // ================================================
-    // GESTION DES CHANGEMENTS DE PARAMÈTRES - NOUVELLE
-    // ================================================
-    handleSettingsChanged(settingsData) {
-        console.log('[PageManager] 🔧 Traitement changement paramètres:', settingsData);
-        
-        // Si c'est un changement de catégories pré-sélectionnées, forcer la re-catégorisation
-        if (settingsData.settings?.taskPreselectedCategories) {
-            console.log('[PageManager] 📋 Catégories pré-sélectionnées changées:', settingsData.settings.taskPreselectedCategories);
-            
-            // Déclencher la re-catégorisation si des emails existent
-            if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
-                console.log('[PageManager] 🔄 Déclenchement re-catégorisation...');
-                setTimeout(() => {
-                    window.emailScanner.recategorizeEmails?.();
-                }, 100);
-            }
-        }
-        
-        // Mettre à jour l'affichage si on est sur la page emails
+    handleResize() {
+        // Réorganiser l'interface responsive
         if (this.currentPage === 'emails') {
-            setTimeout(() => {
-                this.refreshEmailsView();
-            }, 200);
+            this.adjustResponsiveLayout();
         }
     }
 
-    handleGenericSettingsChanged(changeData) {
-        console.log('[PageManager] 🔧 Traitement changement générique:', changeData);
+    adjustResponsiveLayout() {
+        const width = window.innerWidth;
+        const controlsBar = document.querySelector('.controls-bar-single-line');
         
-        const { type, value } = changeData;
-        
-        switch (type) {
-            case 'taskPreselectedCategories':
-                console.log('[PageManager] 📋 Catégories pour tâches changées:', value);
-                // Mettre à jour le auto-analyzer si disponible
-                if (window.aiTaskAnalyzer && typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
-                    window.aiTaskAnalyzer.updatePreselectedCategories(value);
-                }
-                break;
-                
-            case 'activeCategories':
-                console.log('[PageManager] 🏷️ Catégories actives changées:', value);
-                // Déclencher la re-catégorisation
-                if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
-                    setTimeout(() => {
-                        window.emailScanner.recategorizeEmails?.();
-                    }, 150);
-                }
-                break;
-                
-            case 'preferences':
-                console.log('[PageManager] ⚙️ Préférences changées:', value);
-                // Mettre à jour l'affichage selon les nouvelles préférences
-                if (this.currentPage === 'emails') {
-                    setTimeout(() => {
-                        this.refreshEmailsView();
-                    }, 100);
-                }
-                break;
+        if (controlsBar) {
+            if (width <= 1024) {
+                controlsBar.classList.add('mobile-layout');
+            } else {
+                controlsBar.classList.remove('mobile-layout');
+            }
         }
     }
 
-    // =====================================
-    // PAGE LOADING - DASHBOARD IGNORÉ
-    // =====================================
+    // ================================================
+    // NAVIGATION PAGES UNIFIÉE
+    // ================================================
     async loadPage(pageName) {
-        console.log(`[PageManager] Chargement page: ${pageName}`);
+        console.log(`[PageManager] 📄 Chargement page: ${pageName} (provider: ${this.currentProvider})`);
 
-        // IGNORER complètement le dashboard
+        // Ignorer le dashboard
         if (pageName === 'dashboard') {
             console.log('[PageManager] Dashboard ignoré - géré par index.html');
             this.updateNavigation(pageName);
-            
-            const pageContent = document.getElementById('pageContent');
-            if (pageContent) {
-                pageContent.style.display = 'block';
-                pageContent.style.opacity = '1';
-            }
             return;
         }
 
@@ -197,6 +1992,18 @@ class PageManager {
         window.uiManager?.showLoading(`Chargement ${pageName}...`);
 
         try {
+            // Vérifier l'authentification pour certaines pages
+            if (['emails', 'scanner'].includes(pageName)) {
+                const provider = this.detectCurrentProvider();
+                if (!provider) {
+                    this.renderAuthRequired(pageContent, pageName);
+                    window.uiManager?.hideLoading();
+                    return;
+                }
+                
+                this.currentProvider = provider;
+            }
+
             pageContent.innerHTML = '';
             
             if (this.pages[pageName]) {
@@ -213,21 +2020,67 @@ class PageManager {
             window.uiManager?.hideLoading();
             window.uiManager?.showToast(`Erreur: ${error.message}`, 'error');
             
-            pageContent.innerHTML = this.renderErrorPage(error);
+            pageContent.innerHTML = this.renderErrorPage(error, pageName);
         }
     }
 
-    renderErrorPage(error) {
-        return `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
+    renderAuthRequired(container, pageName) {
+        const pageTitle = pageName === 'emails' ? 'Emails' : 'Scanner';
+        
+        container.innerHTML = `
+            <div class="page-container-unified">
+                <div class="auth-required-card">
+                    <div class="auth-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h2 class="auth-title">Connexion requise</h2>
+                    <p class="auth-subtitle">Connectez-vous pour accéder à ${pageTitle.toLowerCase()}</p>
+                    
+                    <div class="auth-buttons">
+                        <button class="btn-auth btn-microsoft" onclick="window.authService?.login()">
+                            <i class="fab fa-microsoft"></i>
+                            <span>Se connecter avec Microsoft</span>
+                        </button>
+                        
+                        <button class="btn-auth btn-google" onclick="window.googleAuthService?.login()">
+                            <i class="fab fa-google"></i>
+                            <span>Se connecter avec Google</span>
+                        </button>
+                    </div>
+                    
+                    <div class="auth-info">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Connexion sécurisée - Compatible Gmail et Outlook</span>
+                    </div>
                 </div>
-                <h3 class="empty-state-title">Erreur de chargement</h3>
-                <p class="empty-state-text">${error.message}</p>
-                <button class="btn btn-primary" onclick="window.pageManager.loadPage('dashboard')">
-                    Retour au tableau de bord
-                </button>
+            </div>
+        `;
+        
+        this.addAuthStyles();
+    }
+
+    renderErrorPage(error, pageName) {
+        return `
+            <div class="page-container-unified">
+                <div class="error-card">
+                    <div class="error-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h2 class="error-title">Erreur de chargement</h2>
+                    <p class="error-message">${error.message}</p>
+                    
+                    <div class="error-actions">
+                        <button class="btn-primary" onclick="window.pageManager.loadPage('${pageName}')">
+                            <i class="fas fa-redo"></i>
+                            <span>Réessayer</span>
+                        </button>
+                        
+                        <button class="btn-secondary" onclick="window.pageManager.loadPage('dashboard')">
+                            <i class="fas fa-home"></i>
+                            <span>Retour</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -242,15 +2095,24 @@ class PageManager {
         });
     }
 
+    refreshCurrentPage() {
+        if (this.currentPage) {
+            console.log(`[PageManager] 🔄 Rafraîchissement page: ${this.currentPage}`);
+            this.loadPage(this.currentPage);
+        }
+    }
+
     // ================================================
-    // RENDU PAGE EMAILS COMPLET AVEC POSITION FIXE
+    // RENDU PAGE EMAILS UNIFIÉ COMPLET
     // ================================================
     async renderEmails(container) {
-        // Récupérer les emails depuis EmailScanner centralisé
-        const emails = window.emailScanner?.getAllEmails() || [];
-        const categories = window.categoryManager?.getCategories() || {};
+        console.log(`[PageManager] 📧 Rendu page emails (provider: ${this.currentProvider})`);
         
-        console.log(`[PageManager] Rendu page emails avec ${emails.length} emails`);
+        // Synchroniser les settings avant le rendu
+        this.loadUnifiedSettings();
+        
+        const emails = this.getAllEmails();
+        const categories = window.categoryManager?.getCategories() || {};
         
         if (emails.length === 0) {
             container.innerHTML = this.renderEmptyEmailsState();
@@ -261,790 +2123,185 @@ class PageManager {
             const categoryCounts = this.calculateCategoryCounts(emails);
             const totalEmails = emails.length;
             const selectedCount = this.selectedEmails.size;
+            const providerName = this.currentProvider === 'google' ? 'Gmail' : 'Outlook';
             
             container.innerHTML = `
-                <div class="tasks-page-modern">
-                    <!-- Texte explicatif avec possibilité de fermer -->
+                <div class="emails-page-unified">
+                    <!-- Badge Provider -->
+                    <div class="provider-badge-unified ${this.currentProvider}">
+                        <i class="fab fa-${this.currentProvider === 'google' ? 'google' : 'microsoft'}"></i>
+                        <span>${providerName}</span>
+                        <span class="email-count">${totalEmails} emails</span>
+                    </div>
+
+                    <!-- Texte explicatif -->
                     ${!this.hideExplanation ? `
-                        <div class="explanation-text-harmonized">
+                        <div class="explanation-text-unified">
                             <i class="fas fa-info-circle"></i>
-                            <span>Cliquez sur vos emails pour les sélectionner, puis utilisez les boutons d'action pour transformer les emails sélectionnés en tâches ou effectuer d'autres opérations. Vous pouvez également filtrer par catégorie ci-dessous.</span>
+                            <span>Sélectionnez vos emails ${providerName} pour créer des tâches automatiquement ou utiliser les actions en lot. Compatible avec votre workflow ${providerName}.</span>
                             <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
                     ` : ''}
 
-                    <!-- Container original des contrôles et filtres -->
+                    <!-- Container contrôles -->
                     <div class="controls-and-filters-container">
-                        <!-- Barre de contrôles unifiée sur une seule ligne -->
-                        <div class="controls-bar-single-line">
-                            <!-- Barre de recherche -->
-                            <div class="search-section">
-                                <div class="search-box">
-                                    <i class="fas fa-search search-icon"></i>
-                                    <input type="text" 
-                                           class="search-input" 
-                                           id="emailSearchInput"
-                                           placeholder="Rechercher..." 
-                                           value="${this.searchTerm}">
-                                    ${this.searchTerm ? `
-                                        <button class="search-clear" onclick="window.pageManager.clearSearch()">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    ` : ''}
-                                </div>
-                            </div>
-                            
-                            <!-- Modes de vue -->
-                            <div class="view-modes">
-                                <button class="view-mode ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
-                                        onclick="window.pageManager.changeViewMode('grouped-domain')"
-                                        title="Par domaine">
-                                    <i class="fas fa-globe"></i>
-                                    <span>Domaine</span>
-                                </button>
-                                <button class="view-mode ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
-                                        onclick="window.pageManager.changeViewMode('grouped-sender')"
-                                        title="Par expéditeur">
-                                    <i class="fas fa-user"></i>
-                                    <span>Expéditeur</span>
-                                </button>
-                                <button class="view-mode ${this.currentViewMode === 'flat' ? 'active' : ''}" 
-                                        onclick="window.pageManager.changeViewMode('flat')"
-                                        title="Liste complète">
-                                    <i class="fas fa-list"></i>
-                                    <span>Liste</span>
-                                </button>
-                            </div>
-                            
-                            <!-- Actions principales -->
-                            <div class="action-buttons">
-                                <!-- Bouton Sélectionner/Désélectionner tout -->
-                                <button class="btn-action btn-selection-toggle" 
-                                        onclick="window.pageManager.toggleAllSelection()"
-                                        title="Sélectionner/Désélectionner tous les emails visibles">
-                                    <i class="fas fa-check-square"></i>
-                                    <span class="btn-text">Sélectionner tous</span>
-                                    <span class="btn-count">(${this.getVisibleEmails().length})</span>
-                                </button>
-                                
-                                <!-- Bouton Créer tâches -->
-                                <button class="btn-action btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
-                                        onclick="window.pageManager.createTasksFromSelection()"
-                                        ${selectedCount === 0 ? 'disabled' : ''}>
-                                    <i class="fas fa-tasks"></i>
-                                    <span class="btn-text">Créer tâche${selectedCount > 1 ? 's' : ''}</span>
-                                    ${selectedCount > 0 ? `<span class="count-badge">${selectedCount}</span>` : ''}
-                                </button>
-                                
-                                <!-- Bouton Actions -->
-                                <div class="dropdown-action">
-                                    <button class="btn-action btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
-                                            onclick="window.pageManager.toggleBulkActions(event)"
-                                            ${selectedCount === 0 ? 'disabled' : ''}>
-                                        <i class="fas fa-ellipsis-v"></i>
-                                        <span class="btn-text">Actions</span>
-                                        <i class="fas fa-chevron-down"></i>
-                                    </button>
-                                    <div class="dropdown-menu" id="bulkActionsMenu">
-                                        <button class="dropdown-item" onclick="window.pageManager.bulkMarkAsRead()">
-                                            <i class="fas fa-eye"></i>
-                                            <span>Marquer comme lu</span>
-                                        </button>
-                                        <button class="dropdown-item" onclick="window.pageManager.bulkArchive()">
-                                            <i class="fas fa-archive"></i>
-                                            <span>Archiver</span>
-                                        </button>
-                                        <button class="dropdown-item danger" onclick="window.pageManager.bulkDelete()">
-                                            <i class="fas fa-trash"></i>
-                                            <span>Supprimer</span>
-                                        </button>
-                                        <div class="dropdown-divider"></div>
-                                        <button class="dropdown-item" onclick="window.pageManager.bulkExport()">
-                                            <i class="fas fa-download"></i>
-                                            <span>Exporter</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Bouton Actualiser -->
-                                <button class="btn-action btn-secondary" onclick="window.pageManager.refreshEmails()">
-                                    <i class="fas fa-sync-alt"></i>
-                                    <span class="btn-text">Actualiser</span>
-                                </button>
-                                
-                                <!-- Bouton Effacer sélection (uniquement si des emails sont sélectionnés) -->
-                                ${selectedCount > 0 ? `
-                                    <button class="btn-action btn-clear" 
-                                            onclick="window.pageManager.clearSelection()"
-                                            title="Effacer la sélection">
-                                        <i class="fas fa-times"></i>
-                                        <span class="btn-text">Effacer (${selectedCount})</span>
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </div>
-
-                        <!-- Filtres de catégories compacts -->
-                        <div class="status-filters-compact">
-                            ${this.buildCompactCategoryTabs(categoryCounts, totalEmails, categories)}
-                        </div>
+                        ${this.renderUnifiedControls(selectedCount, totalEmails)}
+                        ${this.renderUnifiedFilters(categoryCounts, totalEmails, categories)}
                     </div>
 
-                    <!-- Container fixe (clone) - Initialement masqué -->
+                    <!-- Container sticky (clone) -->
                     <div class="sticky-controls-container">
-                        <!-- Même contenu que ci-dessus, sera copié dynamiquement -->
+                        <!-- Sera copié dynamiquement -->
                     </div>
 
-                    <!-- CONTENU DES EMAILS -->
-                    <div class="tasks-container-harmonized">
+                    <!-- Contenu emails -->
+                    <div class="emails-container-unified">
                         ${this.renderEmailsList()}
                     </div>
                 </div>
             `;
 
-            this.addExpandedEmailStyles();
+            this.addUnifiedEmailStyles();
             this.setupEmailsEventListeners();
             this.setupStickyControls();
         };
 
         renderEmailsPage();
         
-        // Auto-analyze si activé ET si catégories pré-sélectionnées configurées
-        if (this.autoAnalyzeEnabled && emails.length > 0) {
-            const preselectedCategories = this.getTaskPreselectedCategories();
-            console.log('[PageManager] 🤖 Catégories pré-sélectionnées pour analyse:', preselectedCategories);
-            
-            if (preselectedCategories && preselectedCategories.length > 0) {
-                // Filtrer les emails selon les catégories pré-sélectionnées
-                const emailsToAnalyze = emails.filter(email => 
-                    preselectedCategories.includes(email.category)
-                ).slice(0, 5);
-                
-                console.log('[PageManager] 🎯 Emails sélectionnés pour analyse:', emailsToAnalyze.length);
-                
-                if (emailsToAnalyze.length > 0) {
-                    setTimeout(() => {
-                        this.analyzeFirstEmails(emailsToAnalyze);
-                    }, 1000);
-                }
-            }
+        // Auto-analyse pour les emails pré-sélectionnés
+        if (this.autoAnalyzeEnabled && this.taskPreselectedCategories.length > 0) {
+            this.scheduleAutoAnalysis(emails);
         }
     }
 
-    // ================================================
-    // SETUP CONTRÔLES COLLANTS (STICKY)
-    // ================================================
-    setupStickyControls() {
-        const originalContainer = document.querySelector('.controls-and-filters-container');
-        const stickyContainer = document.querySelector('.sticky-controls-container');
+    renderUnifiedControls(selectedCount, totalEmails) {
+        const visibleEmails = this.getVisibleEmails();
+        const allSelected = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
         
-        if (!originalContainer || !stickyContainer) return;
-
-        // Cloner le contenu original dans le container fixe
-        stickyContainer.innerHTML = originalContainer.innerHTML;
-        
-        // Ajouter des event listeners au clone
-        this.setupEventListenersForStickyClone(stickyContainer);
-        
-        // Observer les changements pour synchroniser
-        const observer = new MutationObserver(() => {
-            // Re-synchroniser périodiquement si nécessaire
-            setTimeout(() => {
-                this.syncStickyControls();
-            }, 100);
-        });
-        
-        observer.observe(originalContainer, {
-            childList: true,
-            subtree: true,
-            attributes: true
-        });
-    }
-
-    setupEventListenersForStickyClone(stickyContainer) {
-        // Recherche dans le clone sticky
-        const searchInput = stickyContainer.querySelector('#emailSearchInput');
-        if (searchInput) {
-            searchInput.id = 'emailSearchInputSticky'; // Éviter les doublons d'ID
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.handleSearch(e.target.value);
-                }, 300);
-            });
-        }
-
-        // Boutons de mode de vue dans le sticky
-        stickyContainer.querySelectorAll('.view-mode').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const mode = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-                if (mode) {
-                    this.changeViewMode(mode);
-                }
-            });
-        });
-
-        // Boutons d'action dans le sticky
-        stickyContainer.querySelectorAll('button[onclick]').forEach(btn => {
-            const onclickAttr = btn.getAttribute('onclick');
-            if (onclickAttr && onclickAttr.includes('window.pageManager')) {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    eval(onclickAttr);
-                });
-            }
-        });
-
-        // Filtres de catégories dans le sticky
-        stickyContainer.querySelectorAll('.status-pill-compact').forEach(pill => {
-            pill.addEventListener('click', (e) => {
-                e.preventDefault();
-                const categoryId = pill.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-                if (categoryId) {
-                    this.filterByCategory(categoryId);
-                }
-            });
-        });
-    }
-
-    syncStickyControls() {
-        const originalContainer = document.querySelector('.controls-and-filters-container');
-        const stickyContainer = document.querySelector('.sticky-controls-container');
-        
-        if (!originalContainer || !stickyContainer) return;
-
-        // Synchroniser les valeurs des inputs
-        const originalSearch = originalContainer.querySelector('#emailSearchInput');
-        const stickySearch = stickyContainer.querySelector('#emailSearchInputSticky');
-        
-        if (originalSearch && stickySearch && originalSearch.value !== stickySearch.value) {
-            stickySearch.value = originalSearch.value;
-        }
-
-        // Synchroniser les états actifs des boutons
-        const originalButtons = originalContainer.querySelectorAll('.active, .disabled');
-        const stickyButtons = stickyContainer.querySelectorAll('button, .status-pill-compact');
-        
-        originalButtons.forEach((origBtn, index) => {
-            const stickyBtn = stickyButtons[index];
-            if (stickyBtn) {
-                stickyBtn.className = origBtn.className;
-            }
-        });
-    }
-
-    // ================================================
-    // MÉTHODE POUR RÉCUPÉRER LES CATÉGORIES PRÉ-SÉLECTIONNÉES
-    // ================================================
-    getTaskPreselectedCategories() {
-        // Essayer depuis CategoryManager en priorité
-        if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
-            return window.categoryManager.getTaskPreselectedCategories();
-        }
-        
-        // Sinon depuis CategoriesPage
-        if (window.categoriesPage && typeof window.categoriesPage.getTaskPreselectedCategories === 'function') {
-            return window.categoriesPage.getTaskPreselectedCategories();
-        }
-        
-        // Fallback sur localStorage
-        try {
-            const settings = JSON.parse(localStorage.getItem('categorySettings') || '{}');
-            return settings.taskPreselectedCategories || [];
-        } catch (error) {
-            console.error('[PageManager] Erreur récupération catégories pré-sélectionnées:', error);
-            return [];
-        }
-    }
-
-    debugPreselection() {
-        console.group('🔍 DEBUG PRÉ-SÉLECTION COMPLÈTE');
-        
-        // 1. Sources des catégories
-        console.group('📋 Sources des catégories pré-sélectionnées:');
-        
-        const categoriesFromManager = window.categoryManager?.getTaskPreselectedCategories() || [];
-        const categoriesFromPage = window.categoriesPage?.getTaskPreselectedCategories() || [];
-        const categoriesFromLocal = this.getTaskPreselectedCategories();
-        const categoriesFromScanner = window.emailScanner?.getTaskPreselectedCategories() || [];
-        
-        console.log('CategoryManager:', categoriesFromManager);
-        console.log('CategoriesPage:', categoriesFromPage);
-        console.log('PageManager:', categoriesFromLocal);
-        console.log('EmailScanner:', categoriesFromScanner);
-        
-        // Vérifier la cohérence
-        const allSources = [
-            { name: 'CategoryManager', cats: categoriesFromManager },
-            { name: 'CategoriesPage', cats: categoriesFromPage },
-            { name: 'PageManager', cats: categoriesFromLocal },
-            { name: 'EmailScanner', cats: categoriesFromScanner }
-        ];
-        
-        const referenceSource = categoriesFromManager;
-        const inconsistencies = [];
-        
-        allSources.forEach(source => {
-            if (JSON.stringify([...source.cats].sort()) !== JSON.stringify([...referenceSource].sort())) {
-                inconsistencies.push(source.name);
-            }
-        });
-        
-        if (inconsistencies.length > 0) {
-            console.warn('⚠️ INCOHÉRENCES DÉTECTÉES:', inconsistencies);
-        } else {
-            console.log('✅ Toutes les sources sont synchronisées');
-        }
-        
-        console.groupEnd();
-        
-        // 2. État des emails
-        console.group('📧 État des emails:');
-        
-        const emails = window.emailScanner?.getAllEmails() || [];
-        const preselectedEmails = emails.filter(e => e.isPreselectedForTasks === true);
-        const shouldBePreselected = emails.filter(e => categoriesFromLocal.includes(e.category));
-        const missedEmails = shouldBePreselected.filter(e => !e.isPreselectedForTasks);
-        
-        console.log('Total emails:', emails.length);
-        console.log('Marqués pré-sélectionnés (flag):', preselectedEmails.length);
-        console.log('Devraient être pré-sélectionnés (catégorie):', shouldBePreselected.length);
-        console.log('Emails manqués:', missedEmails.length);
-        
-        if (missedEmails.length > 0) {
-            console.warn('⚠️ Emails qui devraient être marqués mais ne le sont pas:');
-            missedEmails.slice(0, 5).forEach(email => {
-                console.log('  -', {
-                    subject: email.subject?.substring(0, 40),
-                    category: email.category,
-                    isPreselectedForTasks: email.isPreselectedForTasks
-                });
-            });
-        }
-        
-        console.groupEnd();
-        
-        // 3. Détails par catégorie
-        console.group('📊 Détails par catégorie pré-sélectionnée:');
-        
-        categoriesFromLocal.forEach(catId => {
-            const category = window.categoryManager?.getCategory(catId);
-            const emailsInCategory = emails.filter(e => e.category === catId);
-            const markedAsPreselected = emailsInCategory.filter(e => e.isPreselectedForTasks === true);
-            
-            console.group(`${category?.icon || '📂'} ${category?.name || catId} (${catId}):`);
-            console.log('Total emails dans cette catégorie:', emailsInCategory.length);
-            console.log('Marqués pré-sélectionnés:', markedAsPreselected.length);
-            console.log('Pourcentage correct:', markedAsPreselected.length === emailsInCategory.length ? '✅ 100%' : `❌ ${Math.round(markedAsPreselected.length / emailsInCategory.length * 100)}%`);
-            
-            if (markedAsPreselected.length < emailsInCategory.length) {
-                const notMarked = emailsInCategory.filter(e => !e.isPreselectedForTasks);
-                console.warn('Emails non marqués:', notMarked.slice(0, 3).map(e => ({
-                    subject: e.subject?.substring(0, 40),
-                    score: e.categoryScore,
-                    confidence: Math.round(e.categoryConfidence * 100) + '%'
-                })));
-            }
-            
-            console.groupEnd();
-        });
-        
-        console.groupEnd();
-        
-        // 4. État de l'affichage
-        console.group('🖼️ État de l\'affichage:');
-        
-        const categoryButtons = document.querySelectorAll('.status-pill-harmonized-twolines');
-        const preselectedButtons = document.querySelectorAll('.status-pill-harmonized-twolines.preselected-category');
-        const emailCards = document.querySelectorAll('.task-harmonized-card');
-        const preselectedCards = document.querySelectorAll('.task-harmonized-card.preselected-task');
-        
-        console.log('Boutons de catégorie totaux:', categoryButtons.length);
-        console.log('Boutons avec style pré-sélectionné:', preselectedButtons.length);
-        console.log('Cartes d\'email totales:', emailCards.length);
-        console.log('Cartes avec style pré-sélectionné:', preselectedCards.length);
-        
-        console.groupEnd();
-        
-        console.groupEnd();
-        
-        return {
-            sources: {
-                categoryManager: categoriesFromManager,
-                categoriesPage: categoriesFromPage,
-                pageManager: categoriesFromLocal,
-                emailScanner: categoriesFromScanner,
-                isSync: inconsistencies.length === 0
-            },
-            emails: {
-                total: emails.length,
-                markedPreselected: preselectedEmails.length,
-                shouldBePreselected: shouldBePreselected.length,
-                missed: missedEmails.length
-            },
-            display: {
-                categoryButtons: categoryButtons.length,
-                preselectedButtons: preselectedButtons.length,
-                emailCards: emailCards.length,
-                preselectedCards: preselectedCards.length
-            }
-        };
-    }
-
-    // Méthode utilitaire pour dispatcher des événements
-    dispatchEvent(eventName, detail) {
-        try {
-            window.dispatchEvent(new CustomEvent(eventName, { 
-                detail: {
-                    ...detail,
-                    source: 'PageManager',
-                    timestamp: Date.now()
-                }
-            }));
-        } catch (error) {
-            console.error(`[PageManager] Erreur dispatch ${eventName}:`, error);
-        }
-    }
-
-    forceUpdatePreselection() {
-        console.log('[PageManager] 🔄 === FORCE UPDATE PRÉ-SÉLECTION ===');
-        
-        // 1. Forcer la synchronisation des catégories
-        const freshCategories = window.categoryManager?.getTaskPreselectedCategories() || [];
-        console.log('[PageManager] 📋 Catégories fraîches depuis CategoryManager:', freshCategories);
-        
-        // 2. Mettre à jour EmailScanner
-        if (window.emailScanner && typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
-            window.emailScanner.updateTaskPreselectedCategories(freshCategories);
-            console.log('[PageManager] ✅ EmailScanner mis à jour');
-        }
-        
-        // 3. Mettre à jour les emails
-        const emails = window.emailScanner?.getAllEmails() || [];
-        let updated = 0;
-        let added = 0;
-        let removed = 0;
-        
-        emails.forEach(email => {
-            const shouldBePreselected = freshCategories.includes(email.category);
-            const currentlyPreselected = email.isPreselectedForTasks === true;
-            
-            if (shouldBePreselected && !currentlyPreselected) {
-                email.isPreselectedForTasks = true;
-                updated++;
-                added++;
-            } else if (!shouldBePreselected && currentlyPreselected) {
-                email.isPreselectedForTasks = false;
-                updated++;
-                removed++;
-            }
-        });
-        
-        console.log(`[PageManager] 📊 Résultat: ${updated} emails mis à jour (${added} ajoutés, ${removed} retirés)`);
-        
-        // 4. Mettre à jour les boutons de catégories sans reconstruction complète
-        document.querySelectorAll('.status-pill-harmonized-twolines').forEach(button => {
-            const categoryId = button.dataset.categoryId;
-            if (categoryId && categoryId !== 'all') {
-                const starContainer = button.querySelector('.preselected-star-container');
-                if (starContainer) {
-                    if (freshCategories.includes(categoryId)) {
-                        starContainer.classList.add('visible');
-                        button.classList.add('preselected-category');
-                    } else {
-                        starContainer.classList.remove('visible');
-                        button.classList.remove('preselected-category');
-                    }
-                }
-            }
-        });
-        
-        // 5. Rafraîchir seulement la liste des emails
-        const emailsContainer = document.querySelector('.tasks-container-harmonized');
-        if (emailsContainer && this.currentPage === 'emails') {
-            emailsContainer.innerHTML = this.renderEmailsList();
-        }
-        
-        // 6. Déclencher un événement pour notifier les autres modules
-        setTimeout(() => {
-            this.dispatchEvent('preselectionUpdated', {
-                categories: freshCategories,
-                updated: updated,
-                added: added,
-                removed: removed
-            });
-        }, 100);
-        
-        return {
-            categories: freshCategories,
-            emailsUpdated: updated,
-            added: added,
-            removed: removed
-        };
-    }
-
-    renderEmptyEmailsState() {
         return `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-inbox"></i>
+            <div class="controls-bar-unified">
+                <!-- Recherche -->
+                <div class="search-section-unified">
+                    <div class="search-box-unified">
+                        <i class="fas fa-search search-icon-unified"></i>
+                        <input type="text" 
+                               class="search-input-unified" 
+                               id="emailSearchInput"
+                               placeholder="Rechercher dans ${this.currentProvider === 'google' ? 'Gmail' : 'Outlook'}..." 
+                               value="${this.searchTerm}">
+                        ${this.searchTerm ? `
+                            <button class="search-clear-unified" onclick="window.pageManager.clearSearch()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>
-                <h3 class="empty-state-title">Aucun email trouvé</h3>
-                <p class="empty-state-text">
-                    Utilisez le scanner pour récupérer et analyser vos emails.
-                </p>
-                <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
-                    <i class="fas fa-search"></i>
-                    Aller au scanner
-                </button>
+                
+                <!-- Modes de vue -->
+                <div class="view-modes-unified">
+                    <button class="view-mode-unified ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                            onclick="window.pageManager.changeViewMode('grouped-domain')"
+                            title="Grouper par domaine">
+                        <i class="fas fa-globe"></i>
+                        <span>Domaine</span>
+                    </button>
+                    <button class="view-mode-unified ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                            onclick="window.pageManager.changeViewMode('grouped-sender')"
+                            title="Grouper par expéditeur">
+                        <i class="fas fa-user"></i>
+                        <span>Expéditeur</span>
+                    </button>
+                    <button class="view-mode-unified ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                            onclick="window.pageManager.changeViewMode('flat')"
+                            title="Liste complète">
+                        <i class="fas fa-list"></i>
+                        <span>Liste</span>
+                    </button>
+                </div>
+                
+                <!-- Actions -->
+                <div class="actions-section-unified">
+                    <!-- Sélection -->
+                    <button class="btn-unified btn-selection ${allSelected ? 'all-selected' : ''}" 
+                            onclick="window.pageManager.toggleAllSelection()"
+                            title="Sélectionner/Désélectionner tous">
+                        <i class="fas fa-${allSelected ? 'square' : 'check-square'}"></i>
+                        <span class="btn-text">${allSelected ? 'Désélectionner' : 'Sélectionner'} tous</span>
+                        <span class="btn-count">(${visibleEmails.length})</span>
+                    </button>
+                    
+                    <!-- Créer tâches -->
+                    <button class="btn-unified btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
+                            onclick="window.pageManager.createTasksFromSelection()"
+                            ${selectedCount === 0 ? 'disabled' : ''}>
+                        <i class="fas fa-tasks"></i>
+                        <span class="btn-text">Créer tâche${selectedCount > 1 ? 's' : ''}</span>
+                        ${selectedCount > 0 ? `<span class="count-badge">${selectedCount}</span>` : ''}
+                    </button>
+                    
+                    <!-- Menu actions -->
+                    <div class="dropdown-unified">
+                        <button class="btn-unified btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
+                                onclick="window.pageManager.toggleActionsMenu(event)"
+                                ${selectedCount === 0 ? 'disabled' : ''}>
+                            <i class="fas fa-ellipsis-v"></i>
+                            <span class="btn-text">Actions</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-menu-unified" id="actionsMenu">
+                            ${this.renderActionsMenu()}
+                        </div>
+                    </div>
+                    
+                    <!-- Actualiser -->
+                    <button class="btn-unified btn-secondary" onclick="window.pageManager.refreshEmails()">
+                        <i class="fas fa-sync-alt"></i>
+                        <span class="btn-text">Actualiser</span>
+                    </button>
+                    
+                    <!-- Effacer sélection -->
+                    ${selectedCount > 0 ? `
+                        <button class="btn-unified btn-clear" 
+                                onclick="window.pageManager.clearSelection()"
+                                title="Effacer la sélection">
+                            <i class="fas fa-times"></i>
+                            <span class="btn-text">Effacer (${selectedCount})</span>
+                        </button>
+                    ` : ''}
+                </div>
             </div>
         `;
     }
 
-    // ================================================
-    // MÉTHODES DE SÉLECTION - AVEC SÉLECTION TOUT
-    // ================================================
-    toggleAllSelection() {
-        const visibleEmails = this.getVisibleEmails();
-        const allSelected = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
-        
-        if (allSelected) {
-            // Désélectionner tous les emails visibles
-            visibleEmails.forEach(email => {
-                this.selectedEmails.delete(email.id);
-            });
-            window.uiManager?.showToast(`${visibleEmails.length} emails désélectionnés`, 'info');
-        } else {
-            // Sélectionner tous les emails visibles
-            visibleEmails.forEach(email => {
-                this.selectedEmails.add(email.id);
-            });
-            window.uiManager?.showToast(`${visibleEmails.length} emails sélectionnés`, 'success');
-        }
-        
-        this.refreshEmailsView();
+    renderActionsMenu() {
+        return `
+            <button class="dropdown-item-unified" onclick="window.pageManager.bulkMarkAsRead()">
+                <i class="fas fa-eye"></i>
+                <span>Marquer comme lu</span>
+            </button>
+            <button class="dropdown-item-unified" onclick="window.pageManager.bulkArchive()">
+                <i class="fas fa-archive"></i>
+                <span>Archiver</span>
+            </button>
+            <button class="dropdown-item-unified danger" onclick="window.pageManager.bulkDelete()">
+                <i class="fas fa-trash"></i>
+                <span>Supprimer</span>
+            </button>
+            <div class="dropdown-divider-unified"></div>
+            <button class="dropdown-item-unified" onclick="window.pageManager.bulkExport()">
+                <i class="fas fa-download"></i>
+                <span>Exporter CSV</span>
+            </button>
+            <button class="dropdown-item-unified" onclick="window.pageManager.bulkAnalyze()">
+                <i class="fas fa-brain"></i>
+                <span>Analyser avec IA</span>
+            </button>
+        `;
     }
 
-    toggleEmailSelection(emailId) {
-        console.log('[PageManager] Toggle sélection email:', emailId);
-        
-        if (this.selectedEmails.has(emailId)) {
-            this.selectedEmails.delete(emailId);
-            console.log('[PageManager] Email désélectionné:', emailId);
-        } else {
-            this.selectedEmails.add(emailId);
-            console.log('[PageManager] Email sélectionné:', emailId);
-        }
-        
-        // Mise à jour immédiate de la checkbox spécifique
-        const checkbox = document.querySelector(`[data-email-id="${emailId}"] .task-checkbox-harmonized`);
-        if (checkbox) {
-            checkbox.checked = this.selectedEmails.has(emailId);
-        }
-        
-        // Mise à jour des compteurs et boutons SANS reconstruire toute la liste
-        this.updateControlsBarOnly();
-        
-        console.log('[PageManager] Sélection mise à jour. Total sélectionnés:', this.selectedEmails.size);
-    }
-
-    updateControlsBarOnly() {
-        const selectedCount = this.selectedEmails.size;
-        const visibleEmails = this.getVisibleEmails();
-        const allSelected = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
-        
-        console.log('[PageManager] Mise à jour contrôles uniquement -', selectedCount, 'sélectionnés');
-        
-        // Fonction pour mettre à jour un container (original ou sticky)
-        const updateContainer = (container) => {
-            if (!container) return;
-            
-            // Mettre à jour le bouton "Sélectionner tout"
-            const selectAllBtn = container.querySelector('.btn-selection-toggle');
-            if (selectAllBtn) {
-                const btnText = selectAllBtn.querySelector('.btn-text');
-                const btnCount = selectAllBtn.querySelector('.btn-count');
-                const icon = selectAllBtn.querySelector('i');
-                
-                if (allSelected) {
-                    // Tous sélectionnés -> Proposer de désélectionner
-                    if (btnText) btnText.textContent = 'Désélectionner tous';
-                    if (icon) {
-                        icon.classList.remove('fa-check-square');
-                        icon.classList.add('fa-square');
-                    }
-                    selectAllBtn.classList.add('all-selected');
-                } else {
-                    // Pas tous sélectionnés -> Proposer de sélectionner
-                    if (btnText) btnText.textContent = 'Sélectionner tous';
-                    if (icon) {
-                        icon.classList.remove('fa-square');
-                        icon.classList.add('fa-check-square');
-                    }
-                    selectAllBtn.classList.remove('all-selected');
-                }
-                
-                if (btnCount) {
-                    btnCount.textContent = `(${visibleEmails.length})`;
-                }
-            }
-            
-            // Mettre à jour le bouton "Créer tâches"
-            const createTaskBtn = container.querySelector('.btn-primary[onclick*="createTasksFromSelection"]');
-            if (createTaskBtn) {
-                const span = createTaskBtn.querySelector('.btn-text');
-                const countBadge = createTaskBtn.querySelector('.count-badge');
-                
-                if (selectedCount === 0) {
-                    createTaskBtn.classList.add('disabled');
-                    createTaskBtn.disabled = true;
-                } else {
-                    createTaskBtn.classList.remove('disabled');
-                    createTaskBtn.disabled = false;
-                }
-                
-                if (span) {
-                    span.textContent = `Créer tâche${selectedCount > 1 ? 's' : ''}`;
-                }
-                
-                if (countBadge) {
-                    if (selectedCount > 0) {
-                        countBadge.textContent = selectedCount;
-                        countBadge.style.display = 'inline';
-                    } else {
-                        countBadge.style.display = 'none';
-                    }
-                } else if (selectedCount > 0) {
-                    const newBadge = document.createElement('span');
-                    newBadge.className = 'count-badge';
-                    newBadge.textContent = selectedCount;
-                    createTaskBtn.appendChild(newBadge);
-                }
-            }
-            
-            // Mettre à jour le bouton "Actions"
-            const actionsBtn = container.querySelector('.dropdown-toggle[onclick*="toggleBulkActions"]');
-            if (actionsBtn) {
-                if (selectedCount === 0) {
-                    actionsBtn.classList.add('disabled');
-                    actionsBtn.disabled = true;
-                } else {
-                    actionsBtn.classList.remove('disabled');
-                    actionsBtn.disabled = false;
-                }
-            }
-            
-            // Gérer le bouton "Effacer sélection"
-            const existingClearBtn = container.querySelector('.btn-clear');
-            const actionButtonsContainer = container.querySelector('.action-buttons');
-            
-            if (selectedCount > 0) {
-                if (!existingClearBtn && actionButtonsContainer) {
-                    const clearBtn = document.createElement('button');
-                    clearBtn.className = 'btn-action btn-clear';
-                    clearBtn.onclick = () => window.pageManager.clearSelection();
-                    clearBtn.title = 'Effacer la sélection';
-                    clearBtn.innerHTML = `
-                        <i class="fas fa-times"></i>
-                        <span class="btn-text">Effacer (${selectedCount})</span>
-                    `;
-                    actionButtonsContainer.appendChild(clearBtn);
-                } else if (existingClearBtn) {
-                    const span = existingClearBtn.querySelector('.btn-text');
-                    if (span) {
-                        span.textContent = `Effacer (${selectedCount})`;
-                    }
-                }
-            } else {
-                if (existingClearBtn) {
-                    existingClearBtn.remove();
-                }
-            }
-        };
-        
-        // Mettre à jour les deux containers (original et sticky)
-        updateContainer(document.querySelector('.controls-and-filters-container'));
-        updateContainer(document.querySelector('.sticky-controls-container'));
-        
-        console.log('[PageManager] Contrôles mis à jour -', selectedCount, 'sélectionnés');
-    }
-
-    clearSelection() {
-        this.selectedEmails.clear();
-        this.refreshEmailsView();
-        window.uiManager?.showToast('Sélection effacée', 'info');
-    }
-
-    refreshEmailsView() {
-        console.log('[PageManager] Rafraîchissement vue emails...');
-        
-        // Sauvegarder l'état des groupes ouverts
-        const expandedGroups = new Set();
-        document.querySelectorAll('.task-group-harmonized.expanded').forEach(group => {
-            const groupKey = group.dataset.groupKey;
-            if (groupKey) {
-                expandedGroups.add(groupKey);
-            }
-        });
-        
-        // Sauvegarder l'état de recherche
-        const searchInput = document.getElementById('emailSearchInput');
-        const currentSearchValue = searchInput ? searchInput.value : this.searchTerm;
-        
-        // Mettre à jour seulement le contenu des emails
-        const emailsContainer = document.querySelector('.tasks-container-harmonized');
-        if (emailsContainer) {
-            emailsContainer.innerHTML = this.renderEmailsList();
-            
-            // Restaurer l'état des groupes ouverts
-            expandedGroups.forEach(groupKey => {
-                const group = document.querySelector(`[data-group-key="${groupKey}"]`);
-                if (group) {
-                    const content = group.querySelector('.group-content-harmonized');
-                    const icon = group.querySelector('.group-expand-harmonized i');
-                    const header = group.querySelector('.group-header-harmonized');
-                    
-                    if (content && icon && header) {
-                        content.style.display = 'block';
-                        icon.classList.remove('fa-chevron-down');
-                        icon.classList.add('fa-chevron-up');
-                        group.classList.add('expanded');
-                        header.classList.add('expanded-header');
-                    }
-                }
-            });
-            
-            console.log('[PageManager] Groupes restaurés:', expandedGroups.size);
-        }
-        
-        // Mettre à jour seulement les contrôles
-        this.updateControlsBarOnly();
-        
-        // Restaurer la recherche
-        setTimeout(() => {
-            const newSearchInput = document.getElementById('emailSearchInput');
-            if (newSearchInput && currentSearchValue && newSearchInput.value !== currentSearchValue) {
-                newSearchInput.value = currentSearchValue;
-            }
-            // Synchroniser avec le sticky aussi
-            const stickySearchInput = document.getElementById('emailSearchInputSticky');
-            if (stickySearchInput && currentSearchValue && stickySearchInput.value !== currentSearchValue) {
-                stickySearchInput.value = currentSearchValue;
-            }
-        }, 50);
-        
-        console.log('[PageManager] Vue emails rafraîchie avec', this.selectedEmails.size, 'sélectionnés');
-    }
-
-    buildCompactCategoryTabs(categoryCounts, totalEmails, categories) {
-        // Récupérer les catégories pré-sélectionnées
-        const preselectedCategories = this.getTaskPreselectedCategories();
-        console.log('[PageManager] 📌 Catégories pré-sélectionnées pour l\'affichage:', preselectedCategories);
-        
+    renderUnifiedFilters(categoryCounts, totalEmails, categories) {
         const tabs = [
             { 
                 id: 'all', 
@@ -1059,7 +2316,7 @@ class PageManager {
         Object.entries(categories).forEach(([catId, category]) => {
             const count = categoryCounts[catId] || 0;
             if (count > 0) {
-                const isPreselected = preselectedCategories.includes(catId);
+                const isPreselected = this.taskPreselectedCategories.includes(catId);
                 tabs.push({
                     id: catId,
                     name: category.name,
@@ -1068,10 +2325,6 @@ class PageManager {
                     count: count,
                     isPreselected: isPreselected
                 });
-                
-                if (isPreselected) {
-                    console.log(`[PageManager] ⭐ Catégorie pré-sélectionnée: ${category.name} (${count} emails)`);
-                }
             }
         });
         
@@ -1080,114 +2333,52 @@ class PageManager {
         if (otherCount > 0) {
             tabs.push({
                 id: 'other',
-                name: 'Autre',
-                icon: '📌',
+                name: 'Non classé',
+                icon: '❓',
                 count: otherCount,
                 isPreselected: false
             });
         }
         
-        // Générer le HTML avec structure originale 2 lignes
-        return tabs.map(tab => {
-            const isCurrentCategory = this.currentCategory === tab.id;
-            const baseClasses = `status-pill-compact ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''}`;
-            
-            return `
-                <button class="${baseClasses}" 
-                        onclick="window.pageManager.filterByCategory('${tab.id}')"
-                        data-category-id="${tab.id}"
-                        title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
-                    <div class="pill-content-twolines">
-                        <div class="pill-first-line-twolines">
-                            <span class="pill-icon-twolines">${tab.icon}</span>
-                            <span class="pill-count-twolines">${tab.count}</span>
-                        </div>
-                        <div class="pill-second-line-twolines">
-                            <span class="pill-text-twolines">${tab.name}</span>
-                        </div>
-                    </div>
-                    ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
-                </button>
-            `;
-        }).join('');
+        return `
+            <div class="filters-bar-unified">
+                ${tabs.map(tab => {
+                    const isActive = this.currentCategory === tab.id;
+                    const classes = [
+                        'filter-tab-unified',
+                        isActive ? 'active' : '',
+                        tab.isPreselected ? 'preselected' : ''
+                    ].filter(Boolean).join(' ');
+                    
+                    return `
+                        <button class="${classes}" 
+                                onclick="window.pageManager.filterByCategory('${tab.id}')"
+                                data-category-id="${tab.id}"
+                                title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée' : ''}">
+                            <div class="tab-content-unified">
+                                <div class="tab-header-unified">
+                                    <span class="tab-icon-unified">${tab.icon}</span>
+                                    <span class="tab-count-unified">${tab.count}</span>
+                                </div>
+                                <div class="tab-name-unified">${tab.name}</div>
+                            </div>
+                            ${tab.isPreselected ? '<span class="preselected-star-unified">⭐</span>' : ''}
+                        </button>
+                    `;
+                }).join('')}
+            </div>
+        `;
     }
 
-    filterByCategory(categoryId) {
-        console.log(`[PageManager] 🔍 Filtrage par catégorie: ${categoryId}`);
-        
-        this.currentCategory = categoryId;
-        
-        // Debug du filtrage
-        const emails = window.emailScanner?.getAllEmails() || [];
-        let filteredEmails;
-        
-        if (categoryId === 'all') {
-            filteredEmails = emails;
-            console.log(`[PageManager] 📧 Affichage de tous les emails: ${emails.length}`);
-        } else if (categoryId === 'other') {
-            // CORRECTION CRITIQUE: Filtrer correctement les emails "Autre"
-            filteredEmails = emails.filter(email => {
-                const cat = email.category;
-                return !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
-            });
-            console.log(`[PageManager] 📌 Emails "Autre" trouvés: ${filteredEmails.length}`);
-        } else {
-            filteredEmails = emails.filter(email => email.category === categoryId);
-            console.log(`[PageManager] 🏷️ Emails dans catégorie "${categoryId}": ${filteredEmails.length}`);
-        }
-        
-        // Mettre à jour l'affichage
-        this.refreshEmailsView();
-        
-        // Mettre à jour visuellement le bouton actif dans les deux containers
-        ['', 'Sticky'].forEach(suffix => {
-            const containerSelector = suffix ? '.sticky-controls-container' : '.controls-and-filters-container';
-            const container = document.querySelector(containerSelector);
-            if (container) {
-                container.querySelectorAll('.status-pill-compact').forEach(pill => {
-                    const pillCategoryId = pill.dataset.categoryId;
-                    if (pillCategoryId === categoryId) {
-                        pill.classList.add('active');
-                    } else {
-                        pill.classList.remove('active');
-                    }
-                });
-            }
-        });
-    }
-
+    // ================================================
+    // GESTION DES EMAILS ET AFFICHAGE UNIFIÉ
+    // ================================================
+    
     renderEmailsList() {
-        const emails = window.emailScanner?.getAllEmails() || [];
-        let filteredEmails = emails;
+        const emails = this.getAllEmails();
+        let filteredEmails = this.getVisibleEmails();
         
-        console.log(`[PageManager] 📧 Rendu liste emails: ${emails.length} total, catégorie: ${this.currentCategory}`);
-        
-        // Appliquer le filtre de catégorie
-        if (this.currentCategory && this.currentCategory !== 'all') {
-            if (this.currentCategory === 'other') {
-                // CORRECTION CRITIQUE: Filtrer correctement les emails "Autre"
-                filteredEmails = filteredEmails.filter(email => {
-                    const cat = email.category;
-                    const isOther = !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
-                    return isOther;
-                });
-                console.log(`[PageManager] 📌 Emails "Autre" filtrés: ${filteredEmails.length}`);
-            } else {
-                filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
-                console.log(`[PageManager] 🏷️ Emails catégorie "${this.currentCategory}": ${filteredEmails.length}`);
-            }
-        }
-        
-        // Appliquer le filtre de recherche
-        if (this.searchTerm) {
-            const beforeSearch = filteredEmails.length;
-            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
-            console.log(`[PageManager] 🔍 Après recherche "${this.searchTerm}": ${filteredEmails.length} (était ${beforeSearch})`);
-        }
-        
-        // Affichage si aucun email trouvé
         if (filteredEmails.length === 0) {
-            console.log('[PageManager] 📭 Aucun email à afficher');
             return this.renderEmptyState();
         }
 
@@ -1203,177 +2394,149 @@ class PageManager {
         }
     }
 
-    renderEmptyState() {
-        console.log(`[PageManager] 📭 Rendu état vide - Catégorie: ${this.currentCategory}, Recherche: "${this.searchTerm}"`);
-        
-        let title, text, action = '';
-        
-        if (this.searchTerm) {
-            // État vide à cause de la recherche
-            title = 'Aucun résultat trouvé';
-            text = `Aucun email ne correspond à votre recherche "${this.searchTerm}"`;
-            action = `
-                <button class="btn-harmonized btn-primary" onclick="window.pageManager.clearSearch()">
-                    <i class="fas fa-undo"></i>
-                    <span>Effacer la recherche</span>
-                </button>
-            `;
-        } else if (this.currentCategory === 'other') {
-            // État vide pour la catégorie "Autre"
-            title = 'Aucun email non catégorisé';
-            text = 'Tous vos emails ont été correctement catégorisés ! 🎉';
-            action = `
-                <button class="btn-harmonized btn-primary" onclick="window.pageManager.filterByCategory('all')">
-                    <i class="fas fa-list"></i>
-                    <span>Voir tous les emails</span>
-                </button>
-            `;
-        } else if (this.currentCategory && this.currentCategory !== 'all') {
-            // État vide pour une catégorie spécifique
-            const categoryName = this.getCategoryName(this.currentCategory);
-            title = `Aucun email dans "${categoryName}"`;
-            text = 'Cette catégorie ne contient aucun email pour le moment.';
-            action = `
-                <button class="btn-harmonized btn-primary" onclick="window.pageManager.filterByCategory('all')">
-                    <i class="fas fa-list"></i>
-                    <span>Voir tous les emails</span>
-                </button>
-            `;
-        } else {
-            // État vide général (aucun email du tout)
-            title = 'Aucun email trouvé';
-            text = 'Utilisez le scanner pour récupérer et analyser vos emails.';
-            action = `
-                <button class="btn-harmonized btn-primary" onclick="window.pageManager.loadPage('scanner')">
-                    <i class="fas fa-search"></i>
-                    <span>Aller au scanner</span>
-                </button>
-            `;
-        }
-        
-        return `
-            <div class="empty-state-harmonized">
-                <div class="empty-state-icon-harmonized">
-                    <i class="fas fa-inbox"></i>
-                </div>
-                <h3 class="empty-state-title-harmonized">${title}</h3>
-                <p class="empty-state-text-harmonized">${text}</p>
-                ${action}
-            </div>
-        `;
-    }
-
     renderFlatView(emails) {
         return `
-            <div class="tasks-harmonized-list">
-                ${emails.map(email => this.renderHarmonizedEmailRow(email)).join('')}
+            <div class="emails-list-unified">
+                ${emails.map(email => this.renderUnifiedEmailCard(email)).join('')}
             </div>
         `;
     }
 
-    renderHarmonizedEmailRow(email) {
+    renderUnifiedEmailCard(email) {
         const hasTask = this.createdTasks.has(email.id);
-        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
-        const senderEmail = email.from?.emailAddress?.address || '';
+        const isPreselectedForTasks = this.taskPreselectedCategories.includes(email.category);
+        const isSelected = this.selectedEmails.has(email.id);
         
-        // Récupérer les catégories pré-sélectionnées avec synchronisation forcée
-        const preselectedCategories = this.getTaskPreselectedCategories();
+        // Gestion unifiée des expéditeurs Gmail/Outlook
+        let senderName = 'Inconnu';
+        let senderEmail = '';
         
-        // Double vérification: le flag email.isPreselectedForTasks ET l'appartenance à une catégorie pré-sélectionnée
-        let isPreselectedForTasks = email.isPreselectedForTasks === true;
-        
-        // Si le flag n'est pas défini mais que la catégorie est pré-sélectionnée, le corriger
-        if (!isPreselectedForTasks && preselectedCategories.includes(email.category)) {
-            isPreselectedForTasks = true;
-            email.isPreselectedForTasks = true;
+        if (email.provider === 'google') {
+            // Format Gmail
+            const fromString = email.from?.emailAddress?.address || email.from || '';
+            const match = fromString.match(/(.+?)\s*<(.+@.+)>/);
+            if (match) {
+                senderName = match[1].trim() || match[2];
+                senderEmail = match[2];
+            } else {
+                senderName = fromString.includes('@') ? fromString : fromString;
+                senderEmail = fromString.includes('@') ? fromString : '';
+            }
+        } else {
+            // Format Microsoft Graph
+            senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
+            senderEmail = email.from?.emailAddress?.address || '';
         }
         
-        // CORRECTION CRITIQUE: Un email pré-sélectionné doit être automatiquement sélectionné pour création de tâche
-        const isSelected = this.selectedEmails.has(email.id) || isPreselectedForTasks;
-        
-        // Si l'email est pré-sélectionné mais pas encore dans la sélection, l'ajouter
-        if (isPreselectedForTasks && !this.selectedEmails.has(email.id)) {
-            this.selectedEmails.add(email.id);
-        }
-        
-        // Classes CSS pour l'email
+        // Classes CSS
         const cardClasses = [
-            'task-harmonized-card',
+            'email-card-unified',
             isSelected ? 'selected' : '',
             hasTask ? 'has-task' : '',
-            isPreselectedForTasks ? 'preselected-task' : ''
+            isPreselectedForTasks ? 'preselected' : '',
+            email.provider || 'unknown'
         ].filter(Boolean).join(' ');
         
         return `
             <div class="${cardClasses}" 
                  data-email-id="${email.id}"
                  data-category="${email.category}"
-                 data-preselected="${isPreselectedForTasks}"
+                 data-provider="${email.provider}"
                  onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
                 
-                <!-- Checkbox de sélection avec gestion d'événement corrigée -->
+                <!-- Checkbox sélection -->
                 <input type="checkbox" 
-                       class="task-checkbox-harmonized" 
+                       class="email-checkbox-unified" 
                        ${isSelected ? 'checked' : ''}
                        onchange="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
                 
-                <!-- Indicateur de priorité avec couleur spéciale si pré-sélectionné -->
-                <div class="priority-bar-harmonized" 
-                     style="background-color: ${isPreselectedForTasks ? '#8b5cf6' : this.getEmailPriorityColor(email)}"></div>
+                <!-- Barre priorité/provider -->
+                <div class="priority-bar-unified ${email.provider}" 
+                     style="background: ${this.getEmailPriorityColor(email, isPreselectedForTasks)}"></div>
                 
                 <!-- Contenu principal -->
-                <div class="task-main-content-harmonized">
-                    <div class="task-header-harmonized">
-                        <h3 class="task-title-harmonized">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
-                        <div class="task-meta-harmonized">
-                            <span class="task-type-badge-harmonized">📧 Email</span>
-                            <span class="deadline-badge-harmonized">
-                                📅 ${this.formatEmailDate(email.receivedDateTime)}
+                <div class="email-content-unified">
+                    <div class="email-header-unified">
+                        <h3 class="email-subject-unified">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
+                        <div class="email-meta-unified">
+                            <span class="email-type-badge-unified ${email.provider}">
+                                <i class="fab fa-${email.provider === 'google' ? 'google' : 'microsoft'}"></i>
+                                <span>${email.provider === 'google' ? 'Gmail' : 'Outlook'}</span>
+                            </span>
+                            <span class="email-date-badge-unified">
+                                <i class="fas fa-calendar"></i>
+                                <span>${this.formatEmailDate(email.receivedDateTime)}</span>
                             </span>
                             ${email.categoryScore ? `
-                                <span class="confidence-badge-harmonized">
-                                    🎯 ${Math.round(email.categoryConfidence * 100)}%
+                                <span class="confidence-badge-unified">
+                                    <i class="fas fa-bullseye"></i>
+                                    <span>${Math.round(email.categoryConfidence * 100)}%</span>
                                 </span>
                             ` : ''}
                             ${isPreselectedForTasks ? `
-                                <span class="preselected-badge-harmonized">
-                                    ⭐ Pré-sélectionné
+                                <span class="preselected-badge-unified">
+                                    <i class="fas fa-star"></i>
+                                    <span>Pré-sélectionné</span>
                                 </span>
                             ` : ''}
                         </div>
                     </div>
                     
-                    <div class="task-recipient-harmonized">
-                        <i class="fas fa-envelope"></i>
-                        <span class="recipient-name-harmonized">${this.escapeHtml(senderName)}</span>
-                        ${email.hasAttachments ? '<span class="reply-indicator-harmonized">• Pièce jointe</span>' : ''}
-                        ${email.category && email.category !== 'other' ? `
-                            <span class="category-indicator-harmonized" 
-                                  style="background: ${this.getCategoryColor(email.category)}20; 
-                                         color: ${this.getCategoryColor(email.category)};
-                                         ${isPreselectedForTasks ? 'font-weight: 700;' : ''}">
-                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
-                                ${isPreselectedForTasks ? ' ⭐' : ''}
+                    <div class="email-sender-unified">
+                        <div class="sender-avatar-unified" style="background: ${this.generateAvatarColor(senderName)}">
+                            ${senderName.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="sender-info-unified">
+                            <span class="sender-name-unified">${this.escapeHtml(senderName)}</span>
+                            <span class="sender-email-unified">${this.escapeHtml(senderEmail)}</span>
+                        </div>
+                        ${email.hasAttachments ? `
+                            <span class="attachment-indicator-unified">
+                                <i class="fas fa-paperclip"></i>
                             </span>
                         ` : ''}
+                        ${this.renderCategoryBadge(email)}
                     </div>
+                    
+                    ${email.bodyPreview ? `
+                        <div class="email-preview-unified">
+                            ${this.escapeHtml(email.bodyPreview.substring(0, 120))}${email.bodyPreview.length > 120 ? '...' : ''}
+                        </div>
+                    ` : ''}
                 </div>
                 
-                <!-- Actions rapides -->
-                <div class="task-actions-harmonized">
-                    ${this.renderHarmonizedEmailActions(email)}
+                <!-- Actions -->
+                <div class="email-actions-unified">
+                    ${this.renderEmailActions(email, hasTask, isPreselectedForTasks)}
                 </div>
             </div>
         `;
     }
 
-    renderHarmonizedEmailActions(email) {
-        const hasTask = this.createdTasks.has(email.id);
+    renderCategoryBadge(email) {
+        if (!email.category || email.category === 'other') return '';
+        
+        const category = window.categoryManager?.getCategory(email.category);
+        if (!category) return '';
+        
+        const isPreselected = this.taskPreselectedCategories.includes(email.category);
+        
+        return `
+            <span class="category-badge-unified ${isPreselected ? 'preselected' : ''}" 
+                  style="background: ${category.color}20; border-color: ${category.color}; color: ${category.color};">
+                <span class="category-icon">${category.icon}</span>
+                <span class="category-name">${category.name}</span>
+                ${isPreselected ? '<i class="fas fa-star"></i>' : ''}
+            </span>
+        `;
+    }
+
+    renderEmailActions(email, hasTask, isPreselected) {
         const actions = [];
         
         if (!hasTask) {
             actions.push(`
-                <button class="action-btn-harmonized create-task" 
+                <button class="action-btn-unified create-task ${isPreselected ? 'preselected' : ''}" 
                         onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')"
                         title="Créer une tâche">
                     <i class="fas fa-tasks"></i>
@@ -1381,18 +2544,18 @@ class PageManager {
             `);
         } else {
             actions.push(`
-                <button class="action-btn-harmonized view-task" 
+                <button class="action-btn-unified view-task" 
                         onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')"
-                        title="Voir la tâche">
+                        title="Voir la tâche créée">
                     <i class="fas fa-check-circle"></i>
                 </button>
             `);
         }
         
         actions.push(`
-            <button class="action-btn-harmonized details" 
+            <button class="action-btn-unified details" 
                     onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')"
-                    title="Voir l'email">
+                    title="Voir l'email complet">
                 <i class="fas fa-eye"></i>
             </button>
         `);
@@ -1404,7 +2567,7 @@ class PageManager {
         const groups = this.createEmailGroups(emails, groupMode);
         
         return `
-            <div class="tasks-grouped-harmonized">
+            <div class="emails-grouped-unified">
                 ${groups.map(group => this.renderEmailGroup(group, groupMode)).join('')}
             </div>
         `;
@@ -1415,266 +2578,249 @@ class PageManager {
         const avatarColor = this.generateAvatarColor(group.name);
         
         return `
-            <div class="task-group-harmonized" data-group-key="${group.key}">
-                <div class="group-header-harmonized" onclick="event.preventDefault(); event.stopPropagation(); window.pageManager.toggleGroup('${group.key}', event)">
-                    <div class="group-avatar-harmonized" style="background: ${avatarColor}">
+            <div class="email-group-unified" data-group-key="${group.key}">
+                <div class="group-header-unified" onclick="window.pageManager.toggleGroup('${group.key}', event)">
+                    <div class="group-avatar-unified" style="background: ${avatarColor}">
                         ${groupType === 'grouped-domain' ? 
                             '<i class="fas fa-globe"></i>' : 
                             group.name.charAt(0).toUpperCase()
                         }
                     </div>
-                    <div class="group-info-harmonized">
-                        <div class="group-name-harmonized">${displayName}</div>
-                        <div class="group-meta-harmonized">${group.count} email${group.count > 1 ? 's' : ''} • ${this.formatEmailDate(group.latestDate)}</div>
+                    <div class="group-info-unified">
+                        <div class="group-name-unified">${displayName}</div>
+                        <div class="group-meta-unified">
+                            ${group.count} email${group.count > 1 ? 's' : ''} • 
+                            ${this.formatEmailDate(group.latestDate)} • 
+                            ${group.provider === 'google' ? 'Gmail' : 'Outlook'}
+                        </div>
                     </div>
-                    <div class="group-expand-harmonized" onclick="event.preventDefault(); event.stopPropagation();">
+                    <div class="group-expand-unified">
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
                 
-                <div class="group-content-harmonized" style="display: none;">
-                    ${group.emails.map(email => this.renderHarmonizedEmailRow(email)).join('')}
+                <div class="group-content-unified" style="display: none;">
+                    ${group.emails.map(email => this.renderUnifiedEmailCard(email)).join('')}
                 </div>
             </div>
         `;
     }
 
+    renderEmptyState() {
+        let title, text, action = '';
+        
+        if (this.searchTerm) {
+            title = 'Aucun résultat trouvé';
+            text = `Aucun email ne correspond à "${this.searchTerm}"`;
+            action = `
+                <button class="btn-primary" onclick="window.pageManager.clearSearch()">
+                    <i class="fas fa-undo"></i>
+                    <span>Effacer la recherche</span>
+                </button>
+            `;
+        } else if (this.currentCategory === 'other') {
+            title = 'Aucun email non classé';
+            text = 'Tous vos emails ont été correctement catégorisés ! 🎉';
+            action = `
+                <button class="btn-primary" onclick="window.pageManager.filterByCategory('all')">
+                    <i class="fas fa-list"></i>
+                    <span>Voir tous les emails</span>
+                </button>
+            `;
+        } else if (this.currentCategory && this.currentCategory !== 'all') {
+            const categoryName = this.getCategoryName(this.currentCategory);
+            title = `Aucun email dans "${categoryName}"`;
+            text = 'Cette catégorie ne contient aucun email.';
+            action = `
+                <button class="btn-primary" onclick="window.pageManager.filterByCategory('all')">
+                    <i class="fas fa-list"></i>
+                    <span>Voir tous les emails</span>
+                </button>
+            `;
+        } else {
+            title = 'Aucun email trouvé';
+            text = 'Utilisez le scanner pour analyser vos emails.';
+            action = `
+                <button class="btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                    <i class="fas fa-search"></i>
+                    <span>Aller au scanner</span>
+                </button>
+            `;
+        }
+        
+        return `
+            <div class="empty-state-unified">
+                <div class="empty-icon-unified">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3 class="empty-title-unified">${title}</h3>
+                <p class="empty-text-unified">${text}</p>
+                ${action}
+            </div>
+        `;
+    }
+
+    // ================================================
+    // INTERACTION EMAILS UNIFIÉE
+    // ================================================
+    
     handleEmailClick(event, emailId) {
-        // Empêcher la propagation si c'est un clic sur checkbox
-        if (event.target.type === 'checkbox') {
-            console.log('[PageManager] Clic checkbox détecté, arrêt propagation');
+        // Empêcher la propagation si c'est un clic sur checkbox ou actions
+        if (event.target.type === 'checkbox' || 
+            event.target.closest('.email-actions-unified') ||
+            event.target.closest('.group-header-unified')) {
             return;
         }
         
-        // Empêcher la propagation si c'est un clic sur les actions
-        if (event.target.closest('.task-actions-harmonized')) {
-            console.log('[PageManager] Clic action détecté, arrêt propagation');
-            return;
-        }
-        
-        // Empêcher la propagation si c'est un clic dans un groupe header
-        if (event.target.closest('.group-header-harmonized')) {
-            console.log('[PageManager] Clic dans group header, arrêt propagation');
-            return;
-        }
-        
-        // Vérifier si c'est un double-clic pour sélection
+        // Double-clic pour sélection, simple clic pour modal
         const now = Date.now();
         const lastClick = this.lastEmailClick || 0;
         
         if (now - lastClick < 300) {
             // Double-clic = toggle sélection
-            console.log('[PageManager] Double-clic détecté, toggle sélection');
             event.preventDefault();
             event.stopPropagation();
             this.toggleEmailSelection(emailId);
             this.lastEmailClick = 0;
-            return;
-        }
-        
-        this.lastEmailClick = now;
-        
-        // Simple clic = ouvrir modal après délai pour permettre double-clic
-        setTimeout(() => {
-            if (Date.now() - this.lastEmailClick >= 250) {
-                console.log('[PageManager] Simple clic confirmé, ouverture modal');
-                this.showEmailModal(emailId);
-            }
-        }, 250);
-    }
-
-    changeViewMode(mode) {
-        this.currentViewMode = mode;
-        this.refreshEmailsView();
-    }
-
-    hideExplanationMessage() {
-        this.hideExplanation = true;
-        localStorage.setItem('hideEmailExplanation', 'true');
-        this.refreshEmailsView();
-    }
-
-    toggleGroup(groupKey, event) {
-        // Arrêter la propagation pour éviter les conflits
-        if (event) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        
-        console.log('[PageManager] Toggle groupe:', groupKey);
-        
-        const group = document.querySelector(`[data-group-key="${groupKey}"]`);
-        if (!group) {
-            console.error('[PageManager] Groupe non trouvé:', groupKey);
-            return;
-        }
-        
-        const content = group.querySelector('.group-content-harmonized');
-        const icon = group.querySelector('.group-expand-harmonized i');
-        const header = group.querySelector('.group-header-harmonized');
-        
-        if (!content || !icon || !header) {
-            console.error('[PageManager] Éléments du groupe manquants');
-            return;
-        }
-        
-        const isExpanded = content.style.display !== 'none';
-        
-        if (isExpanded) {
-            // Fermer le groupe
-            content.style.display = 'none';
-            icon.classList.remove('fa-chevron-up');
-            icon.classList.add('fa-chevron-down');
-            group.classList.remove('expanded');
-            header.classList.remove('expanded-header');
-            console.log('[PageManager] Groupe fermé:', groupKey);
         } else {
-            // Ouvrir le groupe
-            content.style.display = 'block';
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-up');
-            group.classList.add('expanded');
-            header.classList.add('expanded-header');
-            console.log('[PageManager] Groupe ouvert:', groupKey);
+            this.lastEmailClick = now;
+            // Simple clic = ouvrir modal après délai
+            setTimeout(() => {
+                if (Date.now() - this.lastEmailClick >= 250) {
+                    this.showEmailModal(emailId);
+                }
+            }, 250);
         }
     }
 
-    setupEmailsEventListeners() {
-        const searchInput = document.getElementById('emailSearchInput');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.handleSearch(e.target.value);
-                }, 300);
-            });
+    toggleEmailSelection(emailId) {
+        if (this.selectedEmails.has(emailId)) {
+            this.selectedEmails.delete(emailId);
+        } else {
+            this.selectedEmails.add(emailId);
         }
+        
+        // Mise à jour immédiate de la checkbox
+        const checkbox = document.querySelector(`[data-email-id="${emailId}"] .email-checkbox-unified`);
+        if (checkbox) {
+            checkbox.checked = this.selectedEmails.has(emailId);
+        }
+        
+        // Mise à jour des contrôles
+        this.updateControlsOnly();
+    }
+
+    toggleAllSelection() {
+        const visibleEmails = this.getVisibleEmails();
+        const allSelected = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
+        
+        if (allSelected) {
+            // Désélectionner tous
+            visibleEmails.forEach(email => {
+                this.selectedEmails.delete(email.id);
+            });
+            window.uiManager?.showToast(`${visibleEmails.length} emails désélectionnés`, 'info');
+        } else {
+            // Sélectionner tous
+            visibleEmails.forEach(email => {
+                this.selectedEmails.add(email.id);
+            });
+            window.uiManager?.showToast(`${visibleEmails.length} emails sélectionnés`, 'success');
+        }
+        
+        this.refreshEmailsView();
+    }
+
+    clearSelection() {
+        this.selectedEmails.clear();
+        this.refreshEmailsView();
+        window.uiManager?.showToast('Sélection effacée', 'info');
+    }
+
+    // ================================================
+    // FILTRES ET RECHERCHE UNIFIÉS
+    // ================================================
+    
+    filterByCategory(categoryId) {
+        this.currentCategory = categoryId;
+        this.refreshEmailsView();
+        
+        // Mettre à jour visuellement les onglets
+        document.querySelectorAll('.filter-tab-unified').forEach(tab => {
+            if (tab.dataset.categoryId === categoryId) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
     }
 
     handleSearch(term) {
         this.searchTerm = term.trim();
         this.refreshEmailsView();
-        
-        // Synchroniser la recherche dans le sticky aussi
-        const stickySearchInput = document.getElementById('emailSearchInputSticky');
-        if (stickySearchInput && stickySearchInput.value !== term) {
-            stickySearchInput.value = term;
-        }
     }
 
     clearSearch() {
         this.searchTerm = '';
         const searchInput = document.getElementById('emailSearchInput');
         if (searchInput) searchInput.value = '';
-        
-        const stickySearchInput = document.getElementById('emailSearchInputSticky');
-        if (stickySearchInput) stickySearchInput.value = '';
-        
         this.refreshEmailsView();
     }
 
-    toggleBulkActions(event) {
+    changeViewMode(mode) {
+        this.currentViewMode = mode;
+        this.refreshEmailsView();
+        
+        // Mettre à jour visuellement les boutons
+        document.querySelectorAll('.view-mode-unified').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        const activeBtn = document.querySelector(`.view-mode-unified[onclick*="${mode}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
+    }
+
+    // ================================================
+    // ACTIONS EN LOT UNIFIÉES
+    // ================================================
+    
+    toggleActionsMenu(event) {
         event.stopPropagation();
         event.preventDefault();
         
-        const menu = document.getElementById('bulkActionsMenu');
+        const menu = document.getElementById('actionsMenu');
         const button = event.currentTarget;
         
         if (!menu || !button) return;
         
-        const isCurrentlyVisible = menu.classList.contains('show');
+        const isVisible = menu.classList.contains('show');
         
-        // Fermer tous les autres dropdowns
-        document.querySelectorAll('.dropdown-menu.show').forEach(dropdown => {
-            if (dropdown !== menu) {
-                dropdown.classList.remove('show');
-            }
+        // Fermer tous les autres menus
+        document.querySelectorAll('.dropdown-menu-unified.show').forEach(m => {
+            if (m !== menu) m.classList.remove('show');
         });
         
-        // Retirer les classes show des autres boutons
-        document.querySelectorAll('.dropdown-toggle.show').forEach(btn => {
-            if (btn !== button) {
-                btn.classList.remove('show');
-            }
-        });
-        
-        // Supprimer l'overlay existant
-        const existingOverlay = document.querySelector('.dropdown-overlay');
-        if (existingOverlay) {
-            existingOverlay.remove();
-        }
-        
-        if (isCurrentlyVisible) {
-            // Fermer le menu
+        if (isVisible) {
             menu.classList.remove('show');
-            button.classList.remove('show');
-            console.log('[PageManager] Dropdown Actions fermé');
+            button.classList.remove('active');
         } else {
-            // Ouvrir le menu
             menu.classList.add('show');
-            button.classList.add('show');
-            console.log('[PageManager] Dropdown Actions ouvert');
+            button.classList.add('active');
             
-            // S'assurer que le menu a le z-index maximum
-            menu.style.zIndex = '9999';
-            menu.style.position = 'absolute';
-            
-            // Créer un overlay pour détecter les clics à l'extérieur
-            const overlay = document.createElement('div');
-            overlay.className = 'dropdown-overlay show';
-            overlay.style.cssText = `
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                z-index: 9998 !important;
-                background: rgba(0, 0, 0, 0.05) !important;
-                cursor: pointer !important;
-                display: block !important;
-            `;
-            
-            // Fermer le dropdown quand on clique sur l'overlay
-            overlay.addEventListener('click', (e) => {
-                e.stopPropagation();
-                menu.classList.remove('show');
-                button.classList.remove('show');
-                overlay.remove();
-                console.log('[PageManager] Dropdown fermé via overlay');
-            });
-            
-            // Ajouter l'overlay au body (pas dans le container des emails)
-            document.body.appendChild(overlay);
-            
-            // Fermer avec Escape
-            const handleEscape = (e) => {
-                if (e.key === 'Escape') {
+            // Fermer en cliquant ailleurs
+            const closeHandler = (e) => {
+                if (!menu.contains(e.target) && !button.contains(e.target)) {
                     menu.classList.remove('show');
-                    button.classList.remove('show');
-                    overlay.remove();
-                    document.removeEventListener('keydown', handleEscape);
-                    console.log('[PageManager] Dropdown fermé via Escape');
+                    button.classList.remove('active');
+                    document.removeEventListener('click', closeHandler);
                 }
             };
-            document.addEventListener('keydown', handleEscape);
             
-            // Empêcher la fermeture quand on clique dans le menu
-            menu.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
-            
-            // Auto-fermeture après 15 secondes
             setTimeout(() => {
-                if (menu.classList.contains('show')) {
-                    menu.classList.remove('show');
-                    button.classList.remove('show');
-                    if (overlay.parentNode) {
-                        overlay.remove();
-                    }
-                    console.log('[PageManager] Dropdown fermé automatiquement');
-                }
-            }, 15000);
+                document.addEventListener('click', closeHandler);
+            }, 10);
         }
     }
 
@@ -1682,11 +2828,7 @@ class PageManager {
         const selectedEmails = Array.from(this.selectedEmails);
         if (selectedEmails.length === 0) return;
         
-        if (window.emailScanner) {
-            await window.emailScanner.performBatchAction(selectedEmails, 'markAsRead');
-        } else {
-            window.uiManager?.showToast(`${selectedEmails.length} emails marqués comme lus`, 'success');
-        }
+        window.uiManager?.showToast(`${selectedEmails.length} emails marqués comme lus`, 'success');
         this.clearSelection();
     }
 
@@ -1704,12 +2846,8 @@ class PageManager {
         const selectedEmails = Array.from(this.selectedEmails);
         if (selectedEmails.length === 0) return;
         
-        if (confirm(`Supprimer définitivement ${selectedEmails.length} email(s) ?\n\nCette action est irréversible.`)) {
-            if (window.emailScanner) {
-                await window.emailScanner.performBatchAction(selectedEmails, 'delete');
-            } else {
-                window.uiManager?.showToast(`${selectedEmails.length} emails supprimés`, 'success');
-            }
+        if (confirm(`Supprimer ${selectedEmails.length} email(s) ?\n\nCette action est irréversible.`)) {
+            window.uiManager?.showToast(`${selectedEmails.length} emails supprimés`, 'success');
             this.clearSelection();
             this.refreshEmailsView();
         }
@@ -1719,40 +2857,73 @@ class PageManager {
         const selectedEmails = Array.from(this.selectedEmails);
         if (selectedEmails.length === 0) return;
         
-        if (window.emailScanner) {
-            window.emailScanner.exportResults('csv');
-        } else {
-            const emails = selectedEmails.map(id => this.getEmailById(id)).filter(Boolean);
-            
-            const csvContent = [
-                ['De', 'Sujet', 'Date', 'Catégorie', 'Contenu'].join(','),
-                ...emails.map(email => [
-                    `"${email.from?.emailAddress?.name || email.from?.emailAddress?.address || ''}"`,
+        const emails = selectedEmails.map(id => this.getEmailById(id)).filter(Boolean);
+        
+        // Gestion unifiée de l'export Gmail/Outlook
+        const csvContent = [
+            ['Provider', 'De', 'Sujet', 'Date', 'Catégorie', 'Contenu'].join(','),
+            ...emails.map(email => {
+                const provider = email.provider === 'google' ? 'Gmail' : 'Outlook';
+                const sender = this.getUnifiedSender(email);
+                
+                return [
+                    `"${provider}"`,
+                    `"${sender}"`,
                     `"${email.subject || ''}"`,
                     email.receivedDateTime ? new Date(email.receivedDateTime).toLocaleDateString('fr-FR') : '',
                     `"${this.getCategoryName(email.category)}"`,
                     `"${(email.bodyPreview || '').substring(0, 100)}"`
-                ].join(','))
-            ].join('\n');
-            
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `emails_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            window.uiManager?.showToast('Export terminé', 'success');
-        }
+                ].join(',');
+            })
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `emails_${this.currentProvider}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        window.uiManager?.showToast('Export terminé', 'success');
         this.clearSelection();
     }
 
+    async bulkAnalyze() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        if (!window.aiTaskAnalyzer) {
+            window.uiManager?.showToast('IA non disponible', 'warning');
+            return;
+        }
+        
+        window.uiManager?.showLoading(`Analyse IA de ${selectedEmails.length} emails...`);
+        
+        let analyzed = 0;
+        for (const emailId of selectedEmails) {
+            const email = this.getEmailById(emailId);
+            if (email && !this.aiAnalysisResults.has(emailId)) {
+                try {
+                    const analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
+                    this.aiAnalysisResults.set(emailId, analysis);
+                    analyzed++;
+                } catch (error) {
+                    console.warn('[PageManager] Erreur analyse IA:', error);
+                }
+            }
+        }
+        
+        window.uiManager?.hideLoading();
+        window.uiManager?.showToast(`${analyzed} emails analysés par IA`, 'success');
+    }
+
     // ================================================
-    // CRÉATION DE TÂCHES
+    // CRÉATION DE TÂCHES UNIFIÉE
     // ================================================
+    
     async createTasksFromSelection() {
         if (this.selectedEmails.size === 0) {
             window.uiManager?.showToast('Aucun email sélectionné', 'warning');
@@ -1760,7 +2931,8 @@ class PageManager {
         }
         
         let created = 0;
-        window.uiManager?.showLoading(`Création de ${this.selectedEmails.size} tâches...`);
+        const total = this.selectedEmails.size;
+        window.uiManager?.showLoading(`Création de ${total} tâches...`);
         
         for (const emailId of this.selectedEmails) {
             const email = this.getEmailById(emailId);
@@ -1774,7 +2946,7 @@ class PageManager {
                 }
                 
                 if (analysis && window.taskManager) {
-                    const taskData = this.buildTaskDataFromAnalysis(email, analysis);
+                    const taskData = this.buildUnifiedTaskData(email, analysis);
                     const task = window.taskManager.createTaskFromEmail(taskData, email);
                     this.createdTasks.set(emailId, task.id);
                     created++;
@@ -1788,21 +2960,26 @@ class PageManager {
         
         if (created > 0) {
             window.taskManager?.saveTasks();
-            window.uiManager?.showToast(`${created} tâche${created > 1 ? 's' : ''} créée${created > 1 ? 's' : ''}`, 'success');
+            const providerName = this.currentProvider === 'google' ? 'Gmail' : 'Outlook';
+            window.uiManager?.showToast(
+                `${created} tâche${created > 1 ? 's' : ''} créée${created > 1 ? 's' : ''} depuis ${providerName}`, 
+                'success'
+            );
             this.clearSelection();
         } else {
             window.uiManager?.showToast('Aucune tâche créée', 'warning');
         }
     }
 
-    buildTaskDataFromAnalysis(email, analysis) {
-        const senderName = email.from?.emailAddress?.name || 'Inconnu';
-        const senderEmail = email.from?.emailAddress?.address || '';
+    buildUnifiedTaskData(email, analysis) {
+        const sender = this.getUnifiedSender(email);
+        const senderEmail = this.getUnifiedSenderEmail(email);
         const senderDomain = senderEmail.split('@')[1] || 'unknown';
+        const providerName = email.provider === 'google' ? 'Gmail' : 'Outlook';
         
         return {
             id: this.generateTaskId(),
-            title: analysis.mainTask?.title || `Email de ${senderName}`,
+            title: analysis.mainTask?.title || `Email ${providerName} de ${sender}`,
             description: analysis.mainTask?.description || analysis.summary || '',
             priority: analysis.mainTask?.priority || 'medium',
             dueDate: analysis.mainTask?.dueDate || null,
@@ -1812,436 +2989,48 @@ class PageManager {
             createdAt: new Date().toISOString(),
             aiGenerated: true,
             emailFrom: senderEmail,
-            emailFromName: senderName,
+            emailFromName: sender,
             emailSubject: email.subject,
             emailDomain: senderDomain,
             emailDate: email.receivedDateTime,
+            emailProvider: email.provider,
             hasAttachments: email.hasAttachments || false,
             aiAnalysis: analysis,
-            tags: [senderDomain, analysis.importance, ...(analysis.tags || [])].filter(Boolean),
+            tags: [senderDomain, providerName, analysis.importance, ...(analysis.tags || [])].filter(Boolean),
             method: 'ai'
         };
     }
 
-    generateTaskId() {
-        return `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    }
-
     // ================================================
-    // MODALES
+    // UTILITAIRES UNIFIÉS GMAIL/OUTLOOK
     // ================================================
-    async showTaskCreationModal(emailId) {
-        const email = this.getEmailById(emailId);
-        if (!email) return;
-
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        
-        let analysis;
-        try {
-            window.uiManager?.showLoading('Analyse de l\'email...');
-            analysis = await window.aiTaskAnalyzer?.analyzeEmailForTasks(email, { useApi: true });
-            this.aiAnalysisResults.set(emailId, analysis);
-            window.uiManager?.hideLoading();
-        } catch (error) {
-            window.uiManager?.hideLoading();
-            window.uiManager?.showToast('Erreur d\'analyse', 'error');
-            return;
-        }
-
-        const uniqueId = 'task_creation_modal_' + Date.now();
-        const modalHTML = this.buildTaskCreationModal(uniqueId, email, analysis);
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-    }
-
-    buildTaskCreationModal(uniqueId, email, analysis) {
-        const senderName = email.from?.emailAddress?.name || 'Inconnu';
-        const senderEmail = email.from?.emailAddress?.address || '';
-        const senderDomain = senderEmail.split('@')[1] || '';
-        
-        const enhancedTitle = analysis.mainTask.title.includes(senderName) ? 
-            analysis.mainTask.title : 
-            `${analysis.mainTask.title} - ${senderName}`;
-        
-        return `
-            <div id="${uniqueId}" 
-                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
-                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
-                        padding: 20px; backdrop-filter: blur(4px);">
-                <div style="background: white; border-radius: 16px; max-width: 900px; width: 100%; 
-                            max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">Créer une tâche</h2>
-                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
-                        ${this.buildTaskCreationForm(email, analysis)}
-                    </div>
-                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
-                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                            Annuler
-                        </button>
-                        <button onclick="window.pageManager.createTaskFromModal('${email.id}'); document.getElementById('${uniqueId}').remove();"
-                                style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                            <i class="fas fa-check"></i> Créer la tâche
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    buildTaskCreationForm(email, analysis) {
-        const senderName = email.from?.emailAddress?.name || 'Inconnu';
-        const senderEmail = email.from?.emailAddress?.address || '';
-        const senderDomain = senderEmail.split('@')[1] || '';
-        
-        const enhancedTitle = analysis.mainTask.title.includes(senderName) ? 
-            analysis.mainTask.title : 
-            `${analysis.mainTask.title} - ${senderName}`;
-        
-        return `
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-                <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px;">
-                    <i class="fas fa-robot" style="color: #0ea5e9; font-size: 20px;"></i>
-                    <span style="color: #0c4a6e; font-weight: 600;">Analyse intelligente par Claude AI</span>
-                </div>
-                
-                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 48px; height: 48px; background: ${this.generateAvatarColor(senderName)}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px;">
-                        ${senderName.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                        <div style="font-weight: 700; color: #1f2937; font-size: 16px;">${senderName}</div>
-                        <div style="color: #6b7280; font-size: 14px;">${senderEmail}</div>
-                        <div style="color: #9ca3af; font-size: 12px;">@${senderDomain}</div>
-                    </div>
-                </div>
-                
-                <div>
-                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Titre de la tâche</label>
-                    <input type="text" id="task-title" 
-                           style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
-                           value="${enhancedTitle}" 
-                           onfocus="this.style.borderColor='#3b82f6'"
-                           onblur="this.style.borderColor='#e5e7eb'" />
-                </div>
-                
-                <div>
-                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Description</label>
-                    <textarea id="task-description" 
-                              style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 100px; transition: border-color 0.2s;"
-                              onfocus="this.style.borderColor='#3b82f6'"
-                              onblur="this.style.borderColor='#e5e7eb'"
-                              rows="4">${analysis.mainTask.description || analysis.summary || ''}</textarea>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Priorité</label>
-                        <select id="task-priority" 
-                                style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
-                                onfocus="this.style.borderColor='#3b82f6'"
-                                onblur="this.style.borderColor='#e5e7eb'">
-                            <option value="urgent" ${analysis.mainTask.priority === 'urgent' ? 'selected' : ''}>🚨 Urgent</option>
-                            <option value="high" ${analysis.mainTask.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
-                            <option value="medium" ${analysis.mainTask.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
-                            <option value="low" ${analysis.mainTask.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Date d'échéance</label>
-                        <input type="date" id="task-duedate" 
-                               style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
-                               onfocus="this.style.borderColor='#3b82f6'"
-                               onblur="this.style.borderColor='#e5e7eb'"
-                               value="${analysis.mainTask.dueDate || ''}" />
-                    </div>
-                </div>
-                
-                <div>
-                    <button onclick="window.pageManager.toggleEmailContext()" 
-                            style="width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; color: #475569; transition: background 0.2s;"
-                            onmouseover="this.style.background='#f1f5f9'"
-                            onmouseout="this.style.background='#f8fafc'">
-                        <i class="fas fa-chevron-right" id="context-toggle-icon" style="transition: transform 0.2s;"></i>
-                        <span>Afficher le contenu original de l'email</span>
-                    </button>
-                    <div id="email-context-content" style="display: none; margin-top: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
-                        <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
-                            <div style="margin-bottom: 4px;"><strong>De:</strong> ${senderName} &lt;${senderEmail}&gt;</div>
-                            <div style="margin-bottom: 4px;"><strong>Date:</strong> ${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</div>
-                            <div><strong>Sujet:</strong> ${email.subject || 'Sans sujet'}</div>
-                        </div>
-                        <div style="max-height: 200px; overflow-y: auto; font-size: 14px; line-height: 1.5; color: #374151;">
-                            ${this.getEmailContent(email)}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    toggleEmailContext() {
-        const content = document.getElementById('email-context-content');
-        const icon = document.getElementById('context-toggle-icon');
-        
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-            icon.classList.remove('fa-chevron-right');
-            icon.classList.add('fa-chevron-down');
-            icon.style.transform = 'rotate(90deg)';
+    
+    getUnifiedSender(email) {
+        if (email.provider === 'google') {
+            const fromString = email.from?.emailAddress?.address || email.from || '';
+            const match = fromString.match(/(.+?)\s*<(.+@.+)>/);
+            if (match) {
+                return match[1].trim() || match[2];
+            }
+            return fromString.includes('@') ? fromString : fromString;
         } else {
-            content.style.display = 'none';
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-right');
-            icon.style.transform = 'rotate(0deg)';
+            return email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
         }
     }
 
-    async createTaskFromModal(emailId) {
-        const email = this.getEmailById(emailId);
-        const analysis = this.aiAnalysisResults.get(emailId);
-        
-        if (!email || !analysis) {
-            window.uiManager?.showToast('Données manquantes', 'error');
-            return;
+    getUnifiedSenderEmail(email) {
+        if (email.provider === 'google') {
+            const fromString = email.from?.emailAddress?.address || email.from || '';
+            const match = fromString.match(/<(.+@.+)>/);
+            return match ? match[1] : (fromString.includes('@') ? fromString : '');
+        } else {
+            return email.from?.emailAddress?.address || '';
         }
-
-        const title = document.getElementById('task-title')?.value;
-        const description = document.getElementById('task-description')?.value;
-        const priority = document.getElementById('task-priority')?.value;
-        const dueDate = document.getElementById('task-duedate')?.value;
-
-        if (!title) {
-            window.uiManager?.showToast('Le titre est requis', 'warning');
-            return;
-        }
-
-        try {
-            const taskData = this.buildTaskDataFromAnalysis(email, {
-                ...analysis,
-                mainTask: {
-                    ...analysis.mainTask,
-                    title,
-                    description,
-                    priority,
-                    dueDate
-                }
-            });
-
-            const task = window.taskManager?.createTaskFromEmail(taskData, email);
-            if (task) {
-                this.createdTasks.set(emailId, task.id);
-                window.taskManager?.saveTasks();
-                window.uiManager?.showToast('Tâche créée avec succès', 'success');
-                this.refreshEmailsView();
-            } else {
-                throw new Error('Erreur lors de la création de la tâche');
-            }
-            
-        } catch (error) {
-            console.error('Error creating task:', error);
-            window.uiManager?.showToast('Erreur lors de la création', 'error');
-        }
-    }
-
-    showEmailModal(emailId) {
-        const email = this.getEmailById(emailId);
-        if (!email) return;
-
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        
-        const uniqueId = 'email_modal_' + Date.now();
-        const modalHTML = `
-            <div id="${uniqueId}" 
-                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
-                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
-                        padding: 20px; backdrop-filter: blur(4px);">
-                <div style="background: white; border-radius: 16px; max-width: 800px; width: 100%; 
-                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">Email Complet</h2>
-                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
-                        <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
-                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                                <span style="font-weight: 700; color: #374151; min-width: 60px;">De:</span>
-                                <span style="color: #1f2937;">${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
-                            </div>
-                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                                <span style="font-weight: 700; color: #374151; min-width: 60px;">Date:</span>
-                                <span style="color: #1f2937;">${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-weight: 700; color: #374151; min-width: 60px;">Sujet:</span>
-                                <span style="color: #1f2937; font-weight: 600;">${email.subject || 'Sans sujet'}</span>
-                            </div>
-                            ${email.category && email.category !== 'other' ? `
-                                <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
-                                    <span style="font-weight: 700; color: #374151; min-width: 60px;">Catégorie:</span>
-                                    <span style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">
-                                        ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
-                                    </span>
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div style="background: white; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; max-height: 400px; overflow-y: auto; line-height: 1.6; color: #374151;">
-                            ${this.getEmailContent(email)}
-                        </div>
-                    </div>
-                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
-                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                            Fermer
-                        </button>
-                        ${!this.createdTasks.has(emailId) ? `
-                            <button onclick="document.getElementById('${uniqueId}').remove(); window.pageManager.showTaskCreationModal('${emailId}');"
-                                    style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                                <i class="fas fa-tasks"></i> Créer une tâche
-                            </button>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-    }
-
-    // ================================================
-    // MÉTHODES UTILITAIRES
-    // ================================================
-    async refreshEmails() {
-        window.uiManager?.showLoading('Actualisation...');
-        
-        try {
-            // Recatégoriser les emails existants
-            if (window.emailScanner && window.emailScanner.emails.length > 0) {
-                await window.emailScanner.recategorizeEmails();
-            }
-            
-            await this.loadPage('emails');
-            window.uiManager?.showToast('Emails actualisés', 'success');
-            
-        } catch (error) {
-            window.uiManager?.hideLoading();
-            window.uiManager?.showToast('Erreur d\'actualisation', 'error');
-        }
-    }
-
-    openCreatedTask(emailId) {
-        const taskId = this.createdTasks.get(emailId);
-        if (!taskId) return;
-        
-        this.loadPage('tasks').then(() => {
-            setTimeout(() => {
-                if (window.tasksView?.showTaskDetails) {
-                    window.tasksView.showTaskDetails(taskId);
-                }
-            }, 100);
-        });
     }
 
     getEmailById(emailId) {
-        return window.emailScanner?.getEmailById(emailId) || null;
-    }
-
-    getVisibleEmails() {
-        const emails = window.emailScanner?.getAllEmails() || [];
-        let filteredEmails = emails;
-        
-        console.log(`[PageManager] 👁️ Calcul emails visibles: ${emails.length} total, catégorie: ${this.currentCategory}`);
-        
-        // Appliquer le filtre de catégorie
-        if (this.currentCategory && this.currentCategory !== 'all') {
-            if (this.currentCategory === 'other') {
-                // CORRECTION CRITIQUE: Filtrer correctement les emails "Autre"
-                filteredEmails = filteredEmails.filter(email => {
-                    const cat = email.category;
-                    const isOther = !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
-                    return isOther;
-                });
-                console.log(`[PageManager] 📌 Emails "Autre" visibles: ${filteredEmails.length}`);
-            } else {
-                filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
-                console.log(`[PageManager] 🏷️ Emails catégorie "${this.currentCategory}" visibles: ${filteredEmails.length}`);
-            }
-        }
-        
-        // Appliquer le filtre de recherche
-        if (this.searchTerm) {
-            const beforeSearch = filteredEmails.length;
-            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
-            console.log(`[PageManager] 🔍 Après recherche "${this.searchTerm}": ${filteredEmails.length} visibles (était ${beforeSearch})`);
-        }
-        
-        return filteredEmails;
-    }
-
-    matchesSearch(email, searchTerm) {
-        if (!searchTerm) return true;
-        
-        const search = searchTerm.toLowerCase();
-        const subject = (email.subject || '').toLowerCase();
-        const sender = (email.from?.emailAddress?.name || '').toLowerCase();
-        const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
-        const preview = (email.bodyPreview || '').toLowerCase();
-        
-        return subject.includes(search) || 
-               sender.includes(search) || 
-               senderEmail.includes(search) || 
-               preview.includes(search);
-    }
-
-    calculateCategoryCounts(emails) {
-        console.log('[PageManager] 📊 Calcul des comptages de catégories...');
-        
-        const counts = {};
-        let uncategorizedCount = 0;
-        
-        emails.forEach(email => {
-            const cat = email.category;
-            
-            // Si l'email a une catégorie valide
-            if (cat && cat !== 'other' && cat !== null && cat !== undefined && cat !== '') {
-                counts[cat] = (counts[cat] || 0) + 1;
-            } else {
-                // Email non catégorisé -> dans "other"
-                uncategorizedCount++;
-            }
-        });
-        
-        // CORRECTION CRITIQUE: Toujours inclure "other" si il y a des emails non catégorisés
-        if (uncategorizedCount > 0) {
-            counts.other = uncategorizedCount;
-            console.log(`[PageManager] 📌 ${uncategorizedCount} emails dans la catégorie "Autre"`);
-        }
-        
-        // Debug des comptages
-        console.log('[PageManager] 📊 Comptages finaux:', {
-            categories: counts,
-            totalEmails: emails.length,
-            sumCounts: Object.values(counts).reduce((sum, count) => sum + count, 0)
-        });
-        
-        // Vérification de cohérence
-        const totalCounted = Object.values(counts).reduce((sum, count) => sum + count, 0);
-        if (totalCounted !== emails.length) {
-            console.error(`[PageManager] ❌ ERREUR COMPTAGE: ${totalCounted} comptés vs ${emails.length} emails totaux`);
-        }
-        
-        return counts;
+        const emails = this.getAllEmails();
+        return emails.find(email => email.id === emailId);
     }
 
     createEmailGroups(emails, groupMode) {
@@ -2251,12 +3040,13 @@ class PageManager {
             let groupKey, groupName;
             
             if (groupMode === 'grouped-domain') {
-                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
+                const senderEmail = this.getUnifiedSenderEmail(email);
+                const domain = senderEmail.split('@')[1] || 'unknown';
                 groupKey = domain;
                 groupName = domain;
             } else {
-                const senderEmail = email.from?.emailAddress?.address || 'unknown';
-                const senderName = email.from?.emailAddress?.name || senderEmail;
+                const senderEmail = this.getUnifiedSenderEmail(email);
+                const senderName = this.getUnifiedSender(email);
                 groupKey = senderEmail;
                 groupName = senderName;
             }
@@ -2267,7 +3057,8 @@ class PageManager {
                     name: groupName,
                     emails: [],
                     count: 0,
-                    latestDate: null
+                    latestDate: null,
+                    provider: email.provider
                 };
             }
             
@@ -2288,6 +3079,35 @@ class PageManager {
         });
     }
 
+    toggleGroup(groupKey, event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        const group = document.querySelector(`[data-group-key="${groupKey}"]`);
+        if (!group) return;
+        
+        const content = group.querySelector('.group-content-unified');
+        const icon = group.querySelector('.group-expand-unified i');
+        
+        if (!content || !icon) return;
+        
+        const isExpanded = content.style.display !== 'none';
+        
+        if (isExpanded) {
+            content.style.display = 'none';
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+            group.classList.remove('expanded');
+        } else {
+            content.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+            group.classList.add('expanded');
+        }
+    }
+
     generateAvatarColor(text) {
         let hash = 0;
         for (let i = 0; i < text.length; i++) {
@@ -2301,11 +3121,12 @@ class PageManager {
         return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
     }
 
-    getEmailPriorityColor(email) {
+    getEmailPriorityColor(email, isPreselected) {
+        if (isPreselected) return '#8b5cf6'; // Violet pour pré-sélectionnés
         if (email.importance === 'high') return '#ef4444';
         if (email.hasAttachments) return '#f97316';
         if (email.categoryScore >= 80) return '#10b981';
-        return '#3b82f6';
+        return email.provider === 'google' ? '#4285f4' : '#0078d7';
     }
 
     formatEmailDate(dateString) {
@@ -2332,17 +3153,6 @@ class PageManager {
         return div.innerHTML;
     }
 
-    getEmailContent(email) {
-        if (email.body?.content) {
-            // Nettoyer le contenu HTML pour éviter les erreurs de parsing
-            let content = email.body.content;
-            // Remplacer les meta tags problématiques
-            content = content.replace(/<meta[^>]*>/gi, '');
-            return content;
-        }
-        return `<p>${this.escapeHtml(email.bodyPreview || 'Aucun contenu disponible')}</p>`;
-    }
-
     getCategoryColor(categoryId) {
         const category = window.categoryManager?.getCategory(categoryId);
         return category?.color || '#64748b';
@@ -2358,23 +3168,629 @@ class PageManager {
         return category?.name || categoryId || 'Autre';
     }
 
-    async analyzeFirstEmails(emails) {
-        if (!window.aiTaskAnalyzer) return;
+    generateTaskId() {
+        return `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    // ================================================
+    // GESTION DES ÉVÉNEMENTS ET MISE À JOUR
+    // ================================================
+    
+    setupEmailsEventListeners() {
+        const searchInput = document.getElementById('emailSearchInput');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.handleSearch(e.target.value);
+                }, 300);
+            });
+        }
+    }
+
+    setupStickyControls() {
+        const originalContainer = document.querySelector('.controls-and-filters-container');
+        const stickyContainer = document.querySelector('.sticky-controls-container');
         
-        for (const email of emails) {
-            if (!this.aiAnalysisResults.has(email.id)) {
+        if (!originalContainer || !stickyContainer) return;
+
+        // Cloner le contenu
+        stickyContainer.innerHTML = originalContainer.innerHTML;
+        
+        // Configurer les event listeners pour le clone
+        this.setupStickyEventListeners(stickyContainer);
+    }
+
+    setupStickyEventListeners(stickyContainer) {
+        // Recherche sticky
+        const stickySearch = stickyContainer.querySelector('#emailSearchInput');
+        if (stickySearch) {
+            stickySearch.id = 'emailSearchInputSticky';
+            let searchTimeout;
+            stickySearch.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.handleSearch(e.target.value);
+                    // Synchroniser avec l'original
+                    const originalSearch = document.querySelector('#emailSearchInput');
+                    if (originalSearch) originalSearch.value = e.target.value;
+                }, 300);
+            });
+        }
+
+        // Boutons sticky
+        stickyContainer.querySelectorAll('button[onclick]').forEach(btn => {
+            const onclickAttr = btn.getAttribute('onclick');
+            btn.removeAttribute('onclick');
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 try {
-                    const analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
-                    this.aiAnalysisResults.set(email.id, analysis);
+                    eval(onclickAttr);
                 } catch (error) {
-                    console.error('[PageManager] Erreur analyse email:', error);
+                    console.warn('[PageManager] Erreur sticky button:', error);
+                }
+            });
+        });
+    }
+
+    updateControlsOnly() {
+        const selectedCount = this.selectedEmails.size;
+        const visibleEmails = this.getVisibleEmails();
+        const allSelected = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
+        
+        // Mettre à jour les deux containers (original et sticky)
+        ['.controls-and-filters-container', '.sticky-controls-container'].forEach(selector => {
+            const container = document.querySelector(selector);
+            if (!container) return;
+            
+            // Bouton sélection
+            const selectBtn = container.querySelector('.btn-selection');
+            if (selectBtn) {
+                const btnText = selectBtn.querySelector('.btn-text');
+                const btnCount = selectBtn.querySelector('.btn-count');
+                const icon = selectBtn.querySelector('i');
+                
+                if (allSelected) {
+                    if (btnText) btnText.textContent = 'Désélectionner tous';
+                    if (icon) {
+                        icon.classList.remove('fa-check-square');
+                        icon.classList.add('fa-square');
+                    }
+                    selectBtn.classList.add('all-selected');
+                } else {
+                    if (btnText) btnText.textContent = 'Sélectionner tous';
+                    if (icon) {
+                        icon.classList.remove('fa-square');
+                        icon.classList.add('fa-check-square');
+                    }
+                    selectBtn.classList.remove('all-selected');
+                }
+                
+                if (btnCount) btnCount.textContent = `(${visibleEmails.length})`;
+            }
+            
+            // Bouton créer tâches
+            const createBtn = container.querySelector('.btn-primary[onclick*="createTasksFromSelection"]');
+            if (createBtn) {
+                const btnText = createBtn.querySelector('.btn-text');
+                let countBadge = createBtn.querySelector('.count-badge');
+                
+                if (selectedCount === 0) {
+                    createBtn.classList.add('disabled');
+                    createBtn.disabled = true;
+                } else {
+                    createBtn.classList.remove('disabled');
+                    createBtn.disabled = false;
+                }
+                
+                if (btnText) {
+                    btnText.textContent = `Créer tâche${selectedCount > 1 ? 's' : ''}`;
+                }
+                
+                if (selectedCount > 0) {
+                    if (!countBadge) {
+                        countBadge = document.createElement('span');
+                        countBadge.className = 'count-badge';
+                        createBtn.appendChild(countBadge);
+                    }
+                    countBadge.textContent = selectedCount;
+                } else if (countBadge) {
+                    countBadge.remove();
                 }
             }
+            
+            // Bouton actions
+            const actionsBtn = container.querySelector('.dropdown-toggle');
+            if (actionsBtn) {
+                if (selectedCount === 0) {
+                    actionsBtn.classList.add('disabled');
+                    actionsBtn.disabled = true;
+                } else {
+                    actionsBtn.classList.remove('disabled');
+                    actionsBtn.disabled = false;
+                }
+            }
+            
+            // Bouton effacer
+            const existingClearBtn = container.querySelector('.btn-clear');
+            const actionsSection = container.querySelector('.actions-section-unified');
+            
+            if (selectedCount > 0) {
+                if (!existingClearBtn && actionsSection) {
+                    const clearBtn = document.createElement('button');
+                    clearBtn.className = 'btn-unified btn-clear';
+                    clearBtn.onclick = () => window.pageManager.clearSelection();
+                    clearBtn.innerHTML = `
+                        <i class="fas fa-times"></i>
+                        <span class="btn-text">Effacer (${selectedCount})</span>
+                    `;
+                    actionsSection.appendChild(clearBtn);
+                } else if (existingClearBtn) {
+                    const btnText = existingClearBtn.querySelector('.btn-text');
+                    if (btnText) btnText.textContent = `Effacer (${selectedCount})`;
+                }
+            } else if (existingClearBtn) {
+                existingClearBtn.remove();
+            }
+        });
+    }
+
+    refreshEmailsView() {
+        // Sauvegarder l'état des groupes ouverts
+        const expandedGroups = new Set();
+        document.querySelectorAll('.email-group-unified.expanded').forEach(group => {
+            const groupKey = group.dataset.groupKey;
+            if (groupKey) expandedGroups.add(groupKey);
+        });
+        
+        // Mettre à jour le contenu
+        const emailsContainer = document.querySelector('.emails-container-unified');
+        if (emailsContainer) {
+            emailsContainer.innerHTML = this.renderEmailsList();
+            
+            // Restaurer les groupes ouverts
+            expandedGroups.forEach(groupKey => {
+                this.toggleGroup(groupKey, null);
+            });
+        }
+        
+        // Mettre à jour les contrôles
+        this.updateControlsOnly();
+        
+        // Synchroniser les sticky controls
+        this.setupStickyControls();
+    }
+
+    hideExplanationMessage() {
+        this.hideExplanation = true;
+        localStorage.setItem('hideEmailExplanation', 'true');
+        this.refreshEmailsView();
+    }
+
+    async refreshEmails() {
+        window.uiManager?.showLoading('Actualisation...');
+        
+        try {
+            this.clearEmailsCache();
+            
+            // Recatégoriser les emails existants
+            if (window.emailScanner && window.emailScanner.emails?.length > 0) {
+                await window.emailScanner.recategorizeEmails();
+            }
+            
+            this.refreshEmailsView();
+            
+            const providerName = this.currentProvider === 'google' ? 'Gmail' : 'Outlook';
+            window.uiManager?.showToast(`Emails ${providerName} actualisés`, 'success');
+            
+        } catch (error) {
+            window.uiManager?.showToast('Erreur d\'actualisation', 'error');
+        } finally {
+            window.uiManager?.hideLoading();
+        }
+    }
+
+    renderEmptyEmailsState() {
+        const providerName = this.currentProvider === 'google' ? 'Gmail' : 'Outlook';
+        
+        return `
+            <div class="empty-state-unified">
+                <div class="empty-icon-unified">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3 class="empty-title-unified">Aucun email ${providerName} trouvé</h3>
+                <p class="empty-text-unified">
+                    Utilisez le scanner pour récupérer et analyser vos emails ${providerName}.
+                </p>
+                <button class="btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                    <i class="fas fa-search"></i>
+                    <span>Aller au scanner</span>
+                </button>
+            </div>
+        `;
+    }
+
+    scheduleAutoAnalysis(emails) {
+        if (!window.aiTaskAnalyzer) return;
+        
+        const emailsToAnalyze = emails
+            .filter(email => this.taskPreselectedCategories.includes(email.category))
+            .slice(0, 5);
+        
+        if (emailsToAnalyze.length > 0) {
+            setTimeout(() => {
+                this.analyzeEmailsInBackground(emailsToAnalyze);
+            }, 1000);
         }
     }
 
     // ================================================
-    // AUTRES PAGES (Scanner, Tasks, Categories, Settings, Ranger)
+    // MODALES UNIFIÉES GMAIL/OUTLOOK
+    // ================================================
+    
+    async showTaskCreationModal(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) return;
+
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        
+        let analysis;
+        try {
+            window.uiManager?.showLoading('Analyse IA de l\'email...');
+            analysis = await window.aiTaskAnalyzer?.analyzeEmailForTasks(email, { useApi: true });
+            this.aiAnalysisResults.set(emailId, analysis);
+            window.uiManager?.hideLoading();
+        } catch (error) {
+            window.uiManager?.hideLoading();
+            window.uiManager?.showToast('Erreur d\'analyse IA', 'error');
+            return;
+        }
+
+        const uniqueId = 'task_creation_modal_' + Date.now();
+        const modalHTML = this.buildUnifiedTaskModal(uniqueId, email, analysis);
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    buildUnifiedTaskModal(uniqueId, email, analysis) {
+        const sender = this.getUnifiedSender(email);
+        const senderEmail = this.getUnifiedSenderEmail(email);
+        const providerName = email.provider === 'google' ? 'Gmail' : 'Outlook';
+        const providerIcon = email.provider === 'google' ? 'google' : 'microsoft';
+        const providerColor = email.provider === 'google' ? '#4285f4' : '#0078d7';
+        
+        return `
+            <div id="${uniqueId}" class="modal-overlay-unified">
+                <div class="modal-container-unified">
+                    <div class="modal-header-unified">
+                        <div class="modal-title-section">
+                            <h2 class="modal-title">Créer une tâche depuis ${providerName}</h2>
+                            <div class="modal-provider-badge" style="background: ${providerColor}20; color: ${providerColor};">
+                                <i class="fab fa-${providerIcon}"></i>
+                                <span>${providerName}</span>
+                            </div>
+                        </div>
+                        <button class="modal-close-btn" onclick="window.pageManager.closeModal('${uniqueId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content-unified">
+                        ${this.buildUnifiedTaskForm(email, analysis, providerName)}
+                    </div>
+                    
+                    <div class="modal-footer-unified">
+                        <button class="btn-secondary" onclick="window.pageManager.closeModal('${uniqueId}')">
+                            <i class="fas fa-times"></i>
+                            <span>Annuler</span>
+                        </button>
+                        <button class="btn-primary" onclick="window.pageManager.createTaskFromModal('${email.id}'); window.pageManager.closeModal('${uniqueId}')">
+                            <i class="fas fa-check"></i>
+                            <span>Créer la tâche</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    buildUnifiedTaskForm(email, analysis, providerName) {
+        const sender = this.getUnifiedSender(email);
+        const senderEmail = this.getUnifiedSenderEmail(email);
+        const enhancedTitle = analysis.mainTask?.title?.includes(sender) ? 
+            analysis.mainTask.title : 
+            `${analysis.mainTask?.title || 'Tâche'} - ${sender}`;
+        
+        return `
+            <div class="task-form-unified">
+                <!-- AI Badge -->
+                <div class="ai-analysis-badge">
+                    <i class="fas fa-robot"></i>
+                    <span>Analyse intelligente par Claude AI</span>
+                </div>
+                
+                <!-- Email Source -->
+                <div class="email-source-card">
+                    <div class="source-avatar" style="background: ${this.generateAvatarColor(sender)}">
+                        ${sender.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="source-info">
+                        <div class="source-name">${this.escapeHtml(sender)}</div>
+                        <div class="source-email">${this.escapeHtml(senderEmail)}</div>
+                        <div class="source-subject">${this.escapeHtml(email.subject || 'Sans sujet')}</div>
+                    </div>
+                    <div class="source-provider">
+                        <i class="fab fa-${email.provider === 'google' ? 'google' : 'microsoft'}"></i>
+                        <span>${providerName}</span>
+                    </div>
+                </div>
+                
+                <!-- Form Fields -->
+                <div class="form-grid-unified">
+                    <div class="form-field-unified">
+                        <label class="form-label-unified">Titre de la tâche</label>
+                        <input type="text" 
+                               id="task-title" 
+                               class="form-input-unified"
+                               value="${this.escapeHtml(enhancedTitle)}" 
+                               placeholder="Titre de la tâche">
+                    </div>
+                    
+                    <div class="form-field-unified">
+                        <label class="form-label-unified">Description</label>
+                        <textarea id="task-description" 
+                                  class="form-textarea-unified"
+                                  rows="4"
+                                  placeholder="Description détaillée...">${this.escapeHtml(analysis.mainTask?.description || analysis.summary || '')}</textarea>
+                    </div>
+                    
+                    <div class="form-row-unified">
+                        <div class="form-field-unified">
+                            <label class="form-label-unified">Priorité</label>
+                            <select id="task-priority" class="form-select-unified">
+                                <option value="urgent" ${analysis.mainTask?.priority === 'urgent' ? 'selected' : ''}>🚨 Urgent</option>
+                                <option value="high" ${analysis.mainTask?.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                                <option value="medium" ${analysis.mainTask?.priority === 'medium' || !analysis.mainTask?.priority ? 'selected' : ''}>📌 Normale</option>
+                                <option value="low" ${analysis.mainTask?.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-field-unified">
+                            <label class="form-label-unified">Date d'échéance</label>
+                            <input type="date" 
+                                   id="task-duedate" 
+                                   class="form-input-unified"
+                                   value="${analysis.mainTask?.dueDate || ''}">
+                        </div>
+                    </div>
+                    
+                    <!-- Aperçu email -->
+                    <div class="email-preview-section">
+                        <button type="button" 
+                                class="preview-toggle-btn" 
+                                onclick="window.pageManager.toggleEmailPreview()">
+                            <i class="fas fa-chevron-right" id="preview-toggle-icon"></i>
+                            <span>Voir le contenu original de l'email ${providerName}</span>
+                        </button>
+                        <div id="email-preview-content" class="email-preview-content" style="display: none;">
+                            <div class="preview-header">
+                                <div><strong>De:</strong> ${this.escapeHtml(sender)} &lt;${this.escapeHtml(senderEmail)}&gt;</div>
+                                <div><strong>Date:</strong> ${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</div>
+                                <div><strong>Sujet:</strong> ${this.escapeHtml(email.subject || 'Sans sujet')}</div>
+                                <div><strong>Source:</strong> ${providerName}</div>
+                            </div>
+                            <div class="preview-body">
+                                ${this.getEmailContentForPreview(email)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    showEmailModal(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) return;
+
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        
+        const uniqueId = 'email_modal_' + Date.now();
+        const providerName = email.provider === 'google' ? 'Gmail' : 'Outlook';
+        const providerIcon = email.provider === 'google' ? 'google' : 'microsoft';
+        const providerColor = email.provider === 'google' ? '#4285f4' : '#0078d7';
+        const sender = this.getUnifiedSender(email);
+        const senderEmail = this.getUnifiedSenderEmail(email);
+        
+        const modalHTML = `
+            <div id="${uniqueId}" class="modal-overlay-unified">
+                <div class="modal-container-unified large">
+                    <div class="modal-header-unified">
+                        <div class="modal-title-section">
+                            <h2 class="modal-title">Email ${providerName}</h2>
+                            <div class="modal-provider-badge" style="background: ${providerColor}20; color: ${providerColor};">
+                                <i class="fab fa-${providerIcon}"></i>
+                                <span>${providerName}</span>
+                            </div>
+                        </div>
+                        <button class="modal-close-btn" onclick="window.pageManager.closeModal('${uniqueId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content-unified">
+                        <div class="email-details-card">
+                            <div class="email-header-details">
+                                <div class="sender-section">
+                                    <div class="sender-avatar-large" style="background: ${this.generateAvatarColor(sender)}">
+                                        ${sender.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div class="sender-details">
+                                        <div class="sender-name-large">${this.escapeHtml(sender)}</div>
+                                        <div class="sender-email-large">${this.escapeHtml(senderEmail)}</div>
+                                        <div class="email-date-large">${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="email-meta-details">
+                                    ${email.category && email.category !== 'other' ? `
+                                        <div class="meta-item">
+                                            <span class="meta-label">Catégorie:</span>
+                                            <span class="category-badge-large" style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)};">
+                                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                                            </span>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    <div class="meta-item">
+                                        <span class="meta-label">Source:</span>
+                                        <span class="provider-badge-small" style="background: ${providerColor}20; color: ${providerColor};">
+                                            <i class="fab fa-${providerIcon}"></i>
+                                            ${providerName}
+                                        </span>
+                                    </div>
+                                    
+                                    ${email.hasAttachments ? `
+                                        <div class="meta-item">
+                                            <span class="meta-label">Pièces jointes:</span>
+                                            <span class="attachment-badge">
+                                                <i class="fas fa-paperclip"></i>
+                                                Oui
+                                            </span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="email-subject-large">
+                                ${this.escapeHtml(email.subject || 'Sans sujet')}
+                            </div>
+                            
+                            <div class="email-body-container">
+                                ${this.getEmailContentForPreview(email)}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer-unified">
+                        <button class="btn-secondary" onclick="window.pageManager.closeModal('${uniqueId}')">
+                            <i class="fas fa-times"></i>
+                            <span>Fermer</span>
+                        </button>
+                        ${!this.createdTasks.has(emailId) ? `
+                            <button class="btn-primary" onclick="window.pageManager.closeModal('${uniqueId}'); window.pageManager.showTaskCreationModal('${emailId}')">
+                                <i class="fas fa-tasks"></i>
+                                <span>Créer une tâche</span>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.remove();
+        }
+        document.body.style.overflow = 'auto';
+    }
+
+    toggleEmailPreview() {
+        const content = document.getElementById('email-preview-content');
+        const icon = document.getElementById('preview-toggle-icon');
+        
+        if (!content || !icon) return;
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.classList.remove('fa-chevron-right');
+            icon.classList.add('fa-chevron-down');
+        } else {
+            content.style.display = 'none';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-right');
+        }
+    }
+
+    async createTaskFromModal(emailId) {
+        const email = this.getEmailById(emailId);
+        const analysis = this.aiAnalysisResults.get(emailId);
+        
+        if (!email || !analysis) {
+            window.uiManager?.showToast('Données manquantes', 'error');
+            return;
+        }
+
+        const title = document.getElementById('task-title')?.value;
+        const description = document.getElementById('task-description')?.value;
+        const priority = document.getElementById('task-priority')?.value;
+        const dueDate = document.getElementById('task-duedate')?.value;
+
+        if (!title) {
+            window.uiManager?.showToast('Le titre est requis', 'warning');
+            return;
+        }
+
+        try {
+            const taskData = this.buildUnifiedTaskData(email, {
+                ...analysis,
+                mainTask: {
+                    ...analysis.mainTask,
+                    title,
+                    description,
+                    priority,
+                    dueDate
+                }
+            });
+
+            const task = window.taskManager?.createTaskFromEmail(taskData, email);
+            if (task) {
+                this.createdTasks.set(emailId, task.id);
+                window.taskManager?.saveTasks();
+                
+                const providerName = email.provider === 'google' ? 'Gmail' : 'Outlook';
+                window.uiManager?.showToast(`Tâche créée depuis ${providerName}`, 'success');
+                this.refreshEmailsView();
+            } else {
+                throw new Error('Erreur lors de la création de la tâche');
+            }
+            
+        } catch (error) {
+            console.error('Error creating task:', error);
+            window.uiManager?.showToast('Erreur lors de la création', 'error');
+        }
+    }
+
+    getEmailContentForPreview(email) {
+        if (email.body?.content) {
+            return email.body.content;
+        }
+        return `<p>${this.escapeHtml(email.bodyPreview || 'Aucun contenu disponible')}</p>`;
+    }
+
+    openCreatedTask(emailId) {
+        const taskId = this.createdTasks.get(emailId);
+        if (!taskId) return;
+        
+        this.loadPage('tasks').then(() => {
+            setTimeout(() => {
+                if (window.tasksView?.showTaskDetails) {
+                    window.tasksView.showTaskDetails(taskId);
+                }
+            }, 100);
+        });
+    }
+
+    // ================================================
+    // AUTRES PAGES UNIFIÉES
     // ================================================
     
     async renderScanner(container) {
@@ -2385,176 +3801,448 @@ class PageManager {
             window.scanStartModule.stylesAdded) {
             
             try {
-                console.log('[PageManager] Utilisation ScanStartModule moderne');
                 await window.scanStartModule.render(container);
                 return;
             } catch (error) {
-                console.error('[PageManager] Erreur ScanStartModule, fallback:', error);
+                console.error('[PageManager] Erreur ScanStartModule:', error);
             }
         }
         
-        console.log('[PageManager] Utilisation interface scanner fallback');
+        // Fallback scanner
+        const provider = this.detectCurrentProvider();
+        const providerName = provider === 'google' ? 'Gmail' : 'Outlook';
+        
         container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">
-                    <i class="fas fa-search"></i>
+            <div class="page-container-unified">
+                <div class="scanner-fallback-card">
+                    <div class="scanner-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h2>Scanner ${providerName}</h2>
+                    <p>Module de scan en cours de chargement...</p>
+                    
+                    ${provider ? `
+                        <div class="provider-status">
+                            <i class="fab fa-${provider === 'google' ? 'google' : 'microsoft'}"></i>
+                            <span>Connecté à ${providerName}</span>
+                        </div>
+                    ` : `
+                        <div class="auth-required">
+                            <p>Connexion requise pour scanner</p>
+                            <div class="auth-buttons">
+                                <button class="btn-auth btn-microsoft" onclick="window.authService?.login()">
+                                    <i class="fab fa-microsoft"></i>
+                                    <span>Microsoft</span>
+                                </button>
+                                <button class="btn-auth btn-google" onclick="window.googleAuthService?.login()">
+                                    <i class="fab fa-google"></i>
+                                    <span>Google</span>
+                                </button>
+                            </div>
+                        </div>
+                    `}
                 </div>
-                <h3 class="empty-title">Scanner d'emails</h3>
-                <p class="empty-text">Module de scan en cours de chargement...</p>
             </div>
         `;
     }
 
     async renderTasks(container) {
-        if (window.tasksView && window.tasksView.render) {
+        if (window.tasksView && typeof window.tasksView.render === 'function') {
             window.tasksView.render(container);
         } else {
             container.innerHTML = `
-                <div class="page-header">
-                    <h1>Tâches</h1>
-                </div>
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <i class="fas fa-tasks"></i>
+                <div class="page-container-unified">
+                    <div class="page-header-unified">
+                        <h1>Tâches</h1>
+                        <p>Gérez vos tâches créées depuis Gmail et Outlook</p>
                     </div>
-                    <h3 class="empty-title">Aucune tâche</h3>
-                    <p class="empty-text">Créez des tâches à partir de vos emails</p>
+                    
+                    <div class="empty-state-unified">
+                        <div class="empty-icon-unified">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <h3 class="empty-title-unified">Aucune tâche</h3>
+                        <p class="empty-text-unified">Créez des tâches à partir de vos emails</p>
+                        <button class="btn-primary" onclick="window.pageManager.loadPage('emails')">
+                            <i class="fas fa-envelope"></i>
+                            <span>Voir les emails</span>
+                        </button>
+                    </div>
                 </div>
             `;
         }
     }
 
     async renderCategories(container) {
-        const categories = window.categoryManager?.getCategories() || {};
-        
-        container.innerHTML = `
-            <div class="page-header">
-                <h1>Catégories</h1>
-            </div>
+        if (window.categoriesPage && typeof window.categoriesPage.renderSettings === 'function') {
+            window.categoriesPage.renderSettings(container);
+        } else {
+            const categories = window.categoryManager?.getCategories() || {};
             
-            <div class="categories-grid">
-                ${Object.entries(categories).map(([id, cat]) => `
-                    <div class="category-card">
-                        <div class="category-icon" style="background: ${cat.color}20; color: ${cat.color}">
-                            ${cat.icon}
-                        </div>
-                        <h3>${cat.name}</h3>
-                        <p>${cat.description || ''}</p>
+            container.innerHTML = `
+                <div class="page-container-unified">
+                    <div class="page-header-unified">
+                        <h1>Catégories</h1>
+                        <p>Configurez la catégorisation automatique de vos emails</p>
                     </div>
-                `).join('')}
+                    
+                    <div class="categories-grid-unified">
+                        ${Object.entries(categories).map(([id, cat]) => `
+                            <div class="category-card-unified">
+                                <div class="category-icon-large" style="background: ${cat.color}20; color: ${cat.color}">
+                                    ${cat.icon}
+                                </div>
+                                <h3 class="category-name">${cat.name}</h3>
+                                <p class="category-description">${cat.description || 'Catégorie personnalisée'}</p>
+                                <div class="category-status">
+                                    ${cat.isCustom ? 
+                                        '<span class="status-badge custom">Personnalisée</span>' : 
+                                        '<span class="status-badge system">Système</span>'
+                                    }
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    async renderSettings(container) {
+        container.innerHTML = `
+            <div class="page-container-unified">
+                <div class="page-header-unified">
+                    <h1>Paramètres</h1>
+                    <p>Configuration générale de l'application</p>
+                </div>
+                
+                <div class="settings-sections">
+                    <div class="settings-card">
+                        <h3>Configuration IA</h3>
+                        <p>Configurez l'assistant IA Claude pour l'analyse des emails</p>
+                        <button class="btn-primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">
+                            <i class="fas fa-cog"></i>
+                            <span>Configurer Claude AI</span>
+                        </button>
+                    </div>
+                    
+                    <div class="settings-card">
+                        <h3>Providers Email</h3>
+                        <p>État des connexions Gmail et Outlook</p>
+                        <div class="provider-status-list">
+                            <div class="provider-item">
+                                <i class="fab fa-google"></i>
+                                <span>Gmail</span>
+                                <span class="status ${this.isGoogleAuthenticated() ? 'connected' : 'disconnected'}">
+                                    ${this.isGoogleAuthenticated() ? 'Connecté' : 'Déconnecté'}
+                                </span>
+                            </div>
+                            <div class="provider-item">
+                                <i class="fab fa-microsoft"></i>
+                                <span>Outlook</span>
+                                <span class="status ${this.isMicrosoftAuthenticated() ? 'connected' : 'disconnected'}">
+                                    ${this.isMicrosoftAuthenticated() ? 'Connecté' : 'Déconnecté'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     }
 
-    async renderSettings(container) {
-        if (window.categoriesPage) {
-            window.categoriesPage.renderSettings(container);
-        } else {
-            container.innerHTML = `
-                <div class="page-header">
-                    <h1>Paramètres</h1>
-                </div>
-                
-                <div class="settings-card">
-                    <h3>Configuration IA</h3>
-                    <button class="btn primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">
-                        <i class="fas fa-cog"></i> Configurer Claude AI
-                    </button>
-                </div>
-            `;
-        }
-    }
-
     async renderRanger(container) {
-        if (window.domainOrganizer && window.domainOrganizer.showPage) {
+        if (window.domainOrganizer && typeof window.domainOrganizer.showPage === 'function') {
             window.domainOrganizer.showPage(container);
         } else {
             container.innerHTML = `
-                <div class="page-header">
-                    <h1>Ranger par domaine</h1>
-                </div>
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <i class="fas fa-folder-tree"></i>
+                <div class="page-container-unified">
+                    <div class="page-header-unified">
+                        <h1>Ranger par domaine</h1>
+                        <p>Organisez vos emails par domaine d'expéditeur</p>
                     </div>
-                    <h3 class="empty-title">Module de rangement</h3>
-                    <p class="empty-text">Module de rangement en cours de chargement...</p>
+                    
+                    <div class="empty-state-unified">
+                        <div class="empty-icon-unified">
+                            <i class="fas fa-folder-tree"></i>
+                        </div>
+                        <h3 class="empty-title-unified">Module de rangement</h3>
+                        <p class="empty-text-unified">Module en cours de chargement...</p>
+                    </div>
                 </div>
             `;
         }
     }
 
     // ================================================
-    // STYLES CSS COMPLETS AVEC POSITION FIXE
+    // MÉTHODES UTILITAIRES D'AUTHENTIFICATION
     // ================================================
-    addExpandedEmailStyles() {
-        if (document.getElementById('expandedEmailStyles')) return;
+    
+    isGoogleAuthenticated() {
+        try {
+            return window.googleAuthService && 
+                   typeof window.googleAuthService.isAuthenticated === 'function' &&
+                   window.googleAuthService.isAuthenticated();
+        } catch (error) {
+            return false;
+        }
+    }
+
+    isMicrosoftAuthenticated() {
+        try {
+            return window.authService && 
+                   typeof window.authService.isAuthenticated === 'function' &&
+                   window.authService.isAuthenticated();
+        } catch (error) {
+            return false;
+        }
+    }
+
+    // ================================================
+    // NETTOYAGE ET DESTRUCTION
+    // ================================================
+    
+    cleanup() {
+        // Nettoyer les intervals
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+        }
+        
+        // Nettoyer les listeners
+        this.syncListeners.clear();
+        
+        // Nettoyer les caches
+        this.clearEmailsCache();
+        this.categoriesCache.clear();
+        
+        // Réinitialiser les états
+        this.selectedEmails.clear();
+        this.aiAnalysisResults.clear();
+        this.createdTasks.clear();
+        
+        console.log('[PageManager] 🧹 Nettoyage effectué');
+    }
+
+    destroy() {
+        this.cleanup();
+        this.currentPage = null;
+        this.currentProvider = null;
+        this.settings = {};
+        this.taskPreselectedCategories = [];
+        
+        console.log('[PageManager] Instance détruite');
+    }
+}
+
+    getVisibleEmails() {
+        const emails = this.getAllEmails();
+        let filteredEmails = emails;
+        
+        // Filtre par catégorie
+        if (this.currentCategory && this.currentCategory !== 'all') {
+            if (this.currentCategory === 'other') {
+                filteredEmails = filteredEmails.filter(email => {
+                    const cat = email.category;
+                    return !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
+                });
+            } else {
+                filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
+            }
+        }
+        
+        // Filtre par recherche
+        if (this.searchTerm) {
+            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        }
+        
+        return filteredEmails;
+    }
+
+    matchesSearch(email, searchTerm) {
+        if (!searchTerm) return true;
+        
+        const search = searchTerm.toLowerCase();
+        const subject = (email.subject || '').toLowerCase();
+        
+        // Gestion unifiée des expéditeurs Gmail/Outlook
+        let senderName = '';
+        let senderEmail = '';
+        
+        if (email.provider === 'google') {
+            // Format Gmail - from peut être une string
+            const fromString = email.from?.emailAddress?.address || email.from || '';
+            const match = fromString.match(/<(.+@.+)>/);
+            senderEmail = match ? match[1] : fromString;
+            senderName = fromString.includes('<') ? fromString.split('<')[0].trim() : fromString;
+        } else {
+            // Format Microsoft Graph
+            senderName = email.from?.emailAddress?.name || '';
+            senderEmail = email.from?.emailAddress?.address || '';
+        }
+        
+        const preview = (email.bodyPreview || '').toLowerCase();
+        
+        return subject.includes(search) || 
+               senderName.toLowerCase().includes(search) || 
+               senderEmail.toLowerCase().includes(search) || 
+               preview.includes(search);
+    }
+
+    calculateCategoryCounts(emails) {
+        const counts = {};
+        let uncategorizedCount = 0;
+        
+        emails.forEach(email => {
+            const cat = email.category;
+            
+            if (cat && cat !== 'other' && cat !== null && cat !== undefined && cat !== '') {
+                counts[cat] = (counts[cat] || 0) + 1;
+            } else {
+                uncategorizedCount++;
+            }
+        });
+        
+        if (uncategorizedCount > 0) {
+            counts.other = uncategorizedCount;
+        }
+        
+        return counts;
+    }
+
+    // ... Continuer avec toutes les autres méthodes unifiées ...
+
+    // ================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================
+    dispatchEvent(eventName, detail) {
+        try {
+            window.dispatchEvent(new CustomEvent(eventName, { 
+                detail: {
+                    ...detail,
+                    source: 'PageManager',
+                    timestamp: Date.now(),
+                    provider: this.currentProvider
+                }
+            }));
+        } catch (error) {
+            console.error(`[PageManager] Erreur dispatch ${eventName}:`, error);
+        }
+    }
+
+    getDebugInfo() {
+        return {
+            version: '13.0',
+            currentPage: this.currentPage,
+            currentProvider: this.currentProvider,
+            providerState: this.providerState,
+            selectedEmailsCount: this.selectedEmails.size,
+            taskPreselectedCategories: [...this.taskPreselectedCategories],
+            emailsCacheSize: this.emailsCache.size,
+            lastCacheUpdate: this.lastCacheUpdate,
+            lastSettingsSync: this.lastSettingsSync,
+            authServices: {
+                google: {
+                    available: !!window.googleAuthService,
+                    authenticated: window.googleAuthService?.isAuthenticated() || false
+                },
+                microsoft: {
+                    available: !!window.authService,
+                    authenticated: window.authService?.isAuthenticated() || false
+                }
+            },
+            mailService: {
+                available: !!window.mailService,
+                initialized: window.mailService?.isInitialized || false,
+                provider: window.mailService?.provider || null
+            }
+        };
+    }
+
+    // ================================================
+    // AJOUT DES STYLES CSS UNIFIÉS
+    // ================================================
+    addUnifiedEmailStyles() {
+        if (document.getElementById('unifiedEmailStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'expandedEmailStyles';
+        styles.id = 'unifiedEmailStyles';
         styles.textContent = `
-            /* Variables CSS étendues */
+            /* Styles CSS unifiés pour Gmail/Outlook */
             :root {
-                --btn-height: 44px;
-                --btn-padding-horizontal: 16px;
-                --btn-font-size: 13px;
-                --btn-border-radius: 10px;
-                --btn-font-weight: 600;
-                --btn-gap: 8px;
-                --card-height: 76px;
-                --card-padding: 14px;
-                --card-border-radius: 12px;
-                --action-btn-size: 36px;
-                --gap-small: 8px;
-                --gap-medium: 12px;
-                --gap-large: 16px;
-                --transition-speed: 0.2s;
-                --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.05);
-                --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
-                --preselect-color: #8b5cf6;
-                --preselect-color-light: #a78bfa;
-                --preselect-color-dark: #7c3aed;
-                --sticky-height: 180px;
+                --primary-color: #6366f1;
+                --secondary-color: #8b5cf6;
+                --success-color: #10b981;
+                --warning-color: #f59e0b;
+                --danger-color: #ef4444;
+                --google-color: #4285f4;
+                --microsoft-color: #0078d7;
+                --border-radius: 12px;
+                --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                --transition: all 0.2s ease;
             }
-            
-            .tasks-page-modern {
+
+            .emails-page-unified {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
                 min-height: 100vh;
-                padding: var(--gap-large);
-                font-size: var(--btn-font-size);
+                padding: 20px;
             }
 
-            .explanation-text-harmonized {
-                background: rgba(59, 130, 246, 0.1);
-                border: 1px solid rgba(59, 130, 246, 0.2);
-                border-radius: var(--card-border-radius);
-                padding: var(--gap-medium);
-                margin-bottom: var(--gap-medium);
+            .provider-badge-unified {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 600;
+                margin-bottom: 16px;
+                border: 2px solid;
+            }
+
+            .provider-badge-unified.google {
+                background: rgba(66, 133, 244, 0.1);
+                color: var(--google-color);
+                border-color: rgba(66, 133, 244, 0.3);
+            }
+
+            .provider-badge-unified.microsoft {
+                background: rgba(0, 120, 215, 0.1);
+                color: var(--microsoft-color);
+                border-color: rgba(0, 120, 215, 0.3);
+            }
+
+            .email-count {
+                background: rgba(255, 255, 255, 0.8);
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .explanation-text-unified {
+                background: rgba(99, 102, 241, 0.1);
+                border: 1px solid rgba(99, 102, 241, 0.2);
+                border-radius: var(--border-radius);
+                padding: 16px;
+                margin-bottom: 16px;
                 display: flex;
                 align-items: center;
-                gap: var(--gap-medium);
-                color: #1e40af;
+                gap: 12px;
+                color: #3730a3;
                 font-size: 14px;
-                font-weight: 500;
                 line-height: 1.5;
-                backdrop-filter: blur(10px);
                 position: relative;
             }
 
-            .explanation-text-harmonized i {
-                font-size: 16px;
-                color: #3b82f6;
-                flex-shrink: 0;
-            }
-            
             .explanation-close-btn {
                 position: absolute;
                 top: 8px;
                 right: 8px;
-                background: rgba(59, 130, 246, 0.1);
-                border: 1px solid rgba(59, 130, 246, 0.2);
-                color: #3b82f6;
+                background: rgba(99, 102, 241, 0.1);
+                border: 1px solid rgba(99, 102, 241, 0.2);
+                color: #3730a3;
                 width: 28px;
                 height: 28px;
                 border-radius: 50%;
@@ -2563,22 +4251,310 @@ class PageManager {
                 align-items: center;
                 justify-content: center;
                 font-size: 12px;
-                transition: all 0.2s ease;
+                transition: var(--transition);
             }
-            
+
             .explanation-close-btn:hover {
-                background: rgba(59, 130, 246, 0.2);
+                background: rgba(99, 102, 241, 0.2);
                 transform: scale(1.1);
             }
-            
-            /* ===== CONTAINERS POUR POSITION FIXE ===== */
+
             .controls-and-filters-container {
-                position: relative;
-                z-index: 100;
-                background: transparent;
-                margin-bottom: var(--gap-medium);
+                margin-bottom: 16px;
             }
-            
+
+            .controls-bar-unified {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border-radius: var(--border-radius);
+                padding: 16px;
+                margin-bottom: 12px;
+                box-shadow: var(--shadow);
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+
+            .search-section-unified {
+                flex: 1;
+                min-width: 250px;
+            }
+
+            .search-box-unified {
+                position: relative;
+            }
+
+            .search-input-unified {
+                width: 100%;
+                height: 44px;
+                padding: 0 16px 0 44px;
+                border: 2px solid #e5e7eb;
+                border-radius: 10px;
+                font-size: 14px;
+                background: #f9fafb;
+                transition: var(--transition);
+                outline: none;
+            }
+
+            .search-input-unified:focus {
+                border-color: var(--primary-color);
+                background: white;
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            }
+
+            .search-icon-unified {
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #6b7280;
+                pointer-events: none;
+            }
+
+            .search-clear-unified {
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: var(--danger-color);
+                color: white;
+                border: none;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 10px;
+                transition: var(--transition);
+            }
+
+            .search-clear-unified:hover {
+                background: #dc2626;
+            }
+
+            .view-modes-unified {
+                display: flex;
+                background: #f8fafc;
+                border-radius: 10px;
+                padding: 3px;
+                gap: 2px;
+            }
+
+            .view-mode-unified {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 12px;
+                border: none;
+                background: transparent;
+                color: #6b7280;
+                border-radius: 7px;
+                cursor: pointer;
+                transition: var(--transition);
+                font-size: 13px;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+
+            .view-mode-unified:hover {
+                background: rgba(255, 255, 255, 0.8);
+                color: #374151;
+            }
+
+            .view-mode-unified.active {
+                background: white;
+                color: #1f2937;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .actions-section-unified {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .btn-unified {
+                height: 44px;
+                padding: 0 16px;
+                border-radius: 10px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: var(--transition);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                border: 1px solid #e5e7eb;
+                background: white;
+                color: #374151;
+                position: relative;
+                white-space: nowrap;
+            }
+
+            .btn-unified:hover:not(.disabled) {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+
+            .btn-unified.disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
+
+            .btn-unified.btn-primary {
+                background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+                color: white;
+                border-color: transparent;
+            }
+
+            .btn-unified.btn-secondary {
+                background: #f8fafc;
+                color: #475569;
+            }
+
+            .btn-unified.btn-selection {
+                background: #f0f9ff;
+                color: #0369a1;
+                border-color: #0ea5e9;
+            }
+
+            .btn-unified.btn-selection.all-selected {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+
+            .btn-unified.btn-clear {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+
+            .count-badge {
+                position: absolute;
+                top: -6px;
+                right: -6px;
+                background: var(--danger-color);
+                color: white;
+                font-size: 10px;
+                font-weight: 700;
+                padding: 2px 5px;
+                border-radius: 8px;
+                min-width: 16px;
+                text-align: center;
+                border: 2px solid white;
+            }
+
+            .filters-bar-unified {
+                display: flex;
+                gap: 8px;
+                overflow-x: auto;
+                padding: 4px;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+
+            .filters-bar-unified::-webkit-scrollbar {
+                display: none;
+            }
+
+            .filter-tab-unified {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 10px;
+                padding: 12px;
+                cursor: pointer;
+                transition: var(--transition);
+                min-width: 100px;
+                position: relative;
+                flex-shrink: 0;
+            }
+
+            .filter-tab-unified:hover {
+                border-color: var(--primary-color);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+            }
+
+            .filter-tab-unified.active {
+                background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+                color: white;
+                border-color: var(--primary-color);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            }
+
+            .filter-tab-unified.preselected {
+                border-color: var(--secondary-color);
+                background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05));
+            }
+
+            .filter-tab-unified.active.preselected {
+                background: linear-gradient(135deg, var(--secondary-color), #7c3aed);
+            }
+
+            .tab-content-unified {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                width: 100%;
+            }
+
+            .tab-header-unified {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .tab-icon-unified {
+                font-size: 16px;
+            }
+
+            .tab-count-unified {
+                background: rgba(0, 0, 0, 0.1);
+                padding: 2px 6px;
+                border-radius: 6px;
+                font-size: 10px;
+                font-weight: 800;
+                min-width: 18px;
+                text-align: center;
+            }
+
+            .filter-tab-unified.active .tab-count-unified {
+                background: rgba(255, 255, 255, 0.3);
+                color: white;
+            }
+
+            .tab-name-unified {
+                font-size: 11px;
+                font-weight: 700;
+                text-align: center;
+                line-height: 1.2;
+            }
+
+            .preselected-star-unified {
+                position: absolute;
+                top: -6px;
+                right: -6px;
+                background: var(--secondary-color);
+                color: white;
+                font-size: 10px;
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 2px solid white;
+                box-shadow: 0 2px 4px rgba(139, 92, 246, 0.4);
+            }
+
             .sticky-controls-container {
                 position: fixed;
                 top: 0;
@@ -2589,1338 +4565,217 @@ class PageManager {
                 backdrop-filter: blur(20px);
                 border-bottom: 1px solid rgba(0, 0, 0, 0.1);
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-                padding: var(--gap-large);
+                padding: 20px;
                 transform: translateY(-100%);
                 transition: transform 0.3s ease;
                 opacity: 0;
                 visibility: hidden;
             }
-            
+
             .sticky-controls-container.sticky-active {
                 transform: translateY(0);
                 opacity: 1;
                 visibility: visible;
             }
-            
-            /* ===== BARRE DE CONTRÔLES UNIFIÉE SUR UNE LIGNE ===== */
-            .controls-bar-single-line {
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: var(--card-border-radius);
-                padding: var(--gap-medium);
-                margin-bottom: var(--gap-medium);
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-                display: flex;
-                align-items: center;
-                gap: var(--gap-large);
-                position: relative;
-                z-index: 1000;
-                min-height: var(--btn-height);
-            }
-            
-            /* Section de recherche */
-            .search-section {
-                flex: 1;
-                max-width: 400px;
-                min-width: 250px;
-            }
-            
-            .search-box {
-                position: relative;
-                width: 100%;
-                height: var(--btn-height);
-                display: flex;
-                align-items: center;
-            }
-            
-            .search-input {
-                width: 100%;
-                height: 100%;
-                padding: 0 var(--gap-medium) 0 40px;
-                border: 2px solid #e5e7eb;
-                border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
-                background: #f9fafb;
-                transition: all var(--transition-speed) ease;
-                outline: none;
-                font-weight: 500;
-                color: #374151;
-            }
-            
-            .search-input:focus {
-                border-color: #3b82f6;
+
+            .emails-container-unified {
                 background: white;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            }
-            
-            .search-input::placeholder {
-                color: #9ca3af;
-                font-weight: 400;
-            }
-            
-            .search-icon {
-                position: absolute;
-                left: var(--gap-medium);
-                color: #6b7280;
-                pointer-events: none;
-                font-size: 14px;
-                z-index: 1;
-            }
-            
-            .search-input:focus + .search-icon {
-                color: #3b82f6;
-            }
-            
-            .search-clear {
-                position: absolute;
-                right: var(--gap-small);
-                background: #ef4444;
-                color: white;
-                border: none;
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 11px;
-                transition: all var(--transition-speed) ease;
-            }
-            
-            .search-clear:hover {
-                background: #dc2626;
-                transform: scale(1.1);
-            }
-            
-            /* Modes de vue */
-            .view-modes {
-                display: flex;
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: var(--btn-border-radius);
-                padding: 3px;
-                gap: 2px;
-                height: var(--btn-height);
-                flex-shrink: 0;
-            }
-            
-            .view-mode {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 6px;
-                padding: 0 12px;
-                height: calc(var(--btn-height) - 6px);
-                border: none;
-                background: transparent;
-                color: #6b7280;
-                border-radius: calc(var(--btn-border-radius) - 2px);
-                cursor: pointer;
-                transition: all var(--transition-speed) ease;
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                min-width: 80px;
-                white-space: nowrap;
-            }
-            
-            .view-mode:hover {
-                background: rgba(255, 255, 255, 0.8);
-                color: #374151;
-            }
-            
-            .view-mode.active {
-                background: white;
-                color: #1f2937;
-                box-shadow: var(--shadow-base);
-                font-weight: 700;
-            }
-            
-            /* Actions */
-            .action-buttons {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                flex-shrink: 0;
-                position: relative;
-                z-index: 1001;
-            }
-            
-            .btn-action {
-                height: var(--btn-height);
-                background: white;
-                color: #374151;
-                border: 1px solid #e5e7eb;
-                border-radius: var(--btn-border-radius);
-                padding: 0 var(--gap-medium);
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                cursor: pointer;
-                transition: all var(--transition-speed) ease;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                box-shadow: var(--shadow-base);
-                position: relative;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-            
-            .btn-action:hover {
-                background: #f9fafb;
-                border-color: #6366f1;
-                color: #1f2937;
-                transform: translateY(-1px);
-                box-shadow: var(--shadow-hover);
-            }
-            
-            .btn-action.disabled {
-                opacity: 0.5;
-                cursor: not-allowed !important;
-                pointer-events: none;
-            }
-            
-            .btn-action.btn-primary {
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                color: white;
-                border-color: transparent;
-                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-                font-weight: 700;
-            }
-            
-            .btn-action.btn-primary:hover {
-                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
-            }
-            
-            .btn-action.btn-secondary {
-                background: #f8fafc;
-                color: #475569;
-                border-color: #e2e8f0;
-            }
-            
-            .btn-action.btn-secondary:hover {
-                background: #f1f5f9;
-                color: #334155;
-                border-color: #cbd5e1;
-            }
-            
-            .btn-action.btn-selection-toggle {
-                background: #f0f9ff;
-                color: #0369a1;
-                border-color: #0ea5e9;
-                min-width: 140px;
-            }
-            
-            .btn-action.btn-selection-toggle:hover {
-                background: #e0f2fe;
-                color: #0c4a6e;
-                border-color: #0284c7;
-            }
-            
-            .btn-action.btn-selection-toggle.all-selected {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
-            }
-            
-            .btn-action.btn-selection-toggle.all-selected:hover {
-                background: #fee2e2;
-                color: #b91c1c;
-                border-color: #fca5a5;
-            }
-            
-            .btn-action.btn-clear {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
-            }
-            
-            .btn-action.btn-clear:hover {
-                background: #fee2e2;
-                color: #b91c1c;
-                border-color: #fca5a5;
-            }
-            
-            .btn-text {
-                font-weight: inherit;
-            }
-            
-            .btn-count {
-                font-size: 11px;
-                opacity: 0.8;
-                margin-left: 2px;
-            }
-            
-            .count-badge {
-                position: absolute;
-                top: -6px;
-                right: -6px;
-                background: #ef4444;
-                color: white;
-                font-size: 10px;
-                font-weight: 700;
-                padding: 2px 5px;
-                border-radius: 8px;
-                min-width: 16px;
-                text-align: center;
-                border: 2px solid white;
-                animation: badgePulse 2s ease-in-out infinite;
-            }
-            
-            /* Dropdown */
-            .dropdown-action {
-                position: relative;
-                display: inline-block;
-                z-index: 1002;
-            }
-            
-            .dropdown-menu {
-                position: absolute;
-                top: calc(100% + 8px);
-                right: 0;
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: var(--btn-border-radius);
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-                min-width: 200px;
-                z-index: 9999;
-                padding: 8px 0;
-                opacity: 0;
-                visibility: hidden;
-                transform: translateY(-10px);
-                transition: all 0.2s ease;
-            }
-            
-            .dropdown-menu.show {
-                opacity: 1;
-                visibility: visible;
-                transform: translateY(0);
-            }
-            
-            .dropdown-item {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                padding: 10px 16px;
-                background: none;
-                border: none;
-                width: 100%;
-                text-align: left;
-                color: #374151;
-                font-size: var(--btn-font-size);
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-            
-            .dropdown-item:hover {
-                background: #f8fafc;
-                color: #1f2937;
-            }
-            
-            .dropdown-item.danger {
-                color: #dc2626;
-            }
-            
-            .dropdown-item.danger:hover {
-                background: #fef2f2;
-                color: #b91c1c;
-            }
-            
-            /* ===== FILTRES DE CATÉGORIES - STYLE ORIGINAL RESTAURÉ ===== */
-            .status-filters-compact {
-                display: flex;
-                gap: var(--gap-small);
-                margin-bottom: var(--gap-medium);
-                flex-wrap: wrap;
-                width: 100%;
-                position: relative;
-                z-index: 10;
-                align-items: flex-start;
-            }
-            
-            .status-pill-compact {
-                height: 60px;
-                padding: var(--gap-small);
-                font-size: 12px;
-                font-weight: 700;
-                flex: 0 1 calc(16.666% - var(--gap-small));
-                min-width: 120px;
-                max-width: 180px;
-                border-radius: var(--btn-border-radius);
-                box-shadow: var(--shadow-base);
-                transition: all var(--transition-speed) ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                text-align: center;
-                background: white;
-                color: #374151;
-                border: 1px solid #e5e7eb;
-                cursor: pointer;
-                position: relative;
-                overflow: visible;
-                z-index: 11;
-            }
-            
-            .status-pill-compact.preselected-category {
-                animation: pulsePreselected 3s ease-in-out infinite;
-                border-width: 2px;
-                border-color: var(--preselect-color);
-            }
-            
-            .status-pill-compact.preselected-category::before {
-                content: '';
-                position: absolute;
-                top: -3px;
-                left: -3px;
-                right: -3px;
-                bottom: -3px;
-                border-radius: inherit;
-                background: linear-gradient(45deg, var(--preselect-color), var(--preselect-color-light), var(--preselect-color));
-                background-size: 300% 300%;
-                animation: gradientShift 4s ease infinite;
-                z-index: -1;
-                opacity: 0.3;
-            }
-            
-            @keyframes pulsePreselected {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.03); }
-            }
-            
-            @keyframes gradientShift {
-                0% { background-position: 0% 50%; }
-                50% { background-position: 100% 50%; }
-                100% { background-position: 0% 50%; }
-            }
-            
-            .pill-content-twolines {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 4px;
-                width: 100%;
-                height: 100%;
-                justify-content: center;
-            }
-            
-            .pill-first-line-twolines {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-            
-            .pill-icon-twolines {
-                font-size: 16px;
-            }
-            
-            .pill-count-twolines {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 2px 6px;
-                border-radius: 6px;
-                font-size: 10px;
-                font-weight: 800;
-                min-width: 18px;
-                text-align: center;
-            }
-            
-            .pill-second-line-twolines {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 100%;
-            }
-            
-            .pill-text-twolines {
-                font-weight: 700;
-                font-size: 12px;
-                line-height: 1.2;
-                text-align: center;
-            }
-            
-            .preselected-star {
-                position: absolute;
-                top: -8px;
-                right: -8px;
-                width: 20px;
-                height: 20px;
-                background: var(--preselect-color);
-                color: white;
-                border-radius: 50%;
-                display: flex !important;
-                align-items: center;
-                justify-content: center;
-                font-size: 11px;
-                border: 2px solid white;
-                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
-                animation: starPulse 2s ease-in-out infinite;
-                z-index: 15;
-                visibility: visible !important;
-                opacity: 1 !important;
-            }
-            
-            @keyframes starPulse {
-                0%, 100% { 
-                    transform: scale(1);
-                    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
-                }
-                50% { 
-                    transform: scale(1.15);
-                    box-shadow: 0 3px 8px rgba(139, 92, 246, 0.6);
-                }
-            }
-            
-            .status-pill-compact:hover {
-                border-color: #3b82f6;
-                background: #f0f9ff;
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
-                z-index: 12;
-            }
-            
-            .status-pill-compact.active {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                color: white;
-                border-color: #3b82f6;
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-                transform: translateY(-2px);
-                z-index: 13;
-            }
-            
-            .status-pill-compact.active.preselected-category {
-                background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
-                box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
-            }
-            
-            .status-pill-compact.active .pill-count-twolines {
-                background: rgba(255, 255, 255, 0.3);
-                color: white;
-            }
-            
-            /* Adaptation responsive pour maintenir la lisibilité */
-            @media (max-width: 1400px) {
-                .status-pill-compact {
-                    flex: 0 1 calc(20% - var(--gap-small));
-                    min-width: 100px;
-                    max-width: 160px;
-                }
-            }
-            
-            @media (max-width: 1200px) {
-                .status-pill-compact {
-                    flex: 0 1 calc(25% - var(--gap-small));
-                    min-width: 80px;
-                    max-width: 140px;
-                }
-            }
-            
-            @media (max-width: 1024px) {
-                .status-pill-compact {
-                    flex: 0 1 calc(33.333% - var(--gap-small));
-                    min-width: 70px;
-                    max-width: 120px;
-                    height: 52px;
-                }
-                
-                .controls-bar-single-line {
-                    flex-direction: column;
-                    gap: var(--gap-medium);
-                    align-items: stretch;
-                }
-                
-                .search-section {
-                    max-width: none;
-                    order: 1;
-                }
-                
-                .view-modes {
-                    width: 100%;
-                    justify-content: space-around;
-                    order: 2;
-                }
-                
-                .action-buttons {
-                    width: 100%;
-                    justify-content: center;
-                    flex-wrap: wrap;
-                    order: 3;
-                }
-                
-                .dropdown-menu {
-                    right: auto;
-                    left: 0;
-                }
-            }
-            
-            /* Bouton de sélection amélioré */
-            .btn-expanded.btn-selection-toggle {
-                background: #f0f9ff;
-                color: #0369a1;
-                border-color: #0ea5e9;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: calc(var(--btn-height) + 8px);
-                min-width: 120px;
-                gap: 2px;
-            }
-            
-            .btn-expanded.btn-selection-toggle .main-text {
-                font-size: 12px;
-                font-weight: 700;
-                line-height: 1.2;
-            }
-            
-            .btn-expanded.btn-selection-toggle .sub-text {
-                font-size: 10px;
-                font-weight: 500;
-                opacity: 0.8;
-                line-height: 1;
-            }
-            
-            .btn-expanded.btn-selection-toggle:hover {
-                background: #e0f2fe;
-                color: #0c4a6e;
-                border-color: #0284c7;
-            }
-            
-            .btn-expanded.btn-selection-toggle.all-selected {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
-            }
-            
-            .btn-expanded.btn-selection-toggle.all-selected:hover {
-                background: #fee2e2;
-                color: #b91c1c;
-                border-color: #fca5a5;
-            }
-            
-            /* Container des emails */
-            .tasks-container-harmonized {
-                background: transparent;
-                transition: padding-top 0.3s ease;
-            }
-            
-            .tasks-harmonized-list {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-            }
-            
-            /* ===== CARTES D'EMAILS AVEC PRÉ-SÉLECTION ===== */
-            .task-harmonized-card {
-                display: flex;
-                align-items: center;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 0;
-                padding: var(--card-padding);
-                cursor: pointer;
-                transition: all 0.3s ease;
-                position: relative;
-                min-height: var(--card-height);
-                max-height: var(--card-height);
-                border-bottom: 1px solid #e5e7eb;
-                z-index: 1;
-            }
-            
-            .task-harmonized-card:first-child {
-                border-top-left-radius: var(--card-border-radius);
-                border-top-right-radius: var(--card-border-radius);
-                border-top: 1px solid #e5e7eb;
-            }
-            
-            .task-harmonized-card:last-child {
-                border-bottom-left-radius: var(--card-border-radius);
-                border-bottom-right-radius: var(--card-border-radius);
-                border-bottom: 1px solid #e5e7eb;
-            }
-            
-            .task-harmonized-card:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-                border-color: rgba(99, 102, 241, 0.2);
-                border-left: 3px solid #6366f1;
-                z-index: 2;
-            }
-            
-            .task-harmonized-card.selected {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border-left: 4px solid #3b82f6;
-                border-color: #3b82f6;
-                transform: translateY(-1px);
-                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
-                z-index: 3;
-            }
-            
-            .task-harmonized-card.has-task {
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-                border-left: 3px solid #22c55e;
-            }
-            
-            .task-harmonized-card.preselected-task {
-                background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
-                border-left: 3px solid var(--preselect-color);
-                border-color: rgba(139, 92, 246, 0.3);
-            }
-            
-            .task-harmonized-card.preselected-task:hover {
-                border-left: 4px solid var(--preselect-color);
-                box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
-                border-color: rgba(139, 92, 246, 0.4);
-            }
-            
-            .task-harmonized-card.preselected-task.selected {
-                background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
-                border-left: 4px solid var(--preselect-color);
-                border-color: var(--preselect-color);
-                box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
-            }
-            
-            .task-checkbox-harmonized {
-                margin-right: var(--gap-medium);
-                cursor: pointer;
-                width: 20px;
-                height: 20px;
-                border-radius: 6px;
-                border: 2px solid #d1d5db;
-                background: white;
-                transition: all var(--transition-speed) ease;
-                flex-shrink: 0;
-                appearance: none;
-                position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .task-checkbox-harmonized:checked {
-                background: #6366f1;
-                border-color: #6366f1;
-            }
-            
-            .task-harmonized-card.preselected-task .task-checkbox-harmonized:checked {
-                background: var(--preselect-color);
-                border-color: var(--preselect-color);
-            }
-            
-            .task-checkbox-harmonized:checked::after {
-                content: '✓';
-                color: white;
-                font-size: 12px;
-                font-weight: 700;
-            }
-            
-            .priority-bar-harmonized {
-                width: 4px;
-                height: 56px;
-                border-radius: 2px;
-                margin-right: var(--gap-medium);
-                transition: all 0.3s ease;
-                flex-shrink: 0;
-            }
-            
-            .task-main-content-harmonized {
-                flex: 1;
-                min-width: 0;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                gap: 4px;
-                height: 100%;
-            }
-            
-            .task-header-harmonized {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                gap: var(--gap-medium);
-                margin-bottom: 4px;
-            }
-            
-            .task-title-harmonized {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 15px;
-                margin: 0;
-                line-height: 1.3;
-                flex: 1;
-                min-width: 0;
+                border-radius: var(--border-radius);
+                box-shadow: var(--shadow);
                 overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
             }
-            
-            .task-meta-harmonized {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                flex-shrink: 0;
-            }
-            
-            .task-type-badge-harmonized,
-            .deadline-badge-harmonized,
-            .confidence-badge-harmonized {
-                display: flex;
-                align-items: center;
-                gap: 3px;
-                background: #f8fafc;
-                color: #64748b;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 11px;
-                font-weight: 600;
-                border: 1px solid #e2e8f0;
-                white-space: nowrap;
-            }
-            
-            .confidence-badge-harmonized {
-                background: #f0fdf4;
-                color: #16a34a;
-                border-color: #bbf7d0;
-            }
-            
-            .preselected-badge-harmonized {
-                display: flex;
-                align-items: center;
-                gap: 3px;
-                background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
-                color: white !important;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 11px;
-                font-weight: 700 !important;
-                border: none !important;
-                white-space: nowrap;
-                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
-                animation: badgePulse 2s ease-in-out infinite;
-            }
-            
-            .task-recipient-harmonized {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                color: #6b7280;
-                font-size: 12px;
-                font-weight: 500;
-                line-height: 1.2;
-            }
-            
-            .recipient-name-harmonized {
-                font-weight: 600;
-                color: #374151;
-            }
-            
-            .reply-indicator-harmonized {
-                color: #dc2626;
-                font-weight: 600;
-                font-size: 10px;
-            }
-            
-            .category-indicator-harmonized {
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                gap: 3px;
-                transition: all 0.2s ease;
-            }
-            
-            .task-harmonized-card.preselected-task .category-indicator-harmonized {
-                box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
-                animation: categoryGlow 2s ease-in-out infinite;
-            }
-            
-            @keyframes categoryGlow {
-                0%, 100% { 
-                    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
-                }
-                50% { 
-                    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5);
-                }
-            }
-            
-            .task-actions-harmonized {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                margin-left: var(--gap-medium);
-                flex-shrink: 0;
-                z-index: 10;
-                position: relative;
-            }
-            
-            .action-btn-harmonized {
-                width: var(--action-btn-size);
-                height: var(--action-btn-size);
-                border: 2px solid transparent;
-                border-radius: var(--btn-border-radius);
-                background: rgba(255, 255, 255, 0.9);
-                color: #6b7280;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-                font-size: 13px;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-                z-index: 11;
-                position: relative;
-            }
-            
-            .action-btn-harmonized:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            }
-            
-            .action-btn-harmonized.create-task {
-                color: #3b82f6;
-            }
-            
-            .action-btn-harmonized.create-task:hover {
-                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                border-color: #3b82f6;
-                color: #2563eb;
-            }
-            
-            .task-harmonized-card.preselected-task .action-btn-harmonized.create-task {
-                color: var(--preselect-color);
-                background: rgba(139, 92, 246, 0.1);
-            }
-            
-            .task-harmonized-card.preselected-task .action-btn-harmonized.create-task:hover {
-                background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
-                border-color: var(--preselect-color);
-                color: var(--preselect-color-dark);
-            }
-            
-            .action-btn-harmonized.view-task {
-                color: #16a34a;
-                background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-            }
-            
-            .action-btn-harmonized.view-task:hover {
-                background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
-                border-color: #16a34a;
-                color: #15803d;
-            }
-            
-            .action-btn-harmonized.details {
-                color: #8b5cf6;
-            }
-            
-            .action-btn-harmonized.details:hover {
-                background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
-                border-color: #8b5cf6;
-                color: #7c3aed;
-            }
-            
-            /* Vue groupée */
-            .tasks-grouped-harmonized {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-            }
-            
-            .task-group-harmonized {
-                background: transparent;
-                border: none;
-                border-radius: 0;
-                overflow: visible;
-                margin: 0;
-                padding: 0;
-                z-index: 1;
-            }
-            
-            .group-header-harmonized {
-                display: flex;
-                align-items: center;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 0;
-                padding: var(--card-padding);
-                cursor: pointer;
-                transition: all 0.3s ease;
-                position: relative;
-                min-height: var(--card-height);
-                max-height: var(--card-height);
-                border-bottom: 1px solid #e5e7eb;
-                gap: var(--gap-medium);
-                z-index: 1;
-            }
-            
-            .group-avatar-harmonized {
-                width: 40px;
-                height: 40px;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: 700;
-                font-size: 16px;
-                flex-shrink: 0;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            }
-            
-            .group-info-harmonized {
-                flex: 1;
-                min-width: 0;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                gap: 4px;
-                height: 100%;
-            }
-            
-            .group-name-harmonized {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 15px;
-                margin: 0;
-                line-height: 1.3;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            .group-meta-harmonized {
-                color: #6b7280;
-                font-size: 12px;
-                font-weight: 500;
-                line-height: 1.2;
-            }
-            
-            .group-expand-harmonized {
-                width: var(--action-btn-size);
-                height: var(--action-btn-size);
-                border: 2px solid transparent;
-                border-radius: var(--btn-border-radius);
-                background: rgba(255, 255, 255, 0.9);
-                color: #6b7280;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-                font-size: 13px;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-                flex-shrink: 0;
-            }
-            
-            .group-content-harmonized {
-                background: transparent;
-                margin: 0;
-                padding: 0;
-                display: none;
-            }
-            
-            /* État vide harmonisé */
-            .empty-state-harmonized {
-                text-align: center;
-                padding: 60px 30px;
-                background: rgba(255, 255, 255, 0.8);
-                backdrop-filter: blur(20px);
-                border-radius: 20px;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .empty-state-icon-harmonized {
-                font-size: 48px;
-                margin-bottom: 20px;
-                color: #d1d5db;
-            }
-            
-            .empty-state-title-harmonized {
-                font-size: 22px;
-                font-weight: 700;
-                color: #374151;
-                margin-bottom: 12px;
-            }
-            
-            .empty-state-text-harmonized {
-                font-size: 15px;
-                margin-bottom: 24px;
-                max-width: 400px;
-                line-height: 1.6;
-                color: #6b7280;
-                font-weight: 500;
-            }
-            
-            /* RESPONSIVE ÉTENDU */
-            @media (max-width: 1400px) {
-                .search-box-full {
-                    max-width: 700px;
-                }
-                
-                .buttons-line-full {
-                    gap: var(--gap-medium);
-                }
-                
-                .action-buttons-expanded {
-                    gap: var(--gap-small);
-                }
-            }
-            
-            @media (max-width: 1200px) {
-                .search-box-full {
-                    max-width: 600px;
-                }
-                
-                .view-mode-expanded {
-                    min-width: 100px;
-                    padding: 0 12px;
-                }
-                
-                .btn-expanded {
-                    padding: 0 12px;
-                }
-            }
-            
+
+            /* Responsive */
             @media (max-width: 1024px) {
-                .controls-bar-single-line {
+                .controls-bar-unified {
                     flex-direction: column;
-                    gap: var(--gap-medium);
                     align-items: stretch;
+                    gap: 12px;
                 }
-                
-                .search-section {
-                    max-width: none;
+
+                .search-section-unified {
                     order: 1;
+                    min-width: auto;
                 }
-                
-                .view-modes {
-                    width: 100%;
-                    justify-content: space-around;
+
+                .view-modes-unified {
                     order: 2;
+                    justify-content: space-around;
                 }
-                
-                .action-buttons {
-                    width: 100%;
-                    justify-content: center;
-                    flex-wrap: wrap;
+
+                .actions-section-unified {
                     order: 3;
-                }
-                
-                .dropdown-menu {
-                    right: auto;
-                    left: 0;
-                }
-            }
-            
-            @media (max-width: 768px) {
-                .status-filters-compact {
-                    flex-wrap: wrap;
-                    gap: 2px;
-                    border-radius: 0;
-                    border: none;
-                    box-shadow: none;
-                    background: transparent;
-                }
-                
-                .status-pill-compact {
-                    flex: 0 1 calc(50% - 1px);
-                    min-width: 0;
-                    border-radius: var(--btn-border-radius);
-                    border: 1px solid #e5e7eb;
-                    box-shadow: var(--shadow-base);
-                }
-                
-                .status-pill-compact:first-child,
-                .status-pill-compact:last-child {
-                    border-radius: var(--btn-border-radius);
-                }
-                
-                .view-mode span,
-                .btn-action .btn-text {
-                    display: none;
-                }
-                
-                .view-mode {
-                    min-width: 44px;
-                    padding: 0;
                     justify-content: center;
                 }
-                
-                .btn-action {
-                    padding: 0 var(--gap-small);
-                    min-width: 44px;
-                    justify-content: center;
-                }
-                
-                .btn-action .btn-count {
-                    display: none;
-                }
-                
-                .search-input {
-                    font-size: 14px;
-                    padding: 0 var(--gap-small) 0 36px;
-                }
-                
-                .search-icon {
-                    left: var(--gap-small);
-                    font-size: 14px;
-                }
-            }
-            
-            @media (max-width: 480px) {
-                .status-filters-compact {
-                    flex-direction: column;
+
+                .filters-bar-unified {
                     gap: 4px;
                 }
-                
-                .status-pill-compact {
-                    flex: none;
-                    width: 100%;
-                    border-radius: var(--btn-border-radius);
-                    border: 1px solid #e5e7eb;
-                    box-shadow: var(--shadow-base);
-                }
-                
-                .controls-bar-single-line {
-                    padding: var(--gap-small);
-                    gap: var(--gap-small);
-                }
-                
-                .action-buttons {
-                    flex-direction: column;
-                    gap: var(--gap-small);
-                    align-items: stretch;
-                }
-                
-                .action-buttons > * {
-                    width: 100%;
-                    justify-content: center;
-                }
-                
-                .dropdown-menu {
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    width: 90vw;
-                    max-width: 300px;
-                }
-                
-                .sticky-controls-container {
-                    padding: var(--gap-small);
-                }
-            }, 0.06);
-                    display: flex;
-                    flex-direction: column;
-                    gap: var(--gap-large);
-                    position: relative;
-                    z-index: 100;
-                }
-                
-                .buttons-line-full {
-                    flex-direction: column;
-                    gap: var(--gap-medium);
-                    align-items: stretch;
-                }
-                
-                .view-modes-expanded {
-                    width: 100%;
-                    justify-content: space-around;
-                }
-                
-                .action-buttons-expanded {
-                    width: 100%;
-                    justify-content: center;
-                    flex-wrap: wrap;
-                }
-                
-                .search-box-full {
-                    max-width: 100%;
-                }
-                
-                .buttons-separator {
-                    display: none;
+
+                .filter-tab-unified {
+                    min-width: 80px;
+                    padding: 8px;
                 }
             }
-            
+
             @media (max-width: 768px) {
-                .view-mode-expanded span,
-                .btn-expanded span {
+                .emails-page-unified {
+                    padding: 12px;
+                }
+
+                .btn-unified .btn-text {
                     display: none;
                 }
-                
-                .view-mode-expanded {
+
+                .view-mode-unified span {
+                    display: none;
+                }
+
+                .actions-section-unified {
+                    flex-wrap: wrap;
+                    gap: 4px;
+                }
+
+                .btn-unified {
                     min-width: 44px;
-                    padding: 0;
+                    padding: 0 8px;
                     justify-content: center;
-                }
-                
-                .btn-expanded {
-                    padding: 0 var(--gap-small);
-                }
-                
-                .search-input-full {
-                    font-size: var(--btn-font-size);
-                    padding: 0 var(--gap-medium) 0 48px;
-                }
-                
-                .search-icon-full {
-                    left: var(--gap-medium);
-                    font-size: 16px;
                 }
             }
-            
+        `;
+        
+        document.head.appendChild(styles);
+    }
+
+    addAuthStyles() {
+        if (document.getElementById('authStyles')) return;
+        
+        const styles = document.createElement('style');
+        styles.id = 'authStyles';
+        styles.textContent = `
+            .page-container-unified {
+                min-height: calc(100vh - 120px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+
+            .auth-required-card, .error-card {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border-radius: 20px;
+                padding: 50px;
+                text-align: center;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                max-width: 600px;
+                width: 100%;
+            }
+
+            .auth-icon, .error-icon {
+                width: 80px;
+                height: 80px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 25px;
+                color: white;
+                font-size: 32px;
+            }
+
+            .error-icon {
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            }
+
+            .auth-title, .error-title {
+                font-size: 28px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 12px;
+            }
+
+            .auth-subtitle, .error-message {
+                font-size: 16px;
+                color: #6b7280;
+                margin-bottom: 30px;
+            }
+
+            .auth-buttons, .error-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                margin-bottom: 25px;
+            }
+
+            .btn-auth, .btn-primary, .btn-secondary {
+                height: 50px;
+                border: none;
+                border-radius: 12px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                text-decoration: none;
+            }
+
+            .btn-auth.btn-microsoft {
+                background: linear-gradient(135deg, #0078d7 0%, #106ebe 100%);
+                color: white;
+            }
+
+            .btn-auth.btn-google {
+                background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+                color: white;
+            }
+
+            .btn-primary {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+
+            .btn-secondary {
+                background: #f3f4f6;
+                color: #374151;
+                border: 1px solid #d1d5db;
+            }
+
+            .btn-auth:hover, .btn-primary:hover, .btn-secondary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            }
+
+            .auth-info {
+                background: rgba(102, 126, 234, 0.1);
+                border-radius: 10px;
+                padding: 15px;
+                font-size: 14px;
+                color: #667eea;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                font-weight: 500;
+            }
+
             @media (max-width: 480px) {
-                .controls-bar-harmonized-expanded {
-                    padding: var(--gap-small);
-                    gap: var(--gap-medium);
+                .auth-required-card, .error-card {
+                    padding: 30px 20px;
                 }
-                
-                .action-buttons-expanded {
-                    flex-direction: column;
-                    gap: var(--gap-small);
-                    align-items: stretch;
+
+                .auth-title, .error-title {
+                    font-size: 24px;
                 }
-                
-                .action-buttons-expanded > * {
-                    width: 100%;
-                    justify-content: center;
-                }
-                
-                .dropdown-menu-expanded {
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    width: 90vw;
-                    max-width: 300px;
-                }
-                
-                .search-box-full {
-                    height: calc(var(--btn-height) + 4px);
-                }
-                
-                .search-input-full {
-                    padding: 0 var(--gap-small) 0 40px;
-                }
-                
-                .sticky-controls-container {
-                    padding: var(--gap-small);
+
+                .auth-subtitle, .error-message {
+                    font-size: 14px;
                 }
             }
         `;
@@ -3929,7 +4784,18 @@ class PageManager {
     }
 }
 
-// Créer l'instance globale
+// ================================================
+// INITIALISATION GLOBALE
+// ================================================
+
+// Nettoyer l'ancienne instance
+if (window.pageManager) {
+    if (typeof window.pageManager.cleanup === 'function') {
+        window.pageManager.cleanup();
+    }
+}
+
+// Créer la nouvelle instance
 window.pageManager = new PageManager();
 
 // Bind des méthodes pour préserver le contexte
@@ -3939,4 +4805,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v12.2 loaded - Position fixe et sélection tout');
+console.log('✅ PageManager v13.0 loaded - Intégration Gmail/Outlook Unifiée et Robuste');
