@@ -2,29 +2,59 @@
 
 class CategoryManager {
     constructor() {
+        console.log('[CategoryManager] 🚀 Initialisation v21.0 - Unifié Outlook/Gmail...');
+        
+        // Initialiser les propriétés de base en premier
         this.categories = {};
         this.weightedKeywords = {};
         this.customCategories = {};
-        this.settings = this.loadSettings();
         this.isInitialized = false;
         this.debugMode = false;
         this.eventListenersSetup = false;
+        this.currentProvider = null;
         
-        // Système de synchronisation renforcé
+        // Système de synchronisation
         this.syncQueue = [];
         this.syncInProgress = false;
         this.changeListeners = new Set();
         this.lastSyncTimestamp = 0;
         
-        // NOUVEAU: Détection provider automatique
-        this.currentProvider = null; // 'microsoft' ou 'google'
+        // Charger les paramètres avec gestion d'erreur
+        try {
+            this.settings = this.loadSettings();
+        } catch (error) {
+            console.warn('[CategoryManager] Erreur chargement settings:', error);
+            this.settings = this.getDefaultSettings();
+        }
         
-        this.initializeCategories();
-        this.loadCustomCategories();
-        this.initializeWeightedDetection();
-        this.initializeFilters();
-        this.setupEventListeners();
-        this.startAutoSync();
+        // Initialiser les composants de base
+        try {
+            this.initializeCategories();
+            this.loadCustomCategories();
+            this.initializeWeightedDetection();
+            this.initializeFilters();
+            
+            // Démarrer les systèmes en arrière-plan
+            setTimeout(() => {
+                try {
+                    this.setupEventListeners();
+                    this.startAutoSync();
+                } catch (error) {
+                    console.warn('[CategoryManager] Erreur initialisation systèmes:', error);
+                }
+            }, 100);
+            
+            this.isInitialized = true;
+            console.log('[CategoryManager] ✅ Initialisation de base réussie');
+            
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur initialisation:', error);
+            this.isInitialized = false;
+            // Continuer avec une initialisation minimale
+            this.categories = {};
+            this.weightedKeywords = {};
+            this.settings = this.getDefaultSettings();
+        }
         
         console.log('[CategoryManager] ✅ Version 21.0 - Unifié Outlook/Gmail avec performance identique');
     }
