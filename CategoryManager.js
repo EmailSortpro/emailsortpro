@@ -2211,6 +2211,142 @@ class CategoryManager {
     }
 
     // ================================================
+    // MÉTHODES UTILITAIRES SUPPLÉMENTAIRES
+    // ================================================
+    
+    /**
+     * Génère une couleur d'avatar basée sur un texte
+     */
+    generateAvatarColor(text) {
+        if (!text) return '#64748b';
+        
+        const colors = [
+            '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
+            '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
+            '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+            '#ec4899', '#f43f5e'
+        ];
+        
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        return colors[Math.abs(hash) % colors.length];
+    }
+
+    /**
+     * Formate une date de manière lisible
+     */
+    formatDate(dateString) {
+        if (!dateString) return '';
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) {
+            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        } else if (diffDays === 1) {
+            return 'Hier';
+        } else if (diffDays < 7) {
+            return `Il y a ${diffDays} jours`;
+        } else {
+            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        }
+    }
+
+    /**
+     * Nettoie et échappe le HTML
+     */
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /**
+     * Tronque un texte à une longueur donnée
+     */
+    truncateText(text, maxLength = 100) {
+        if (!text || text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    }
+
+    /**
+     * Détermine la couleur de priorité d'un email
+     */
+    getEmailPriorityColor(email) {
+        if (email.importance === 'high') return '#ef4444';
+        if (email.hasAttachments) return '#f97316';
+        if (email.categoryScore >= 80) return '#10b981';
+        if (email.isPreselectedForTasks) return '#8b5cf6';
+        return '#3b82f6';
+    }
+
+    /**
+     * Obtient les informations d'une catégorie avec fallback
+     */
+    getCategoryInfo(categoryId) {
+        const category = this.getCategory(categoryId);
+        return {
+            id: categoryId,
+            name: category?.name || categoryId || 'Autre',
+            icon: category?.icon || '📌',
+            color: category?.color || '#64748b',
+            description: category?.description || '',
+            priority: category?.priority || 50
+        };
+    }
+
+    /**
+     * Valide la structure d'un email
+     */
+    validateEmailStructure(email) {
+        if (!email || typeof email !== 'object') return false;
+        
+        const requiredFields = ['id', 'subject', 'from', 'receivedDateTime'];
+        return requiredFields.every(field => email.hasOwnProperty(field));
+    }
+
+    /**
+     * Normalise un email au format standard
+     */
+    normalizeEmailFormat(email) {
+        if (!this.validateEmailStructure(email)) {
+            console.warn('[CategoryManager] Email invalide:', email);
+            return null;
+        }
+
+        return {
+            id: email.id,
+            subject: email.subject || 'Sans sujet',
+            bodyPreview: email.bodyPreview || '',
+            body: email.body || { content: '', contentType: 'text' },
+            from: email.from || { emailAddress: { address: '', name: '' } },
+            toRecipients: email.toRecipients || [],
+            ccRecipients: email.ccRecipients || [],
+            receivedDateTime: email.receivedDateTime,
+            sentDateTime: email.sentDateTime || email.receivedDateTime,
+            hasAttachments: email.hasAttachments || false,
+            importance: email.importance || 'normal',
+            isRead: email.isRead || false,
+            categories: email.categories || [],
+            sourceProvider: email.sourceProvider || 'unknown',
+            
+            // Champs de catégorisation
+            category: email.category || null,
+            categoryScore: email.categoryScore || 0,
+            categoryConfidence: email.categoryConfidence || 0,
+            matchedPatterns: email.matchedPatterns || [],
+            hasAbsolute: email.hasAbsolute || false,
+            isPreselectedForTasks: email.isPreselectedForTasks || false
+        };
+    }
+
+    // ================================================
     // MÉTHODES DE NETTOYAGE ET DESTRUCTION
     // ================================================
     
