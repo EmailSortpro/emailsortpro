@@ -442,6 +442,9 @@ class SettingsPageVisual {
                         <button class="tab-btn" onclick="window.settingsPage.switchEditTab('keywords', '${uniqueId}')">
                             <i class="fas fa-key"></i> Mots-clés
                         </button>
+                        <button class="tab-btn" onclick="window.settingsPage.switchEditTab('filters', '${uniqueId}')">
+                            <i class="fas fa-filter"></i> Filtres
+                        </button>
                         ${category.isCustom ? `
                             <button class="tab-btn" onclick="window.settingsPage.switchEditTab('danger', '${uniqueId}')">
                                 <i class="fas fa-exclamation-triangle"></i> Supprimer
@@ -493,7 +496,7 @@ class SettingsPageVisual {
                                     </div>
                                     <p class="section-description">Mots-clés qui garantissent le classement dans cette catégorie</p>
                                     <div class="input-group">
-                                        <input type="text" id="absolute-input-${uniqueId}" placeholder="Ajouter un mot-clé absolu">
+                                        <input type="text" id="absolute-input-${uniqueId}" placeholder="Ajouter un mot-clé absolu" onkeypress="if(event.key==='Enter') window.settingsPage.addKeyword('absolute', '${uniqueId}')">
                                         <button class="btn-add" style="background: #EF4444" onclick="window.settingsPage.addKeyword('absolute', '${uniqueId}')">
                                             <i class="fas fa-plus"></i>
                                         </button>
@@ -517,7 +520,7 @@ class SettingsPageVisual {
                                     </div>
                                     <p class="section-description">Mots-clés qui augmentent fortement la probabilité de classement</p>
                                     <div class="input-group">
-                                        <input type="text" id="strong-input-${uniqueId}" placeholder="Ajouter un mot-clé fort">
+                                        <input type="text" id="strong-input-${uniqueId}" placeholder="Ajouter un mot-clé fort" onkeypress="if(event.key==='Enter') window.settingsPage.addKeyword('strong', '${uniqueId}')">
                                         <button class="btn-add" style="background: #F59E0B" onclick="window.settingsPage.addKeyword('strong', '${uniqueId}')">
                                             <i class="fas fa-plus"></i>
                                         </button>
@@ -541,7 +544,7 @@ class SettingsPageVisual {
                                     </div>
                                     <p class="section-description">Mots-clés qui suggèrent cette catégorie</p>
                                     <div class="input-group">
-                                        <input type="text" id="weak-input-${uniqueId}" placeholder="Ajouter un mot-clé faible">
+                                        <input type="text" id="weak-input-${uniqueId}" placeholder="Ajouter un mot-clé faible" onkeypress="if(event.key==='Enter') window.settingsPage.addKeyword('weak', '${uniqueId}')">
                                         <button class="btn-add" style="background: #10B981" onclick="window.settingsPage.addKeyword('weak', '${uniqueId}')">
                                             <i class="fas fa-plus"></i>
                                         </button>
@@ -565,7 +568,7 @@ class SettingsPageVisual {
                                     </div>
                                     <p class="section-description">Mots-clés qui empêchent le classement dans cette catégorie</p>
                                     <div class="input-group">
-                                        <input type="text" id="exclusions-input-${uniqueId}" placeholder="Ajouter une exclusion">
+                                        <input type="text" id="exclusions-input-${uniqueId}" placeholder="Ajouter une exclusion" onkeypress="if(event.key==='Enter') window.settingsPage.addKeyword('exclusions', '${uniqueId}')">
                                         <button class="btn-add" style="background: #6B7280" onclick="window.settingsPage.addKeyword('exclusions', '${uniqueId}')">
                                             <i class="fas fa-plus"></i>
                                         </button>
@@ -579,6 +582,100 @@ class SettingsPageVisual {
                                                 </button>
                                             </span>`
                                         ).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Onglet Filtres -->
+                        <div id="edit-tab-filters-${uniqueId}" class="edit-tab-content">
+                            <div class="filters-layout">
+                                <div class="filter-group">
+                                    <h3><i class="fas fa-filter"></i> Filtres avancés</h3>
+                                    <p class="filter-description">Affinez la classification en fonction des expéditeurs et domaines</p>
+                                    
+                                    <div class="filter-section">
+                                        <h4><i class="fas fa-at"></i> Filtres par domaine</h4>
+                                        <p class="section-description">Domaines d'emails qui correspondent à cette catégorie (ex: amazon.com, paypal.com)</p>
+                                        <div class="input-group">
+                                            <input type="text" id="domain-filter-input-${uniqueId}" placeholder="Ex: amazon.com, paypal.com..." onkeypress="if(event.key==='Enter') window.settingsPage.addFilter('domain', '${uniqueId}')">
+                                            <button class="btn-add" style="background: #3B82F6" onclick="window.settingsPage.addFilter('domain', '${uniqueId}')">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="filters-list" id="domain-filters-${uniqueId}">
+                                            ${(keywords.domainFilters || []).map(domain => 
+                                                `<span class="filter-tag" style="background: #DBEAFE; color: #1E40AF">
+                                                    <i class="fas fa-globe"></i> ${domain}
+                                                    <button onclick="window.settingsPage.removeFilter('domain', '${domain}', '${uniqueId}')">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </span>`
+                                            ).join('')}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="filter-section">
+                                        <h4><i class="fas fa-envelope"></i> Filtres par expéditeur</h4>
+                                        <p class="section-description">Adresses email spécifiques qui correspondent à cette catégorie</p>
+                                        <div class="input-group">
+                                            <input type="text" id="email-filter-input-${uniqueId}" placeholder="Ex: noreply@amazon.com, support@paypal.com..." onkeypress="if(event.key==='Enter') window.settingsPage.addFilter('email', '${uniqueId}')">
+                                            <button class="btn-add" style="background: #10B981" onclick="window.settingsPage.addFilter('email', '${uniqueId}')">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="filters-list" id="email-filters-${uniqueId}">
+                                            ${(keywords.emailFilters || []).map(email => 
+                                                `<span class="filter-tag" style="background: #D1FAE5; color: #065F46">
+                                                    <i class="fas fa-envelope"></i> ${email}
+                                                    <button onclick="window.settingsPage.removeFilter('email', '${email}', '${uniqueId}')">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </span>`
+                                            ).join('')}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="filter-section">
+                                        <h4><i class="fas fa-times-circle"></i> Exclusions de domaines</h4>
+                                        <p class="section-description">Domaines à exclure de cette catégorie</p>
+                                        <div class="input-group">
+                                            <input type="text" id="exclude-domain-input-${uniqueId}" placeholder="Ex: spam.com, unwanted.net..." onkeypress="if(event.key==='Enter') window.settingsPage.addFilter('excludeDomain', '${uniqueId}')">
+                                            <button class="btn-add" style="background: #EF4444" onclick="window.settingsPage.addFilter('excludeDomain', '${uniqueId}')">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="filters-list" id="exclude-domain-filters-${uniqueId}">
+                                            ${(keywords.excludeDomainFilters || []).map(domain => 
+                                                `<span class="filter-tag" style="background: #FEE2E2; color: #B91C1C">
+                                                    <i class="fas fa-ban"></i> ${domain}
+                                                    <button onclick="window.settingsPage.removeFilter('excludeDomain', '${domain}', '${uniqueId}')">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </span>`
+                                            ).join('')}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="filter-section">
+                                        <h4><i class="fas fa-envelope-open-text"></i> Exclusions d'expéditeurs</h4>
+                                        <p class="section-description">Adresses email à exclure de cette catégorie</p>
+                                        <div class="input-group">
+                                            <input type="text" id="exclude-email-input-${uniqueId}" placeholder="Ex: spam@domain.com..." onkeypress="if(event.key==='Enter') window.settingsPage.addFilter('excludeEmail', '${uniqueId}')">
+                                            <button class="btn-add" style="background: #F59E0B" onclick="window.settingsPage.addFilter('excludeEmail', '${uniqueId}')">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="filters-list" id="exclude-email-filters-${uniqueId}">
+                                            ${(keywords.excludeEmailFilters || []).map(email => 
+                                                `<span class="filter-tag" style="background: #FEF3C7; color: #D97706">
+                                                    <i class="fas fa-ban"></i> ${email}
+                                                    <button onclick="window.settingsPage.removeFilter('excludeEmail', '${email}', '${uniqueId}')">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </span>`
+                                            ).join('')}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -693,9 +790,79 @@ class SettingsPageVisual {
         });
     }
 
-    getKeywordSectionIndex(type) {
-        const typeMap = { absolute: 1, strong: 2, weak: 3, exclusions: 4 };
-        return typeMap[type] || 1;
+    addFilter(type, modalId) {
+        const inputMap = {
+            domain: `domain-filter-input-${modalId}`,
+            email: `email-filter-input-${modalId}`,
+            excludeDomain: `exclude-domain-input-${modalId}`,
+            excludeEmail: `exclude-email-input-${modalId}`
+        };
+        
+        const listMap = {
+            domain: `domain-filters-${modalId}`,
+            email: `email-filters-${modalId}`,
+            excludeDomain: `exclude-domain-filters-${modalId}`,
+            excludeEmail: `exclude-email-filters-${modalId}`
+        };
+        
+        const input = document.getElementById(inputMap[type]);
+        const value = input.value.trim().toLowerCase();
+        
+        if (!value) return;
+        
+        // Validation pour les emails
+        if ((type === 'email' || type === 'excludeEmail') && !value.includes('@')) {
+            this.showToast('Veuillez entrer une adresse email valide', 'error');
+            return;
+        }
+        
+        // Validation pour les domaines
+        if ((type === 'domain' || type === 'excludeDomain') && value.includes('@')) {
+            this.showToast('Veuillez entrer uniquement le domaine (sans @)', 'error');
+            return;
+        }
+        
+        const list = document.getElementById(listMap[type]);
+        const colorMap = {
+            domain: { bg: '#DBEAFE', color: '#1E40AF', icon: 'globe' },
+            email: { bg: '#D1FAE5', color: '#065F46', icon: 'envelope' },
+            excludeDomain: { bg: '#FEE2E2', color: '#B91C1C', icon: 'ban' },
+            excludeEmail: { bg: '#FEF3C7', color: '#D97706', icon: 'ban' }
+        };
+        
+        const config = colorMap[type];
+        const tag = document.createElement('span');
+        tag.className = 'filter-tag';
+        tag.style.background = config.bg;
+        tag.style.color = config.color;
+        tag.innerHTML = `
+            <i class="fas fa-${config.icon}"></i> ${value}
+            <button onclick="window.settingsPage.removeFilter('${type}', '${value}', '${modalId}')">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        list.appendChild(tag);
+        input.value = '';
+    }
+
+    removeFilter(type, value, modalId) {
+        const listMap = {
+            domain: `domain-filters-${modalId}`,
+            email: `email-filters-${modalId}`,
+            excludeDomain: `exclude-domain-filters-${modalId}`,
+            excludeEmail: `exclude-email-filters-${modalId}`
+        };
+        
+        const list = document.getElementById(listMap[type]);
+        const tags = list.querySelectorAll('.filter-tag');
+        
+        tags.forEach(tag => {
+            const text = tag.textContent.trim().replace('×', '').trim();
+            if (text === value) {
+                tag.remove();
+            }
+        });
     }
 
     saveCategory(categoryId, modalId) {
@@ -723,12 +890,16 @@ class SettingsPageVisual {
                 }
             }
 
-            // Sauvegarder les mots-clés
+            // Sauvegarder les mots-clés et filtres
             const keywords = {
                 absolute: this.getKeywordsFromModal('absolute', modalId),
                 strong: this.getKeywordsFromModal('strong', modalId),
                 weak: this.getKeywordsFromModal('weak', modalId),
-                exclusions: this.getKeywordsFromModal('exclusions', modalId)
+                exclusions: this.getKeywordsFromModal('exclusions', modalId),
+                domainFilters: this.getFiltersFromModal('domain', modalId),
+                emailFilters: this.getFiltersFromModal('email', modalId),
+                excludeDomainFilters: this.getFiltersFromModal('excludeDomain', modalId),
+                excludeEmailFilters: this.getFiltersFromModal('excludeEmail', modalId)
             };
 
             window.categoryManager?.setCategoryKeywords(categoryId, keywords);
@@ -3540,7 +3711,89 @@ Tapez "RESET" pour confirmer :`);
                 background: rgba(255, 255, 255, 0.2);
             }
 
-            /* Zone de danger */
+            /* Filtres */
+            .filters-layout {
+                display: grid;
+                gap: 24px;
+            }
+            
+            .filter-group {
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 20px;
+            }
+            
+            .filter-group h3 {
+                margin: 0 0 8px 0;
+                font-size: 18px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text);
+            }
+            
+            .filter-description {
+                margin: 0 0 20px 0;
+                color: var(--text-light);
+                font-size: 14px;
+            }
+            
+            .filter-section {
+                margin-bottom: 20px;
+            }
+            
+            .filter-section:last-child {
+                margin-bottom: 0;
+            }
+            
+            .filter-section h4 {
+                margin: 0 0 8px 0;
+                font-size: 14px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text);
+            }
+
+            .filters-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                min-height: 40px;
+            }
+
+            .filter-tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 10px;
+                border-radius: 16px;
+                font-size: 13px;
+                font-weight: 500;
+                transition: all 0.2s;
+            }
+            
+            .filter-tag button {
+                background: none;
+                border: none;
+                color: currentColor;
+                cursor: pointer;
+                padding: 2px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0.7;
+                transition: opacity 0.2s;
+            }
+            
+            .filter-tag button:hover {
+                opacity: 1;
+                background: rgba(255, 255, 255, 0.2);
+            }
             .danger-zone {
                 background: var(--danger)05;
                 border: 2px solid var(--danger)20;
