@@ -1,4 +1,911 @@
-// SettingsPage.js - Version 2.0 Moderne et Fonctionnelle
+.note-section p {
+                margin: 0;
+                font-size: 0.875rem;
+                color: var(--success);
+                line-height: 1.4;
+            }
+
+            kbd {
+                background: var(--bg-tertiary);
+                border: 1px solid var(--border);
+                border-radius: 0.25rem;
+                padding: 0.125rem 0.25rem;
+                font-size: 0.75rem;
+                font-family: monospace;
+                color: var(--text-primary);
+            }
+
+            /* Header compact */
+            .settings-header {
+                margin-bottom: 2rem;
+            }
+
+            .header-content {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                padding: 1rem 1.5rem;
+                background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+                border-radius: var(--radius);
+                color: white;
+                box-shadow: var(--shadow);
+            }
+
+            .header-icon {
+                width: 2.5rem;
+                height: 2.5rem;
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: var(--radius);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.25rem;
+            }
+
+            .header-text h1 {
+                font-size: 1.5rem;
+                font-weight: 700;
+                margin: 0 0 0.25rem 0;
+            }
+
+            .header-text p {
+                font-size: 0.875rem;
+                opacity: 0.9;
+                margin: 0;
+            }
+
+            /* Navigation compacte */
+            .settings-navigation {
+                margin-bottom: 2rem;
+            }
+
+            .nav-container {
+                display: flex;
+                gap: 0.5rem;
+                background: var(--bg-secondary);
+                padding: 0.25rem;
+                border-radius: var(--radius);
+                box-shadow: var(--shadow);
+            }
+
+            .nav-item {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.75rem 1rem;
+                border: none;
+                background: none;
+                border-radius: 0.25rem;
+                cursor: pointer;
+                transition: all 0.2s;
+                color: var(--text-secondary);
+            }
+
+            .nav-item:hover {
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+            }
+
+            .nav-item.active {
+                background: var(--primary);
+                color: white;
+                box-shadow: var(--shadow);
+            }
+
+            .nav-icon {
+                width: 2rem;
+                height: 2rem;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 0.25rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1rem;
+            }
+
+            .nav-item.active .nav-icon {
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+            .nav-text {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .nav-title {
+                font-weight: 600;
+                font-size: 0.875rem;
+            }
+
+            .nav-subtitle {
+                font-size: 0.75rem;
+                opacity: 0.7;
+            }
+
+            /* Container principal */
+            .settings-container {
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 1.5rem;
+                background: var(--bg-primary);
+                min-height: 100vh;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            }
+
+            .settings-main {
+                background: var(--bg-secondary);
+                border-radius: var(--radius);
+                box-shadow: var(--shadow);
+                overflow: hidden;
+            }
+
+            .tab-content {
+                display: none;
+                padding: 1.5rem;
+            }
+
+            .tab-content.active {
+                display: block;
+            }
+
+            /* Responsive */
+            @media (max-width: 1024px) {
+                .categories-grid {
+                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                }
+
+                .stats-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+
+                .backup-actions-compact {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .settings-container {
+                    padding: 1rem;
+                }
+
+                .header-content {
+                    flex-direction: column;
+                    text-align: center;
+                    gap: 0.75rem;
+                }
+
+                .nav-container {
+                    flex-direction: column;
+                }
+
+                .nav-item {
+                    justify-content: center;
+                }
+
+                .categories-toolbar {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 1rem;
+                }
+
+                .toolbar-center {
+                    order: -1;
+                }
+
+                .categories-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .stats-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+
+                .status-row {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                .details-compact {
+                    justify-content: center;
+                }
+
+                .category-card-compact {
+                    padding: 1rem;
+                }
+
+                .category-actions-mini {
+                    gap: 0.5rem;
+                }
+
+                .action-btn-mini {
+                    width: 2rem;
+                    height: 2rem;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .tab-content {
+                    padding: 1rem;
+                }
+
+                .stats-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .filter-tabs {
+                    justify-content: center;
+                }
+
+                .history-name-mini {
+                    max-width: 120px;
+                }
+
+                .details-compact {
+                    flex-direction: column;
+                    gap: 0.5rem;
+                }
+
+                .modal-modern {
+                    margin: 0.5rem;
+                    max-width: none;
+                }
+
+                .step-card {
+                    flex-direction: column;
+                    gap: 0.75rem;
+                }
+
+                .path-display {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 0.5rem;
+                }
+            }
+        `;
+
+        document.head.appendChild(styles);
+    }
+}
+
+// ================================================
+// GESTIONNAIRE DE BACKUP V2 AVEC DÉTECTION UTILISATEUR
+// ================================================
+
+            .category-card-compact {
+                background: var(--bg-secondary);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 0.75rem;
+                transition: all 0.2s ease;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            }
+
+            .category-card-compact:hover {
+                border-color: var(--category-color);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                transform: translateY(-1px);
+            }
+
+            .category-card-compact.inactive {
+                opacity: 0.6;
+                background: var(--bg-tertiary);
+            }
+
+            .category-icon-mini {
+                width: 2rem;
+                height: 2rem;
+                border-radius: var(--radius);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1rem;
+                color: white;
+                flex-shrink: 0;
+            }
+
+            .category-info-compact {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .category-name-mini {
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: var(--text-primary);
+                margin-bottom: 0.25rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .category-stats-mini {
+                font-size: 0.75rem;
+                color: var(--text-secondary);
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            .category-actions-mini {
+                display: flex;
+                gap: 0.25rem;
+                flex-shrink: 0;
+            }
+
+            .action-btn-mini {
+                width: 1.75rem;
+                height: 1.75rem;
+                border: 1px solid var(--border);
+                background: var(--bg-secondary);
+                border-radius: 0.25rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+                color: var(--text-secondary);
+                font-size: 0.75rem;
+            }
+
+            .action-btn-mini:hover {
+                border-color: var(--primary);
+                color: var(--primary);
+                transform: scale(1.1);
+            }
+
+            .action-btn-mini.active {
+                background: var(--success);
+                border-color: var(--success);
+                color: white;
+            }
+
+            .action-btn-mini.inactive {
+                background: var(--danger);
+                border-color: var(--danger);
+                color: white;
+            }
+
+            .action-btn-mini.selected {
+                background: var(--warning);
+                border-color: var(--warning);
+                color: white;
+            }
+
+            .action-btn-mini.danger:hover {
+                background: var(--danger);
+                border-color: var(--danger);
+                color: white;
+            }
+
+            /* Stats compactes */
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .stat-card-mini {
+                background: var(--bg-secondary);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 1rem;
+                text-align: center;
+                transition: all 0.2s;
+                cursor: pointer;
+                border-left: 3px solid var(--stat-color);
+            }
+
+            .stat-card-mini:hover {
+                border-color: var(--stat-color);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                transform: translateY(-1px);
+            }
+
+            .stat-card-mini.primary { --stat-color: var(--primary); }
+            .stat-card-mini.success { --stat-color: var(--success); }
+            .stat-card-mini.warning { --stat-color: var(--warning); }
+            .stat-card-mini.info { --stat-color: var(--info); }
+
+            .stat-icon-mini {
+                width: 2rem;
+                height: 2rem;
+                background: var(--stat-color);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.875rem;
+                margin: 0 auto 0.5rem;
+            }
+
+            .stat-number-mini {
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: var(--stat-color);
+                line-height: 1;
+                margin-bottom: 0.25rem;
+            }
+
+            .stat-label-mini {
+                font-size: 0.75rem;
+                font-weight: 500;
+                color: var(--text-secondary);
+            }
+
+            /* Backup compact */
+            .backup-status-compact {
+                background: var(--bg-secondary);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .status-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .status-info-compact {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                font-weight: 500;
+            }
+
+            .status-indicator-mini {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.875rem;
+            }
+
+            .details-compact {
+                display: flex;
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .detail-mini {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.75rem;
+                color: var(--text-secondary);
+            }
+
+            .detail-mini code {
+                background: var(--bg-tertiary);
+                padding: 0.125rem 0.25rem;
+                border-radius: 0.25rem;
+                font-size: 0.625rem;
+            }
+
+            .backup-actions-compact {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .action-card-mini {
+                background: var(--bg-secondary);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 1rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                transition: all 0.2s;
+            }
+
+            .action-card-mini:hover {
+                border-color: var(--card-color);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+
+            .action-card-mini.primary { --card-color: var(--primary); }
+            .action-card-mini.secondary { --card-color: var(--secondary); }
+            .action-card-mini.accent { --card-color: var(--info); }
+
+            .card-header-mini {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                flex: 1;
+            }
+
+            .card-header-mini i {
+                width: 2rem;
+                height: 2rem;
+                background: var(--card-color);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.875rem;
+            }
+
+            .card-header-mini strong {
+                font-size: 0.875rem;
+                color: var(--text-primary);
+            }
+
+            .card-header-mini small {
+                font-size: 0.75rem;
+                color: var(--text-secondary);
+            }
+
+            .btn-compact {
+                padding: 0.5rem 1rem;
+                border: none;
+                border-radius: var(--radius);
+                font-size: 0.75rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                white-space: nowrap;
+            }
+
+            .btn-compact.btn-primary {
+                background: var(--primary);
+                color: white;
+            }
+
+            .btn-compact.btn-secondary {
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+                border: 1px solid var(--border);
+            }
+
+            .btn-compact.btn-accent {
+                background: var(--info);
+                color: white;
+            }
+
+            .btn-compact:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+
+            /* Historique compact */
+            .backup-history-compact {
+                background: var(--bg-tertiary);
+                border-radius: var(--radius);
+                padding: 1rem;
+            }
+
+            .history-header-mini {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1rem;
+                font-size: 0.875rem;
+            }
+
+            .btn-mini {
+                width: 2rem;
+                height: 2rem;
+                border: 1px solid var(--border);
+                background: var(--bg-secondary);
+                border-radius: 0.25rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.75rem;
+                color: var(--text-secondary);
+                transition: all 0.2s;
+            }
+
+            .btn-mini:hover {
+                border-color: var(--primary);
+                color: var(--primary);
+            }
+
+            .history-list-compact {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .history-item-mini {
+                background: var(--bg-secondary);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 0.75rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                transition: all 0.2s;
+            }
+
+            .history-item-mini:hover {
+                border-color: var(--primary);
+            }
+
+            .history-info-mini {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .history-info-mini i {
+                color: var(--primary);
+                font-size: 1rem;
+            }
+
+            .history-name-mini {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: var(--text-primary);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .history-meta-mini {
+                font-size: 0.625rem;
+                color: var(--text-secondary);
+            }
+
+            .history-actions-mini {
+                display: flex;
+                gap: 0.25rem;
+            }
+
+            .btn-icon-mini {
+                width: 1.5rem;
+                height: 1.5rem;
+                border: 1px solid var(--border);
+                background: var(--bg-secondary);
+                border-radius: 0.25rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.625rem;
+                color: var(--text-secondary);
+                transition: all 0.2s;
+            }
+
+            .btn-icon-mini:hover {
+                border-color: var(--primary);
+                color: var(--primary);
+            }
+
+            .btn-icon-mini.danger:hover {
+                background: var(--danger);
+                border-color: var(--danger);
+                color: white;
+            }
+
+            /* États vides compacts */
+            .empty-state-compact {
+                text-align: center;
+                padding: 2rem;
+                color: var(--text-secondary);
+                background: var(--bg-tertiary);
+                border-radius: var(--radius);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            .empty-state-mini {
+                text-align: center;
+                padding: 1rem;
+                color: var(--text-secondary);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                font-size: 0.875rem;
+            }
+
+            /* Toolbar compact */
+            .categories-toolbar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .section-title {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: var(--text-primary);
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .filter-tabs {
+                display: flex;
+                gap: 0.25rem;
+                background: var(--bg-tertiary);
+                padding: 0.25rem;
+                border-radius: var(--radius);
+            }
+
+            .filter-tab {
+                padding: 0.5rem 0.75rem;
+                border: none;
+                background: none;
+                border-radius: 0.25rem;
+                cursor: pointer;
+                font-size: 0.75rem;
+                font-weight: 500;
+                color: var(--text-secondary);
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+
+            .filter-tab:hover {
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+            }
+
+            .filter-tab.active {
+                background: var(--primary);
+                color: white;
+            }
+
+            /* Instructions modales */
+            .modal-instructions {
+                max-width: 700px;
+            }
+
+            .instructions-content {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .step-card {
+                display: flex;
+                gap: 1rem;
+                padding: 1rem;
+                background: var(--bg-tertiary);
+                border-radius: var(--radius);
+                border-left: 3px solid var(--primary);
+            }
+
+            .step-number {
+                width: 2rem;
+                height: 2rem;
+                background: var(--primary);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                flex-shrink: 0;
+            }
+
+            .step-content h4 {
+                margin: 0 0 0.5rem 0;
+                font-size: 1rem;
+                color: var(--text-primary);
+            }
+
+            .step-content p {
+                margin: 0;
+                font-size: 0.875rem;
+                color: var(--text-secondary);
+                line-height: 1.4;
+            }
+
+            .path-display {
+                display: flex;
+                gap: 0.5rem;
+                align-items: center;
+                margin-top: 0.5rem;
+                padding: 0.5rem;
+                background: var(--bg-secondary);
+                border-radius: 0.25rem;
+                border: 1px solid var(--border);
+            }
+
+            .path-display code {
+                flex: 1;
+                background: none;
+                border: none;
+                font-size: 0.75rem;
+                word-break: break-all;
+            }
+
+            .btn-copy-path {
+                padding: 0.25rem 0.5rem;
+                border: 1px solid var(--border);
+                background: var(--bg-tertiary);
+                border-radius: 0.25rem;
+                cursor: pointer;
+                font-size: 0.625rem;
+                transition: all 0.2s;
+            }
+
+            .btn-copy-path:hover {
+                background: var(--primary);
+                color: white;
+                border-color: var(--primary);
+            }
+
+            .tips-section {
+                background: var(--info)10;
+                border: 1px solid var(--info)30;
+                border-radius: var(--radius);
+                padding: 1rem;
+            }
+
+            .tips-section h4 {
+                margin: 0 0 0.5rem 0;
+                color: var(--info);
+                font-size: 0.875rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .folder-instructions {
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .step-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                margin-top: 0.5rem;
+            }
+
+            .step-item {
+                font-size: 0.875rem;
+                color: var(--text-secondary);
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            .alternative-method {
+                margin-top: 1rem;
+                padding: 0.75rem;
+                background: var(--warning)10;
+                border-radius: 0.25rem;
+                font-size: 0.875rem;
+                color: var(--warning);
+            }
+
+            .note-section {
+                background: var(--success)10;
+                border: 1px solid var(--success)30;
+                border-radius: var(--radius);
+                padding: 1rem;
+            }
+
+            .note-section p// SettingsPage.js - Version 2.0 Moderne et Fonctionnelle
 console.log('[SettingsPage] 🚀 Loading SettingsPage v2.0...');
 
 // Nettoyer toute instance précédente
@@ -169,59 +1076,43 @@ class SettingsPageV2 {
         const stats = this.calculateStats(categories);
         
         return `
-            <div class="stat-card primary" onclick="window.settingsPage.filterCategories('all')">
-                <div class="stat-icon">
+            <div class="stat-card-mini primary" onclick="window.settingsPage.filterCategories('all')">
+                <div class="stat-icon-mini">
                     <i class="fas fa-tags"></i>
                 </div>
-                <div class="stat-content">
-                    <div class="stat-number">${stats.total}</div>
-                    <div class="stat-label">Catégories totales</div>
-                    <div class="stat-trend">+${stats.custom} personnalisées</div>
-                </div>
-                <div class="stat-chart">
-                    <div class="mini-chart" style="--percentage: ${(stats.custom/stats.total)*100}%"></div>
+                <div class="stat-content-mini">
+                    <div class="stat-number-mini">${stats.total}</div>
+                    <div class="stat-label-mini">Total</div>
                 </div>
             </div>
 
-            <div class="stat-card success" onclick="window.settingsPage.filterCategories('active')">
-                <div class="stat-icon">
+            <div class="stat-card-mini success" onclick="window.settingsPage.filterCategories('active')">
+                <div class="stat-icon-mini">
                     <i class="fas fa-toggle-on"></i>
                 </div>
-                <div class="stat-content">
-                    <div class="stat-number">${stats.active}</div>
-                    <div class="stat-label">Catégories actives</div>
-                    <div class="stat-trend">${Math.round((stats.active/stats.total)*100)}% du total</div>
-                </div>
-                <div class="stat-chart">
-                    <div class="mini-chart" style="--percentage: ${(stats.active/stats.total)*100}%"></div>
+                <div class="stat-content-mini">
+                    <div class="stat-number-mini">${stats.active}</div>
+                    <div class="stat-label-mini">Actives</div>
                 </div>
             </div>
 
-            <div class="stat-card warning">
-                <div class="stat-icon">
+            <div class="stat-card-mini warning">
+                <div class="stat-icon-mini">
                     <i class="fas fa-star"></i>
                 </div>
-                <div class="stat-content">
-                    <div class="stat-number">${stats.preselected}</div>
-                    <div class="stat-label">Pré-sélectionnées</div>
-                    <div class="stat-trend">Pour les tâches</div>
-                </div>
-                <div class="stat-chart">
-                    <div class="mini-chart" style="--percentage: ${stats.preselected > 0 ? (stats.preselected/stats.total)*100 : 0}%"></div>
+                <div class="stat-content-mini">
+                    <div class="stat-number-mini">${stats.preselected}</div>
+                    <div class="stat-label-mini">Pré-sélect.</div>
                 </div>
             </div>
 
-            <div class="stat-card info">
-                <div class="stat-icon">
-                    <i class="fas fa-envelope"></i>
+            <div class="stat-card-mini info">
+                <div class="stat-icon-mini">
+                    <i class="fas fa-user"></i>
                 </div>
-                <div class="stat-content">
-                    <div class="stat-number">${stats.emails.toLocaleString()}</div>
-                    <div class="stat-label">Emails classés</div>
-                    <div class="stat-trend">Cette semaine</div>
-                </div>
-                <div class="stat-chart">
-                    <div class="mini-chart" style="--percentage: 85%"></div>
+                <div class="stat-content-mini">
+                    <div class="stat-number-mini">${stats.custom}</div>
+                    <div class="stat-label-mini">Perso.</div>
                 </div>
             </div>
         `;
@@ -233,15 +1124,12 @@ class SettingsPageV2 {
         
         if (Object.keys(categories).length === 0) {
             return `
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <i class="fas fa-folder-open"></i>
-                    </div>
-                    <h3>Aucune catégorie</h3>
-                    <p>Créez votre première catégorie pour organiser vos emails</p>
-                    <button class="btn-modern btn-primary" onclick="window.settingsPage.showCreateCategoryModal()">
+                <div class="empty-state-compact">
+                    <i class="fas fa-folder-open"></i>
+                    <span>Aucune catégorie</span>
+                    <button class="btn-compact btn-primary" onclick="window.settingsPage.showCreateCategoryModal()">
                         <i class="fas fa-plus"></i>
-                        Créer une catégorie
+                        Créer
                     </button>
                 </div>
             `;
@@ -255,65 +1143,49 @@ class SettingsPageV2 {
                 const stats = this.getCategoryStats(id);
                 
                 return `
-                    <div class="category-card ${!isActive ? 'inactive' : ''}" 
+                    <div class="category-card-compact ${!isActive ? 'inactive' : ''}" 
                          style="--category-color: ${category.color}"
                          onclick="window.settingsPage.toggleCategorySelection('${id}')">
                         
-                        <div class="category-header">
-                            <div class="category-icon" style="background: ${category.color}">
-                                ${category.icon || '📁'}
-                            </div>
-                            <div class="category-badges">
-                                ${category.isCustom ? '<span class="badge custom">Personnalisée</span>' : ''}
-                                ${isPreselected ? '<span class="badge preselected">⭐ Pré-sélectionnée</span>' : ''}
-                                <span class="badge status ${isActive ? 'active' : 'inactive'}">
-                                    ${isActive ? 'Active' : 'Inactive'}
-                                </span>
+                        <div class="category-icon-mini" style="background: ${category.color}">
+                            ${category.icon || '📁'}
+                        </div>
+                        
+                        <div class="category-info-compact">
+                            <div class="category-name-mini">${category.name}</div>
+                            <div class="category-stats-mini">
+                                ${stats.emails}📧 ${stats.keywords}🔑
+                                ${isPreselected ? ' ⭐' : ''}
+                                ${category.isCustom ? ' 👤' : ''}
                             </div>
                         </div>
 
-                        <div class="category-body">
-                            <h3 class="category-name">${category.name}</h3>
-                            <div class="category-stats">
-                                <div class="stat-item">
-                                    <i class="fas fa-envelope"></i>
-                                    <span>${stats.emails} emails</span>
-                                </div>
-                                <div class="stat-item">
-                                    <i class="fas fa-key"></i>
-                                    <span>${stats.keywords} mots-clés</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="category-footer">
-                            <div class="category-actions" onclick="event.stopPropagation()">
-                                <button class="action-btn ${isActive ? 'active' : 'inactive'}" 
-                                        onclick="window.settingsPage.toggleCategory('${id}')"
-                                        title="${isActive ? 'Désactiver' : 'Activer'}">
-                                    <i class="fas fa-${isActive ? 'toggle-on' : 'toggle-off'}"></i>
+                        <div class="category-actions-mini" onclick="event.stopPropagation()">
+                            <button class="action-btn-mini ${isActive ? 'active' : 'inactive'}" 
+                                    onclick="window.settingsPage.toggleCategory('${id}')"
+                                    title="${isActive ? 'Désactiver' : 'Activer'}">
+                                <i class="fas fa-${isActive ? 'toggle-on' : 'toggle-off'}"></i>
+                            </button>
+                            
+                            <button class="action-btn-mini ${isPreselected ? 'selected' : ''}" 
+                                    onclick="window.settingsPage.togglePreselection('${id}')"
+                                    title="Pré-sélection">
+                                <i class="fas fa-star"></i>
+                            </button>
+                            
+                            <button class="action-btn-mini" 
+                                    onclick="window.settingsPage.editCategory('${id}')"
+                                    title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            
+                            ${category.isCustom ? `
+                                <button class="action-btn-mini danger" 
+                                        onclick="window.settingsPage.deleteCategory('${id}')"
+                                        title="Supprimer">
+                                    <i class="fas fa-trash"></i>
                                 </button>
-                                
-                                <button class="action-btn ${isPreselected ? 'selected' : ''}" 
-                                        onclick="window.settingsPage.togglePreselection('${id}')"
-                                        title="Pré-sélection pour tâches">
-                                    <i class="fas fa-star"></i>
-                                </button>
-                                
-                                <button class="action-btn" 
-                                        onclick="window.settingsPage.editCategory('${id}')"
-                                        title="Modifier">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                
-                                ${category.isCustom ? `
-                                    <button class="action-btn danger" 
-                                            onclick="window.settingsPage.deleteCategory('${id}')"
-                                            title="Supprimer">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                ` : ''}
-                            </div>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -325,147 +1197,116 @@ class SettingsPageV2 {
     // ================================================
     renderBackupContent() {
         return `
-            <!-- Status du système -->
-            <div class="backup-status-section">
-                <div class="status-card">
-                    <div class="status-header">
-                        <div class="status-icon">
-                            <i class="fas fa-shield-alt"></i>
-                        </div>
-                        <div class="status-info">
-                            <h3>Système de sauvegarde</h3>
-                            <div class="status-indicator" id="backup-status">
-                                <span class="status-dot loading"></span>
-                                <span>Initialisation...</span>
-                            </div>
+            <!-- Status compact -->
+            <div class="backup-status-compact">
+                <div class="status-row">
+                    <div class="status-info-compact">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Système de sauvegarde</span>
+                        <div class="status-indicator-mini" id="backup-status">
+                            <span class="status-dot loading"></span>
+                            <span>Init...</span>
                         </div>
                     </div>
-                    <div class="status-details" id="backup-details">
+                    <div class="status-details-compact" id="backup-details">
                         <!-- Sera rempli par JS -->
                     </div>
                 </div>
             </div>
 
-            <!-- Actions principales -->
-            <div class="backup-actions-section">
-                <div class="actions-grid">
-                    <div class="action-card primary">
-                        <div class="card-icon">
-                            <i class="fas fa-cloud-upload-alt"></i>
+            <!-- Actions compactes -->
+            <div class="backup-actions-compact">
+                <div class="action-card-mini primary">
+                    <div class="card-header-mini">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <div>
+                            <strong>Sauvegarde complète</strong>
+                            <small>Toutes vos données</small>
                         </div>
-                        <div class="card-content">
-                            <h3>Sauvegarde complète</h3>
-                            <p>Créez une sauvegarde de toutes vos données : catégories, paramètres et configuration.</p>
-                            <div class="card-features">
-                                <span><i class="fas fa-check"></i> Catégories personnalisées</span>
-                                <span><i class="fas fa-check"></i> Paramètres utilisateur</span>
-                                <span><i class="fas fa-check"></i> Historique des emails</span>
-                            </div>
-                        </div>
-                        <button class="btn-card btn-primary" onclick="window.settingsPage.createFullBackup()" id="backup-btn">
-                            <i class="fas fa-save"></i>
-                            Créer maintenant
-                        </button>
                     </div>
+                    <button class="btn-compact btn-primary" onclick="window.settingsPage.createFullBackup()" id="backup-btn">
+                        <i class="fas fa-save"></i>
+                        Créer
+                    </button>
+                </div>
 
-                    <div class="action-card secondary">
-                        <div class="card-icon">
-                            <i class="fas fa-file-import"></i>
+                <div class="action-card-mini secondary">
+                    <div class="card-header-mini">
+                        <i class="fas fa-file-import"></i>
+                        <div>
+                            <strong>Restauration</strong>
+                            <small>Importer fichier JSON</small>
                         </div>
-                        <div class="card-content">
-                            <h3>Restauration</h3>
-                            <p>Restaurez vos données à partir d'un fichier de sauvegarde existant.</p>
-                            <div class="card-features">
-                                <span><i class="fas fa-upload"></i> Import de fichier JSON</span>
-                                <span><i class="fas fa-check"></i> Validation automatique</span>
-                                <span><i class="fas fa-shield"></i> Sauvegarde préventive</span>
-                            </div>
-                        </div>
-                        <button class="btn-card btn-secondary" onclick="window.settingsPage.importBackup()">
-                            <i class="fas fa-file-import"></i>
-                            Importer un fichier
-                        </button>
                     </div>
+                    <button class="btn-compact btn-secondary" onclick="window.settingsPage.importBackup()">
+                        <i class="fas fa-upload"></i>
+                        Importer
+                    </button>
+                </div>
 
-                    <div class="action-card accent">
-                        <div class="card-icon">
-                            <i class="fas fa-sync-alt"></i>
+                <div class="action-card-mini accent">
+                    <div class="card-header-mini">
+                        <i class="fas fa-folder-open"></i>
+                        <div>
+                            <strong>Ouvrir dossier</strong>
+                            <small>Dossier de sauvegarde</small>
                         </div>
-                        <div class="card-content">
-                            <h3>Sauvegarde auto</h3>
-                            <p>Configuration de la sauvegarde automatique lors des modifications.</p>
-                            <div class="card-features">
-                                <span><i class="fas fa-clock"></i> Sauvegarde planifiée</span>
-                                <span><i class="fas fa-magic"></i> Déclenchement intelligent</span>
-                                <span><i class="fas fa-history"></i> Versioning automatique</span>
-                            </div>
-                        </div>
-                        <button class="btn-card btn-accent" onclick="window.settingsPage.configureAutoBackup()">
-                            <i class="fas fa-cog"></i>
-                            Configurer
-                        </button>
                     </div>
+                    <button class="btn-compact btn-accent" onclick="window.settingsPage.openBackupFolder()">
+                        <i class="fas fa-external-link-alt"></i>
+                        Ouvrir
+                    </button>
                 </div>
             </div>
 
-            <!-- Historique -->
-            <div class="backup-history-section">
-                <div class="history-header">
-                    <h3><i class="fas fa-history"></i> Historique des sauvegardes</h3>
-                    <button class="btn-modern btn-secondary" onclick="window.settingsPage.refreshBackupHistory()">
+            <!-- Historique compact -->
+            <div class="backup-history-compact">
+                <div class="history-header-mini">
+                    <strong><i class="fas fa-history"></i> Historique</strong>
+                    <button class="btn-mini" onclick="window.settingsPage.refreshBackupHistory()">
                         <i class="fas fa-sync-alt"></i>
-                        Actualiser
                     </button>
                 </div>
-                <div class="history-content" id="backup-history">
-                    ${this.renderBackupHistory()}
+                <div class="history-list-compact" id="backup-history">
+                    ${this.renderBackupHistoryCompact()}
                 </div>
             </div>
         `;
     }
 
-    renderBackupHistory() {
+    renderBackupHistoryCompact() {
         const history = this.backupManager.getHistory();
         
         if (history.length === 0) {
             return `
-                <div class="empty-state">
-                    <div class="empty-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <h3>Aucune sauvegarde</h3>
-                    <p>Créez votre première sauvegarde pour commencer</p>
+                <div class="empty-state-mini">
+                    <i class="fas fa-clock"></i>
+                    <span>Aucune sauvegarde</span>
                 </div>
             `;
         }
 
-        return `
-            <div class="history-list">
-                ${history.map(backup => `
-                    <div class="history-item">
-                        <div class="history-icon">
-                            <i class="fas fa-file-archive"></i>
-                        </div>
-                        <div class="history-info">
-                            <div class="history-name">${backup.name}</div>
-                            <div class="history-meta">
-                                ${new Date(backup.date).toLocaleString('fr-FR')} • 
-                                ${this.formatFileSize(backup.size)} • 
-                                ${backup.categories || 0} catégories
-                            </div>
-                        </div>
-                        <div class="history-actions">
-                            <button class="btn-icon" onclick="window.settingsPage.downloadBackup('${backup.id}')" title="Télécharger">
-                                <i class="fas fa-download"></i>
-                            </button>
-                            <button class="btn-icon danger" onclick="window.settingsPage.deleteBackupRecord('${backup.id}')" title="Supprimer">
-                                <i class="fas fa-trash"></i>
-                            </button>
+        return history.slice(0, 5).map(backup => `
+            <div class="history-item-mini">
+                <div class="history-info-mini">
+                    <i class="fas fa-file-archive"></i>
+                    <div>
+                        <div class="history-name-mini">${backup.name.substring(0, 30)}...</div>
+                        <div class="history-meta-mini">
+                            ${new Date(backup.date).toLocaleDateString('fr-FR')} • ${this.formatFileSize(backup.size)}
                         </div>
                     </div>
-                `).join('')}
+                </div>
+                <div class="history-actions-mini">
+                    <button class="btn-icon-mini" onclick="window.settingsPage.downloadBackup('${backup.id}')" title="Télécharger">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="btn-icon-mini danger" onclick="window.settingsPage.deleteBackupRecord('${backup.id}')" title="Supprimer">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
-        `;
+        `).join('');
     }
 
     // ================================================
@@ -856,22 +1697,92 @@ class SettingsPageV2 {
         const detailsEl = document.getElementById('backup-details');
         if (!detailsEl) return;
 
+        const username = this.backupManager.getUsername() || 'utilisateur';
+        const backupPath = this.backupManager.getBackupPath() || 'Dossier de téléchargement';
+
         detailsEl.innerHTML = `
-            <div class="status-details-grid">
-                <div class="detail-item">
+            <div class="details-compact">
+                <div class="detail-mini">
+                    <i class="fas fa-user"></i>
+                    <span>Utilisateur: <strong>${username}</strong></span>
+                </div>
+                <div class="detail-mini">
                     <i class="fas fa-folder"></i>
-                    <span>Dossier: Téléchargements du navigateur</span>
+                    <span>Dossier: <code>${backupPath}</code></span>
                 </div>
-                <div class="detail-item">
+                <div class="detail-mini">
                     <i class="fas fa-shield-alt"></i>
-                    <span>Sécurité: Données 100% locales</span>
-                </div>
-                <div class="detail-item">
-                    <i class="fas fa-download"></i>
-                    <span>Mode: Téléchargement automatique</span>
+                    <span>100% local et sécurisé</span>
                 </div>
             </div>
         `;
+    }
+
+    openBackupFolder() {
+        const backupPath = this.backupManager.getBackupPath();
+        const username = this.backupManager.getUsername();
+        
+        if (!backupPath || !username) {
+            this.showToast('Chemin de sauvegarde non configuré', 'warning');
+            return;
+        }
+
+        // Créer une modal avec instructions pour ouvrir le dossier
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.innerHTML = `
+            <div class="modal-modern">
+                <div class="modal-header">
+                    <h2><i class="fas fa-folder-open"></i> Ouvrir le dossier de sauvegarde</h2>
+                    <button class="btn-close" onclick="this.closest('.modal-backdrop').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="folder-instructions">
+                        <div class="path-section">
+                            <h4>📁 Chemin du dossier</h4>
+                            <div class="path-display">
+                                <code>${backupPath}</code>
+                                <button class="btn-copy-path" onclick="navigator.clipboard.writeText('${backupPath.replace(/\\/g, '\\\\')}'); this.innerHTML='✅ Copié!'">
+                                    📋 Copier
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="instructions-steps">
+                            <h4>🔍 Comment y accéder :</h4>
+                            <div class="step-list">
+                                <div class="step-item">
+                                    <strong>1.</strong> Appuyez sur <kbd>Win + R</kbd>
+                                </div>
+                                <div class="step-item">
+                                    <strong>2.</strong> Collez le chemin ci-dessus
+                                </div>
+                                <div class="step-item">
+                                    <strong>3.</strong> Appuyez sur <kbd>Entrée</kbd>
+                                </div>
+                            </div>
+                            
+                            <div class="alternative-method">
+                                <strong>Ou :</strong> Ouvrez l'Explorateur de fichiers → Documents → Créez "MailSort Pro"
+                            </div>
+                        </div>
+
+                        <div class="note-section">
+                            <p><i class="fas fa-info-circle"></i> <strong>Note :</strong> Si le dossier n'existe pas, créez-le manuellement. Les sauvegardes futures y seront automatiquement suggérées.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-modern btn-primary" onclick="this.closest('.modal-backdrop').remove()">
+                        <i class="fas fa-check"></i>
+                        Compris
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
     }
 
     async createFullBackup() {
@@ -2616,11 +3527,113 @@ class BackupManagerV2 {
     constructor() {
         this.isInitialized = false;
         this.history = this.loadHistory();
+        this.backupPath = null;
+        this.username = null;
     }
 
     async initialize() {
-        this.isInitialized = true;
-        console.log('[BackupManager] ✅ Initialisé');
+        try {
+            // Détecter le nom d'utilisateur
+            this.username = await this.detectUsername();
+            
+            // Définir le chemin de sauvegarde
+            this.backupPath = `C:\\Users\\${this.username}\\Documents\\MailSort Pro`;
+            
+            // Créer le dossier (simulation - en réalité on ne peut pas créer de dossiers depuis le navigateur)
+            this.isInitialized = true;
+            
+            console.log('[BackupManager] ✅ Initialisé - Dossier:', this.backupPath);
+            return this.backupPath;
+        } catch (error) {
+            console.error('[BackupManager] Erreur initialisation:', error);
+            this.backupPath = 'Dossier Téléchargements';
+            this.isInitialized = true;
+        }
+    }
+
+    async detectUsername() {
+        try {
+            // Méthode 1: Via l'utilisateur Windows/OS connecté
+            if (window.navigator.userAgentData) {
+                // API moderne (limitée)
+                console.log('[BackupManager] Tentative détection via UserAgentData...');
+            }
+
+            // Méthode 2: Via les variables d'environnement (si Electron)
+            if (typeof process !== 'undefined' && process.env) {
+                const envUsername = process.env.USERNAME || process.env.USER;
+                if (envUsername && envUsername !== 'User') {
+                    console.log('[BackupManager] ✅ Nom utilisateur détecté via ENV:', envUsername);
+                    return envUsername;
+                }
+            }
+
+            // Méthode 3: Via l'authentification Microsoft (si disponible)
+            if (window.authService && window.authService.isAuthenticated && window.authService.isAuthenticated()) {
+                try {
+                    const userInfo = await window.authService.getUserInfo();
+                    if (userInfo && userInfo.userPrincipalName) {
+                        const emailPart = userInfo.userPrincipalName.split('@')[0];
+                        let username = emailPart.split('.')[0];
+                        username = username.replace(/[^a-zA-Z0-9]/g, '');
+                        
+                        if (username && username.length > 2) {
+                            console.log('[BackupManager] ✅ Nom utilisateur extrait de l\'email:', username);
+                            return username;
+                        }
+                    }
+                } catch (error) {
+                    console.log('[BackupManager] ⚠️ Erreur auth Microsoft:', error);
+                }
+            }
+
+            // Méthode 4: Demander à l'utilisateur
+            const userInput = this.askUserForUsername();
+            if (userInput) {
+                console.log('[BackupManager] ✅ Nom utilisateur saisi:', userInput);
+                localStorage.setItem('mailsort-username', userInput);
+                return userInput;
+            }
+
+            // Méthode 5: Utiliser celui sauvegardé
+            const savedUsername = localStorage.getItem('mailsort-username');
+            if (savedUsername) {
+                console.log('[BackupManager] ✅ Nom utilisateur sauvegardé:', savedUsername);
+                return savedUsername;
+            }
+
+            // Fallback
+            console.log('[BackupManager] ⚠️ Utilisation du fallback');
+            return 'utilisateur';
+            
+        } catch (error) {
+            console.error('[BackupManager] ❌ Erreur détection nom utilisateur:', error);
+            return 'utilisateur';
+        }
+    }
+
+    askUserForUsername() {
+        const username = prompt(`🔍 Détection du nom d'utilisateur Windows
+
+Pour créer le dossier de sauvegarde au bon endroit, veuillez saisir votre nom d'utilisateur Windows.
+
+Le dossier sera créé dans :
+C:\\Users\\[VOTRE_NOM]\\Documents\\MailSort Pro
+
+Nom d'utilisateur Windows :`);
+
+        if (username && username.trim().length > 0) {
+            return username.trim().replace(/[^a-zA-Z0-9._-]/g, '');
+        }
+        return null;
+    }
+
+    getBackupPath() {
+        return this.backupPath;
+    }
+
+    getUsername() {
+        return this.username;
     }
 
     async createBackup() {
@@ -2633,13 +3646,38 @@ class BackupManagerV2 {
                 totalCategories: Object.keys(window.settingsPage.getCategories()).length,
                 createdAt: new Date().toISOString(),
                 application: 'MailSort Pro v2.0',
-                userAgent: navigator.userAgent
+                userAgent: navigator.userAgent,
+                username: this.username,
+                backupPath: this.backupPath,
+                instructions: `Fichier à placer dans : ${this.backupPath}`
             }
         };
 
         const filename = `mailsort-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
 
+        // Créer un lien de téléchargement avec instructions
+        this.downloadWithInstructions(blob, filename);
+
+        // Ajouter à l'historique
+        const record = {
+            id: Date.now().toString(),
+            name: filename,
+            date: new Date().toISOString(),
+            size: blob.size,
+            categories: Object.keys(backupData.categories).length,
+            type: 'complete',
+            path: `${this.backupPath}\\${filename}`
+        };
+
+        this.history.unshift(record);
+        this.history = this.history.slice(0, 20);
+        this.saveHistory();
+
+        return backupData;
+    }
+
+    downloadWithInstructions(blob, filename) {
         // Télécharger le fichier
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -2651,21 +3689,74 @@ class BackupManagerV2 {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        // Ajouter à l'historique
-        const record = {
-            id: Date.now().toString(),
-            name: filename,
-            date: new Date().toISOString(),
-            size: blob.size,
-            categories: Object.keys(backupData.categories).length,
-            type: 'complete'
-        };
+        // Afficher les instructions
+        setTimeout(() => {
+            this.showBackupInstructions(filename);
+        }, 1000);
+    }
 
-        this.history.unshift(record);
-        this.history = this.history.slice(0, 20); // Garder 20 max
-        this.saveHistory();
+    showBackupInstructions(filename) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-backdrop';
+        modal.innerHTML = `
+            <div class="modal-modern modal-instructions">
+                <div class="modal-header">
+                    <h2><i class="fas fa-info-circle"></i> Instructions de sauvegarde</h2>
+                    <button class="btn-close" onclick="this.closest('.modal-backdrop').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="instructions-content">
+                        <div class="step-card">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h4>Fichier téléchargé</h4>
+                                <p>Le fichier <code>${filename}</code> a été téléchargé dans votre dossier Téléchargements.</p>
+                            </div>
+                        </div>
 
-        return backupData;
+                        <div class="step-card">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h4>Créer le dossier de destination</h4>
+                                <p>Créez le dossier suivant s'il n'existe pas :</p>
+                                <div class="path-display">
+                                    <code>${this.backupPath}</code>
+                                    <button class="btn-copy-path" onclick="navigator.clipboard.writeText('${this.backupPath.replace(/\\/g, '\\\\')}'); this.innerHTML='✅ Copié!'">
+                                        📋 Copier
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step-card">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h4>Déplacer le fichier</h4>
+                                <p>Déplacez le fichier téléchargé vers le dossier créé pour une organisation optimale.</p>
+                            </div>
+                        </div>
+
+                        <div class="tips-section">
+                            <h4><i class="fas fa-lightbulb"></i> Conseil</h4>
+                            <p>Vous pouvez également laisser le fichier dans Téléchargements, il sera fonctionnel partout !</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-modern btn-secondary" onclick="window.settingsPage.openBackupFolder()">
+                        <i class="fas fa-folder-open"></i>
+                        Ouvrir le dossier
+                    </button>
+                    <button class="btn-modern btn-primary" onclick="this.closest('.modal-backdrop').remove()">
+                        <i class="fas fa-check"></i>
+                        Compris
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
     }
 
     getHistory() {
