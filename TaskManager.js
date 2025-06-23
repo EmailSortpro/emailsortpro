@@ -3534,7 +3534,7 @@ class TasksView {
             .status-filters-panel.show,
             .category-filters-panel.show,
             .advanced-filters-panel.show {
-                max-height: 200px;
+                max-height: 300px;
                 opacity: 1;
                 padding: 20px;
                 margin-bottom: 12px;
@@ -3590,6 +3590,7 @@ class TasksView {
                 display: flex;
                 gap: 8px;
                 flex-wrap: wrap;
+                justify-content: flex-start;
             }
 
             /* Filtres de catégories dans panel conditionnel */
@@ -3597,6 +3598,7 @@ class TasksView {
                 display: flex;
                 gap: 8px;
                 flex-wrap: wrap;
+                justify-content: flex-start;
             }
 
             /* Filtres avancés dans panel conditionnel */
@@ -3669,83 +3671,7 @@ class TasksView {
                 transform: translateY(-1px);
             }
 
-            /* Filtres de statut */
-            .status-filters {
-                display: flex;
-                gap: 8px;
-                flex: 1;
-                flex-wrap: wrap;
-            }
-
-            .status-pill {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                padding: 8px 12px;
-                background: white;
-                border: 2px solid var(--border-color);
-                border-radius: 8px;
-                cursor: pointer;
-                transition: var(--transition);
-                font-size: 12px;
-                font-weight: 600;
-                color: var(--text-primary);
-                min-width: 90px;
-                justify-content: space-between;
-                position: relative;
-                overflow: hidden;
-            }
-
-            .status-pill:hover {
-                border-color: var(--pill-color, var(--primary-color));
-                background: rgba(59, 130, 246, 0.05);
-                transform: translateY(-1px);
-                box-shadow: var(--shadow-sm);
-            }
-
-            .status-pill.active {
-                background: var(--pill-color, var(--primary-color));
-                color: white;
-                border-color: var(--pill-color, var(--primary-color));
-                box-shadow: var(--shadow-md);
-            }
-
-            .status-pill.active .pill-count {
-                background: rgba(255, 255, 255, 0.3);
-                color: white;
-            }
-
-            .pill-icon {
-                font-size: 14px;
-                flex-shrink: 0;
-            }
-
-            .pill-text {
-                flex: 1;
-                text-align: center;
-                font-size: 11px;
-                white-space: nowrap;
-            }
-
-            .pill-count {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 2px 6px;
-                border-radius: 6px;
-                font-size: 10px;
-                font-weight: 700;
-                min-width: 20px;
-                text-align: center;
-                flex-shrink: 0;
-            }
-
-            /* Filtres de catégories */
-            .category-filters {
-                display: flex;
-                gap: 8px;
-                flex: 1;
-                flex-wrap: wrap;
-            }
-
+            .status-pill,
             .category-pill {
                 display: flex;
                 align-items: center;
@@ -3763,8 +3689,11 @@ class TasksView {
                 justify-content: space-between;
                 position: relative;
                 overflow: hidden;
+                flex-shrink: 0;
+                margin: 2px;
             }
 
+            .status-pill:hover,
             .category-pill:hover {
                 border-color: var(--pill-color, var(--primary-color));
                 background: rgba(59, 130, 246, 0.05);
@@ -3772,6 +3701,7 @@ class TasksView {
                 box-shadow: var(--shadow-sm);
             }
 
+            .status-pill.active,
             .category-pill.active {
                 background: var(--pill-color, var(--primary-color));
                 color: white;
@@ -3779,6 +3709,7 @@ class TasksView {
                 box-shadow: var(--shadow-md);
             }
 
+            .status-pill.active .pill-count,
             .category-pill.active .pill-count {
                 background: rgba(255, 255, 255, 0.3);
                 color: white;
@@ -4889,14 +4820,15 @@ class TasksView {
 
                 .status-filters,
                 .category-filters {
-                    flex-direction: column;
+                    flex-direction: row;
                     gap: 6px;
+                    flex-wrap: wrap;
                 }
 
                 .status-pill,
                 .category-pill {
                     min-width: auto;
-                    width: 100%;
+                    flex: 0 1 auto;
                     justify-content: space-between;
                 }
             }
