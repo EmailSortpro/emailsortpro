@@ -646,8 +646,120 @@ class SettingsPageVisual {
     }
 
     // ================================================
-    // MÉTHODES UTILITAIRES
+    // MODALES COMPLÈTES CATÉGORIES (Ajout des méthodes manquantes)
     // ================================================
+    
+    showCreateCategoryModal() {
+        this.closeModal();
+        
+        const uniqueId = 'create_category_modal_' + Date.now();
+        const modalHTML = `
+            <div id="${uniqueId}" class="modal-backdrop" onclick="if(event.target === this) window.settingsPage.closeModal('${uniqueId}')">
+                <div class="modal-simple">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-plus"></i> Nouvelle catégorie</h2>
+                        <button class="btn-close" onclick="window.settingsPage.closeModal('${uniqueId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Nom de la catégorie</label>
+                            <input type="text" id="category-name" placeholder="Ex: Factures, Newsletter..." autofocus>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Icône</label>
+                            <div class="icon-selector">
+                                ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌'].map((icon, i) => 
+                                    `<button class="icon-option ${i === 0 ? 'selected' : ''}" onclick="window.settingsPage.selectIcon('${icon}')">${icon}</button>`
+                                ).join('')}
+                            </div>
+                            <input type="hidden" id="category-icon" value="📁">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Couleur</label>
+                            <div class="color-selector">
+                                ${this.colors.map((color, i) => 
+                                    `<button class="color-option ${i === 0 ? 'selected' : ''}" 
+                                             style="background: ${color}"
+                                             onclick="window.settingsPage.selectColor('${color}')"></button>`
+                                ).join('')}
+                            </div>
+                            <input type="hidden" id="category-color" value="${this.colors[0]}">
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="window.settingsPage.closeModal('${uniqueId}')">Annuler</button>
+                        <button class="btn-primary" onclick="window.settingsPage.createCategory('${uniqueId}')">
+                            <i class="fas fa-plus"></i> Créer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        this.currentModal = uniqueId;
+        
+        setTimeout(() => document.getElementById('category-name')?.focus(), 100);
+    }
+
+    selectIcon(icon) {
+        document.getElementById('category-icon').value = icon;
+        document.querySelectorAll('.icon-option').forEach(btn => {
+            btn.classList.toggle('selected', btn.textContent === icon);
+        });
+    }
+
+    selectColor(color) {
+        document.getElementById('category-color').value = color;
+        document.querySelectorAll('.color-option').forEach(btn => {
+            btn.classList.toggle('selected', btn.style.background === color);
+        });
+    }
+
+    createCategory(modalId) {
+        const name = document.getElementById('category-name')?.value?.trim();
+        const icon = document.getElementById('category-icon')?.value || '📁';
+        const color = document.getElementById('category-color')?.value || this.colors[0];
+        
+        if (!name) {
+            this.showToast('Le nom est requis', 'error');
+            return;
+        }
+        
+        const categoryData = {
+            name,
+            icon,
+            color,
+            priority: 30,
+            keywords: { absolute: [], strong: [], weak: [], exclusions: [] },
+            isCustom: true
+        };
+        
+        try {
+            const newCategory = window.categoryManager?.createCustomCategory(categoryData);
+            
+            if (newCategory) {
+                this.closeModal(modalId);
+                this.showToast('Catégorie créée avec succès!');
+                this.refreshCategoriesTab();
+                
+                // Déclencher sauvegarde automatique
+                this.triggerAutoBackup('Création de catégorie');
+            } else {
+                this.showToast('Erreur lors de la création', 'error');
+            }
+        } catch (error) {
+            console.error('[SettingsPage] Erreur création catégorie:', error);
+            this.showToast('Erreur lors de la création', 'error');
+        }
+    }
     formatTimeAgo(timestamp) {
         const now = new Date();
         const time = new Date(timestamp);
@@ -752,20 +864,24 @@ class SettingsPageVisual {
             const isPreselected = settings.taskPreselectedCategories?.includes(id) || false;
             
             return `
-                <div class="category-card ${!isActive ? 'inactive' : ''} ${isPreselected ? 'preselected' : ''}" data-category-id="${id}">
+                <div class="category-card ${!isActive ? 'inactive' : ''} ${isPreselected ? 'preselected' : ''}" 
+                     data-category-id="${id}">
                     <div class="category-card-header">
-                        <div class="category-icon-large" style="background: ${category.color}20; color: ${category.color}">
+                        <div class="category-icon-large" 
+                             style="background: ${category.color}20; color: ${category.color}"
+                             onclick="window.settingsPage.editCategory('${id}')"
+                             title="Cliquer pour modifier">
                             ${category.icon}
                         </div>
                         <div class="category-actions-compact">
                             <button class="action-btn-compact ${isActive ? 'active' : 'inactive'}" 
-                                    onclick="window.settingsPage.toggleCategory('${id}')"
+                                    onclick="event.stopPropagation(); window.settingsPage.toggleCategory('${id}')"
                                     title="${isActive ? 'Désactiver' : 'Activer'}">
                                 <i class="fas fa-${isActive ? 'toggle-on' : 'toggle-off'}"></i>
                             </button>
                             ${category.isCustom ? `
                                 <button class="action-btn-compact danger" 
-                                        onclick="window.settingsPage.deleteCategory('${id}')"
+                                        onclick="event.stopPropagation(); window.settingsPage.deleteCategory('${id}')"
                                         title="Supprimer">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -773,16 +889,17 @@ class SettingsPageVisual {
                         </div>
                     </div>
                     
-                    <div class="category-card-content">
+                    <div class="category-card-content" onclick="window.settingsPage.editCategory('${id}')" 
+                         style="cursor: pointer;" title="Cliquer pour modifier">
                         <h4 class="category-name">${category.name}</h4>
                         <div class="category-stats">
                             <div class="stat-item">
                                 <i class="fas fa-envelope"></i>
-                                <span>${stats.emailCount}</span>
+                                <span>${stats.emailCount} emails</span>
                             </div>
                             <div class="stat-item">
                                 <i class="fas fa-key"></i>
-                                <span>${stats.keywords}</span>
+                                <span>${stats.keywords} mots-clés</span>
                             </div>
                         </div>
                         
@@ -796,14 +913,14 @@ class SettingsPageVisual {
                     
                     <div class="category-card-footer">
                         <button class="btn-card-action ${isPreselected ? 'selected' : ''}" 
-                                onclick="window.settingsPage.togglePreselection('${id}')"
+                                onclick="event.stopPropagation(); window.settingsPage.togglePreselection('${id}')"
                                 title="Pré-sélection pour tâches">
                             <i class="fas fa-star"></i>
                             ${isPreselected ? 'Pré-sélectionnée' : 'Pré-sélectionner'}
                         </button>
                         <button class="btn-card-action secondary" 
-                                onclick="window.settingsPage.editCategory('${id}')"
-                                title="Modifier">
+                                onclick="event.stopPropagation(); window.settingsPage.editCategory('${id}')"
+                                title="Modifier et voir mots-clés">
                             <i class="fas fa-edit"></i>
                             Modifier
                         </button>
@@ -2752,7 +2869,465 @@ Tapez "RESET" pour confirmer :`);
                 display: block;
             }
 
-            /* Responsive pour grille de catégories */
+            /* Modales de catégories */
+            .modal-backdrop {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                backdrop-filter: blur(8px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                padding: 20px;
+            }
+            
+            .modal-simple {
+                background: white;
+                border-radius: var(--radius);
+                width: 100%;
+                max-width: 500px;
+                box-shadow: var(--shadow-lg);
+                overflow: hidden;
+            }
+
+            .modal-edit {
+                background: white;
+                border-radius: var(--radius);
+                width: 100%;
+                max-width: 800px;
+                max-height: 90vh;
+                box-shadow: var(--shadow-lg);
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .modal-header {
+                padding: 20px;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .modal-title {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .modal-icon {
+                font-size: 24px;
+            }
+            
+            .modal-header h2 {
+                margin: 0;
+                font-size: 18px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .btn-close {
+                width: 32px;
+                height: 32px;
+                border: none;
+                background: var(--bg);
+                border-radius: 6px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--text-light);
+                transition: var(--transition);
+            }
+            
+            .btn-close:hover {
+                background: var(--danger);
+                color: white;
+            }
+            
+            .modal-body {
+                padding: 20px;
+            }
+
+            .modal-content {
+                padding: 24px;
+                overflow-y: auto;
+                flex: 1;
+            }
+
+            .modal-tabs {
+                display: flex;
+                background: var(--bg);
+                border-bottom: 1px solid var(--border);
+                padding: 0 20px;
+            }
+            
+            .tab-btn {
+                padding: 12px 20px;
+                border: none;
+                background: none;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text-light);
+                font-weight: 500;
+                border-bottom: 2px solid transparent;
+                transition: all 0.2s;
+            }
+            
+            .tab-btn:hover {
+                color: var(--text);
+                background: white;
+            }
+            
+            .tab-btn.active {
+                color: var(--primary);
+                border-bottom-color: var(--primary);
+                background: white;
+            }
+            
+            .edit-tab-content {
+                display: none;
+            }
+            
+            .edit-tab-content.active {
+                display: block;
+            }
+            
+            .form-group {
+                margin-bottom: 20px;
+            }
+            
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 500;
+                color: var(--text);
+            }
+            
+            .form-group input {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-size: 14px;
+                box-sizing: border-box;
+            }
+            
+            .form-group input:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+            
+            .icon-selector, .color-selector {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+                gap: 8px;
+            }
+            
+            .icon-option {
+                width: 40px;
+                height: 40px;
+                border: 1px solid var(--border);
+                background: white;
+                border-radius: 6px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                transition: all 0.2s;
+            }
+            
+            .icon-option:hover {
+                border-color: var(--primary);
+            }
+            
+            .icon-option.selected {
+                border-color: var(--primary);
+                background: rgba(59, 130, 246, 0.1);
+            }
+            
+            .color-option {
+                width: 40px;
+                height: 40px;
+                border: 2px solid transparent;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.2s;
+                position: relative;
+            }
+            
+            .color-option:hover {
+                transform: scale(1.1);
+            }
+            
+            .color-option.selected {
+                border-color: var(--text);
+            }
+            
+            .color-option.selected::after {
+                content: '✓';
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            }
+            
+            .modal-footer {
+                padding: 20px;
+                border-top: 1px solid var(--border);
+                display: flex;
+                justify-content: flex-end;
+                gap: 12px;
+            }
+
+            .btn-primary, .btn-secondary, .btn-danger {
+                padding: 10px 16px;
+                border-radius: 6px;
+                border: none;
+                cursor: pointer;
+                font-weight: 500;
+                transition: all 0.2s;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                text-decoration: none;
+                font-size: 14px;
+            }
+            
+            .btn-primary {
+                background: var(--primary);
+                color: white;
+            }
+            
+            .btn-primary:hover {
+                background: #2563EB;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            }
+            
+            .btn-secondary {
+                background: var(--bg);
+                color: var(--text);
+                border: 1px solid var(--border);
+            }
+            
+            .btn-secondary:hover {
+                background: white;
+                border-color: var(--primary);
+            }
+
+            .btn-danger {
+                background: var(--danger);
+                color: white;
+            }
+            
+            .btn-danger:hover {
+                background: #dc2626;
+                transform: translateY(-1px);
+            }
+
+            /* Styles pour l'édition de mots-clés */
+            .keywords-layout {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+            }
+            
+            .keyword-section {
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 20px;
+            }
+            
+            .section-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+            
+            .section-header h4 {
+                margin: 0;
+                font-size: 16px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .keyword-count {
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            
+            .section-description {
+                margin: 0 0 16px 0;
+                font-size: 13px;
+                color: var(--text-light);
+                line-height: 1.4;
+            }
+            
+            .input-group {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            
+            .input-group input {
+                flex: 1;
+                padding: 8px 12px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            
+            .input-group input:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+            }
+            
+            .btn-add {
+                width: 36px;
+                height: 36px;
+                border: none;
+                border-radius: 6px;
+                color: white;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+            }
+            
+            .btn-add:hover {
+                transform: scale(1.05);
+            }
+            
+            .keywords-list, .filters-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                min-height: 40px;
+            }
+            
+            .keyword-tag, .filter-tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 10px;
+                border-radius: 16px;
+                font-size: 13px;
+                font-weight: 500;
+                transition: all 0.2s;
+            }
+            
+            .keyword-tag button, .filter-tag button {
+                background: none;
+                border: none;
+                color: currentColor;
+                cursor: pointer;
+                padding: 2px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0.7;
+                transition: opacity 0.2s;
+            }
+            
+            .keyword-tag button:hover, .filter-tag button:hover {
+                opacity: 1;
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+            /* Filtres */
+            .filters-layout {
+                display: grid;
+                gap: 24px;
+            }
+            
+            .filter-group {
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 20px;
+            }
+            
+            .filter-group h3 {
+                margin: 0 0 20px 0;
+                font-size: 18px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text);
+            }
+            
+            .filter-section {
+                margin-bottom: 20px;
+            }
+            
+            .filter-section:last-child {
+                margin-bottom: 0;
+            }
+            
+            .filter-section h4 {
+                margin: 0 0 12px 0;
+                font-size: 14px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text);
+            }
+
+            /* Zone de danger */
+            .settings-section {
+                max-width: 500px;
+            }
+            
+            .danger-zone {
+                background: var(--danger)05;
+                border: 2px solid var(--danger)20;
+                border-radius: var(--radius);
+                padding: 20px;
+            }
+            
+            .danger-zone h3 {
+                margin: 0 0 8px 0;
+                color: var(--danger);
+                font-size: 16px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .danger-zone p {
+                margin: 0 0 16px 0;
+                color: var(--text-light);
+                font-size: 14px;
+                line-height: 1.4;
+            }
             @media (max-width: 1024px) {
                 .categories-grid-enhanced {
                     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
