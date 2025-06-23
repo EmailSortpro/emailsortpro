@@ -65,65 +65,48 @@ class SettingsPageComplete {
 
         return `
             <div class="categories-section">
-                <!-- Header avec stats et recherche -->
+                <!-- Header compact -->
                 <div class="categories-header">
-                    <div class="stats-row">
-                        <div class="stat">
-                            <span class="stat-number">${stats.total}</span>
-                            <span class="stat-label">Total</span>
+                    <div class="header-row">
+                        <div class="stats-compact">
+                            <span class="stat-item">${stats.total} total</span>
+                            <span class="stat-item">${stats.active} actives</span>
+                            <span class="stat-item">${stats.custom} perso</span>
+                            ${stats.preselected > 0 ? `<span class="stat-item">⭐ ${stats.preselected}</span>` : ''}
                         </div>
-                        <div class="stat">
-                            <span class="stat-number">${stats.active}</span>
-                            <span class="stat-label">Actives</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-number">${stats.custom}</span>
-                            <span class="stat-label">Perso</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-number">${stats.preselected}</span>
-                            <span class="stat-label">Favoris</span>
-                        </div>
-                    </div>
-
-                    <div class="search-section">
-                        <div class="search-bar">
+                        
+                        <div class="search-compact">
                             <input type="text" 
                                    id="category-search" 
-                                   placeholder="🔍 Rechercher une catégorie..." 
+                                   placeholder="🔍 Rechercher..." 
                                    value="${this.searchTerm}"
                                    oninput="settingsPage.handleSearch(this.value)">
-                            <button class="search-clear" onclick="settingsPage.clearSearch()" 
-                                    style="display: ${this.searchTerm ? 'block' : 'none'}">✕</button>
+                            ${this.searchTerm ? '<button class="search-clear" onclick="settingsPage.clearSearch()">✕</button>' : ''}
                         </div>
-                    </div>
-
-                    <div class="actions-row">
-                        <button class="btn-primary" onclick="settingsPage.createCategory()">
-                            ➕ Nouvelle catégorie
-                        </button>
-                        <button class="btn-secondary" onclick="settingsPage.exportCategories()">
-                            📥 Exporter tout
-                        </button>
-                        <button class="btn-secondary" onclick="settingsPage.importCategories()">
-                            📤 Importer
-                        </button>
+                        
+                        <div class="actions-compact">
+                            <button class="btn-compact btn-primary" onclick="settingsPage.createCategory()">
+                                ➕ Nouvelle
+                            </button>
+                            <button class="btn-compact btn-secondary" onclick="settingsPage.exportCategories()">
+                                📥
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Grille des catégories -->
-                <div class="categories-grid">
-                    ${Object.entries(filteredCategories).map(([id, cat]) => this.renderCategoryCard(id, cat)).join('')}
+                <!-- Liste compacte des catégories -->
+                <div class="categories-list">
+                    ${Object.entries(filteredCategories).map(([id, cat]) => this.renderCategoryRow(id, cat)).join('')}
                 </div>
 
                 ${Object.keys(filteredCategories).length === 0 ? `
                     <div class="empty-state">
-                        <div class="empty-icon">🔍</div>
-                        <div class="empty-title">Aucune catégorie trouvée</div>
-                        <div class="empty-subtitle">
+                        <div class="empty-icon">📂</div>
+                        <div class="empty-text">
                             ${this.searchTerm ? 
                                 `Aucun résultat pour "${this.searchTerm}"` : 
-                                'Commencez par créer votre première catégorie'
+                                'Aucune catégorie trouvée'
                             }
                         </div>
                     </div>
@@ -132,82 +115,57 @@ class SettingsPageComplete {
         `;
     }
 
-    renderCategoryCard(id, category) {
+    renderCategoryRow(id, category) {
         const settings = this.getSettings();
         const isActive = settings.activeCategories?.includes(id) ?? true;
         const isPreselected = settings.preselectedCategories?.includes(id) ?? false;
         
-        // Simuler des données de filtres
         const keywords = category.keywords || this.generateSampleKeywords(category.name);
         const emails = category.emails || this.generateSampleEmails(category.name);
         const domains = category.domains || this.generateSampleDomains(category.name);
 
         return `
-            <div class="category-card ${!isActive ? 'inactive' : ''}" style="--color: ${category.color}">
-                <div class="cat-header">
-                    <div class="cat-icon" style="background: ${category.color}">${category.icon || '📁'}</div>
-                    <div class="cat-info">
+            <div class="category-row ${!isActive ? 'inactive' : ''}" data-id="${id}">
+                <div class="cat-main">
+                    <div class="cat-icon-small" style="background: ${category.color}">${category.icon || '📁'}</div>
+                    <div class="cat-details">
                         <div class="cat-name">${category.name}</div>
-                        <div class="cat-stats">
-                            ${keywords.length}🔤 ${emails.length}📧 ${domains.length}🌐
-                            ${isPreselected ? ' ⭐' : ''}
-                            ${category.isCustom ? ' 👤' : ''}
+                        <div class="cat-preview">
+                            ${keywords.slice(0, 2).join(', ')}${keywords.length > 2 ? '...' : ''}
+                            ${emails.length > 0 ? ` • ${emails.slice(0, 1)[0]}` : ''}
+                            ${domains.length > 0 ? ` • ${domains.slice(0, 1)[0]}` : ''}
                         </div>
                     </div>
-                    <div class="cat-actions">
-                        <button class="act-btn ${isActive ? 'active' : 'inactive'}" 
-                                onclick="settingsPage.toggleActive('${id}')" 
-                                title="${isActive ? 'Désactiver' : 'Activer'}">
-                            ${isActive ? '🟢' : '🔴'}
-                        </button>
-                        <button class="act-btn ${isPreselected ? 'starred' : ''}" 
-                                onclick="settingsPage.toggleStar('${id}')" 
-                                title="Favori">
-                            ${isPreselected ? '⭐' : '☆'}
-                        </button>
-                        <button class="act-btn edit" 
-                                onclick="settingsPage.editCategory('${id}')" 
-                                title="Modifier">
-                            ✏️
-                        </button>
-                        ${category.isCustom ? `
-                            <button class="act-btn delete" 
-                                    onclick="settingsPage.deleteCategory('${id}')" 
-                                    title="Supprimer">
-                                🗑️
-                            </button>
-                        ` : ''}
+                    <div class="cat-stats">
+                        <span class="stat-badge">${keywords.length}🔤</span>
+                        <span class="stat-badge">${emails.length}📧</span>
+                        <span class="stat-badge">${domains.length}🌐</span>
                     </div>
                 </div>
-
-                <div class="cat-details">
-                    <div class="filter-preview">
-                        <div class="filter-group">
-                            <span class="filter-label">Mots-clés:</span>
-                            <div class="filter-tags">
-                                ${keywords.slice(0, 3).map(kw => `<span class="filter-tag">${kw}</span>`).join('')}
-                                ${keywords.length > 3 ? `<span class="filter-more">+${keywords.length - 3}</span>` : ''}
-                            </div>
-                        </div>
-                        ${emails.length > 0 ? `
-                            <div class="filter-group">
-                                <span class="filter-label">Emails:</span>
-                                <div class="filter-tags">
-                                    ${emails.slice(0, 2).map(email => `<span class="filter-tag">${email}</span>`).join('')}
-                                    ${emails.length > 2 ? `<span class="filter-more">+${emails.length - 2}</span>` : ''}
-                                </div>
-                            </div>
-                        ` : ''}
-                        ${domains.length > 0 ? `
-                            <div class="filter-group">
-                                <span class="filter-label">Domaines:</span>
-                                <div class="filter-tags">
-                                    ${domains.slice(0, 2).map(domain => `<span class="filter-tag">${domain}</span>`).join('')}
-                                    ${domains.length > 2 ? `<span class="filter-more">+${domains.length - 2}</span>` : ''}
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
+                
+                <div class="cat-controls">
+                    <button class="control-btn ${isActive ? 'active' : 'inactive'}" 
+                            onclick="settingsPage.toggleActive('${id}')" 
+                            title="${isActive ? 'Désactiver' : 'Activer'}">
+                        ${isActive ? '🟢' : '🔴'}
+                    </button>
+                    <button class="control-btn ${isPreselected ? 'starred' : ''}" 
+                            onclick="settingsPage.toggleStar('${id}')" 
+                            title="Favori">
+                        ${isPreselected ? '⭐' : '☆'}
+                    </button>
+                    <button class="control-btn edit" 
+                            onclick="settingsPage.editCategory('${id}')" 
+                            title="Modifier">
+                        ✏️
+                    </button>
+                    ${category.isCustom ? `
+                        <button class="control-btn delete" 
+                                onclick="settingsPage.deleteCategory('${id}')" 
+                                title="Supprimer">
+                            🗑️
+                        </button>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -460,38 +418,84 @@ class SettingsPageComplete {
     // GESTION DES CATÉGORIES
     // ================================================
     getCategories() {
-        return window.categoryManager?.getCategories() || {
+        // Vérifier si CategoryManager existe et a des catégories
+        if (window.categoryManager?.getCategories) {
+            const categories = window.categoryManager.getCategories();
+            console.log('[SettingsPage] Catégories récupérées:', categories);
+            return categories;
+        }
+        
+        // Sinon, utiliser les données par défaut ou localStorage
+        const savedCategories = localStorage.getItem('mailsort-categories');
+        if (savedCategories) {
+            try {
+                const parsed = JSON.parse(savedCategories);
+                console.log('[SettingsPage] Catégories depuis localStorage:', parsed);
+                return parsed;
+            } catch (e) {
+                console.warn('[SettingsPage] Erreur lecture localStorage:', e);
+            }
+        }
+        
+        // Données par défaut plus réalistes
+        const defaultCategories = {
             'factures': { 
                 id: 'factures', 
-                name: 'Factures', 
+                name: 'Factures & Finances', 
                 icon: '💰', 
                 color: '#ef4444', 
                 isCustom: false,
-                keywords: ['facture', 'bill', 'invoice', 'payment'],
-                emails: ['billing@company.com', 'invoices@service.fr'],
-                domains: ['paypal.com', 'stripe.com']
+                keywords: ['facture', 'invoice', 'bill', 'payment', 'paiement', 'échéance'],
+                emails: ['billing@stripe.com', 'noreply@paypal.com', 'factures@orange.fr'],
+                domains: ['paypal.com', 'stripe.com', 'amazon.fr']
             },
             'newsletters': { 
                 id: 'newsletters', 
-                name: 'Newsletters', 
+                name: 'Newsletters & Abonnements', 
                 icon: '📧', 
                 color: '#3b82f6', 
                 isCustom: false,
-                keywords: ['newsletter', 'unsubscribe', 'weekly'],
-                emails: ['newsletter@tech.com', 'info@startup.io'],
-                domains: ['mailchimp.com', 'constant-contact.com']
+                keywords: ['newsletter', 'unsubscribe', 'weekly', 'digest', 'actualités'],
+                emails: ['hello@morning-brew.com', 'newsletter@techcrunch.com'],
+                domains: ['mailchimp.com', 'substack.com']
             },
             'work': { 
                 id: 'work', 
-                name: 'Travail', 
+                name: 'Travail & Professionnel', 
                 icon: '💼', 
                 color: '#10b981', 
-                isCustom: true,
-                keywords: ['meeting', 'project', 'deadline'],
-                emails: ['boss@company.com', 'team@workplace.fr'],
-                domains: ['company.com', 'workplace.fr']
+                isCustom: false,
+                keywords: ['meeting', 'projet', 'deadline', 'réunion', 'rapport'],
+                emails: ['boss@company.com', 'hr@entreprise.fr'],
+                domains: ['slack.com', 'notion.so', 'teams.microsoft.com']
+            },
+            'shopping': {
+                id: 'shopping',
+                name: 'Achats & Commandes',
+                icon: '🛒',
+                color: '#f59e0b',
+                isCustom: false,
+                keywords: ['commande', 'order', 'livraison', 'shipping', 'confirmation'],
+                emails: ['noreply@amazon.fr', 'commandes@cdiscount.com'],
+                domains: ['amazon.fr', 'zalando.fr', 'fnac.com']
+            },
+            'social': {
+                id: 'social',
+                name: 'Réseaux Sociaux',
+                icon: '📱',
+                color: '#8b5cf6',
+                isCustom: false,
+                keywords: ['notification', 'like', 'comment', 'follow', 'mention'],
+                emails: ['no-reply@facebook.com', 'noreply@twitter.com'],
+                domains: ['facebook.com', 'instagram.com', 'linkedin.com']
             }
         };
+        
+        // Sauvegarder les données par défaut
+        localStorage.setItem('mailsort-categories', JSON.stringify(defaultCategories));
+        console.log('[SettingsPage] Catégories par défaut créées:', defaultCategories);
+        
+        return defaultCategories;
     }
 
     generateSampleKeywords(categoryName) {
@@ -1192,67 +1196,52 @@ class SettingsPageComplete {
                 display: block;
             }
 
-            /* Categories Header */
+            /* Categories Header Compact */
             .categories-header {
-                margin-bottom: 2rem;
+                margin-bottom: 1rem;
             }
 
-            .stats-row {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            .header-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
                 gap: 1rem;
-                margin-bottom: 1.5rem;
+                flex-wrap: wrap;
             }
 
-            .stat {
-                text-align: center;
-                padding: 1rem;
-                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-                border-radius: 10px;
-                border-left: 4px solid #6366f1;
-                transition: transform 0.2s ease;
+            .stats-compact {
+                display: flex;
+                gap: 1rem;
+                align-items: center;
             }
 
-            .stat:hover {
-                transform: translateY(-2px);
-            }
-
-            .stat-number {
-                display: block;
-                font-size: 1.75rem;
-                font-weight: 700;
-                color: #6366f1;
-                margin-bottom: 0.25rem;
-            }
-
-            .stat-label {
+            .stat-item {
                 font-size: 0.875rem;
                 color: #64748b;
                 font-weight: 500;
+                padding: 0.25rem 0.75rem;
+                background: #f1f5f9;
+                border-radius: 20px;
+                border-left: 3px solid #6366f1;
             }
 
-            /* Search */
-            .search-section {
-                margin-bottom: 1.5rem;
-            }
-
-            .search-bar {
+            .search-compact {
                 position: relative;
-                max-width: 400px;
+                flex: 1;
+                max-width: 300px;
             }
 
-            .search-bar input {
+            .search-compact input {
                 width: 100%;
-                padding: 0.75rem 1rem;
-                padding-right: 2.5rem;
+                padding: 0.5rem 0.75rem;
                 border: 2px solid #e2e8f0;
-                border-radius: 10px;
-                font-size: 1rem;
-                transition: all 0.2s ease;
+                border-radius: 20px;
+                font-size: 0.875rem;
                 background: #f8fafc;
+                transition: all 0.2s ease;
             }
 
-            .search-bar input:focus {
+            .search-compact input:focus {
                 outline: none;
                 border-color: #6366f1;
                 background: white;
@@ -1261,27 +1250,185 @@ class SettingsPageComplete {
 
             .search-clear {
                 position: absolute;
-                right: 0.75rem;
+                right: 0.5rem;
                 top: 50%;
                 transform: translateY(-50%);
                 background: #ef4444;
                 color: white;
                 border: none;
                 border-radius: 50%;
-                width: 1.5rem;
-                height: 1.5rem;
+                width: 1.25rem;
+                height: 1.25rem;
                 cursor: pointer;
-                font-size: 0.75rem;
+                font-size: 0.7rem;
                 display: flex;
                 align-items: center;
                 justify-content: center;
             }
 
-            /* Actions */
-            .actions-row {
+            .actions-compact {
                 display: flex;
+                gap: 0.5rem;
+            }
+
+            .btn-compact {
+                padding: 0.5rem 1rem;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 500;
+                font-size: 0.875rem;
+                transition: all 0.2s ease;
+            }
+
+            .btn-compact.btn-primary {
+                background: #6366f1;
+                color: white;
+            }
+
+            .btn-compact.btn-primary:hover {
+                background: #5b21b6;
+                transform: translateY(-1px);
+            }
+
+            .btn-compact.btn-secondary {
+                background: #f1f5f9;
+                color: #475569;
+                border: 1px solid #e2e8f0;
+            }
+
+            .btn-compact.btn-secondary:hover {
+                background: #e2e8f0;
+            }
+
+            /* Categories List */
+            .categories-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .category-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.75rem 1rem;
+                background: white;
+                border: 1px solid #f1f5f9;
+                border-radius: 8px;
+                transition: all 0.2s ease;
+                cursor: pointer;
+            }
+
+            .category-row:hover {
+                border-color: #e2e8f0;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                transform: translateY(-1px);
+            }
+
+            .category-row.inactive {
+                opacity: 0.6;
+                background: #f8fafc;
+            }
+
+            .cat-main {
+                display: flex;
+                align-items: center;
                 gap: 0.75rem;
-                flex-wrap: wrap;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .cat-icon-small {
+                width: 2rem;
+                height: 2rem;
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 1rem;
+                flex-shrink: 0;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            }
+
+            .cat-details {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .cat-name {
+                font-weight: 600;
+                color: #1e293b;
+                margin-bottom: 0.25rem;
+                font-size: 0.95rem;
+            }
+
+            .cat-preview {
+                font-size: 0.8rem;
+                color: #64748b;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .cat-stats {
+                display: flex;
+                gap: 0.5rem;
+                margin-right: 1rem;
+            }
+
+            .stat-badge {
+                font-size: 0.75rem;
+                background: #f1f5f9;
+                color: #475569;
+                padding: 0.25rem 0.5rem;
+                border-radius: 12px;
+                font-weight: 500;
+            }
+
+            .cat-controls {
+                display: flex;
+                gap: 0.25rem;
+            }
+
+            .control-btn {
+                width: 1.75rem;
+                height: 1.75rem;
+                border: none;
+                background: #f8fafc;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 0.8rem;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .control-btn:hover {
+                background: #f1f5f9;
+                transform: scale(1.1);
+            }
+
+            .control-btn.active {
+                background: #dcfce7;
+            }
+
+            .control-btn.inactive {
+                background: #fee2e2;
+            }
+
+            .control-btn.starred {
+                background: #fef3c7;
+            }
+
+            .control-btn.edit:hover {
+                background: #dbeafe;
+            }
+
+            .control-btn.delete:hover {
+                background: #fee2e2;
             }
 
             .btn-primary, .btn-secondary {
@@ -1979,17 +2126,64 @@ class SettingsPageComplete {
                     padding: 0.5rem;
                 }
 
-                .categories-grid {
-                    grid-template-columns: 1fr;
+                .categories-list {
+                    gap: 0.75rem;
                 }
-
-                .stats-row {
-                    grid-template-columns: repeat(2, 1fr);
-                }
-
-                .actions-row {
+                
+                .category-row {
                     flex-direction: column;
+                    align-items: flex-start;
+                    gap: 0.75rem;
                 }
+
+                .cat-main {
+                    width: 100%;
+                }
+
+                .cat-controls {
+                    align-self: flex-end;
+                }
+
+                .header-row {
+                    flex-direction: column;
+                    gap: 0.75rem;
+                    align-items: stretch;
+                }
+
+                .search-compact {
+                    max-width: none;
+                }
+
+                .stats-compact {
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+
+                .actions-compact {
+                    justify-content: center;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .cat-stats {
+                    flex-direction: column;
+                    gap: 0.25rem;
+                    margin-right: 0.5rem;
+                }
+
+                .stat-badge {
+                    font-size: 0.7rem;
+                }
+
+                .stats-compact {
+                    gap: 0.5rem;
+                }
+
+                .stat-item {
+                    font-size: 0.8rem;
+                    padding: 0.2rem 0.5rem;
+                }
+            }
 
                 .modal-content {
                     width: 95%;
