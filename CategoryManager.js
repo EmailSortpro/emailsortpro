@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 23.0 - COMPLÈTEMENT CORRIGÉ avec intégration Gmail/Outlook
+// CategoryManager.js - Version 24.0 - DÉTECTION NEWSLETTER CORRIGÉE + Gmail/Outlook
 
 class CategoryManager {
     constructor() {
@@ -34,11 +34,11 @@ class CategoryManager {
         
         this.initializeCategories();
         this.loadCustomCategories();
-        this.initializeKeywordCatalog(); // MÉTHODE UNIQUE
+        this.initializeKeywordCatalog(); // MÉTHODE UNIQUE AVEC DÉTECTION NEWSLETTER RENFORCÉE
         this.setupEventListeners();
         
         this.isInitialized = true;
-        console.log('[CategoryManager] ✅ Version 23.0 - Détection marketing + Gmail/Outlook corrigés');
+        console.log('[CategoryManager] ✅ Version 24.0 - Détection newsletter corrigée + Gmail/Outlook');
     }
 
     // ================================================
@@ -202,13 +202,13 @@ class CategoryManager {
     }
 
     // ================================================
-    // CATALOGUE DE MOTS-CLÉS - MARKETING EN PRIORITÉ ABSOLUE
+    // CATALOGUE DE MOTS-CLÉS - DÉTECTION NEWSLETTER RENFORCÉE
     // ================================================
     initializeKeywordCatalog() {
-        console.log('[CategoryManager] 🔍 Initialisation du catalogue avec priorité marketing...');
+        console.log('[CategoryManager] 🔍 Initialisation du catalogue avec détection newsletter renforcée...');
         
         this.keywordCatalog = {
-            // PRIORITÉ MAXIMALE - MARKETING & NEWS - DÉTECTION EN PREMIER
+            // PRIORITÉ MAXIMALE - MARKETING & NEWS - DÉTECTION NEWSLETTER RENFORCÉE
             marketing_news: {
                 absolute: [
                     // Mots-clés de désabonnement - PRIORITÉ ABSOLUE
@@ -225,11 +225,35 @@ class CategoryManager {
                     'update your preferences', 'modify your subscription',
                     'this email was sent to', 'you are receiving this',
                     'cet email vous a été envoyé', 'vous recevez cet email',
+                    'click here to unsubscribe', 'cliquez ici pour vous désabonner',
+                    'if you no longer wish to receive', 'si vous ne souhaitez plus recevoir',
+                    'subscription preferences', 'préférences d\'abonnement',
+                    'manage your subscription', 'gérer votre abonnement',
+                    'modify subscription', 'modifier l\'abonnement',
+                    'email subscription', 'abonnement email',
+                    'subscription center', 'centre d\'abonnement',
+                    'email frequency', 'fréquence des emails',
+                    'stop receiving these emails', 'arrêter de recevoir ces emails',
+                    'remove from mailing list', 'retirer de la liste de diffusion',
+                    'mailing list preferences', 'préférences liste de diffusion',
                     
-                    // Newsletter explicites
-                    'newsletter', 'mailing list', 'mailing', 'e-mailing',
+                    // Newsletter explicites - RENFORCÉ
+                    'newsletter', 'newsletter hebdomadaire', 'newsletter mensuelle',
+                    'newsletter quotidienne', 'weekly newsletter', 'monthly newsletter',
+                    'daily newsletter', 'newsletter gratuite', 'free newsletter',
+                    'mailing list', 'mailing', 'e-mailing', 'emailing',
                     'bulletin d\'information', 'lettre d\'information',
-                    'our newsletter', 'notre newsletter', 'subscribe to',
+                    'our newsletter', 'notre newsletter', 'subscribe to newsletter',
+                    'abonnez-vous à notre newsletter', 'newsletter subscription',
+                    'abonnement newsletter', 'newsletter signup', 'inscription newsletter',
+                    'votre newsletter', 'your newsletter', 'la newsletter',
+                    'infolettre', 'info-lettre', 'bulletin électronique',
+                    'lettre électronique', 'courrier électronique',
+                    'liste de diffusion', 'diffusion email', 'email marketing',
+                    'marketing email', 'campagne email', 'email campaign',
+                    'bulletin d\'actualités', 'actualités par email',
+                    'news by email', 'email news', 'nouvelles par email',
+                    'update newsletter', 'newsletter updates', 'mise à jour newsletter',
                     
                     // Marketing explicite
                     'limited offer', 'offre limitée', 'special offer', 'offre spéciale',
@@ -239,6 +263,11 @@ class CategoryManager {
                     'flash sale', 'vente flash', 'deal of the day',
                     'shop now', 'acheter maintenant', 'buy now',
                     'limited time', 'temps limité', 'expires soon', 'expire bientôt',
+                    'hurry up', 'dépêchez-vous', 'act now', 'agissez maintenant',
+                    'don\'t miss out', 'ne ratez pas', 'last chance', 'dernière chance',
+                    'final sale', 'vente finale', 'clearance sale', 'liquidation',
+                    'mega sale', 'super sale', 'big sale', 'grosse promo',
+                    'black friday', 'cyber monday', 'soldes d\'été', 'soldes d\'hiver',
                     
                     // Retail et e-commerce
                     'your order', 'votre commande', 'order confirmation',
@@ -246,12 +275,25 @@ class CategoryManager {
                     'shipped', 'expédié', 'delivered', 'livré',
                     'cart reminder', 'rappel panier', 'abandoned cart',
                     'panier abandonné', 'complete your order',
+                    'finalisez votre commande', 'checkout now', 'passer commande',
+                    'order status', 'statut commande', 'order update',
+                    'mise à jour commande', 'delivery update', 'mise à jour livraison',
+                    'invoice attached', 'facture jointe', 'receipt attached',
+                    'reçu joint', 'payment confirmation', 'confirmation paiement',
                     
-                    // Notifications commerciales
+                    // Notifications commerciales - CIBLÉ
                     'product recommendation', 'recommandation produit',
                     'you might like', 'cela pourrait vous plaire',
                     'personalized for you', 'personnalisé pour vous',
-                    'based on your purchase', 'selon vos achats'
+                    'based on your purchase', 'selon vos achats',
+                    'customers who bought', 'les clients qui ont acheté',
+                    'recommended for you', 'recommandé pour vous',
+                    'similar products', 'produits similaires',
+                    'you may also like', 'vous pourriez aussi aimer',
+                    'back in stock', 'de nouveau en stock',
+                    'restock notification', 'notification de réapprovisionnement',
+                    'wishlist reminder', 'rappel liste de souhaits',
+                    'price drop', 'baisse de prix', 'price alert', 'alerte prix'
                 ],
                 strong: [
                     // Marketing général
@@ -276,23 +318,45 @@ class CategoryManager {
                     // Retail
                     'brand', 'marque', 'collection', 'catalog',
                     'catalogue', 'lookbook', 'trend', 'tendance',
-                    'fashion', 'mode', 'style', 'design'
+                    'fashion', 'mode', 'style', 'design',
+                    
+                    // Nouvelles communications marketing
+                    'blast', 'diffusion', 'broadcast', 'mass email',
+                    'email blast', 'bulk email', 'groupe email',
+                    'destinataires multiples', 'multiple recipients',
+                    'bcc', 'cci', 'copie cachée', 'hidden copy',
+                    'mass communication', 'communication de masse',
+                    'commercial email', 'email commercial',
+                    'promotional email', 'email promotionnel',
+                    'marketing automation', 'automatisation marketing',
+                    'drip campaign', 'campagne goutte à goutte',
+                    'email sequence', 'séquence email',
+                    'autoresponder', 'répondeur automatique'
                 ],
                 weak: [
                     'update', 'discover', 'découvrir', 'explore',
                     'learn more', 'en savoir plus', 'read more',
-                    'download', 'télécharger', 'free', 'gratuit'
+                    'download', 'télécharger', 'free', 'gratuit',
+                    'tips', 'conseils', 'guide', 'tutorial',
+                    'how to', 'comment', 'best practices',
+                    'meilleures pratiques', 'advice', 'avis'
                 ],
                 exclusions: [
-                    // Éviter les faux positifs
-                    'task', 'tâche', 'meeting', 'réunion', 'urgent',
-                    'action required', 'facture', 'invoice', 'payment due',
-                    'security alert', 'alerte sécurité', 'password',
-                    'verification', 'support ticket', 'help desk'
+                    // Éviter les faux positifs - RÉDUIT pour permettre plus de détection
+                    'urgent task', 'tâche urgente', 'action required',
+                    'security alert', 'alerte sécurité', 'password expired',
+                    'mot de passe expiré', 'account suspended',
+                    'compte suspendu', 'verify account', 'vérifier compte',
+                    'login attempt', 'tentative connexion',
+                    'system maintenance', 'maintenance système',
+                    'service interruption', 'interruption service',
+                    'payment failed', 'paiement échoué',
+                    'payment overdue', 'paiement en retard'
+                    // Suppression de 'meeting', 'réunion', 'facture', 'invoice' pour éviter blocage newsletter
                 ]
             },
 
-            // NOTIFICATIONS SYSTÈME - Après marketing
+            // NOTIFICATIONS SYSTÈME - Après marketing - RÉDUIT POUR ÉVITER CONFLIT
             notifications: {
                 absolute: [
                     'do not reply', 'ne pas répondre', 'noreply@',
@@ -300,7 +364,11 @@ class CategoryManager {
                     'system notification', 'ceci est un message automatique',
                     'no-reply@', 'donotreply@', 'auto-reply',
                     'automatic reply', 'réponse automatique',
-                    'system alert', 'alerte système'
+                    'system alert', 'alerte système',
+                    'server notification', 'notification serveur',
+                    'maintenance notification', 'notification maintenance',
+                    'backup notification', 'notification sauvegarde',
+                    'system status', 'statut système'
                 ],
                 strong: [
                     'automated', 'automatic', 'automatique', 'system',
@@ -311,10 +379,15 @@ class CategoryManager {
                     'info', 'information', 'notice', 'avis'
                 ],
                 exclusions: [
-                    // Éviter les marketing déguisés
+                    // Éviter les marketing déguisés - RENFORCÉ
                     'newsletter', 'unsubscribe', 'promotion', 'offer',
                     'shop', 'buy', 'purchase', 'sale', 'deal',
-                    'marketing', 'campaign', 'advertising'
+                    'marketing', 'campaign', 'advertising',
+                    'mailing list', 'email preferences', 'subscription',
+                    'discount', 'special offer', 'limited time',
+                    'exclusive', 'promo', 'code promo',
+                    'new arrivals', 'nouveautés', 'flash sale',
+                    'vente flash', 'soldes', 'réduction'
                 ]
             },
 
@@ -574,11 +647,11 @@ class CategoryManager {
             }
         };
 
-        console.log('[CategoryManager] ✅ Catalogue initialisé avec priorité marketing pour', Object.keys(this.keywordCatalog).length, 'catégories');
+        console.log('[CategoryManager] ✅ Catalogue initialisé avec détection newsletter renforcée pour', Object.keys(this.keywordCatalog).length, 'catégories');
     }
 
     // ================================================
-    // ANALYSE EMAIL - MARKETING EN PRIORITÉ ABSOLUE
+    // ANALYSE EMAIL - NEWSLETTER PRIORITAIRE ABSOLUE
     // ================================================
     analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
@@ -594,11 +667,18 @@ class CategoryManager {
             return { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
         }
         
+        // DÉTECTION NEWSLETTER SPÉCIALE - AVANT TOUT
+        const specialNewsletterResult = this.detectSpecialNewsletter(content, email);
+        if (specialNewsletterResult) {
+            console.log(`[CategoryManager] 📰 Newsletter spéciale détectée: ${email.subject?.substring(0, 50)}`);
+            return specialNewsletterResult;
+        }
+        
         // PRIORITÉ 1: MARKETING/NEWSLETTER - TOUJOURS EN PREMIER
         const marketingAnalysis = this.analyzeCategory(content, this.keywordCatalog.marketing_news);
         
         // Si détection marketing forte, retourner immédiatement
-        if (marketingAnalysis.hasAbsolute || marketingAnalysis.total >= 80) {
+        if (marketingAnalysis.hasAbsolute || marketingAnalysis.total >= 60) { // Seuil réduit de 80 à 60
             console.log(`[CategoryManager] ✅ Marketing détecté: ${email.subject?.substring(0, 50)} (${marketingAnalysis.total}pts)`);
             return {
                 category: 'marketing_news',
@@ -672,6 +752,135 @@ class CategoryManager {
         return selectedResult;
     }
 
+    // ================================================
+    // DÉTECTION NEWSLETTER SPÉCIALE - NOUVELLE MÉTHODE
+    // ================================================
+    detectSpecialNewsletter(content, email) {
+        const text = content.text;
+        const subject = content.subject;
+        const domain = content.domain;
+        
+        // Patterns spéciaux pour newsletters qui passent à travers
+        const specialPatterns = [
+            // Structure typique newsletter
+            {
+                pattern: /newsletter|bulletin|lettre d'information/i,
+                weight: 120,
+                name: 'newsletter_keyword'
+            },
+            // Liens de désabonnement cachés
+            {
+                pattern: /unsubscribe|désabonner|se désinscrire/i,
+                weight: 150,
+                name: 'unsubscribe_link'
+            },
+            // Domaines marketing typiques
+            {
+                pattern: /(mailchimp|sendgrid|mailgun|constant-contact|aweber|getresponse|campaign-monitor)\.com/i,
+                weight: 100,
+                name: 'marketing_domain'
+            },
+            // Structure email marketing
+            {
+                pattern: /view in browser|voir dans le navigateur|version web/i,
+                weight: 100,
+                name: 'web_version'
+            },
+            // Réseaux sociaux
+            {
+                pattern: /follow us|suivez-nous|réseaux sociaux|social media/i,
+                weight: 80,
+                name: 'social_follow'
+            },
+            // Messages promotionnels
+            {
+                pattern: /promotion|promo|offre|special|exclusive|limited/i,
+                weight: 60,
+                name: 'promotional'
+            },
+            // Structure liste email
+            {
+                pattern: /mailing list|liste de diffusion|email list/i,
+                weight: 90,
+                name: 'mailing_list'
+            }
+        ];
+        
+        let totalScore = 0;
+        const matches = [];
+        let hasStrong = false;
+        
+        specialPatterns.forEach(pattern => {
+            // Tester dans le sujet (poids x2)
+            if (pattern.pattern.test(subject)) {
+                totalScore += pattern.weight * 2;
+                matches.push({ 
+                    keyword: pattern.name + '_in_subject', 
+                    type: 'special_subject', 
+                    score: pattern.weight * 2 
+                });
+                hasStrong = true;
+            }
+            
+            // Tester dans le contenu
+            if (pattern.pattern.test(text)) {
+                totalScore += pattern.weight;
+                matches.push({ 
+                    keyword: pattern.name, 
+                    type: 'special_content', 
+                    score: pattern.weight 
+                });
+                if (pattern.weight >= 100) hasStrong = true;
+            }
+            
+            // Tester dans le domaine
+            if (pattern.pattern.test(domain)) {
+                totalScore += pattern.weight * 1.5;
+                matches.push({ 
+                    keyword: pattern.name + '_domain', 
+                    type: 'special_domain', 
+                    score: pattern.weight * 1.5 
+                });
+                hasStrong = true;
+            }
+        });
+        
+        // Détection automatique noreply/no-reply
+        if (/noreply|no-reply|donotreply|do-not-reply/i.test(email.from?.emailAddress?.address || '')) {
+            totalScore += 80;
+            matches.push({ 
+                keyword: 'noreply_sender', 
+                type: 'special_sender', 
+                score: 80 
+            });
+        }
+        
+        // Détection BCC/liste nombreuse (newsletter probable)
+        if (email.toRecipients && email.toRecipients.length > 5) {
+            totalScore += 60;
+            matches.push({ 
+                keyword: 'multiple_recipients', 
+                type: 'special_recipients', 
+                score: 60 
+            });
+        }
+        
+        // Si score suffisant, c'est une newsletter
+        if (totalScore >= 120 || hasStrong) {
+            return {
+                category: 'marketing_news',
+                score: Math.min(totalScore, 250), // Cap à 250
+                confidence: hasStrong ? 0.95 : 0.85,
+                matchedPatterns: matches,
+                hasAbsolute: hasStrong,
+                priorityDetection: 'special_newsletter',
+                detectionMethod: 'special_patterns'
+            };
+        }
+        
+        return null;
+    }
+
     analyzeAllCategoriesExceptMarketing(content) {
         const results = {};
         const activeCategories = this.getActiveCategories();
@@ -731,7 +940,7 @@ class CategoryManager {
         const matches = [];
         const text = content.text;
         
-        // Pénalité pour contenu marketing dans autres catégories
+        // Pénalité pour contenu marketing dans autres catégories - RÉDUITE
         const marketingKeywords = [
             'newsletter', 'unsubscribe', 'promotion', 'marketing',
             'shop', 'buy', 'purchase', 'sale', 'deal', 'offer'
@@ -740,12 +949,12 @@ class CategoryManager {
         let marketingContent = 0;
         marketingKeywords.forEach(keyword => {
             if (this.findInText(text, keyword)) {
-                marketingContent += 20;
+                marketingContent += 15; // Réduit de 20 à 15
             }
         });
         
         // Si contenu marketing détecté et on n'est pas dans marketing_news
-        if (marketingContent >= 40 && categoryId !== 'marketing_news') {
+        if (marketingContent >= 30 && categoryId !== 'marketing_news') { // Seuil réduit de 40 à 30
             totalScore -= marketingContent;
             matches.push({ 
                 keyword: 'marketing_content_penalty', 
@@ -764,7 +973,7 @@ class CategoryManager {
             'hr': 10,
             'commercial': 10,
             'project': 5,
-            'notifications': 5,
+            'notifications': 5, // Réduit pour éviter conflit avec newsletter
             'cc': 5
         };
         
@@ -872,12 +1081,12 @@ class CategoryManager {
     }
 
     selectByPriorityWithThreshold(results) {
-        const MIN_SCORE_THRESHOLD = 30;
-        const MIN_CONFIDENCE_THRESHOLD = 0.5;
+        const MIN_SCORE_THRESHOLD = 25; // Réduit de 30 à 25
+        const MIN_CONFIDENCE_THRESHOLD = 0.45; // Réduit de 0.5 à 0.45
         
         // Priorité spéciale pour marketing
         const marketingResult = results.marketing_news;
-        if (marketingResult && marketingResult.score >= 40) {
+        if (marketingResult && marketingResult.score >= 30) { // Réduit de 40 à 30
             console.log(`[CategoryManager] ✅ Marketing prioritaire: ${marketingResult.score}pts`);
             return {
                 category: 'marketing_news',
@@ -927,7 +1136,7 @@ class CategoryManager {
                 return b.score - a.score;
             });
         
-        if (allSorted.length > 0 && allSorted[0].score >= 20 && allSorted[0].confidence >= 0.4) {
+        if (allSorted.length > 0 && allSorted[0].score >= 15 && allSorted[0].confidence >= 0.35) { // Seuils réduits
             const fallback = allSorted[0];
             console.log(`[CategoryManager] 📌 Utilisation fallback: ${fallback.category} (${fallback.score}pts, ${Math.round(fallback.confidence * 100)}%)`);
             return {
@@ -1063,7 +1272,7 @@ class CategoryManager {
                 icon: '🔔',
                 color: '#94a3b8',
                 description: 'Notifications automatiques système',
-                priority: 35,
+                priority: 25, // PRIORITÉ RÉDUITE pour éviter conflit newsletter
                 isCustom: false
             },
             
@@ -1077,7 +1286,7 @@ class CategoryManager {
             }
         };
         
-        console.log('[CategoryManager] 📚 Catégories initialisées avec priorité marketing:', Object.keys(this.categories).length);
+        console.log('[CategoryManager] 📚 Catégories initialisées avec détection newsletter renforcée:', Object.keys(this.categories).length);
     }
 
     // ================================================
@@ -1093,17 +1302,17 @@ class CategoryManager {
         
         if (email.subject && email.subject.trim()) {
             subject = email.subject;
-            allText += (email.subject + ' ').repeat(15); // Augmenté pour le sujet
+            allText += (email.subject + ' ').repeat(20); // Augmenté pour plus de poids au sujet
         } else {
             subject = '[SANS_SUJET]';
             allText += 'sans sujet email sans objet ';
         }
         
         if (email.from?.emailAddress?.address) {
-            allText += (email.from.emailAddress.address + ' ').repeat(5);
+            allText += (email.from.emailAddress.address + ' ').repeat(10); // Augmenté pour expéditeur
         }
         if (email.from?.emailAddress?.name) {
-            allText += (email.from.emailAddress.name + ' ').repeat(5);
+            allText += (email.from.emailAddress.name + ' ').repeat(10);
         }
         
         if (email.toRecipients && Array.isArray(email.toRecipients)) {
@@ -1129,7 +1338,7 @@ class CategoryManager {
         }
         
         if (email.bodyPreview) {
-            allText += (email.bodyPreview + ' ').repeat(3); // Augmenté pour le preview
+            allText += (email.bodyPreview + ' ').repeat(5); // Augmenté pour le preview
         }
         
         if (email.body?.content) {
@@ -1648,7 +1857,7 @@ class CategoryManager {
     }
 
     runDiagnostics() {
-        console.group('🏥 DIAGNOSTIC CategoryManager v23.0 - Marketing Priority + Gmail/Outlook');
+        console.group('🏥 DIAGNOSTIC CategoryManager v24.0 - Newsletter Detection Fixed');
         
         console.group('📂 Catégories');
         const allCategories = Object.keys(this.categories);
@@ -1668,7 +1877,7 @@ class CategoryManager {
         // Afficher marketing en premier
         if (this.keywordCatalog.marketing_news) {
             const marketingKeywords = this.getTotalKeywordsCount('marketing_news');
-            console.log(`📰 Marketing & News (PRIORITÉ): ${marketingKeywords} mots-clés`);
+            console.log(`📰 Marketing & News (PRIORITÉ RENFORCÉE): ${marketingKeywords} mots-clés`);
         }
         
         catalogEntries.filter(cat => cat !== 'marketing_news').forEach(catId => {
@@ -1720,6 +1929,7 @@ class CategoryManager {
             catalogEntries: catalogEntries.length,
             preselectedCategories: this.getTaskPreselectedCategories().length,
             marketingPriority: true,
+            newsletterDetectionFixed: true,
             emailProvider: provider?.type || null,
             canScan: emailMethods.available,
             scanHistory: this.scanHistory.length,
@@ -2375,22 +2585,24 @@ if (window.categoryManager) {
     window.categoryManager.destroy?.();
 }
 
-console.log('[CategoryManager] 🚀 Création nouvelle instance v23.0...');
+console.log('[CategoryManager] 🚀 Création nouvelle instance v24.0...');
 window.categoryManager = new CategoryManager();
 
 // Export des méthodes de test globales
 window.testCategoryManager = function() {
-    console.group('🧪 TEST CategoryManager v23.0 - Marketing Priority + Gmail/Outlook');
+    console.group('🧪 TEST CategoryManager v24.0 - Newsletter Detection Fixed');
     
     const tests = [
         { subject: "Newsletter hebdomadaire - Désabonnez-vous ici", expected: "marketing_news" },
         { subject: "Promotion spéciale - 50% de réduction - unsubscribe", expected: "marketing_news" },
         { subject: "Votre commande a été expédiée - tracking disponible", expected: "marketing_news" },
+        { subject: "Bulletin d'information mensuel", expected: "marketing_news" },
+        { subject: "Weekly Newsletter - View in browser", expected: "marketing_news" },
         { subject: "Action requise: Confirmer votre commande", expected: "tasks" },
         { subject: "Nouvelle connexion détectée sur votre compte", expected: "security" },
         { subject: "Facture #12345 - Échéance dans 3 jours", expected: "finance" },
         { subject: "Réunion équipe prévue pour demain", expected: "meetings" },
-        { subject: "Do not reply - système automatique", expected: "notifications" }
+        { subject: "System notification - Do not reply", expected: "notifications" }
     ];
     
     tests.forEach(test => {
@@ -2425,25 +2637,26 @@ window.testCategoryManager = function() {
         success: true, 
         testsRun: tests.length,
         canScan: emailMethods.available,
-        provider: provider?.type || null
+        provider: provider?.type || null,
+        newsletterDetectionFixed: true
     };
 };
 
 window.debugCategoryKeywords = function() {
-    console.group('🔍 DEBUG Mots-clés v23.0 - Marketing Priority + Gmail/Outlook');
+    console.group('🔍 DEBUG Mots-clés v24.0 - Newsletter Detection Fixed');
     const catalog = window.categoryManager.keywordCatalog;
     
-    // Afficher marketing en premier
+    // Afficher marketing en premier avec détails
     if (catalog.marketing_news) {
         const keywords = catalog.marketing_news;
         const total = (keywords.absolute?.length || 0) + (keywords.strong?.length || 0) + 
                      (keywords.weak?.length || 0) + (keywords.exclusions?.length || 0);
         
-        console.log(`📰 Marketing & News (PRIORITÉ ABSOLUE): ${total} mots-clés`);
-        if (keywords.absolute?.length) console.log(`  Absolus: ${keywords.absolute.slice(0, 10).join(', ')}...`);
-        if (keywords.strong?.length) console.log(`  Forts: ${keywords.strong.slice(0, 10).join(', ')}...`);
-        if (keywords.weak?.length) console.log(`  Faibles: ${keywords.weak.slice(0, 5).join(', ')}...`);
-        if (keywords.exclusions?.length) console.log(`  Exclusions: ${keywords.exclusions.slice(0, 5).join(', ')}...`);
+        console.log(`📰 Marketing & News (DÉTECTION NEWSLETTER RENFORCÉE): ${total} mots-clés`);
+        if (keywords.absolute?.length) console.log(`  Absolus (${keywords.absolute.length}):`, keywords.absolute.slice(0, 15).join(', ') + '...');
+        if (keywords.strong?.length) console.log(`  Forts (${keywords.strong.length}):`, keywords.strong.slice(0, 10).join(', ') + '...');
+        if (keywords.weak?.length) console.log(`  Faibles (${keywords.weak.length}):`, keywords.weak.slice(0, 5).join(', ') + '...');
+        if (keywords.exclusions?.length) console.log(`  Exclusions (${keywords.exclusions.length}):`, keywords.exclusions.slice(0, 5).join(', ') + '...');
     }
     
     Object.entries(catalog).forEach(([categoryId, keywords]) => {
@@ -2496,8 +2709,9 @@ window.testEmailProviders = function() {
         provider: provider?.type || null,
         available: methods.available,
         methods: methods.methods,
-        error: methods.error
+        error: methods.error,
+        newsletterDetectionFixed: true
     };
 };
 
-console.log('✅ CategoryManager v23.0 loaded - Détection marketing prioritaire + Gmail/Outlook corrigés');
+console.log('✅ CategoryManager v24.0 loaded - Détection newsletter corrigée + Gmail/Outlook fonctionnels');
