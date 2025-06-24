@@ -1,4 +1,4 @@
-// app.js - Application EmailSortPro avec authentification dual provider (Microsoft + Google) v4.2 - COMPLET ET CORRIGÉ
+// app.js - Application EmailSortPro avec authentification dual provider v4.3 - CHARGEMENT OPTIMISÉ
 
 class App {
     constructor() {
@@ -10,12 +10,18 @@ class App {
         this.isInitializing = false;
         this.initializationPromise = null;
         this.currentPage = 'dashboard';
+        this.modulesReady = {
+            categoryManager: false,
+            taskManager: false,
+            pageManager: false,
+            dashboardModule: false
+        };
         
-        console.log('[App] Constructor - EmailSortPro starting with dual provider support...');
+        console.log('[App] Constructor - EmailSortPro v4.3 starting with dual provider support...');
     }
 
     async init() {
-        console.log('[App] Initializing dual provider application...');
+        console.log('[App] Initializing dual provider application v4.3...');
         
         if (this.initializationPromise) {
             console.log('[App] Already initializing, waiting...');
@@ -42,48 +48,13 @@ class App {
 
             console.log('[App] Initializing auth services...');
             
-            const initTimeout = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Initialization timeout')), 30000)
-            );
-            
-            // Initialiser les deux services d'authentification en parallèle
-            const authPromises = [];
-            
-            if (window.authService) {
-                authPromises.push(
-                    window.authService.initialize().then(() => {
-                        console.log('[App] ✅ Microsoft auth service initialized');
-                        return 'microsoft';
-                    }).catch(error => {
-                        console.warn('[App] ⚠️ Microsoft auth service failed:', error.message);
-                        return null;
-                    })
-                );
-            }
-            
-            if (window.googleAuthService) {
-                authPromises.push(
-                    window.googleAuthService.initialize().then(() => {
-                        console.log('[App] ✅ Google auth service initialized');
-                        return 'google';
-                    }).catch(error => {
-                        console.warn('[App] ⚠️ Google auth service failed:', error.message);
-                        return null;
-                    })
-                );
-            }
-            
-            // Attendre au moins un service d'auth
-            const initResults = await Promise.race([
-                Promise.allSettled(authPromises),
-                initTimeout
-            ]);
-            
-            console.log('[App] Auth services initialization results:', initResults);
+            // Initialiser les services d'authentification en parallèle
+            await this.initializeAuthServices();
             
             // INITIALISER LES MODULES CRITIQUES
             await this.initializeCriticalModules();
             
+            // Vérifier l'authentification
             await this.checkAuthenticationStatus();
             
         } catch (error) {
@@ -95,33 +66,146 @@ class App {
     }
 
     // =====================================
-    // INITIALISATION DES MODULES CRITIQUES
+    // INITIALISATION DES SERVICES D'AUTH
+    // =====================================
+    async initializeAuthServices() {
+        const initTimeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Auth initialization timeout')), 30000)
+        );
+        
+        const authPromises = [];
+        
+        if (window.authService) {
+            authPromises.push(
+                window.authService.initialize()
+                    .then(() => {
+                        console.log('[App] ✅ Microsoft auth service initialized');
+                        return 'microsoft';
+                    })
+                    .catch(error => {
+                        console.warn('[App] ⚠️ Microsoft auth service failed:', error.message);
+                        return null;
+                    })
+            );
+        }
+        
+        if (window.googleAuthService) {
+            authPromises.push(
+                window.googleAuthService.initialize()
+                    .then(() => {
+                        console.log('[App] ✅ Google auth service initialized');
+                        return 'google';
+                    })
+                    .catch(error => {
+                        console.warn('[App] ⚠️ Google auth service failed:', error.message);
+                        return null;
+                    })
+            );
+        }
+        
+        try {
+            const results = await Promise.race([
+                Promise.allSettled(authPromises),
+                initTimeout
+            ]);
+            
+            console.log('[App] Auth services initialization results:', results);
+            
+            const availableProviders = results
+                .filter(r => r.status === 'fulfilled' && r.value)
+                .map(r => r.value);
+            
+            if (availableProviders.length === 0) {
+                throw new Error('No authentication providers available');
+            }
+            
+            console.log('[App] Available auth providers:', availableProviders);
+            
+        } catch (error) {
+            if (error.message.includes('timeout')) {
+                console.error('[App] Auth services initialization timeout');
+            }
+            throw error;
+        }
+    }
+
+    // =====================================
+    // INITIALISATION DES MODULES CRITIQUES OPTIMISÉE
     // =====================================
     async initializeCriticalModules() {
-        console.log('[App] Initializing critical modules...');
+        console.log('[App] Initializing critical modules v4.3...');
         
-        // 1. Vérifier CategoryManager (PRIORITÉ ABSOLUE)
-        await this.ensureCategoryManagerReady();
+        // Initialisation en parallèle avec timeout individuel
+        const modulePromises = [
+            this.waitForModule('categoryManager', 5000),
+            this.waitForModule('taskManager', 3000),
+            this.waitForModule('pageManager', 3000),
+            this.waitForModule('dashboardModule', 3000)
+        ];
         
-        // 2. Vérifier TaskManager
-        await this.ensureTaskManagerReady();
+        const results = await Promise.allSettled(modulePromises);
         
-        // 3. Vérifier PageManager
-        await this.ensurePageManagerReady();
+        results.forEach((result, index) => {
+            const moduleName = ['categoryManager', 'taskManager', 'pageManager', 'dashboardModule'][index];
+            if (result.status === 'fulfilled') {
+                this.modulesReady[moduleName] = true;
+                console.log(`[App] ✅ ${moduleName} ready`);
+            } else {
+                console.warn(`[App] ⚠️ ${moduleName} not ready:`, result.reason);
+            }
+        });
         
-        // 4. Vérifier TasksView
-        await this.ensureTasksViewReady();
+        // CategoryManager est obligatoire
+        if (!this.modulesReady.categoryManager) {
+            throw new Error('CategoryManager is required but not available');
+        }
         
-        // 5. Vérifier DashboardModule
-        await this.ensureDashboardModuleReady();
-        
-        // 6. Bind methods
+        // Bind methods pour les modules disponibles
         this.bindModuleMethods();
         
-        // 7. Initialiser la gestion du scroll
+        // Initialiser la gestion du scroll
         this.initializeScrollManager();
         
-        console.log('[App] Critical modules initialized');
+        console.log('[App] Critical modules initialization complete');
+    }
+
+    // =====================================
+    // ATTENTE DE MODULE AVEC TIMEOUT
+    // =====================================
+    async waitForModule(moduleName, timeout = 5000) {
+        const startTime = Date.now();
+        
+        // Vérification rapide si déjà disponible
+        if (this.isModuleReady(moduleName)) {
+            return true;
+        }
+        
+        // Attente active avec vérification périodique
+        while (Date.now() - startTime < timeout) {
+            if (this.isModuleReady(moduleName)) {
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        throw new Error(`${moduleName} not ready after ${timeout}ms`);
+    }
+
+    isModuleReady(moduleName) {
+        switch (moduleName) {
+            case 'categoryManager':
+                return window.categoryManager && window.categoryManager.isInitialized;
+            case 'taskManager':
+                return window.taskManager && window.taskManager.initialized;
+            case 'pageManager':
+                return !!window.pageManager;
+            case 'dashboardModule':
+                return !!window.dashboardModule;
+            case 'tasksView':
+                return !!window.tasksView;
+            default:
+                return false;
+        }
     }
 
     // =====================================
@@ -130,17 +214,13 @@ class App {
     initializeScrollManager() {
         console.log('[App] Initializing scroll manager...');
         
-        // Variables pour éviter les boucles infinies
         let scrollCheckInProgress = false;
         let lastScrollState = null;
         let lastContentHeight = 0;
         let lastViewportHeight = 0;
         
-        // Fonction pour vérifier si le scroll est nécessaire
         this.checkScrollNeeded = () => {
-            if (scrollCheckInProgress) {
-                return;
-            }
+            if (scrollCheckInProgress) return;
             
             scrollCheckInProgress = true;
             
@@ -151,7 +231,6 @@ class App {
                     const viewportHeight = window.innerHeight;
                     const currentPage = this.currentPage || 'dashboard';
                     
-                    // Vérifier si les dimensions ont réellement changé
                     const dimensionsChanged = 
                         Math.abs(contentHeight - lastContentHeight) > 10 || 
                         Math.abs(viewportHeight - lastViewportHeight) > 10;
@@ -173,7 +252,7 @@ class App {
                         return;
                     }
                     
-                    // Autres pages: scroll seulement si vraiment nécessaire
+                    // Autres pages: scroll si nécessaire
                     const threshold = 100;
                     const needsScroll = contentHeight > viewportHeight + threshold;
                     const newState = needsScroll ? 'scroll-enabled' : 'scroll-disabled';
@@ -194,7 +273,7 @@ class App {
                     }
                     
                 } catch (error) {
-                    console.error('[SCROLL_MANAGER] Error checking scroll:', error);
+                    console.error('[SCROLL_MANAGER] Error:', error);
                 } finally {
                     scrollCheckInProgress = false;
                 }
@@ -203,32 +282,24 @@ class App {
 
         // Fonction pour définir le mode de page
         window.setPageMode = (pageName) => {
-            if (!pageName || this.currentPage === pageName) {
-                return;
-            }
+            if (!pageName || this.currentPage === pageName) return;
             
             const body = document.body;
-            
-            // Mettre à jour la page actuelle
             const previousPage = this.currentPage;
             this.currentPage = pageName;
             
-            // Nettoyer les anciennes classes de page
             body.classList.remove(
                 'page-dashboard', 'page-scanner', 'page-emails', 
                 'page-tasks', 'page-ranger', 'page-settings', 
                 'needs-scroll', 'login-mode'
             );
             
-            // Ajouter la nouvelle classe de page
             body.classList.add(`page-${pageName}`);
             
-            // Réinitialiser l'état du scroll
             lastScrollState = null;
             lastContentHeight = 0;
             lastViewportHeight = 0;
             
-            // Dashboard: configuration immédiate
             if (pageName === 'dashboard') {
                 body.style.overflow = 'hidden';
                 body.style.overflowY = 'hidden';
@@ -237,7 +308,6 @@ class App {
                 return;
             }
             
-            // Autres pages: vérifier après stabilisation du contenu
             setTimeout(() => {
                 if (this.currentPage === pageName) {
                     this.checkScrollNeeded();
@@ -251,21 +321,15 @@ class App {
             let pendingMutations = false;
             
             const contentObserver = new MutationObserver((mutations) => {
-                if (this.currentPage === 'dashboard') {
-                    return;
-                }
+                if (this.currentPage === 'dashboard') return;
                 
                 const significantChanges = mutations.some(mutation => {
                     if (mutation.type === 'attributes') {
                         const attrName = mutation.attributeName;
                         const target = mutation.target;
                         
-                        if (attrName === 'style' && target === document.body) {
-                            return false;
-                        }
-                        if (attrName === 'class' && target === document.body) {
-                            return false;
-                        }
+                        if (attrName === 'style' && target === document.body) return false;
+                        if (attrName === 'class' && target === document.body) return false;
                     }
                     
                     if (mutation.type === 'childList') {
@@ -308,9 +372,7 @@ class App {
                 Math.abs(currentSize.width - lastWindowSize.width) > 10 ||
                 Math.abs(currentSize.height - lastWindowSize.height) > 10;
             
-            if (!sizeChanged || this.currentPage === 'dashboard') {
-                return;
-            }
+            if (!sizeChanged || this.currentPage === 'dashboard') return;
             
             lastWindowSize = currentSize;
             
@@ -326,279 +388,31 @@ class App {
     }
 
     // =====================================
-    // VÉRIFICATION CATEGORYMANAGER CORRIGÉE V4.2
+    // MÉTHODES DE BINDING
     // =====================================
-    async ensureCategoryManagerReady() {
-        console.log('[App] Ensuring CategoryManager is ready...');
+    bindModuleMethods() {
+        const modulesToBind = ['categoryManager', 'taskManager', 'pageManager'];
         
-        // Vérification rapide si déjà prêt
-        if (window.categoryManager && window.categoryManager.isInitialized) {
-            console.log('[App] ✅ CategoryManager already ready');
-            return this.validateCategoryManager();
-        }
-        
-        // Attendre que CategoryManager soit créé
-        console.log('[App] ⏳ Waiting for CategoryManager creation...');
-        
-        // D'abord, attendre que la classe CategoryManager soit définie
-        let classAttempts = 0;
-        const maxClassAttempts = 50;
-        
-        while (typeof CategoryManager === 'undefined' && classAttempts < maxClassAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            classAttempts++;
-            
-            if (classAttempts % 10 === 0) {
-                console.log(`[App] ⏳ Waiting for CategoryManager class... (${classAttempts}/${maxClassAttempts})`);
-            }
-        }
-        
-        if (typeof CategoryManager === 'undefined') {
-            console.error('[App] ❌ CategoryManager class not found');
-            return false;
-        }
-        
-        console.log('[App] ✅ CategoryManager class found');
-        
-        // Ensuite, attendre l'instance globale ou la créer
-        let instanceAttempts = 0;
-        const maxInstanceAttempts = 50;
-        
-        while (!window.categoryManager && instanceAttempts < maxInstanceAttempts) {
-            // Si après 10 tentatives toujours pas d'instance, essayer de la créer
-            if (instanceAttempts === 10) {
-                console.log('[App] 🔧 Creating CategoryManager instance manually...');
+        modulesToBind.forEach(moduleName => {
+            if (window[moduleName] && this.modulesReady[moduleName]) {
                 try {
-                    window.categoryManager = new CategoryManager();
-                    console.log('[App] ✅ CategoryManager instance created manually');
-                    break;
+                    const module = window[moduleName];
+                    Object.getOwnPropertyNames(Object.getPrototypeOf(module)).forEach(name => {
+                        if (name !== 'constructor' && typeof module[name] === 'function') {
+                            module[name] = module[name].bind(module);
+                        }
+                    });
+                    console.log(`[App] ✅ ${moduleName} methods bound`);
                 } catch (error) {
-                    console.error('[App] ❌ Failed to create CategoryManager:', error);
+                    console.warn(`[App] Error binding ${moduleName} methods:`, error);
                 }
             }
-            
-            await new Promise(resolve => setTimeout(resolve, 100));
-            instanceAttempts++;
-            
-            if (instanceAttempts % 10 === 0) {
-                console.log(`[App] ⏳ Waiting for CategoryManager instance... (${instanceAttempts}/${maxInstanceAttempts})`);
-            }
-        }
-        
-        if (!window.categoryManager) {
-            console.error('[App] ❌ CategoryManager instance not available');
-            return false;
-        }
-        
-        // Attendre l'initialisation complète
-        let initAttempts = 0;
-        const maxInitAttempts = 30;
-        
-        while (!window.categoryManager.isInitialized && initAttempts < maxInitAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            initAttempts++;
-            
-            if (initAttempts % 5 === 0) {
-                console.log(`[App] ⏳ Waiting for CategoryManager initialization... (${initAttempts}/${maxInitAttempts})`);
-            }
-        }
-        
-        if (!window.categoryManager.isInitialized) {
-            console.error('[App] ❌ CategoryManager not initialized after waiting');
-            return false;
-        }
-        
-        // Valider que tout est fonctionnel
-        return this.validateCategoryManager();
-    }
-    
-    validateCategoryManager() {
-        console.log('[App] 🔍 Validating CategoryManager...');
-        
-        if (!window.categoryManager) {
-            console.error('[App] ❌ CategoryManager not found');
-            return false;
-        }
-        
-        if (!window.categoryManager.isInitialized) {
-            console.error('[App] ❌ CategoryManager not initialized');
-            return false;
-        }
-        
-        // Vérifier les méthodes essentielles
-        const essentialMethods = ['analyzeEmail', 'getCategories', 'getSettings', 'getTaskPreselectedCategories'];
-        for (const method of essentialMethods) {
-            if (typeof window.categoryManager[method] !== 'function') {
-                console.error(`[App] ❌ CategoryManager missing essential method: ${method}`);
-                return false;
-            }
-        }
-        
-        // Vérifier que les catégories sont chargées
-        const categories = window.categoryManager.getCategories();
-        const categoriesCount = Object.keys(categories).length;
-        
-        if (categoriesCount === 0) {
-            console.error('[App] ❌ CategoryManager has no categories');
-            return false;
-        }
-        
-        console.log('[App] ✅ CategoryManager validated with', categoriesCount, 'categories');
-        return true;
+        });
     }
 
-    async ensureTaskManagerReady() {
-        console.log('[App] Ensuring TaskManager is ready...');
-        
-        if (window.taskManager && window.taskManager.initialized) {
-            console.log('[App] ✅ TaskManager already ready');
-            return true;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 50;
-        
-        while ((!window.taskManager || !window.taskManager.initialized) && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.taskManager || !window.taskManager.initialized) {
-            console.error('[App] TaskManager not ready after 5 seconds');
-            return false;
-        }
-        
-        const essentialMethods = ['createTaskFromEmail', 'createTask', 'updateTask', 'deleteTask', 'getStats'];
-        for (const method of essentialMethods) {
-            if (typeof window.taskManager[method] !== 'function') {
-                console.error(`[App] TaskManager missing essential method: ${method}`);
-                return false;
-            }
-        }
-        
-        console.log('[App] ✅ TaskManager ready with', window.taskManager.getAllTasks().length, 'tasks');
-        return true;
-    }
-
-    async ensurePageManagerReady() {
-        console.log('[App] Ensuring PageManager is ready...');
-        
-        if (window.pageManager) {
-            console.log('[App] ✅ PageManager already ready');
-            return true;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while (!window.pageManager && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.pageManager) {
-            console.error('[App] PageManager not ready after 3 seconds');
-            return false;
-        }
-        
-        console.log('[App] ✅ PageManager ready');
-        return true;
-    }
-
-    async ensureTasksViewReady() {
-        console.log('[App] Ensuring TasksView is ready...');
-        
-        if (window.tasksView) {
-            console.log('[App] ✅ TasksView already ready');
-            return true;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while (!window.tasksView && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.tasksView) {
-            console.warn('[App] TasksView not ready after 3 seconds - will work without it');
-            return false;
-        }
-        
-        console.log('[App] ✅ TasksView ready');
-        return true;
-    }
-
-    async ensureDashboardModuleReady() {
-        console.log('[App] Ensuring DashboardModule is ready...');
-        
-        if (window.dashboardModule) {
-            console.log('[App] ✅ DashboardModule already ready');
-            return true;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while (!window.dashboardModule && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window.dashboardModule) {
-            console.error('[App] DashboardModule not ready after 3 seconds');
-            return false;
-        }
-        
-        console.log('[App] ✅ DashboardModule ready');
-        return true;
-    }
-
-    bindModuleMethods() {
-        // Bind CategoryManager methods
-        if (window.categoryManager) {
-            try {
-                Object.getOwnPropertyNames(Object.getPrototypeOf(window.categoryManager)).forEach(name => {
-                    if (name !== 'constructor' && typeof window.categoryManager[name] === 'function') {
-                        window.categoryManager[name] = window.categoryManager[name].bind(window.categoryManager);
-                    }
-                });
-                console.log('[App] ✅ CategoryManager methods bound');
-            } catch (error) {
-                console.warn('[App] Error binding CategoryManager methods:', error);
-            }
-        }
-        
-        // Bind TaskManager methods
-        if (window.taskManager) {
-            try {
-                Object.getOwnPropertyNames(Object.getPrototypeOf(window.taskManager)).forEach(name => {
-                    if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
-                        window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
-                    }
-                });
-                console.log('[App] ✅ TaskManager methods bound');
-            } catch (error) {
-                console.warn('[App] Error binding TaskManager methods:', error);
-            }
-        }
-        
-        // Bind PageManager methods
-        if (window.pageManager) {
-            try {
-                Object.getOwnPropertyNames(Object.getPrototypeOf(window.pageManager)).forEach(name => {
-                    if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
-                        window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
-                    }
-                });
-                console.log('[App] ✅ PageManager methods bound');
-            } catch (error) {
-                console.warn('[App] Error binding PageManager methods:', error);
-            }
-        }
-    }
-
+    // =====================================
+    // VÉRIFICATION PRÉREQUIS
+    // =====================================
     checkPrerequisites() {
         if (typeof msal === 'undefined') {
             console.error('[App] MSAL library not loaded');
@@ -629,10 +443,10 @@ class App {
     }
 
     // =====================================
-    // VÉRIFICATION DE L'AUTHENTIFICATION DUAL PROVIDER
+    // VÉRIFICATION DE L'AUTHENTIFICATION
     // =====================================
     async checkAuthenticationStatus() {
-        console.log('[App] Checking authentication status for both providers...');
+        console.log('[App] Checking authentication status...');
         
         // Vérifier d'abord s'il y a un callback Google à traiter
         const googleCallbackHandled = await this.handleGoogleCallback();
@@ -641,11 +455,11 @@ class App {
             return;
         }
         
-        // Vérifier Microsoft d'abord
+        // Vérifier Microsoft
         if (window.authService && window.authService.isAuthenticated()) {
             const account = window.authService.getAccount();
             if (account) {
-                console.log('[App] Microsoft authentication found, getting user info...');
+                console.log('[App] Microsoft authentication found');
                 try {
                     this.user = await window.authService.getUserInfo();
                     this.user.provider = 'microsoft';
@@ -654,21 +468,18 @@ class App {
                     console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
                     this.showAppWithTransition();
                     return;
-                } catch (userInfoError) {
-                    console.error('[App] Error getting Microsoft user info:', userInfoError);
-                    if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
-                        console.log('[App] Microsoft token seems invalid, clearing auth');
-                        await window.authService.reset();
-                    }
+                } catch (error) {
+                    console.error('[App] Error getting Microsoft user info:', error);
+                    await window.authService.reset();
                 }
             }
         }
         
-        // Vérifier Google ensuite
+        // Vérifier Google
         if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
             const account = window.googleAuthService.getAccount();
             if (account) {
-                console.log('[App] Google authentication found, getting user info...');
+                console.log('[App] Google authentication found');
                 try {
                     this.user = await window.googleAuthService.getUserInfo();
                     this.user.provider = 'google';
@@ -677,8 +488,8 @@ class App {
                     console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
                     this.showAppWithTransition();
                     return;
-                } catch (userInfoError) {
-                    console.error('[App] Error getting Google user info:', userInfoError);
+                } catch (error) {
+                    console.error('[App] Error getting Google user info:', error);
                     await window.googleAuthService.reset();
                 }
             }
@@ -693,23 +504,19 @@ class App {
     // GESTION DU CALLBACK GOOGLE OAuth2
     // =====================================
     async handleGoogleCallback() {
-        console.log('[App] Handling Google OAuth2 callback...');
+        console.log('[App] Checking for Google OAuth2 callback...');
         
         try {
-            // Vérifier s'il y a des données de callback Google
             const callbackDataStr = sessionStorage.getItem('google_callback_data');
             if (!callbackDataStr) {
-                console.log('[App] No Google callback data found');
                 return false;
             }
             
             const callbackData = JSON.parse(callbackDataStr);
-            console.log('[App] Found Google callback data:', callbackData);
+            console.log('[App] Found Google callback data');
             
-            // Nettoyer les données de callback
             sessionStorage.removeItem('google_callback_data');
             
-            // Traiter le callback avec le service Google
             const urlParams = new URLSearchParams();
             urlParams.set('code', callbackData.code);
             urlParams.set('state', callbackData.state);
@@ -719,7 +526,6 @@ class App {
             if (success) {
                 console.log('[App] ✅ Google callback handled successfully');
                 
-                // Obtenir les informations utilisateur
                 this.user = await window.googleAuthService.getUserInfo();
                 this.user.provider = 'google';
                 this.isAuthenticated = true;
@@ -746,6 +552,9 @@ class App {
         }
     }
 
+    // =====================================
+    // GESTION DES ERREURS D'INITIALISATION
+    // =====================================
     async handleInitializationError(error) {
         console.error('[App] Initialization error:', error);
         
@@ -758,8 +567,10 @@ class App {
             return;
         }
         
-        if (error.message.includes('Configuration invalid')) {
-            this.showConfigurationError(['Configuration invalide - vérifiez la configuration']);
+        if (error.message.includes('CategoryManager')) {
+            // Pour CategoryManager, on peut continuer sans lui en mode dégradé
+            console.warn('[App] CategoryManager not available, continuing in degraded mode');
+            this.showLogin();
             return;
         }
         
@@ -775,10 +586,13 @@ class App {
         this.showError('Failed to initialize the application. Please check the configuration and refresh the page.');
     }
 
+    // =====================================
+    // CONFIGURATION DES ÉVÉNEMENTS
+    // =====================================
     setupEventListeners() {
         console.log('[App] Setting up event listeners...');
         
-        // NAVIGATION CORRIGÉE
+        // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             const newItem = item.cloneNode(true);
             item.parentNode.replaceChild(newItem, item);
@@ -797,6 +611,7 @@ class App {
             });
         });
 
+        // Gestion des erreurs globales
         window.addEventListener('error', (event) => {
             console.error('[App] Global error:', event.error);
             
@@ -817,21 +632,6 @@ class App {
         window.addEventListener('unhandledrejection', (event) => {
             console.error('[App] Unhandled promise rejection:', event.reason);
             
-            if (event.reason && event.reason.message && 
-                event.reason.message.includes('Cannot read properties of undefined')) {
-                
-                if (event.reason.message.includes('createTaskFromEmail')) {
-                    console.error('[App] TaskManager createTaskFromEmail error detected');
-                    
-                    if (window.uiManager) {
-                        window.uiManager.showToast(
-                            'Erreur du gestionnaire de tâches. Veuillez actualiser la page.',
-                            'warning'
-                        );
-                    }
-                }
-            }
-            
             if (event.reason && event.reason.errorCode) {
                 console.log('[App] MSAL promise rejection:', event.reason.errorCode);
             }
@@ -839,16 +639,13 @@ class App {
     }
 
     // =====================================
-    // MÉTHODES DE CONNEXION DUAL PROVIDER
+    // MÉTHODES DE CONNEXION
     // =====================================
-
-    // Méthode de connexion unifiée (backward compatibility)
     async login() {
         console.log('[App] Unified login attempted - defaulting to Microsoft...');
         return this.loginMicrosoft();
     }
 
-    // Connexion Microsoft spécifique
     async loginMicrosoft() {
         console.log('[App] Microsoft login attempted...');
         
@@ -891,8 +688,6 @@ class App {
                             errorMessage = `Erreur Microsoft: ${errorCode}`;
                     }
                 }
-            } else if (error.message.includes('unauthorized_client')) {
-                errorMessage = 'Configuration Azure incorrecte. Vérifiez votre Client ID.';
             }
             
             if (window.uiManager) {
@@ -903,7 +698,6 @@ class App {
         }
     }
 
-    // Connexion Google spécifique - SANS IFRAME
     async loginGoogle() {
         console.log('[App] Google login attempted...');
         
@@ -915,11 +709,7 @@ class App {
                 await window.googleAuthService.initialize();
             }
             
-            // Le service Google redirige automatiquement, pas besoin d'attendre
             await window.googleAuthService.login();
-            
-            // Cette ligne ne sera jamais atteinte car login() redirige
-            console.log('[App] This should not be reached due to redirect');
             
         } catch (error) {
             console.error('[App] Google login error:', error);
@@ -957,13 +747,11 @@ class App {
             
             this.showModernLoading('Déconnexion...');
             
-            // Déconnexion selon le provider actif
             if (this.activeProvider === 'microsoft' && window.authService) {
                 await window.authService.logout();
             } else if (this.activeProvider === 'google' && window.googleAuthService) {
                 await window.googleAuthService.logout();
             } else {
-                // Fallback: essayer les deux
                 if (window.authService) {
                     try { await window.authService.logout(); } catch (e) {}
                 }
@@ -984,7 +772,7 @@ class App {
     }
 
     forceCleanup() {
-        console.log('[App] Force cleanup dual provider...');
+        console.log('[App] Force cleanup...');
         
         this.user = null;
         this.isAuthenticated = false;
@@ -993,7 +781,6 @@ class App {
         this.initializationPromise = null;
         this.currentPage = 'dashboard';
         
-        // Nettoyer les deux services d'authentification
         if (window.authService) {
             window.authService.forceCleanup();
         }
@@ -1002,7 +789,6 @@ class App {
             window.googleAuthService.forceCleanup();
         }
         
-        // Nettoyer le localStorage sélectivement
         const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
         const allKeys = Object.keys(localStorage);
         
@@ -1016,7 +802,6 @@ class App {
             }
         });
         
-        // Nettoyer sessionStorage aussi
         try {
             sessionStorage.removeItem('google_callback_data');
             sessionStorage.removeItem('google_oauth_state');
@@ -1030,6 +815,9 @@ class App {
         }, 1000);
     }
 
+    // =====================================
+    // AFFICHAGE DE L'APPLICATION
+    // =====================================
     showLogin() {
         console.log('[App] Showing login page');
         
@@ -1049,14 +837,13 @@ class App {
     }
 
     showAppWithTransition() {
-        console.log('[App] Showing application with transition - Provider:', this.activeProvider);
+        console.log('[App] Showing application - Provider:', this.activeProvider);
         
         this.hideModernLoading();
         
-        // Retirer le mode login et activer le mode app
+        // Passer en mode app
         document.body.classList.remove('login-mode');
         document.body.classList.add('app-active');
-        console.log('[App] App mode activated');
         
         // Afficher les éléments
         const loginPage = document.getElementById('loginPage');
@@ -1066,71 +853,105 @@ class App {
         
         if (loginPage) {
             loginPage.style.display = 'none';
-            console.log('[App] Login page hidden');
         }
         
         if (appHeader) {
             appHeader.style.display = 'block';
             appHeader.style.opacity = '1';
             appHeader.style.visibility = 'visible';
-            console.log('[App] Header displayed');
         }
         
         if (appNav) {
             appNav.style.display = 'block';
             appNav.style.opacity = '1';
             appNav.style.visibility = 'visible';
-            console.log('[App] Navigation displayed');
         }
         
         if (pageContent) {
             pageContent.style.display = 'block';
             pageContent.style.opacity = '1';
             pageContent.style.visibility = 'visible';
-            console.log('[App] Page content displayed');
         }
         
-        // Mettre à jour l'interface utilisateur avec le provider
+        // Mettre à jour l'interface utilisateur
         if (window.uiManager) {
             window.uiManager.updateAuthStatus(this.user);
         }
         
-        // Mettre à jour l'affichage utilisateur avec badge provider
         if (window.updateUserDisplay) {
             window.updateUserDisplay(this.user);
         }
         
-        // INITIALISATION DASHBOARD VIA MODULE
+        // Charger le dashboard
+        this.loadDashboard();
+        
+        // Forcer l'affichage avec CSS
+        this.forceAppDisplay();
+        
+        console.log(`[App] ✅ Application displayed with ${this.activeProvider} provider`);
+    }
+
+    loadDashboard() {
+        console.log('[App] Loading dashboard...');
+        
         this.currentPage = 'dashboard';
         if (window.setPageMode) {
             window.setPageMode('dashboard');
         }
         
-        // Forcer immédiatement pas de scroll pour le dashboard
         document.body.style.overflow = 'hidden';
         document.body.style.overflowY = 'hidden';
-        console.log('[App] Dashboard scroll forcé à hidden');
         
-        // CHARGER LE DASHBOARD VIA LE MODULE
-        if (window.dashboardModule) {
-            console.log('[App] Loading dashboard via dashboardModule...');
-            setTimeout(() => {
-                window.dashboardModule.render();
-                console.log('[App] Dashboard loaded via module for provider:', this.activeProvider);
-            }, 100);
-        } else {
-            console.warn('[App] Dashboard module not available, will retry...');
-            setTimeout(() => {
-                if (window.dashboardModule) {
+        // Essayer plusieurs méthodes pour charger le dashboard
+        const loadMethods = [
+            // Méthode 1: DashboardModule
+            () => {
+                if (window.dashboardModule && typeof window.dashboardModule.render === 'function') {
+                    console.log('[App] Loading dashboard via dashboardModule.render()');
                     window.dashboardModule.render();
+                    return true;
                 }
-            }, 500);
+                return false;
+            },
+            // Méthode 2: PageManager
+            () => {
+                if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                    console.log('[App] Loading dashboard via pageManager.loadPage()');
+                    window.pageManager.loadPage('dashboard');
+                    return true;
+                }
+                return false;
+            },
+            // Méthode 3: Direct load
+            () => {
+                console.log('[App] Loading dashboard directly');
+                const pageContent = document.getElementById('pageContent');
+                if (pageContent) {
+                    pageContent.innerHTML = '<div class="loading-placeholder">Chargement du dashboard...</div>';
+                    
+                    // Réessayer après un délai
+                    setTimeout(() => {
+                        if (window.dashboardModule) {
+                            window.dashboardModule.render();
+                        } else if (window.pageManager) {
+                            window.pageManager.loadPage('dashboard');
+                        }
+                    }, 500);
+                    return true;
+                }
+                return false;
+            }
+        ];
+        
+        // Essayer chaque méthode
+        for (const method of loadMethods) {
+            if (method()) {
+                console.log('[App] Dashboard load initiated');
+                return;
+            }
         }
         
-        // Forcer l'affichage avec CSS
-        this.forceAppDisplay();
-        
-        console.log(`[App] ✅ Application fully displayed with ${this.activeProvider} provider`);
+        console.error('[App] Failed to load dashboard');
     }
 
     forceAppDisplay() {
@@ -1163,9 +984,11 @@ class App {
         }
         
         document.head.appendChild(forceDisplayStyle);
-        console.log('[App] Force display CSS injected');
     }
 
+    // =====================================
+    // AFFICHAGE DES MESSAGES
+    // =====================================
     showModernLoading(message = 'Chargement...') {
         const loadingOverlay = document.getElementById('loadingOverlay');
         if (loadingOverlay) {
@@ -1267,7 +1090,7 @@ class App {
     }
 
     // =====================================
-    // DIAGNOSTIC ET INFORMATIONS DUAL PROVIDER
+    // DIAGNOSTIC
     // =====================================
     getDiagnosticInfo() {
         return {
@@ -1280,37 +1103,29 @@ class App {
             } : null,
             currentPage: this.currentPage,
             isInitialized: !this.isInitializing,
+            modulesReady: this.modulesReady,
             microsoftAuthService: window.authService ? {
                 isInitialized: window.authService.isInitialized,
                 isAuthenticated: window.authService.isAuthenticated()
             } : null,
             googleAuthService: window.googleAuthService ? {
                 isInitialized: window.googleAuthService.isInitialized,
-                isAuthenticated: window.googleAuthService.isAuthenticated(),
-                method: 'Direct OAuth2 (sans iframe)',
-                avoidsiFrameError: true
+                isAuthenticated: window.googleAuthService.isAuthenticated()
             } : null,
             categoryManager: window.categoryManager ? {
                 isInitialized: window.categoryManager.isInitialized,
                 categoriesCount: Object.keys(window.categoryManager.getCategories()).length
             } : null,
-            services: window.checkServices ? window.checkServices() : null,
-            googleCallbackData: sessionStorage.getItem('google_callback_data'),
-            sessionData: {
-                googleCallback: !!sessionStorage.getItem('google_callback_data'),
-                googleToken: !!localStorage.getItem('google_token_emailsortpro'),
-                directToken: !!sessionStorage.getItem('direct_token_data')
-            }
+            version: 'v4.3-optimized'
         };
     }
 }
 
 // =====================================
-// FONCTIONS GLOBALES D'URGENCE DUAL PROVIDER
+// FONCTIONS GLOBALES
 // =====================================
-
 window.emergencyReset = function() {
-    console.log('[App] Emergency reset triggered for dual provider');
+    console.log('[App] Emergency reset triggered');
     
     const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
     const allKeys = Object.keys(localStorage);
@@ -1325,7 +1140,6 @@ window.emergencyReset = function() {
         }
     });
     
-    // Nettoyer sessionStorage
     try {
         sessionStorage.clear();
     } catch (e) {
@@ -1355,98 +1169,27 @@ window.forceShowApp = function() {
     }
 };
 
-// =====================================
-// VÉRIFICATION DES SERVICES DUAL PROVIDER
-// =====================================
-function checkServicesReady() {
-    const requiredServices = ['uiManager'];
-    const authServices = ['authService', 'googleAuthService'];
-    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule'];
-    
-    const missingRequired = requiredServices.filter(service => !window[service]);
-    const availableAuthServices = authServices.filter(service => window[service]);
-    const missingOptional = optionalServices.filter(service => !window[service]);
-    
-    if (missingRequired.length > 0) {
-        console.error('[App] Missing REQUIRED services:', missingRequired);
-        return false;
-    }
-    
-    if (availableAuthServices.length === 0) {
-        console.error('[App] No authentication services available:', authServices);
-        return false;
-    }
-    
-    if (missingOptional.length > 0) {
-        console.warn('[App] Missing optional services:', missingOptional);
-    }
-    
-    if (!window.AppConfig) {
-        console.error('[App] Missing AppConfig');
-        return false;
-    }
-    
-    console.log('[App] Available auth services:', availableAuthServices);
-    return true;
-}
-
 // ================================================
-// INITIALISATION PRINCIPALE DUAL PROVIDER V4.2
+// INITIALISATION PRINCIPALE
 // ================================================
-
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, initializing EmailSortPro v4.2...');
+    console.log('[App] DOM loaded, initializing EmailSortPro v4.3...');
     
     document.body.classList.add('login-mode');
     
-    // Fonction pour créer l'app quand CategoryManager est prêt
-    const createAppWhenReady = () => {
-        console.log('[App] Creating app instance...');
-        window.app = new App();
-        
-        // Lancer l'initialisation
-        setTimeout(() => {
-            window.app.init().catch(error => {
-                console.error('[App] Initialization failed:', error);
-                window.app.showError('Failed to initialize the application. Please refresh the page.');
-            });
-        }, 100);
-    };
+    // Créer l'app immédiatement
+    window.app = new App();
     
-    // Vérifier si CategoryManager existe déjà
-    if (window.categoryManager && window.categoryManager.isInitialized) {
-        console.log('[App] CategoryManager already available');
-        createAppWhenReady();
-    } else {
-        console.log('[App] Waiting for CategoryManager...');
-        
-        // Écouter l'événement de création du CategoryManager
-        window.addEventListener('categoryManagerReady', () => {
-            console.log('[App] CategoryManager ready event received');
-            createAppWhenReady();
+    // Lancer l'initialisation après un court délai pour laisser les modules se charger
+    setTimeout(() => {
+        window.app.init().catch(error => {
+            console.error('[App] Initialization failed:', error);
+            window.app.showError('Failed to initialize the application. Please refresh the page.');
         });
-        
-        // Vérification périodique au cas où l'événement serait manqué
-        let checkInterval = setInterval(() => {
-            if (window.categoryManager && window.categoryManager.isInitialized) {
-                console.log('[App] CategoryManager detected via polling');
-                clearInterval(checkInterval);
-                createAppWhenReady();
-            }
-        }, 100);
-        
-        // Timeout de sécurité
-        setTimeout(() => {
-            clearInterval(checkInterval);
-            if (!window.app) {
-                console.error('[App] Timeout waiting for CategoryManager');
-                // Créer l'app même si CategoryManager n'est pas prêt
-                createAppWhenReady();
-            }
-        }, 5000);
-    }
+    }, 100);
 });
 
+// Vérification de sécurité après chargement complet
 window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.app) {
@@ -1467,39 +1210,32 @@ window.addEventListener('load', () => {
 });
 
 // =====================================
-// DIAGNOSTIC GLOBAL DUAL PROVIDER
+// DIAGNOSTIC GLOBAL
 // =====================================
 window.diagnoseApp = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER - EmailSortPro v4.2');
+    console.group('🔍 DIAGNOSTIC APPLICATION v4.3');
     
     try {
         if (window.app) {
             const appDiag = window.app.getDiagnosticInfo();
             console.log('📱 App Status:', appDiag);
             
-            // Services
-            if (appDiag.services) {
-                console.log('🛠️ Services:', appDiag.services);
-            }
+            console.group('🛠️ Modules Status');
+            Object.entries(appDiag.modulesReady).forEach(([module, ready]) => {
+                console.log(`${module}: ${ready ? '✅' : '❌'}`);
+            });
+            console.groupEnd();
             
-            // Microsoft
             if (appDiag.microsoftAuthService) {
                 console.log('🔵 Microsoft Auth:', appDiag.microsoftAuthService);
             }
             
-            // Google
             if (appDiag.googleAuthService) {
                 console.log('🔴 Google Auth:', appDiag.googleAuthService);
             }
             
-            // CategoryManager
             if (appDiag.categoryManager) {
                 console.log('📂 CategoryManager:', appDiag.categoryManager);
-            }
-            
-            // Session Data
-            if (appDiag.sessionData) {
-                console.log('💾 Session Data:', appDiag.sessionData);
             }
             
             return appDiag;
@@ -1515,4 +1251,4 @@ window.diagnoseApp = function() {
     }
 };
 
-console.log('✅ App v4.2 loaded - DUAL PROVIDER (Microsoft + Google) with CategoryManager support - COMPLET ET CORRIGÉ');
+console.log('✅ App v4.3 loaded - Optimized loading with improved module handling');
