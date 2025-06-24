@@ -1,6 +1,7 @@
-// StartScan.js - Version 10.0 - Détection automatique Outlook/Gmail
+// StartScan.js - Version 11.0 - Détection automatique Outlook/Gmail SANS LIMITES
+// Même structure qu'Outlook pour tous les providers
 
-console.log('[StartScan] 🚀 Loading StartScan.js v10.0 - Provider Detection...');
+console.log('[StartScan] 🚀 Loading StartScan.js v11.0 - Provider Detection UNLIMITED...');
 
 class UnifiedScanModule {
     constructor() {
@@ -17,7 +18,22 @@ class UnifiedScanModule {
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        console.log('[UnifiedScan] Scanner v10.0 initialized - Auto-detection Provider');
+        // NOUVEAU: Configuration scan illimité pour tous les providers
+        this.scanLimits = {
+            outlook: {
+                maxEmails: Number.MAX_SAFE_INTEGER,
+                batchSize: 1000,
+                defaultTop: 1000
+            },
+            gmail: {
+                maxEmails: Number.MAX_SAFE_INTEGER,
+                batchSize: 500,
+                defaultTop: 500
+            }
+        };
+        
+        console.log('[UnifiedScan] Scanner v11.0 initialized - Auto-detection Provider UNLIMITED');
+        console.log('[UnifiedScan] 🚀 Scan mode: ILLIMITÉ pour tous les providers');
         this.detectProvider();
         this.loadSettingsFromCategoryManager();
         this.addMinimalStyles();
@@ -29,10 +45,10 @@ class UnifiedScanModule {
     detectProvider() {
         if (window.googleAuthService?.isAuthenticated()) {
             this.provider = 'gmail';
-            console.log('[UnifiedScan] 📧 Provider détecté: Gmail');
+            console.log('[UnifiedScan] 📧 Provider détecté: Gmail - UNLIMITED');
         } else if (window.authService?.isAuthenticated()) {
             this.provider = 'outlook';
-            console.log('[UnifiedScan] 📧 Provider détecté: Outlook');
+            console.log('[UnifiedScan] 📧 Provider détecté: Outlook - UNLIMITED');
         } else {
             this.provider = null;
             console.log('[UnifiedScan] ⚠️ Aucun provider authentifié');
@@ -50,18 +66,35 @@ class UnifiedScanModule {
 
         if (!this.scanner) {
             if (this.provider === 'gmail') {
+                // Vérifier d'abord EmailScannerGmail, sinon utiliser EmailScanner unifié
                 if (window.EmailScannerGmail) {
                     this.scanner = window.emailScannerGmail || new window.EmailScannerGmail();
-                    console.log('[UnifiedScan] ✅ Scanner Gmail initialisé');
+                    console.log('[UnifiedScan] ✅ Scanner Gmail spécifique initialisé - UNLIMITED');
+                } else if (window.EmailScanner) {
+                    // Fallback sur scanner unifié
+                    this.scanner = window.emailScanner || new window.EmailScanner();
+                    console.log('[UnifiedScan] ✅ Scanner unifié initialisé pour Gmail - UNLIMITED');
                 } else {
-                    console.error('[UnifiedScan] ❌ EmailScannerGmail non disponible');
+                    console.error('[UnifiedScan] ❌ Aucun scanner disponible pour Gmail');
                 }
             } else if (this.provider === 'outlook') {
                 if (window.EmailScannerOutlook) {
                     this.scanner = window.emailScannerOutlook || new window.EmailScannerOutlook();
-                    console.log('[UnifiedScan] ✅ Scanner Outlook initialisé');
+                    console.log('[UnifiedScan] ✅ Scanner Outlook spécifique initialisé - UNLIMITED');
+                } else if (window.EmailScanner) {
+                    // Fallback sur scanner unifié
+                    this.scanner = window.emailScanner || new window.EmailScanner();
+                    console.log('[UnifiedScan] ✅ Scanner unifié initialisé pour Outlook - UNLIMITED');
                 } else {
-                    console.error('[UnifiedScan] ❌ EmailScannerOutlook non disponible');
+                    console.error('[UnifiedScan] ❌ Aucun scanner disponible pour Outlook');
+                }
+            }
+            
+            // Configurer le scanner pour le mode illimité
+            if (this.scanner) {
+                console.log('[UnifiedScan] 🚀 Configuration du scanner en mode ILLIMITÉ');
+                if (typeof this.scanner.setScanLimits === 'function') {
+                    this.scanner.setScanLimits(this.scanLimits[this.provider]);
                 }
             }
         }
@@ -126,7 +159,7 @@ class UnifiedScanModule {
         const styles = document.createElement('style');
         styles.id = 'unified-scan-styles';
         styles.textContent = `
-            /* Scanner Unifié v10.0 */
+            /* Scanner Unifié v11.0 - UNLIMITED */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -210,6 +243,25 @@ class UnifiedScanModule {
 
             .provider-badge i {
                 font-size: 16px;
+            }
+            
+            .unlimited-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                border-radius: 12px;
+                padding: 4px 12px;
+                font-size: 12px;
+                font-weight: 700;
+                margin-left: 8px;
+                animation: pulse 2s ease-in-out infinite;
+            }
+            
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
             }
             
             #preselected-categories-display {
@@ -501,6 +553,24 @@ class UnifiedScanModule {
                 text-align: center;
             }
             
+            .scan-limit-info {
+                background: rgba(16, 185, 129, 0.1);
+                border: 1px solid rgba(16, 185, 129, 0.3);
+                border-radius: 8px;
+                padding: 8px 12px;
+                margin-top: 12px;
+                font-size: 13px;
+                color: #059669;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .scan-limit-info i {
+                font-size: 14px;
+            }
+            
             @media (max-width: 480px) {
                 .scanner-card-minimal {
                     padding: 35px 25px;
@@ -533,14 +603,14 @@ class UnifiedScanModule {
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[UnifiedScan] ✅ Styles v10.0 ajoutés');
+        console.log('[UnifiedScan] ✅ Styles v11.0 ajoutés - Mode UNLIMITED');
     }
 
     // ================================================
     // RENDER PRINCIPAL
     // ================================================
     async render(container) {
-        console.log('[UnifiedScan] 🎯 Rendu du scanner unifié...');
+        console.log('[UnifiedScan] 🎯 Rendu du scanner unifié ILLIMITÉ...');
         
         try {
             this.addMinimalStyles();
@@ -559,7 +629,7 @@ class UnifiedScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[UnifiedScan] ✅ Scanner rendu avec succès - Provider:', this.provider);
+            console.log('[UnifiedScan] ✅ Scanner rendu avec succès - Provider:', this.provider, '- Mode: UNLIMITED');
             
         } catch (error) {
             console.error('[UnifiedScan] ❌ Erreur lors du rendu:', error);
@@ -573,6 +643,7 @@ class UnifiedScanModule {
             '<i class="fab fa-microsoft"></i>';
         
         const providerName = this.provider === 'gmail' ? 'Gmail' : 'Outlook';
+        const scanCapacity = this.scanLimits[this.provider] || this.scanLimits.outlook;
         
         return `
             <div class="minimal-scanner">
@@ -587,6 +658,10 @@ class UnifiedScanModule {
                     <div class="provider-badge ${this.provider}">
                         ${providerIcon}
                         <span>Connecté avec ${providerName}</span>
+                        <span class="unlimited-badge">
+                            <i class="fas fa-infinity"></i>
+                            ILLIMITÉ
+                        </span>
                     </div>
                     
                     <div id="preselected-categories-display">
@@ -619,6 +694,11 @@ class UnifiedScanModule {
                         <i class="fas fa-play"></i>
                         <span>Démarrer l'analyse intelligente</span>
                     </button>
+                    
+                    <div class="scan-limit-info">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Scan illimité - Pas de restriction sur le nombre d'emails</span>
+                    </div>
                     
                     <div class="progress-section-minimal" id="progressSection">
                         <div class="progress-bar-minimal">
@@ -703,7 +783,11 @@ class UnifiedScanModule {
             { value: 3, label: '3 jours' },
             { value: 7, label: '7 jours' },
             { value: 15, label: '15 jours' },
-            { value: 30, label: '30 jours' }
+            { value: 30, label: '30 jours' },
+            { value: 90, label: '3 mois' },
+            { value: 180, label: '6 mois' },
+            { value: 365, label: '1 an' },
+            { value: 9999, label: 'Tout' }
         ];
         
         return options.map(option => {
@@ -724,6 +808,8 @@ class UnifiedScanModule {
         if (this.provider) {
             details.push(`Provider: ${this.provider === 'gmail' ? 'Gmail' : 'Outlook'}`);
         }
+        
+        details.push('🚀 Scan illimité activé');
         
         if (this.taskPreselectedCategories.length > 0) {
             details.push(`${this.taskPreselectedCategories.length} catégorie(s) pour tâches`);
@@ -780,13 +866,15 @@ class UnifiedScanModule {
         if (!window.mailService) {
             console.warn('[UnifiedScan] ⚠️ MailService non disponible');
         }
+        
+        console.log('[UnifiedScan] ✅ Services vérifiés - Mode ILLIMITÉ actif');
     }
 
     // ================================================
     // GESTION DES ÉVÉNEMENTS
     // ================================================
     initializeEvents() {
-        console.log('[UnifiedScan] ✅ Événements initialisés');
+        console.log('[UnifiedScan] ✅ Événements initialisés - Mode UNLIMITED');
         
         if (this.settingsCheckInterval) {
             clearInterval(this.settingsCheckInterval);
@@ -857,7 +945,7 @@ class UnifiedScanModule {
     }
 
     // ================================================
-    // DÉMARRAGE DU SCAN
+    // DÉMARRAGE DU SCAN - SANS LIMITES
     // ================================================
     async startScan() {
         if (this.scanInProgress) {
@@ -865,8 +953,9 @@ class UnifiedScanModule {
             return;
         }
         
-        console.log('[UnifiedScan] 🚀 Démarrage du scan -', this.provider);
+        console.log('[UnifiedScan] 🚀 Démarrage du scan ILLIMITÉ -', this.provider);
         console.log('[UnifiedScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+        console.log('[UnifiedScan] 📊 Capacités de scan:', this.scanLimits[this.provider]);
         
         try {
             this.scanInProgress = true;
@@ -896,7 +985,7 @@ class UnifiedScanModule {
             
             const scanOptions = this.prepareScanOptions();
             
-            // Déléguer au scanner approprié
+            // Déléguer au scanner approprié avec options illimitées
             const results = await this.scanner.scan(scanOptions);
             this.scanResults = results;
             
@@ -910,13 +999,25 @@ class UnifiedScanModule {
     }
 
     prepareScanOptions() {
+        const scanCapacity = this.scanLimits[this.provider] || this.scanLimits.outlook;
+        
+        // Calculer le nombre d'emails à scanner en mode illimité
+        let maxEmails = scanCapacity.maxEmails;
+        if (this.selectedDays < 9999) {
+            // Estimation approximative : 100 emails par jour en moyenne
+            maxEmails = Math.min(this.selectedDays * 100, scanCapacity.maxEmails);
+        }
+        
         const baseOptions = {
-            days: this.selectedDays,
+            days: this.selectedDays === 9999 ? 10000 : this.selectedDays, // 10000 jours = tout
             folder: this.settings.scanSettings?.defaultFolder || 'inbox',
             autoAnalyze: this.settings.scanSettings?.autoAnalyze !== false,
             autoCategrize: this.settings.scanSettings?.autoCategrize !== false,
             includeSpam: !this.settings.preferences?.excludeSpam,
             detectCC: this.settings.preferences?.detectCC !== false,
+            maxEmails: maxEmails,
+            batchSize: scanCapacity.batchSize,
+            unlimited: true,
             onProgress: (progress) => this.updateProgress(
                 progress.progress?.current || 0, 
                 progress.message || '', 
@@ -928,7 +1029,7 @@ class UnifiedScanModule {
             baseOptions.taskPreselectedCategories = [...this.taskPreselectedCategories];
         }
         
-        console.log('[UnifiedScan] 📊 Options de scan:', baseOptions);
+        console.log('[UnifiedScan] 📊 Options de scan ILLIMITÉES:', baseOptions);
         return baseOptions;
     }
 
@@ -958,15 +1059,20 @@ class UnifiedScanModule {
             const scanBtn = document.getElementById('unifiedScanBtn');
             if (scanBtn) {
                 const preselectedCount = this.scanResults?.stats?.preselectedForTasks || 0;
+                const totalEmails = this.scanResults?.total || 0;
                 
                 scanBtn.innerHTML = `<i class="fas fa-check"></i> <span>Scan terminé !</span>`;
                 scanBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                 
-                if (preselectedCount > 0) {
+                if (totalEmails > 0) {
                     scanBtn.style.position = 'relative';
+                    const badgeText = preselectedCount > 0 ? 
+                        `${totalEmails} emails • ⭐ ${preselectedCount} pour tâches` :
+                        `${totalEmails} emails analysés`;
+                        
                     scanBtn.insertAdjacentHTML('beforeend', `
                         <span class="success-badge">
-                            ⭐ ${preselectedCount} emails pour tâches
+                            ${badgeText}
                         </span>
                     `);
                 }
@@ -989,7 +1095,9 @@ class UnifiedScanModule {
             preselectedForTasks: this.scanResults?.stats?.preselectedForTasks || 0,
             scanDuration: Math.floor((Date.now() - this.scanStartTime) / 1000),
             timestamp: Date.now(),
-            provider: this.provider
+            provider: this.provider,
+            unlimited: true,
+            maxEmails: this.scanResults?.total || 0
         };
         
         try {
@@ -1066,7 +1174,7 @@ class UnifiedScanModule {
         this.loadSettingsFromCategoryManager();
         this.updatePreselectedCategoriesDisplay();
         
-        console.log('[UnifiedScan] 🔄 Scanner réinitialisé');
+        console.log('[UnifiedScan] 🔄 Scanner réinitialisé - Mode UNLIMITED');
     }
 
     updateSettings(newSettings) {
@@ -1094,7 +1202,9 @@ class UnifiedScanModule {
             lastSettingsSync: this.lastSettingsSync,
             scanResults: this.scanResults,
             provider: this.provider,
-            scanner: this.scanner ? this.scanner.constructor.name : null
+            scanner: this.scanner ? this.scanner.constructor.name : null,
+            scanLimits: this.scanLimits[this.provider],
+            unlimitedMode: true
         };
     }
 
@@ -1131,4 +1241,5 @@ window.unifiedScanModule = new UnifiedScanModule();
 window.minimalScanModule = window.unifiedScanModule;
 window.scanStartModule = window.unifiedScanModule;
 
-console.log('[StartScan] ✅ Scanner unifié v10.0 chargé - Détection automatique Outlook/Gmail!');
+console.log('[StartScan] ✅ Scanner unifié v11.0 chargé - Détection automatique Outlook/Gmail!');
+console.log('[StartScan] 🚀 Mode: SCAN ILLIMITÉ - Aucune restriction!');
