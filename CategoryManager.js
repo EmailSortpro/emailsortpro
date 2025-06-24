@@ -1,7 +1,9 @@
-// CategoryManager.js - Version 26.0 - COMPLET ET CORRIGÉ
+// CategoryManager.js - Version 26.1 - CORRIGÉ avec notification d'initialisation
 
 class CategoryManager {
     constructor() {
+        console.log('[CategoryManager] 🚀 Constructor starting v26.1...');
+        
         this.categories = {};
         this.keywordCatalog = {};
         this.customCategories = {};
@@ -32,13 +34,47 @@ class CategoryManager {
             }
         };
         
-        this.initializeCategories();
-        this.loadCustomCategories();
-        this.initializeKeywordCatalog();
-        this.setupEventListeners();
+        // Initialisation synchrone des composants critiques
+        try {
+            this.initializeCategories();
+            this.loadCustomCategories();
+            this.initializeKeywordCatalog();
+            this.setupEventListeners();
+            
+            this.isInitialized = true;
+            console.log('[CategoryManager] ✅ Version 26.1 - Initialized successfully');
+            
+            // Notifier que CategoryManager est prêt
+            this.notifyReady();
+            
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Initialization error:', error);
+            this.isInitialized = false;
+        }
+    }
+
+    // ================================================
+    // NOTIFICATION DE DISPONIBILITÉ
+    // ================================================
+    notifyReady() {
+        console.log('[CategoryManager] 📢 Notifying that CategoryManager is ready');
         
-        this.isInitialized = true;
-        console.log('[CategoryManager] ✅ Version 26.0 - Détection newsletter ULTRA-RENFORCÉE corrigée');
+        // Dispatcher un événement custom
+        try {
+            window.dispatchEvent(new CustomEvent('categoryManagerReady', {
+                detail: {
+                    isInitialized: this.isInitialized,
+                    categoriesCount: Object.keys(this.categories).length,
+                    version: '26.1'
+                }
+            }));
+            console.log('[CategoryManager] ✅ Ready event dispatched');
+        } catch (error) {
+            console.error('[CategoryManager] Error dispatching ready event:', error);
+        }
+        
+        // Marquer globalement comme prêt
+        window.categoryManagerReady = true;
     }
 
     // ================================================
@@ -1627,8 +1663,13 @@ class CategoryManager {
     }
 
     escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\    isInCC(email) {
-        if (!email.ccRecipients || !Array.is');
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\    cleanAndNormalizeText(text) {
+        if (!text) return '';
+        
+        return text
+            // Gérer encodage défectueux
+            .replace(/Ã©/g, 'é')
+            .replace(/Ã¨/g, 'è')');
     }
 
     shouldExcludeSpam() {
@@ -1962,7 +2003,7 @@ class CategoryManager {
         
         const result = this.analyzeEmail(testEmail);
         
-        console.log('\n[CategoryManager] TEST RESULT v26.0:');
+        console.log('\n[CategoryManager] TEST RESULT v26.1:');
         console.log(`Subject: "${subject}"`);
         console.log(`From: ${from}`);
         console.log(`Category: ${result.category} (expected: ${expectedCategory || 'any'})`);
@@ -1981,7 +2022,7 @@ class CategoryManager {
     }
 
     runDiagnostics() {
-        console.group('🏥 DIAGNOSTIC CategoryManager v26.0');
+        console.group('🏥 DIAGNOSTIC CategoryManager v26.1');
         
         console.group('📂 Catégories');
         const allCategories = Object.keys(this.categories);
@@ -2080,7 +2121,7 @@ class CategoryManager {
             canScan: emailMethods.available,
             scanHistory: this.scanHistory.length,
             hasLastScan: !!this.lastScanResults,
-            version: 'v26.0-CORRIGÉ'
+            version: 'v26.1-CORRIGÉ'
         };
     }
 
@@ -2109,18 +2150,37 @@ class CategoryManager {
 // ================================================
 if (window.categoryManager) {
     console.log('[CategoryManager] 🔄 Nettoyage ancienne instance...');
-    window.categoryManager.destroy?.();
+    try {
+        window.categoryManager.destroy?.();
+    } catch (e) {
+        console.warn('[CategoryManager] Erreur nettoyage:', e);
+    }
 }
 
-console.log('[CategoryManager] 🚀 Création nouvelle instance v26.0 CORRIGÉE...');
-window.categoryManager = new CategoryManager();
+console.log('[CategoryManager] 🚀 Création nouvelle instance v26.1 CORRIGÉE...');
+
+try {
+    window.categoryManager = new CategoryManager();
+    console.log('[CategoryManager] ✅ Instance créée avec succès');
+} catch (error) {
+    console.error('[CategoryManager] ❌ Erreur création instance:', error);
+    
+    // Notifier quand même que le chargement est terminé (avec erreur)
+    window.dispatchEvent(new CustomEvent('categoryManagerReady', {
+        detail: {
+            isInitialized: false,
+            error: error.message,
+            version: '26.1'
+        }
+    }));
+}
 
 // ================================================
 // FONCTIONS DE TEST GLOBALES
 // ================================================
 
 window.testCategoryManagerV26 = function() {
-    console.group('🧪 TEST CategoryManager v26.0 - Newsletter Detection CORRIGÉE');
+    console.group('🧪 TEST CategoryManager v26.1 - Newsletter Detection CORRIGÉE');
     
     const tests = [
         // Tests Newsletter Ultra-Enhanced
@@ -2164,12 +2224,12 @@ window.testCategoryManagerV26 = function() {
         canScan: emailMethods.available,
         provider: provider?.type || null,
         newsletterDetectionUltraEnhanced: true,
-        version: 'v26.0-CORRIGÉE'
+        version: 'v26.1-CORRIGÉE'
     };
 };
 
 window.debugCategoryKeywordsV26 = function() {
-    console.group('🔍 DEBUG Mots-clés v26.0 - Newsletter ULTRA-ENHANCED');
+    console.group('🔍 DEBUG Mots-clés v26.1 - Newsletter ULTRA-ENHANCED');
     const catalog = window.categoryManager.keywordCatalog;
     
     if (catalog.marketing_news) {
@@ -2219,7 +2279,7 @@ window.debugCategoryKeywordsV26 = function() {
 };
 
 window.testSpecificExamplesV26 = function() {
-    console.group('🧪 TEST Exemples Spécifiques v26.0');
+    console.group('🧪 TEST Exemples Spécifiques v26.1');
     
     const examples = [
         {
@@ -2254,8 +2314,9 @@ window.testSpecificExamplesV26 = function() {
     console.groupEnd();
 };
 
-console.log('✅ CategoryManager v26.0 loaded - COMPLET ET CORRIGÉ');
+console.log('✅ CategoryManager v26.1 loaded - COMPLET ET CORRIGÉ avec notification');
 console.log('🔥 Priorité ABSOLUE pour newsletters avec seuils ultra-permissifs');
+console.log('📢 Notification automatique quand prêt');
 console.log('📧 Utilisez testCategoryManagerV26() pour tester');
 console.log('📧 Utilisez debugCategoryKeywordsV26() pour voir les mots-clés');
 console.log('📧 Utilisez testSpecificExamplesV26() pour tester les exemples spécifiques');
