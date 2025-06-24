@@ -1,4 +1,4 @@
-// app.js - Application EmailSortPro avec authentification dual provider (Microsoft + Google) v4.1 - CORRIGÉ
+// app.js - Application EmailSortPro avec authentification dual provider (Microsoft + Google) v4.2 - COMPLET ET CORRIGÉ
 
 class App {
     constructor() {
@@ -326,56 +326,102 @@ class App {
     }
 
     // =====================================
-    // VÉRIFICATION CATEGORYMANAGER CORRIGÉE
+    // VÉRIFICATION CATEGORYMANAGER CORRIGÉE V4.2
     // =====================================
     async ensureCategoryManagerReady() {
         console.log('[App] Ensuring CategoryManager is ready...');
         
+        // Vérification rapide si déjà prêt
         if (window.categoryManager && window.categoryManager.isInitialized) {
             console.log('[App] ✅ CategoryManager already ready');
-            return true;
+            return this.validateCategoryManager();
         }
         
-        let attempts = 0;
-        const maxAttempts = 100; // Augmenté car CategoryManager peut prendre du temps
+        // Attendre que CategoryManager soit créé
+        console.log('[App] ⏳ Waiting for CategoryManager creation...');
         
-        while ((!window.categoryManager || !window.categoryManager.isInitialized) && attempts < maxAttempts) {
+        // D'abord, attendre que la classe CategoryManager soit définie
+        let classAttempts = 0;
+        const maxClassAttempts = 50;
+        
+        while (typeof CategoryManager === 'undefined' && classAttempts < maxClassAttempts) {
             await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
+            classAttempts++;
             
-            // Log tous les 10 attempts
-            if (attempts % 10 === 0) {
-                console.log(`[App] ⏳ Waiting for CategoryManager... (${attempts}/${maxAttempts})`);
-                
-                // Vérifier si CategoryManager existe mais n'est pas initialisé
-                if (window.categoryManager && !window.categoryManager.isInitialized) {
-                    console.log('[App] 🔄 CategoryManager exists but not initialized, waiting...');
+            if (classAttempts % 10 === 0) {
+                console.log(`[App] ⏳ Waiting for CategoryManager class... (${classAttempts}/${maxClassAttempts})`);
+            }
+        }
+        
+        if (typeof CategoryManager === 'undefined') {
+            console.error('[App] ❌ CategoryManager class not found');
+            return false;
+        }
+        
+        console.log('[App] ✅ CategoryManager class found');
+        
+        // Ensuite, attendre l'instance globale ou la créer
+        let instanceAttempts = 0;
+        const maxInstanceAttempts = 50;
+        
+        while (!window.categoryManager && instanceAttempts < maxInstanceAttempts) {
+            // Si après 10 tentatives toujours pas d'instance, essayer de la créer
+            if (instanceAttempts === 10) {
+                console.log('[App] 🔧 Creating CategoryManager instance manually...');
+                try {
+                    window.categoryManager = new CategoryManager();
+                    console.log('[App] ✅ CategoryManager instance created manually');
+                    break;
+                } catch (error) {
+                    console.error('[App] ❌ Failed to create CategoryManager:', error);
                 }
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            instanceAttempts++;
+            
+            if (instanceAttempts % 10 === 0) {
+                console.log(`[App] ⏳ Waiting for CategoryManager instance... (${instanceAttempts}/${maxInstanceAttempts})`);
             }
         }
         
         if (!window.categoryManager) {
-            console.error('[App] ❌ CategoryManager not found after waiting');
-            
-            // Tentative de création manuelle si le script est chargé
-            if (typeof CategoryManager !== 'undefined') {
-                console.log('[App] 🔧 Attempting to create CategoryManager manually...');
-                try {
-                    window.categoryManager = new CategoryManager();
-                    if (window.categoryManager.isInitialized) {
-                        console.log('[App] ✅ CategoryManager created manually');
-                        return true;
-                    }
-                } catch (error) {
-                    console.error('[App] ❌ Failed to create CategoryManager manually:', error);
-                }
-            }
-            
+            console.error('[App] ❌ CategoryManager instance not available');
             return false;
+        }
+        
+        // Attendre l'initialisation complète
+        let initAttempts = 0;
+        const maxInitAttempts = 30;
+        
+        while (!window.categoryManager.isInitialized && initAttempts < maxInitAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            initAttempts++;
+            
+            if (initAttempts % 5 === 0) {
+                console.log(`[App] ⏳ Waiting for CategoryManager initialization... (${initAttempts}/${maxInitAttempts})`);
+            }
         }
         
         if (!window.categoryManager.isInitialized) {
             console.error('[App] ❌ CategoryManager not initialized after waiting');
+            return false;
+        }
+        
+        // Valider que tout est fonctionnel
+        return this.validateCategoryManager();
+    }
+    
+    validateCategoryManager() {
+        console.log('[App] 🔍 Validating CategoryManager...');
+        
+        if (!window.categoryManager) {
+            console.error('[App] ❌ CategoryManager not found');
+            return false;
+        }
+        
+        if (!window.categoryManager.isInitialized) {
+            console.error('[App] ❌ CategoryManager not initialized');
             return false;
         }
         
@@ -388,9 +434,16 @@ class App {
             }
         }
         
-        const categoriesCount = Object.keys(window.categoryManager.getCategories()).length;
-        console.log('[App] ✅ CategoryManager ready with', categoriesCount, 'categories');
+        // Vérifier que les catégories sont chargées
+        const categories = window.categoryManager.getCategories();
+        const categoriesCount = Object.keys(categories).length;
         
+        if (categoriesCount === 0) {
+            console.error('[App] ❌ CategoryManager has no categories');
+            return false;
+        }
+        
+        console.log('[App] ✅ CategoryManager validated with', categoriesCount, 'categories');
         return true;
     }
 
@@ -1337,38 +1390,61 @@ function checkServicesReady() {
     return true;
 }
 
-// =====================================
-// INITIALISATION PRINCIPALE DUAL PROVIDER
-// =====================================
+// ================================================
+// INITIALISATION PRINCIPALE DUAL PROVIDER V4.2
+// ================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating dual provider app instance...');
+    console.log('[App] DOM loaded, initializing EmailSortPro v4.2...');
     
     document.body.classList.add('login-mode');
     
-    window.app = new App();
-    
-    const waitForServices = (attempts = 0) => {
-        const maxAttempts = 50;
+    // Fonction pour créer l'app quand CategoryManager est prêt
+    const createAppWhenReady = () => {
+        console.log('[App] Creating app instance...');
+        window.app = new App();
         
-        if (checkServicesReady()) {
-            console.log('[App] All required services ready, initializing dual provider app...');
-            
-            setTimeout(() => {
-                window.app.init();
-            }, 100);
-        } else if (attempts < maxAttempts) {
-            console.log(`[App] Waiting for services... (${attempts + 1}/${maxAttempts})`);
-            setTimeout(() => waitForServices(attempts + 1), 100);
-        } else {
-            console.error('[App] Timeout waiting for services, initializing anyway...');
-            setTimeout(() => {
-                window.app.init();
-            }, 100);
-        }
+        // Lancer l'initialisation
+        setTimeout(() => {
+            window.app.init().catch(error => {
+                console.error('[App] Initialization failed:', error);
+                window.app.showError('Failed to initialize the application. Please refresh the page.');
+            });
+        }, 100);
     };
     
-    waitForServices();
+    // Vérifier si CategoryManager existe déjà
+    if (window.categoryManager && window.categoryManager.isInitialized) {
+        console.log('[App] CategoryManager already available');
+        createAppWhenReady();
+    } else {
+        console.log('[App] Waiting for CategoryManager...');
+        
+        // Écouter l'événement de création du CategoryManager
+        window.addEventListener('categoryManagerReady', () => {
+            console.log('[App] CategoryManager ready event received');
+            createAppWhenReady();
+        });
+        
+        // Vérification périodique au cas où l'événement serait manqué
+        let checkInterval = setInterval(() => {
+            if (window.categoryManager && window.categoryManager.isInitialized) {
+                console.log('[App] CategoryManager detected via polling');
+                clearInterval(checkInterval);
+                createAppWhenReady();
+            }
+        }, 100);
+        
+        // Timeout de sécurité
+        setTimeout(() => {
+            clearInterval(checkInterval);
+            if (!window.app) {
+                console.error('[App] Timeout waiting for CategoryManager');
+                // Créer l'app même si CategoryManager n'est pas prêt
+                createAppWhenReady();
+            }
+        }, 5000);
+    }
 });
 
 window.addEventListener('load', () => {
@@ -1394,7 +1470,7 @@ window.addEventListener('load', () => {
 // DIAGNOSTIC GLOBAL DUAL PROVIDER
 // =====================================
 window.diagnoseApp = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER - EmailSortPro v4.1');
+    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER - EmailSortPro v4.2');
     
     try {
         if (window.app) {
@@ -1439,4 +1515,4 @@ window.diagnoseApp = function() {
     }
 };
 
-console.log('✅ App v4.1 loaded - DUAL PROVIDER (Microsoft + Google) with CategoryManager support - NO IFRAME ERRORS');
+console.log('✅ App v4.2 loaded - DUAL PROVIDER (Microsoft + Google) with CategoryManager support - COMPLET ET CORRIGÉ');
