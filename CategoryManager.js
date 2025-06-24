@@ -69,15 +69,6 @@ class CategoryManager {
                     'if you no longer wish to receive', 'si vous ne souhaitez plus recevoir',
                     'subscription preferences', 'préférences d\'abonnement',
                     'manage your subscription', 'gérer votre abonnement',
-                    'modify subscription', 'modifier l\'abonnement',
-                    'email subscription', 'abonnement email',
-                    'subscription center', 'centre d\'abonnement',
-                    'email frequency', 'fréquence des emails',
-                    'stop receiving these emails', 'arrêter de recevoir ces emails',
-                    'remove from mailing list', 'retirer de la liste de diffusion',
-                    'mailing list preferences', 'préférences liste de diffusion',
-                    'update email preferences', 'mettre à jour les préférences',
-                    'change email settings', 'changer les paramètres email',
                     
                     // === NEWSLETTER EXPLICITES - ULTRA-RENFORCÉ ===
                     'newsletter', 'newsletter hebdomadaire', 'newsletter mensuelle',
@@ -85,47 +76,29 @@ class CategoryManager {
                     'daily newsletter', 'newsletter gratuite', 'free newsletter',
                     'notre newsletter', 'our newsletter', 'la newsletter',
                     'votre newsletter', 'your newsletter', 'this newsletter',
-                    'abonnez-vous à notre newsletter', 'subscribe to newsletter',
-                    'newsletter subscription', 'abonnement newsletter',
-                    'newsletter signup', 'inscription newsletter',
-                    'newsletter archive', 'archive newsletter',
-                    'newsletter gratuite', 'newsletter premium',
-                    'newsletter spéciale', 'special newsletter',
                     
                     // === MAILING ET DIFFUSION ===
                     'mailing list', 'mailing', 'e-mailing', 'emailing',
                     'liste de diffusion', 'diffusion email', 'email marketing',
                     'marketing email', 'campagne email', 'email campaign',
                     'mass email', 'email blast', 'bulk email',
-                    'broadcast email', 'email broadcast',
-                    'marketing automation', 'automatisation marketing',
-                    'drip campaign', 'campagne goutte à goutte',
-                    'email sequence', 'séquence email',
-                    'autoresponder', 'répondeur automatique',
                     
                     // === BULLETIN D'INFORMATION ===
                     'bulletin d\'information', 'lettre d\'information',
                     'bulletin électronique', 'lettre électronique',
                     'bulletin d\'actualités', 'actualités par email',
                     'infolettre', 'info-lettre', 'courrier électronique',
-                    'news by email', 'email news', 'nouvelles par email',
-                    'update newsletter', 'newsletter updates', 'mise à jour newsletter',
-                    'electronic bulletin', 'digital newsletter',
                     
                     // === STRUCTURE NEWSLETTER ===
                     'view in browser', 'voir dans le navigateur', 'version web',
                     'web version', 'version navigateur', 'afficher dans navigateur',
                     'having trouble viewing', 'problème d\'affichage',
-                    'can\'t see this email', 'email non visible',
-                    'images not displaying', 'images non affichées',
-                    'click here to view online', 'cliquer pour voir en ligne',
                     
                     // === DOMAINES MARKETING SPÉCIALISÉS ===
                     'mailchimp', 'sendgrid', 'mailgun', 'constant-contact',
                     'aweber', 'getresponse', 'campaign-monitor', 'sendinblue',
                     'klaviyo', 'convertkit', 'activecampaign', 'drip',
                     'infusionsoft', 'pardot', 'hubspot', 'marketo',
-                    'eloqua', 'responsys', 'exacttarget', 'silverpop',
                     
                     // === NOREPLY ET AUTOMATIQUE ===
                     'noreply@', 'no-reply@', 'donotreply@', 'do-not-reply@',
@@ -133,7 +106,6 @@ class CategoryManager {
                     'marketing@', 'promo@', 'offers@', 'deals@',
                     'automated message', 'message automatique',
                     'automatic notification', 'notification automatique',
-                    'this is an automated email', 'ceci est un email automatique',
                     
                     // === CONTENU PROMOTIONNEL EXPLICITE ===
                     'promotion exclusive', 'exclusive promotion', 'offre exclusive',
@@ -141,68 +113,27 @@ class CategoryManager {
                     'special offer', 'offre spéciale', 'deal of the day',
                     'affaire du jour', 'flash sale', 'vente flash',
                     'limited time', 'temps limité', 'expires soon', 'expire bientôt',
-                    'hurry up', 'dépêchez-vous', 'act now', 'agissez maintenant',
-                    'don\'t miss out', 'ne ratez pas', 'last chance', 'dernière chance',
-                    'final sale', 'vente finale', 'clearance sale', 'liquidation',
-                    'mega sale', 'super sale', 'big sale', 'grosse promo',
-                    'black friday', 'cyber monday', 'soldes d\'été', 'soldes d\'hiver',
                     'shop now', 'acheter maintenant', 'buy now', 'achetez maintenant',
-                    'order now', 'commandez maintenant', 'get yours today',
-                    'obtenez le vôtre aujourd\'hui',
                     
                     // === E-COMMERCE ET RETAIL ===
                     'order confirmation', 'confirmation de commande',
                     'shipping confirmation', 'confirmation d\'expédition',
                     'order shipped', 'commande expédiée', 'votre commande',
                     'your order', 'tracking number', 'numéro de suivi',
-                    'delivery update', 'mise à jour livraison',
                     'cart reminder', 'rappel panier', 'abandoned cart',
                     'panier abandonné', 'complete your order',
-                    'finalisez votre commande', 'checkout now', 'passer commande',
-                    'order status', 'statut commande', 'order update',
-                    'back in stock', 'de nouveau en stock',
-                    'restock notification', 'notification de réapprovisionnement',
-                    'wishlist reminder', 'rappel liste de souhaits',
-                    'price drop', 'baisse de prix', 'price alert', 'alerte prix',
-                    'new arrivals', 'nouveautés', 'latest products', 'derniers produits',
-                    
-                    // === RECOMMANDATIONS ET PERSONNALISATION ===
-                    'product recommendation', 'recommandation produit',
-                    'you might like', 'cela pourrait vous plaire',
-                    'personalized for you', 'personnalisé pour vous',
-                    'based on your purchase', 'selon vos achats',
-                    'customers who bought', 'les clients qui ont acheté',
-                    'recommended for you', 'recommandé pour vous',
-                    'similar products', 'produits similaires',
-                    'you may also like', 'vous pourriez aussi aimer',
-                    'curated for you', 'sélectionné pour vous',
-                    'handpicked deals', 'offres sélectionnées',
-                    
-                    // === RÉSEAUX SOCIAUX ET SUIVI ===
-                    'follow us', 'suivez-nous', 'follow us on',
-                    'suivez-nous sur', 'social media', 'réseaux sociaux',
-                    'facebook', 'twitter', 'instagram', 'linkedin',
-                    'youtube', 'tiktok', 'pinterest', 'snapchat',
-                    'connect with us', 'connectez-vous avec nous',
-                    'join our community', 'rejoignez notre communauté',
-                    'share with friends', 'partagez avec vos amis',
                     
                     // === SERVICES CLOUD ET TECH - SPÉCIFIQUE ===
                     'google cloud platform', 'aws notifications', 'azure updates',
                     'cloud platform notifications', 'service updates',
                     'platform news', 'developer newsletter',
                     'api updates', 'service announcements',
-                    'feature updates', 'product updates',
-                    'release notes', 'changelog', 'nouvelles fonctionnalités',
                     
                     // === STREAMING ET DIVERTISSEMENT ===
                     'twitch notifications', 'youtube notifications',
                     'streaming notifications', 'new video', 'nouvelle vidéo',
                     'live stream', 'direct live', 'streaming en direct',
                     'subscribe to channel', 'abonnez-vous à la chaîne',
-                    'channel updates', 'mises à jour chaîne',
-                    'episode alert', 'alerte épisode',
-                    'new content', 'nouveau contenu',
                     
                     // === ENCODAGE ET CARACTÈRES SPÉCIAUX - AJOUT CRITICAL ===
                     'sÃ©curitÃ©', 'notificatÃ©', 'prÃ©fÃ©rences',
@@ -211,12 +142,7 @@ class CategoryManager {
                     // Pour gérer les problèmes d'encodage UTF-8
                     'sécurité', 'notification', 'préférences',
                     'désabonner', 'réception', 'équipe',
-                    'confidentialité', 'déclaration',
-                    
-                    // === HEADERS DE NEWSLETTER ===
-                    'newsletter', 'bulletin', 'actualités', 'news',
-                    'updates', 'mises à jour', 'informations',
-                    'communication', 'annonces', 'nouveautés'
+                    'confidentialité', 'déclaration'
                 ],
                 
                 strong: [
@@ -242,11 +168,6 @@ class CategoryManager {
                     'brand', 'marque', 'collection', 'catalog',
                     'catalogue', 'lookbook', 'trend', 'tendance',
                     'fashion', 'mode', 'style', 'design',
-                    
-                    // Nouvelles communications marketing
-                    'blast', 'diffusion', 'broadcast', 'mass email',
-                    'commercial email', 'email commercial',
-                    'promotional email', 'email promotionnel',
                     
                     // Cloud et tech
                     'platform', 'service', 'api', 'cloud',
@@ -274,11 +195,7 @@ class CategoryManager {
                     'urgent task', 'tâche urgente',
                     'security alert urgent', 'alerte sécurité urgente',
                     'password expired urgent', 'mot de passe expiré urgent',
-                    'account suspended urgent', 'compte suspendu urgent',
-                    'verify account urgent', 'vérifier compte urgent',
-                    'payment failed urgent', 'paiement échoué urgent',
-                    'system maintenance urgent', 'maintenance système urgente'
-                    // SUPPRESSION de la plupart des exclusions pour permettre détection newsletter
+                    'account suspended urgent', 'compte suspendu urgent'
                 ]
             },
 
@@ -1890,15 +1807,10 @@ class CategoryManager {
     }
 
     escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\        // Recherche avec frontières de mots
-        try {
-            const wordBoundaryRegex = new RegExp(`\\b${this.escapeRegex(normalizedKeyword)}\\b`, 'i');
-            if (wordBoundaryRegex.test(normalizedText)) {
-                return true;
-            }
-        } catch (e) {
-            // Fallback si regex échoue
-        }');
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\        // Calcul standard pour autres catégories
+        if (score.hasAbsolute) return 0.95;
+        if (score.total >= 200) return 0.90;
+        if (score.total >= 150) return 0.');
     }
 
     shouldExcludeSpam() {
