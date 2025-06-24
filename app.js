@@ -135,30 +135,36 @@ class App {
     async initializeCriticalModules() {
         console.log('[App] Initializing critical modules v4.3...');
         
-        // Initialisation en parallèle avec timeout individuel
-        const modulePromises = [
-            this.waitForModule('categoryManager', 5000),
+        // Attendre CategoryManager spécifiquement d'abord (critique)
+        try {
+            await this.waitForCategoryManager();
+            this.modulesReady.categoryManager = true;
+            console.log('[App] ✅ CategoryManager ready');
+        } catch (error) {
+            console.warn('[App] ⚠️ CategoryManager not available:', error.message);
+            // Continuer sans CategoryManager en mode dégradé
+            this.modulesReady.categoryManager = false;
+        }
+        
+        // Puis initialiser les autres modules en parallèle
+        const otherModulePromises = [
             this.waitForModule('taskManager', 3000),
             this.waitForModule('pageManager', 3000),
             this.waitForModule('dashboardModule', 3000)
         ];
         
-        const results = await Promise.allSettled(modulePromises);
+        const results = await Promise.allSettled(otherModulePromises);
         
         results.forEach((result, index) => {
-            const moduleName = ['categoryManager', 'taskManager', 'pageManager', 'dashboardModule'][index];
+            const moduleName = ['taskManager', 'pageManager', 'dashboardModule'][index];
             if (result.status === 'fulfilled') {
                 this.modulesReady[moduleName] = true;
                 console.log(`[App] ✅ ${moduleName} ready`);
             } else {
                 console.warn(`[App] ⚠️ ${moduleName} not ready:`, result.reason);
+                this.modulesReady[moduleName] = false;
             }
         });
-        
-        // CategoryManager est obligatoire
-        if (!this.modulesReady.categoryManager) {
-            throw new Error('CategoryManager is required but not available');
-        }
         
         // Bind methods pour les modules disponibles
         this.bindModuleMethods();
@@ -167,6 +173,69 @@ class App {
         this.initializeScrollManager();
         
         console.log('[App] Critical modules initialization complete');
+    }
+
+    // =====================================
+    // ATTENTE SPÉCIALE POUR CATEGORYMANAGER
+    // =====================================
+    async waitForCategoryManager() {
+        const maxWaitTime = 10000; // 10 secondes max
+        const checkInterval = 100;
+        const startTime = Date.now();
+        
+        console.log('[App] Waiting for CategoryManager...');
+        
+        // Vérifier si déjà disponible
+        if (window.categoryManager && window.categoryManager.isInitialized) {
+            return true;
+        }
+        
+        // Si la classe CategoryManager existe, créer l'instance
+        if (typeof CategoryManager !== 'undefined' && !window.categoryManager) {
+            console.log('[App] CategoryManager class found, creating instance...');
+            try {
+                window.categoryManager = new CategoryManager();
+                // Attendre un peu pour l'initialisation
+                await new Promise(resolve => setTimeout(resolve, 100));
+                if (window.categoryManager.isInitialized) {
+                    return true;
+                }
+            } catch (error) {
+                console.error('[App] Failed to create CategoryManager:', error);
+            }
+        }
+        
+        // Attente active avec vérification périodique
+        return new Promise((resolve, reject) => {
+            const checkCategoryManager = () => {
+                // Vérifier si disponible
+                if (window.categoryManager && window.categoryManager.isInitialized) {
+                    resolve(true);
+                    return;
+                }
+                
+                // Vérifier si la classe existe pour créer l'instance
+                if (typeof CategoryManager !== 'undefined' && !window.categoryManager) {
+                    try {
+                        window.categoryManager = new CategoryManager();
+                        console.log('[App] CategoryManager instance created during wait');
+                    } catch (error) {
+                        console.warn('[App] Failed to create CategoryManager during wait:', error);
+                    }
+                }
+                
+                // Vérifier le timeout
+                if (Date.now() - startTime >= maxWaitTime) {
+                    reject(new Error('CategoryManager not ready after ' + maxWaitTime + 'ms'));
+                    return;
+                }
+                
+                // Continuer à vérifier
+                setTimeout(checkCategoryManager, checkInterval);
+            };
+            
+            checkCategoryManager();
+        });
     }
 
     // =====================================
