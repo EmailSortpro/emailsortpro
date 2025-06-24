@@ -1,4 +1,4 @@
-// PageManager.js - Version 13.1 - CORRIGÉ - Gmail Compatible avec priorité Newsletter/Spam
+// PageManager.js - Version 14.0 - SCAN ET AFFICHAGE CORRIGÉS COMPLETS
 
 class PageManager {
     constructor() {
@@ -11,40 +11,49 @@ class PageManager {
         this.searchTerm = '';
         this.lastScanData = null;
         this.hideExplanation = localStorage.getItem('hideEmailExplanation') === 'true';
-        this.emailsData = []; // AJOUT: Cache local des emails
+        
+        // SYSTÈME EMAIL ROBUSTE CORRIGÉ
+        this.emailsCache = {
+            rawEmails: [], // Emails bruts depuis l'API
+            processedEmails: [], // Emails traités et catégorisés
+            lastUpdate: null,
+            scanInProgress: false,
+            errors: []
+        };
         
         // Vue modes pour les emails
         this.currentViewMode = 'grouped-domain';
         this.currentCategory = null;
         
-        // Gmail/Outlook detection et état
+        // Gmail/Outlook detection et état RENFORCÉ
         this.currentProvider = null;
         this.connectionStatus = {
             gmail: false,
             outlook: false,
-            lastCheck: null
+            lastCheck: null,
+            authenticated: false
         };
         
-        // Newsletter/Spam priority system
+        // PRIORITÉ NEWSLETTER/SPAM ABSOLUE
         this.categoryPriority = {
-            'marketing_news': 100,  // PRIORITÉ ABSOLUE
-            'spam': 95,
-            'security': 90,
-            'finance': 85,
-            'tasks': 80,
-            'meetings': 75,
-            'commercial': 70,
-            'support': 65,
-            'hr': 60,
-            'notifications': 55,
-            'reminders': 50,
-            'project': 45,
-            'internal': 40,
-            'cc': 35,
+            'marketing_news': 1000,  // PRIORITÉ MAXIMALE ABSOLUE
+            'spam': 950,
+            'security': 900,
+            'finance': 850,
+            'tasks': 800,
+            'meetings': 750,
+            'commercial': 700,
+            'support': 650,
+            'hr': 600,
+            'notifications': 100, // TRÈS RÉDUIT
+            'reminders': 500,
+            'project': 450,
+            'internal': 400,
+            'cc': 350,
             'other': 0
         };
         
-        // Page renderers - DASHBOARD SUPPRIMÉ
+        // Page renderers
         this.pages = {
             scanner: (container) => this.renderScanner(container),
             emails: (container) => this.renderEmails(container),
@@ -60,39 +69,475 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] ✅ Version 13.1 - CORRIGÉ - Gmail Compatible avec priorité Newsletter/Spam');
+        console.log('[PageManager] ✅ Version 14.0 - SCAN ET AFFICHAGE CORRIGÉS COMPLETS');
         this.startPeriodicProviderCheck();
+        this.loadEmailsFromCache();
     }
 
     // ================================================
-    // GESTION DES EMAILS - CORRIGÉE
+    // SYSTÈME EMAIL ROBUSTE CORRIGÉ - NOUVELLE APPROCHE
     // ================================================
     
     /**
-     * Récupère tous les emails depuis EmailScanner ou cache local
+     * Récupère TOUS les emails de toutes les sources disponibles
      */
-    getAllEmails() {
-        // Essayer EmailScanner d'abord
+    async getAllEmailsRobust() {
+        console.log('[PageManager] 📧 Récupération emails robuste...');
+        
+        // 1. Essayer EmailScanner en premier (si scan récent)
         if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
-            const emails = window.emailScanner.getAllEmails();
-            if (emails && emails.length > 0) {
-                this.emailsData = [...emails]; // Mettre à jour le cache
-                return emails;
+            try {
+                const scannerEmails = window.emailScanner.getAllEmails();
+                if (scannerEmails && scannerEmails.length > 0) {
+                    console.log(`[PageManager] ✅ ${scannerEmails.length} emails depuis EmailScanner`);
+                    this.updateEmailsCache(scannerEmails, 'emailScanner');
+                    return this.emailsCache.processedEmails;
+                }
+            } catch (error) {
+                console.warn('[PageManager] ⚠️ Erreur EmailScanner:', error);
             }
         }
         
-        // Utiliser le cache local si disponible
-        if (this.emailsData && this.emailsData.length > 0) {
-            return this.emailsData;
+        // 2. Essayer le cache local
+        if (this.emailsCache.processedEmails.length > 0) {
+            console.log(`[PageManager] 📦 ${this.emailsCache.processedEmails.length} emails depuis cache`);
+            return this.emailsCache.processedEmails;
         }
         
-        // Fallback: emails vides
-        console.warn('[PageManager] Aucun email disponible depuis EmailScanner ou cache');
+        // 3. Essayer sessionStorage (scan précédent)
+        try {
+            const sessionEmails = this.loadEmailsFromSessionStorage();
+            if (sessionEmails && sessionEmails.length > 0) {
+                console.log(`[PageManager] 💾 ${sessionEmails.length} emails depuis sessionStorage`);
+                this.updateEmailsCache(sessionEmails, 'sessionStorage');
+                return this.emailsCache.processedEmails;
+            }
+        } catch (error) {
+            console.warn('[PageManager] ⚠️ Erreur sessionStorage:', error);
+        }
+        
+        // 4. Essayer de déclencher un scan direct si provider connecté
+        const provider = this.detectProviders();
+        if (provider && !this.emailsCache.scanInProgress) {
+            console.log('[PageManager] 🔄 Tentative scan direct...');
+            try {
+                const directEmails = await this.performDirectEmailScan();
+                if (directEmails && directEmails.length > 0) {
+                    console.log(`[PageManager] 🎯 ${directEmails.length} emails depuis scan direct`);
+                    this.updateEmailsCache(directEmails, 'directScan');
+                    return this.emailsCache.processedEmails;
+                }
+            } catch (error) {
+                console.warn('[PageManager] ⚠️ Erreur scan direct:', error);
+            }
+        }
+        
+        console.warn('[PageManager] ❌ Aucun email trouvé depuis aucune source');
         return [];
     }
 
     /**
-     * Trouve un email par ID - VERSION CORRIGÉE
+     * Scan direct des emails si provider disponible
+     */
+    async performDirectEmailScan() {
+        const provider = this.detectProviders();
+        if (!provider) {
+            console.warn('[PageManager] Aucun provider pour scan direct');
+            return [];
+        }
+        
+        this.emailsCache.scanInProgress = true;
+        
+        try {
+            let emails = [];
+            
+            if (provider === 'gmail' && window.googleAuthService) {
+                emails = await this.scanGmailDirect();
+            } else if (provider === 'outlook' && window.authService) {
+                emails = await this.scanOutlookDirect();
+            }
+            
+            // Traiter et catégoriser les emails
+            if (emails.length > 0) {
+                const processedEmails = await this.processAndCategorizeEmails(emails);
+                this.saveEmailsToSessionStorage(processedEmails);
+                return processedEmails;
+            }
+            
+        } catch (error) {
+            console.error('[PageManager] Erreur scan direct:', error);
+            this.emailsCache.errors.push({
+                timestamp: Date.now(),
+                error: error.message,
+                provider: provider
+            });
+        } finally {
+            this.emailsCache.scanInProgress = false;
+        }
+        
+        return [];
+    }
+
+    /**
+     * Scan Gmail direct
+     */
+    async scanGmailDirect() {
+        console.log('[PageManager] 📧 Scan Gmail direct...');
+        
+        const token = window.googleAuthService.getAccessToken();
+        if (!token) throw new Error('Token Gmail non disponible');
+        
+        const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=in:inbox', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Gmail API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (!data.messages) return [];
+        
+        // Récupérer les détails de chaque message
+        const emails = [];
+        for (const message of data.messages.slice(0, 30)) { // Limiter pour éviter rate limit
+            try {
+                const detailResponse = await fetch(
+                    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${message.id}?format=full`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                
+                if (detailResponse.ok) {
+                    const emailDetail = await detailResponse.json();
+                    const processedEmail = this.convertGmailToStandardFormat(emailDetail);
+                    if (processedEmail) {
+                        emails.push(processedEmail);
+                    }
+                }
+                
+                // Délai pour éviter rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+            } catch (error) {
+                console.warn(`[PageManager] Erreur récupération message ${message.id}:`, error);
+            }
+        }
+        
+        console.log(`[PageManager] ✅ ${emails.length} emails Gmail récupérés`);
+        return emails;
+    }
+
+    /**
+     * Scan Outlook direct
+     */
+    async scanOutlookDirect() {
+        console.log('[PageManager] 📧 Scan Outlook direct...');
+        
+        const token = window.authService.getAccessToken();
+        if (!token) throw new Error('Token Outlook non disponible');
+        
+        const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=50&$select=id,subject,from,receivedDateTime,bodyPreview,toRecipients,ccRecipients,hasAttachments,importance,categories', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Outlook API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const emails = data.value || [];
+        
+        // Enrichir chaque email avec le body complet si nécessaire
+        for (const email of emails.slice(0, 20)) {
+            try {
+                const bodyResponse = await fetch(
+                    `https://graph.microsoft.com/v1.0/me/messages/${email.id}?$select=body`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                
+                if (bodyResponse.ok) {
+                    const bodyData = await bodyResponse.json();
+                    email.body = bodyData.body;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 50));
+                
+            } catch (error) {
+                console.warn(`[PageManager] Erreur récupération body ${email.id}:`, error);
+            }
+        }
+        
+        console.log(`[PageManager] ✅ ${emails.length} emails Outlook récupérés`);
+        return emails;
+    }
+
+    /**
+     * Convertit un email Gmail au format standard
+     */
+    convertGmailToStandardFormat(gmailEmail) {
+        if (!gmailEmail || !gmailEmail.payload) return null;
+        
+        const headers = gmailEmail.payload.headers || [];
+        const getHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
+        
+        // Extraire le body
+        let bodyContent = '';
+        if (gmailEmail.payload.body && gmailEmail.payload.body.data) {
+            bodyContent = atob(gmailEmail.payload.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+        } else if (gmailEmail.payload.parts) {
+            // Email multipart
+            for (const part of gmailEmail.payload.parts) {
+                if (part.mimeType === 'text/plain' && part.body && part.body.data) {
+                    bodyContent = atob(part.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+                    break;
+                } else if (part.mimeType === 'text/html' && part.body && part.body.data) {
+                    bodyContent = atob(part.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+                }
+            }
+        }
+        
+        // Extraire preview (premiers 150 caractères du body nettoyé)
+        const bodyPreview = bodyContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 150);
+        
+        return {
+            id: gmailEmail.id,
+            subject: getHeader('Subject') || '[Sans sujet]',
+            from: {
+                emailAddress: {
+                    address: getHeader('From').replace(/.*<(.+?)>.*/, '$1') || getHeader('From'),
+                    name: getHeader('From').replace(/^([^<]+)<.*/, '$1').trim() || getHeader('From')
+                }
+            },
+            receivedDateTime: getHeader('Date') || new Date().toISOString(),
+            bodyPreview: bodyPreview,
+            body: {
+                content: bodyContent,
+                contentType: 'html'
+            },
+            toRecipients: this.parseEmailAddresses(getHeader('To')),
+            ccRecipients: this.parseEmailAddresses(getHeader('Cc')),
+            hasAttachments: gmailEmail.payload.parts?.some(part => 
+                part.filename && part.filename.length > 0
+            ) || false,
+            importance: 'normal',
+            categories: [],
+            provider: 'gmail'
+        };
+    }
+
+    /**
+     * Parse les adresses email depuis un header
+     */
+    parseEmailAddresses(headerValue) {
+        if (!headerValue) return [];
+        
+        const addresses = [];
+        const emailRegex = /([^<,]+)<([^>]+)>|([^,\s]+@[^,\s]+)/g;
+        let match;
+        
+        while ((match = emailRegex.exec(headerValue)) !== null) {
+            if (match[2]) {
+                // Format "Name <email@domain.com>"
+                addresses.push({
+                    emailAddress: {
+                        name: match[1].trim(),
+                        address: match[2].trim()
+                    }
+                });
+            } else if (match[3]) {
+                // Format "email@domain.com"
+                addresses.push({
+                    emailAddress: {
+                        name: match[3].trim(),
+                        address: match[3].trim()
+                    }
+                });
+            }
+        }
+        
+        return addresses;
+    }
+
+    /**
+     * Traite et catégorise les emails avec le CategoryManager ULTRA-RENFORCÉ
+     */
+    async processAndCategorizeEmails(rawEmails) {
+        console.log(`[PageManager] 🔄 Traitement et catégorisation de ${rawEmails.length} emails...`);
+        
+        if (!window.categoryManager) {
+            console.error('[PageManager] CategoryManager non disponible');
+            return rawEmails;
+        }
+        
+        const processedEmails = [];
+        const categoryStats = {};
+        
+        for (const email of rawEmails) {
+            try {
+                // Analyser avec CategoryManager
+                const analysis = window.categoryManager.analyzeEmail(email);
+                
+                // Enrichir l'email avec les résultats d'analyse
+                const processedEmail = {
+                    ...email,
+                    category: analysis.category,
+                    categoryScore: analysis.score,
+                    categoryConfidence: analysis.confidence,
+                    matchedPatterns: analysis.matchedPatterns || [],
+                    hasAbsolute: analysis.hasAbsolute || false,
+                    priorityDetection: analysis.priorityDetection || null,
+                    detectionMethod: analysis.detectionMethod || 'standard',
+                    isSpam: analysis.isSpam || false,
+                    isExcluded: analysis.isExcluded || false,
+                    processedAt: Date.now()
+                };
+                
+                // Marquer comme pré-sélectionné pour tâches si nécessaire
+                const preselectedCategories = this.getTaskPreselectedCategories();
+                processedEmail.isPreselectedForTasks = preselectedCategories.includes(analysis.category);
+                
+                processedEmails.push(processedEmail);
+                
+                // Stats
+                categoryStats[analysis.category] = (categoryStats[analysis.category] || 0) + 1;
+                
+            } catch (error) {
+                console.error('[PageManager] Erreur traitement email:', email.id, error);
+                // Ajouter l'email avec catégorie par défaut
+                processedEmails.push({
+                    ...email,
+                    category: 'other',
+                    categoryScore: 0,
+                    categoryConfidence: 0,
+                    processedAt: Date.now()
+                });
+            }
+        }
+        
+        console.log('[PageManager] ✅ Emails traités:', {
+            total: processedEmails.length,
+            categories: categoryStats,
+            newsletter: categoryStats.marketing_news || 0,
+            spam: categoryStats.spam || 0
+        });
+        
+        return processedEmails;
+    }
+
+    /**
+     * Met à jour le cache d'emails
+     */
+    updateEmailsCache(emails, source) {
+        console.log(`[PageManager] 📦 Mise à jour cache emails depuis ${source}: ${emails.length} emails`);
+        
+        // Si emails déjà traités, les utiliser directement
+        if (emails.length > 0 && emails[0].processedAt) {
+            this.emailsCache.processedEmails = [...emails];
+        } else {
+            // Sinon, marquer pour traitement
+            this.emailsCache.rawEmails = [...emails];
+        }
+        
+        this.emailsCache.lastUpdate = Date.now();
+        this.emailsCache.source = source;
+        
+        // Dispatcher événement
+        this.dispatchEvent('emailsCacheUpdated', {
+            count: emails.length,
+            source: source,
+            timestamp: Date.now()
+        });
+    }
+
+    /**
+     * Charge les emails depuis sessionStorage
+     */
+    loadEmailsFromSessionStorage() {
+        try {
+            const stored = sessionStorage.getItem('lastScanResults');
+            if (stored) {
+                const data = JSON.parse(stored);
+                if (data.emails && Array.isArray(data.emails)) {
+                    console.log(`[PageManager] 📥 ${data.emails.length} emails chargés depuis sessionStorage`);
+                    return data.emails;
+                }
+            }
+        } catch (error) {
+            console.warn('[PageManager] Erreur chargement sessionStorage:', error);
+        }
+        return null;
+    }
+
+    /**
+     * Sauvegarde les emails dans sessionStorage
+     */
+    saveEmailsToSessionStorage(emails) {
+        try {
+            const data = {
+                emails: emails,
+                timestamp: Date.now(),
+                provider: this.currentProvider,
+                total: emails.length
+            };
+            sessionStorage.setItem('lastScanResults', JSON.stringify(data));
+            console.log(`[PageManager] 💾 ${emails.length} emails sauvegardés dans sessionStorage`);
+        } catch (error) {
+            console.warn('[PageManager] Erreur sauvegarde sessionStorage:', error);
+        }
+    }
+
+    /**
+     * Charge les emails depuis le cache au démarrage
+     */
+    loadEmailsFromCache() {
+        const cachedEmails = this.loadEmailsFromSessionStorage();
+        if (cachedEmails && cachedEmails.length > 0) {
+            this.updateEmailsCache(cachedEmails, 'startup_cache');
+        }
+    }
+
+    /**
+     * Méthode publique pour récupérer les emails (API simple)
+     */
+    getAllEmails() {
+        // Retourner les emails traités du cache
+        if (this.emailsCache.processedEmails.length > 0) {
+            return this.emailsCache.processedEmails;
+        }
+        
+        // Sinon retourner les emails bruts
+        if (this.emailsCache.rawEmails.length > 0) {
+            return this.emailsCache.rawEmails;
+        }
+        
+        // Charger depuis sessionStorage si pas en cache
+        const sessionEmails = this.loadEmailsFromSessionStorage();
+        if (sessionEmails) {
+            this.updateEmailsCache(sessionEmails, 'lazy_load');
+            return sessionEmails;
+        }
+        
+        return [];
+    }
+
+    /**
+     * Trouve un email par ID - VERSION ULTRA-ROBUSTE
      */
     getEmailById(emailId) {
         if (!emailId) {
@@ -100,70 +545,58 @@ class PageManager {
             return null;
         }
 
-        // Méthode 1: Essayer EmailScanner si disponible
+        // 1. Chercher dans le cache traité
+        if (this.emailsCache.processedEmails.length > 0) {
+            const email = this.emailsCache.processedEmails.find(e => e.id === emailId);
+            if (email) return email;
+        }
+        
+        // 2. Chercher dans le cache brut
+        if (this.emailsCache.rawEmails.length > 0) {
+            const email = this.emailsCache.rawEmails.find(e => e.id === emailId);
+            if (email) return email;
+        }
+        
+        // 3. Chercher dans EmailScanner
         if (window.emailScanner) {
-            // Vérifier si la méthode existe
             if (typeof window.emailScanner.getEmailById === 'function') {
                 const email = window.emailScanner.getEmailById(emailId);
                 if (email) return email;
             }
             
-            // Fallback: utiliser getAllEmails si getEmailById n'existe pas
             if (typeof window.emailScanner.getAllEmails === 'function') {
                 const allEmails = window.emailScanner.getAllEmails();
                 const email = allEmails.find(e => e.id === emailId);
                 if (email) return email;
             }
         }
-
-        // Méthode 2: Chercher dans le cache local
-        if (this.emailsData && this.emailsData.length > 0) {
-            const email = this.emailsData.find(e => e.id === emailId);
+        
+        // 4. Chercher dans sessionStorage
+        const sessionEmails = this.loadEmailsFromSessionStorage();
+        if (sessionEmails) {
+            const email = sessionEmails.find(e => e.id === emailId);
             if (email) return email;
-        }
-
-        // Méthode 3: Chercher dans les résultats de scan stockés
-        try {
-            const scanResults = sessionStorage.getItem('lastScanResults');
-            if (scanResults) {
-                const parsed = JSON.parse(scanResults);
-                if (parsed.emails && Array.isArray(parsed.emails)) {
-                    const email = parsed.emails.find(e => e.id === emailId);
-                    if (email) return email;
-                }
-            }
-        } catch (error) {
-            console.warn('[PageManager] Erreur lecture sessionStorage:', error);
         }
 
         console.warn(`[PageManager] Email non trouvé: ${emailId}`);
         return null;
     }
 
-    /**
-     * Met à jour les données d'emails 
-     */
-    updateEmailsData(emails) {
-        if (emails && Array.isArray(emails)) {
-            this.emailsData = [...emails];
-            console.log(`[PageManager] Cache emails mis à jour: ${emails.length} emails`);
-        }
-    }
-
     // ================================================
-    // DÉTECTION PROVIDER GMAIL/OUTLOOK - RENFORCÉE
+    // DÉTECTION PROVIDER RENFORCÉE
     // ================================================
     detectProviders() {
-        console.log('[PageManager] 🔍 Détection providers email...');
+        console.log('[PageManager] 🔍 Détection providers email RENFORCÉE...');
         
-        // Reset connection status
+        // Reset
         this.connectionStatus = {
             gmail: false,
             outlook: false,
-            lastCheck: Date.now()
+            lastCheck: Date.now(),
+            authenticated: false
         };
         
-        // PRIORITÉ 1: Gmail via GoogleAuthService
+        // PRIORITÉ 1: Gmail
         if (window.googleAuthService && 
             typeof window.googleAuthService.isAuthenticated === 'function') {
             try {
@@ -172,7 +605,8 @@ class PageManager {
                 
                 if (isGmailAuth) {
                     this.currentProvider = 'gmail';
-                    console.log('[PageManager] ✅ Gmail détecté et authentifié');
+                    this.connectionStatus.authenticated = true;
+                    console.log('[PageManager] ✅ Gmail AUTHENTIFIÉ et PRÊT');
                     return 'gmail';
                 }
             } catch (error) {
@@ -180,7 +614,7 @@ class PageManager {
             }
         }
         
-        // PRIORITÉ 2: Outlook via AuthService
+        // PRIORITÉ 2: Outlook
         if (window.authService && 
             typeof window.authService.isAuthenticated === 'function') {
             try {
@@ -189,7 +623,8 @@ class PageManager {
                 
                 if (isOutlookAuth) {
                     this.currentProvider = 'outlook';
-                    console.log('[PageManager] ✅ Outlook détecté et authentifié');
+                    this.connectionStatus.authenticated = true;
+                    console.log('[PageManager] ✅ Outlook AUTHENTIFIÉ et PRÊT');
                     return 'outlook';
                 }
             } catch (error) {
@@ -199,6 +634,7 @@ class PageManager {
         
         console.log('[PageManager] ⚠️ Aucun provider email authentifié');
         this.currentProvider = null;
+        this.connectionStatus.authenticated = false;
         return null;
     }
 
@@ -212,7 +648,8 @@ class PageManager {
                 color: '#ea4335',
                 status: 'connected',
                 priority: 'high',
-                optimized: true
+                optimized: true,
+                canScan: true
             };
         } else if (provider === 'outlook') {
             return {
@@ -221,7 +658,8 @@ class PageManager {
                 color: '#0078d4',
                 status: 'connected',
                 priority: 'normal',
-                optimized: false
+                optimized: true,
+                canScan: true
             };
         }
         
@@ -231,156 +669,165 @@ class PageManager {
             color: '#6b7280',
             status: 'disconnected',
             priority: 'none',
-            optimized: false
+            optimized: false,
+            canScan: false
         };
     }
 
-    startPeriodicProviderCheck() {
-        // Vérifier les providers toutes les 30 secondes
-        setInterval(() => {
-            const oldProvider = this.currentProvider;
-            const newProvider = this.detectProviders();
-            
-            if (oldProvider !== newProvider) {
-                console.log(`[PageManager] 🔄 Provider changé: ${oldProvider} → ${newProvider}`);
-                this.updateProviderStatus();
-            }
-        }, 30000);
-    }
-
-    updateProviderStatus() {
-        // Mettre à jour l'affichage si on est sur la page emails
-        if (this.currentPage === 'emails') {
-            this.updateProviderInfoDisplay();
+    // ================================================
+    // ACTUALISATION ET SCAN FORCÉ
+    // ================================================
+    
+    /**
+     * Force un nouveau scan complet
+     */
+    async forceEmailScan() {
+        console.log('[PageManager] 🔄 SCAN FORCÉ démarré...');
+        
+        const provider = this.detectProviders();
+        if (!provider) {
+            throw new Error('Aucun provider email connecté');
         }
         
-        // Dispatcher un événement pour les autres composants
-        this.dispatchEvent('providerChanged', {
-            provider: this.currentProvider,
-            connectionStatus: this.connectionStatus
-        });
+        // Vider le cache
+        this.emailsCache = {
+            rawEmails: [],
+            processedEmails: [],
+            lastUpdate: null,
+            scanInProgress: false,
+            errors: []
+        };
+        
+        // Déclencher scan direct
+        const emails = await this.performDirectEmailScan();
+        
+        if (emails.length > 0) {
+            // Notifier les composants
+            this.dispatchEvent('emailsRefreshed', {
+                count: emails.length,
+                provider: provider,
+                timestamp: Date.now()
+            });
+            
+            console.log(`[PageManager] ✅ SCAN FORCÉ terminé: ${emails.length} emails`);
+            return emails;
+        }
+        
+        throw new Error('Aucun email récupéré lors du scan forcé');
     }
 
-    updateProviderInfoDisplay() {
-        const providerDisplays = document.querySelectorAll('.provider-status-display');
-        const providerInfo = this.getProviderInfo();
+    /**
+     * Actualise les emails (API publique)
+     */
+    async refreshEmails() {
+        window.uiManager?.showLoading('Actualisation des emails...');
         
-        providerDisplays.forEach(display => {
-            if (display) {
-                const statusClass = providerInfo.status === 'connected' ? 'connected' : 'disconnected';
-                const optimizedBadge = providerInfo.optimized ? 
-                    '<span class="optimization-badge">🚀 Optimisé</span>' : '';
-                
-                display.innerHTML = `
-                    <div class="provider-info ${statusClass}" style="color: ${providerInfo.color};">
-                        <i class="${providerInfo.icon}"></i>
-                        <span>${providerInfo.name}</span>
-                        ${optimizedBadge}
-                    </div>
-                `;
+        try {
+            // Tenter un scan forcé
+            await this.forceEmailScan();
+            
+            // Recharger la page emails si on y est
+            if (this.currentPage === 'emails') {
+                await this.loadPage('emails');
             }
-        });
+            
+            window.uiManager?.showToast(`Emails actualisés (${this.currentProvider})`, 'success');
+            
+        } catch (error) {
+            console.error('[PageManager] Erreur actualisation:', error);
+            window.uiManager?.showToast(`Erreur: ${error.message}`, 'error');
+        } finally {
+            window.uiManager?.hideLoading();
+        }
     }
 
     // ================================================
-    // ÉVÉNEMENTS GLOBAUX - SYNCHRONISATION FIXÉE
+    // ÉVÉNEMENTS ET SYNCHRONISATION
     // ================================================
     setupEventListeners() {
-        // Écouter les changements de paramètres depuis CategoriesPage
+        // Écouter les changements de paramètres
         window.addEventListener('categorySettingsChanged', (event) => {
-            console.log('[PageManager] 📨 Paramètres changés reçus:', event.detail);
+            console.log('[PageManager] 📨 Paramètres changés:', event.detail);
             this.handleSettingsChanged(event.detail);
         });
 
-        // Écouter les changements génériques de paramètres
         window.addEventListener('settingsChanged', (event) => {
-            console.log('[PageManager] 📨 Changement générique reçu:', event.detail);
+            console.log('[PageManager] 📨 Changement générique:', event.detail);
             this.handleGenericSettingsChanged(event.detail);
         });
 
-        // Écouter la recatégorisation des emails
-        window.addEventListener('emailsRecategorized', (event) => {
-            console.log('[PageManager] Emails recatégorisés, mise à jour interface');
-            if (event.detail && event.detail.emails) {
-                this.updateEmailsData(event.detail.emails);
-            }
-            if (this.currentPage === 'emails') {
-                setTimeout(() => {
-                    this.refreshEmailsView();
-                }, 100);
-            }
-        });
-
-        // Écouter les fins de scan - CORRIGÉ
+        // Écouter les fins de scan
         window.addEventListener('scanCompleted', (event) => {
-            console.log('[PageManager] Scan terminé, données mises à jour');
-            this.lastScanData = event.detail;
-            
-            // Mettre à jour le cache d'emails si disponible
-            if (event.detail && event.detail.emails) {
-                this.updateEmailsData(event.detail.emails);
-            } else if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
-                const emails = window.emailScanner.getAllEmails();
-                this.updateEmailsData(emails);
-            }
-            
-            if (this.currentPage === 'emails') {
-                this.loadPage('emails');
-            }
+            console.log('[PageManager] 📨 Scan terminé:', event.detail);
+            this.handleScanCompleted(event.detail);
         });
 
-        // Écouter le scroll pour gérer la position fixe
+        // Écouter les recatégorisations
+        window.addEventListener('emailsRecategorized', (event) => {
+            console.log('[PageManager] 📨 Emails recatégorisés');
+            this.handleEmailsRecategorized(event.detail);
+        });
+
+        // Écouter le scroll
         window.addEventListener('scroll', () => {
             this.handleScrollForSticky();
         });
-
-        // Écouter les changements de provider
-        window.addEventListener('providerChanged', (event) => {
-            console.log('[PageManager] Provider changé:', event.detail);
-            this.updateProviderInfoDisplay();
-        });
     }
 
-    // ================================================
-    // GESTION POSITION FIXE POUR SCROLL
-    // ================================================
-    handleScrollForSticky() {
-        if (this.currentPage !== 'emails') return;
-
-        const stickyContainer = document.querySelector('.sticky-controls-container');
-        const originalContainer = document.querySelector('.controls-and-filters-container');
+    handleScanCompleted(eventDetail) {
+        this.lastScanData = eventDetail;
         
-        if (!stickyContainer || !originalContainer) return;
-
-        const scrollY = window.scrollY;
-        const containerTop = originalContainer.offsetTop;
-        
-        if (scrollY > containerTop - 20) {
-            stickyContainer.classList.add('sticky-active');
-            const content = document.querySelector('.tasks-container-harmonized');
-            if (content) {
-                content.style.paddingTop = stickyContainer.offsetHeight + 'px';
-            }
+        // Mettre à jour le cache si des emails sont fournis
+        if (eventDetail.emails && Array.isArray(eventDetail.emails)) {
+            this.updateEmailsCache(eventDetail.emails, 'scan_completed');
         } else {
-            stickyContainer.classList.remove('sticky-active');
-            const content = document.querySelector('.tasks-container-harmonized');
-            if (content) {
-                content.style.paddingTop = '0';
+            // Recharger depuis EmailScanner
+            this.reloadFromEmailScanner();
+        }
+        
+        // Rafraîchir la vue si on est sur la page emails
+        if (this.currentPage === 'emails') {
+            setTimeout(() => {
+                this.loadPage('emails');
+            }, 100);
+        }
+    }
+
+    handleEmailsRecategorized(eventDetail) {
+        if (eventDetail && eventDetail.emails) {
+            this.updateEmailsCache(eventDetail.emails, 'recategorized');
+        } else {
+            this.reloadFromEmailScanner();
+        }
+        
+        if (this.currentPage === 'emails') {
+            setTimeout(() => {
+                this.refreshEmailsView();
+            }, 100);
+        }
+    }
+
+    reloadFromEmailScanner() {
+        if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
+            try {
+                const emails = window.emailScanner.getAllEmails();
+                if (emails && emails.length > 0) {
+                    this.updateEmailsCache(emails, 'emailScanner_reload');
+                }
+            } catch (error) {
+                console.warn('[PageManager] Erreur rechargement EmailScanner:', error);
             }
         }
     }
 
-    // ================================================
-    // GESTION DES CHANGEMENTS DE PARAMÈTRES
-    // ================================================
     handleSettingsChanged(settingsData) {
         console.log('[PageManager] 🔧 Traitement changement paramètres:', settingsData);
         
         if (settingsData.settings?.taskPreselectedCategories) {
-            console.log('[PageManager] 📋 Catégories pré-sélectionnées changées:', settingsData.settings.taskPreselectedCategories);
+            console.log('[PageManager] 📋 Catégories pré-sélectionnées changées');
             
-            if (window.emailScanner && this.emailsData.length > 0) {
-                console.log('[PageManager] 🔄 Déclenchement re-catégorisation...');
+            // Forcer une re-catégorisation
+            if (window.emailScanner && this.emailsCache.processedEmails.length > 0) {
                 setTimeout(() => {
                     if (typeof window.emailScanner.recategorizeEmails === 'function') {
                         window.emailScanner.recategorizeEmails();
@@ -397,21 +844,17 @@ class PageManager {
     }
 
     handleGenericSettingsChanged(changeData) {
-        console.log('[PageManager] 🔧 Traitement changement générique:', changeData);
-        
         const { type, value } = changeData;
         
         switch (type) {
             case 'taskPreselectedCategories':
                 console.log('[PageManager] 📋 Catégories pour tâches changées:', value);
-                if (window.aiTaskAnalyzer && typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
-                    window.aiTaskAnalyzer.updatePreselectedCategories(value);
-                }
                 break;
                 
             case 'activeCategories':
                 console.log('[PageManager] 🏷️ Catégories actives changées:', value);
-                if (window.emailScanner && this.emailsData.length > 0) {
+                // Forcer recatégorisation
+                if (window.emailScanner && this.emailsCache.processedEmails.length > 0) {
                     setTimeout(() => {
                         if (typeof window.emailScanner.recategorizeEmails === 'function') {
                             window.emailScanner.recategorizeEmails();
@@ -419,289 +862,191 @@ class PageManager {
                     }, 150);
                 }
                 break;
-                
-            case 'preferences':
-                console.log('[PageManager] ⚙️ Préférences changées:', value);
-                if (this.currentPage === 'emails') {
-                    setTimeout(() => {
-                        this.refreshEmailsView();
-                    }, 100);
-                }
-                break;
         }
-    }
-
-    // =====================================
-    // PAGE LOADING - DASHBOARD IGNORÉ
-    // =====================================
-    async loadPage(pageName) {
-        console.log(`[PageManager] Chargement page: ${pageName}`);
-
-        if (pageName === 'dashboard') {
-            console.log('[PageManager] Dashboard ignoré - géré par index.html');
-            this.updateNavigation(pageName);
-            
-            const pageContent = document.getElementById('pageContent');
-            if (pageContent) {
-                pageContent.style.display = 'block';
-                pageContent.style.opacity = '1';
-            }
-            return;
-        }
-
-        const pageContent = document.getElementById('pageContent');
-        if (!pageContent) {
-            console.error('[PageManager] Container de contenu non trouvé');
-            return;
-        }
-
-        this.updateNavigation(pageName);
-        window.uiManager?.showLoading(`Chargement ${pageName}...`);
-
-        try {
-            pageContent.innerHTML = '';
-            
-            if (this.pages[pageName]) {
-                await this.pages[pageName](pageContent);
-                this.currentPage = pageName;
-            } else {
-                throw new Error(`Page ${pageName} non trouvée`);
-            }
-
-            window.uiManager?.hideLoading();
-
-        } catch (error) {
-            console.error(`[PageManager] Erreur chargement page:`, error);
-            window.uiManager?.hideLoading();
-            window.uiManager?.showToast(`Erreur: ${error.message}`, 'error');
-            
-            pageContent.innerHTML = this.renderErrorPage(error);
-        }
-    }
-
-    renderErrorPage(error) {
-        return `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <h3 class="empty-state-title">Erreur de chargement</h3>
-                <p class="empty-state-text">${error.message}</p>
-                <button class="btn btn-primary" onclick="window.pageManager.loadPage('dashboard')">
-                    Retour au tableau de bord
-                </button>
-            </div>
-        `;
-    }
-
-    updateNavigation(activePage) {
-        document.querySelectorAll('.nav-item').forEach(item => {
-            if (item.dataset.page === activePage) {
-                item.classList.add('active');
-            } else {
-                item.classList.remove('active');
-            }
-        });
     }
 
     // ================================================
-    // RENDU PAGE EMAILS - AVEC PRIORITÉ NEWSLETTER/SPAM
+    // RENDU PAGE EMAILS CORRIGÉ
     // ================================================
     async renderEmails(container) {
-        // Récupérer les emails depuis la méthode centralisée
-        const emails = this.getAllEmails();
+        console.log('[PageManager] 📧 Rendu page emails CORRIGÉ...');
+        
+        // Récupérer les emails avec la méthode robuste
+        const emails = await this.getAllEmailsRobust();
         const categories = window.categoryManager?.getCategories() || {};
         
-        console.log(`[PageManager] 📧 Rendu page emails avec ${emails.length} emails`);
-        console.log(`[PageManager] 🔌 Provider actuel: ${this.currentProvider}`);
+        console.log(`[PageManager] 📧 ${emails.length} emails à afficher`);
+        console.log(`[PageManager] 🔌 Provider: ${this.currentProvider}`);
         
         if (emails.length === 0) {
             container.innerHTML = this.renderEmptyEmailsState();
             return;
         }
 
-        // Priorité Newsletter/Spam - Analyse et correction
+        // Assurer la détection Newsletter/Spam en priorité
         this.ensureNewsletterSpamPriority(emails);
 
-        const renderEmailsPage = () => {
-            const categoryCounts = this.calculateCategoryCounts(emails);
-            const totalEmails = emails.length;
-            const selectedCount = this.selectedEmails.size;
-            const providerInfo = this.getProviderInfo();
-            
-            // Stats Newsletter/Spam
-            const newsletterCount = emails.filter(e => e.category === 'marketing_news').length;
-            const spamCount = emails.filter(e => e.category === 'spam').length;
-            const preselectedCount = emails.filter(e => e.isPreselectedForTasks).length;
-            
-            container.innerHTML = `
-                <div class="tasks-page-modern">
-                    <!-- Texte explicatif avec stats provider -->
-                    ${!this.hideExplanation ? `
-                        <div class="explanation-text-harmonized ${providerInfo.status === 'connected' ? 'provider-connected' : 'provider-disconnected'}">
-                            <div class="explanation-content">
-                                <div class="explanation-main">
-                                    <i class="fas fa-info-circle"></i>
-                                    <span>
-                                        Cliquez sur vos emails pour les sélectionner, puis utilisez les boutons d'action. 
-                                        <strong>Newsletters et spam détectés automatiquement en priorité.</strong>
-                                    </span>
-                                </div>
-                                <div class="explanation-stats">
-                                    <span class="stat-item newsletter">📰 ${newsletterCount} newsletters</span>
-                                    <span class="stat-item spam">🚫 ${spamCount} spam</span>
-                                    <span class="stat-item preselected">⭐ ${preselectedCount} pré-sélectionnés</span>
-                                    <span class="stat-item provider" style="color: ${providerInfo.color};">
-                                        <i class="${providerInfo.icon}"></i> ${providerInfo.name}
-                                    </span>
-                                </div>
-                            </div>
-                            <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
-                                <i class="fas fa-times"></i>
-                            </button>
+        const categoryCounts = this.calculateCategoryCounts(emails);
+        const totalEmails = emails.length;
+        const selectedCount = this.selectedEmails.size;
+        const providerInfo = this.getProviderInfo();
+        
+        // Stats Newsletter/Spam
+        const newsletterCount = emails.filter(e => e.category === 'marketing_news').length;
+        const spamCount = emails.filter(e => e.category === 'spam').length;
+        const preselectedCount = emails.filter(e => e.isPreselectedForTasks).length;
+        
+        container.innerHTML = `
+            <div class="tasks-page-modern">
+                <!-- Statut du cache et provider -->
+                <div class="cache-status-info">
+                    <div class="cache-indicators">
+                        <div class="cache-indicator ${this.emailsCache.processedEmails.length > 0 ? 'active' : ''}">
+                            <i class="fas fa-database"></i>
+                            <span>Cache: ${this.emailsCache.processedEmails.length} emails</span>
                         </div>
-                    ` : ''}
+                        <div class="provider-indicator ${providerInfo.status === 'connected' ? 'connected' : 'disconnected'}">
+                            <i class="${providerInfo.icon}"></i>
+                            <span>${providerInfo.name}</span>
+                            ${providerInfo.optimized ? '<span class="opt-badge">✨</span>' : ''}
+                        </div>
+                        <div class="scan-indicator ${this.emailsCache.scanInProgress ? 'scanning' : ''}">
+                            <i class="fas fa-sync-alt ${this.emailsCache.scanInProgress ? 'fa-spin' : ''}"></i>
+                            <span>${this.emailsCache.scanInProgress ? 'Scan en cours...' : 'Prêt'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Texte explicatif -->
+                ${!this.hideExplanation ? `
+                    <div class="explanation-text-harmonized ${providerInfo.status === 'connected' ? 'provider-connected' : 'provider-disconnected'}">
+                        <div class="explanation-content">
+                            <div class="explanation-main">
+                                <i class="fas fa-info-circle"></i>
+                                <span>
+                                    Cliquez sur vos emails pour les sélectionner, puis utilisez les boutons d'action. 
+                                    <strong>Detection Newsletter/Spam ULTRA-RENFORCÉE active.</strong>
+                                </span>
+                            </div>
+                            <div class="explanation-stats">
+                                <span class="stat-item newsletter">📰 ${newsletterCount} newsletters</span>
+                                <span class="stat-item spam">🚫 ${spamCount} spam</span>
+                                <span class="stat-item preselected">⭐ ${preselectedCount} pré-sélectionnés</span>
+                                <span class="stat-item provider" style="color: ${providerInfo.color};">
+                                    <i class="${providerInfo.icon}"></i> ${providerInfo.name}
+                                </span>
+                            </div>
+                        </div>
+                        <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                ` : ''}
 
-                    <!-- Container original des contrôles et filtres -->
-                    <div class="controls-and-filters-container">
-                        <!-- Barre de contrôles unifiée -->
-                        <div class="controls-bar-single-line">
-                            <!-- Status Provider -->
-                            <div class="provider-status-display">
-                                ${this.renderProviderStatus(providerInfo)}
-                            </div>
+                <!-- Contrôles -->
+                <div class="controls-and-filters-container">
+                    <div class="controls-bar-single-line">
+                        <!-- Actions de scan -->
+                        <div class="scan-controls">
+                            <button class="btn-action btn-scan" onclick="window.pageManager.refreshEmails()" 
+                                    ${this.emailsCache.scanInProgress ? 'disabled' : ''}>
+                                <i class="fas fa-sync-alt ${this.emailsCache.scanInProgress ? 'fa-spin' : ''}"></i>
+                                <span class="btn-text">${this.emailsCache.scanInProgress ? 'Scan...' : 'Actualiser'}</span>
+                            </button>
                             
-                            <!-- Barre de recherche -->
-                            <div class="search-section">
-                                <div class="search-box">
-                                    <i class="fas fa-search search-icon"></i>
-                                    <input type="text" 
-                                           class="search-input" 
-                                           id="emailSearchInput"
-                                           placeholder="Rechercher..." 
-                                           value="${this.searchTerm}">
-                                    ${this.searchTerm ? `
-                                        <button class="search-clear" onclick="window.pageManager.clearSearch()">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    ` : ''}
-                                </div>
-                            </div>
-                            
-                            <!-- Modes de vue -->
-                            <div class="view-modes">
-                                <button class="view-mode ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
-                                        onclick="window.pageManager.changeViewMode('grouped-domain')"
-                                        title="Par domaine">
-                                    <i class="fas fa-globe"></i>
-                                    <span>Domaine</span>
+                            ${providerInfo.canScan ? `
+                                <button class="btn-action btn-force-scan" onclick="window.pageManager.forceEmailScan()" 
+                                        ${this.emailsCache.scanInProgress ? 'disabled' : ''}>
+                                    <i class="fas fa-search"></i>
+                                    <span class="btn-text">Scan forcé</span>
                                 </button>
-                                <button class="view-mode ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
-                                        onclick="window.pageManager.changeViewMode('grouped-sender')"
-                                        title="Par expéditeur">
-                                    <i class="fas fa-user"></i>
-                                    <span>Expéditeur</span>
-                                </button>
-                                <button class="view-mode ${this.currentViewMode === 'flat' ? 'active' : ''}" 
-                                        onclick="window.pageManager.changeViewMode('flat')"
-                                        title="Liste complète">
-                                    <i class="fas fa-list"></i>
-                                    <span>Liste</span>
-                                </button>
-                            </div>
-                            
-                            <!-- Actions principales -->
-                            <div class="action-buttons">
-                                <!-- Bouton Sélectionner/Désélectionner tout -->
-                                <button class="btn-action btn-selection-toggle" 
-                                        onclick="window.pageManager.toggleAllSelection()"
-                                        title="Sélectionner/Désélectionner tous les emails visibles">
-                                    <i class="fas fa-check-square"></i>
-                                    <span class="btn-text">Sélectionner tous</span>
-                                    <span class="btn-count">(${this.getVisibleEmails().length})</span>
-                                </button>
-                                
-                                <!-- Bouton Créer tâches -->
-                                <button class="btn-action btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
-                                        onclick="window.pageManager.createTasksFromSelection()"
-                                        ${selectedCount === 0 ? 'disabled' : ''}>
-                                    <i class="fas fa-tasks"></i>
-                                    <span class="btn-text">Créer tâche${selectedCount > 1 ? 's' : ''}</span>
-                                    ${selectedCount > 0 ? `<span class="count-badge">${selectedCount}</span>` : ''}
-                                </button>
-                                
-                                <!-- Bouton Actions -->
-                                <div class="dropdown-action">
-                                    <button class="btn-action btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
-                                            onclick="window.pageManager.toggleBulkActions(event)"
-                                            ${selectedCount === 0 ? 'disabled' : ''}>
-                                        <i class="fas fa-ellipsis-v"></i>
-                                        <span class="btn-text">Actions</span>
-                                        <i class="fas fa-chevron-down"></i>
-                                    </button>
-                                    <div class="dropdown-menu" id="bulkActionsMenu">
-                                        <button class="dropdown-item" onclick="window.pageManager.bulkMarkAsRead()">
-                                            <i class="fas fa-eye"></i>
-                                            <span>Marquer comme lu</span>
-                                        </button>
-                                        <button class="dropdown-item" onclick="window.pageManager.bulkArchive()">
-                                            <i class="fas fa-archive"></i>
-                                            <span>Archiver</span>
-                                        </button>
-                                        <button class="dropdown-item danger" onclick="window.pageManager.bulkDelete()">
-                                            <i class="fas fa-trash"></i>
-                                            <span>Supprimer</span>
-                                        </button>
-                                        <div class="dropdown-divider"></div>
-                                        <button class="dropdown-item" onclick="window.pageManager.bulkExport()">
-                                            <i class="fas fa-download"></i>
-                                            <span>Exporter</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Bouton Actualiser -->
-                                <button class="btn-action btn-secondary" onclick="window.pageManager.refreshEmails()">
-                                    <i class="fas fa-sync-alt"></i>
-                                    <span class="btn-text">Actualiser</span>
-                                </button>
-                                
-                                <!-- Bouton Effacer sélection -->
-                                ${selectedCount > 0 ? `
-                                    <button class="btn-action btn-clear" 
-                                            onclick="window.pageManager.clearSelection()"
-                                            title="Effacer la sélection">
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Recherche -->
+                        <div class="search-section">
+                            <div class="search-box">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" 
+                                       class="search-input" 
+                                       id="emailSearchInput"
+                                       placeholder="Rechercher..." 
+                                       value="${this.searchTerm}">
+                                ${this.searchTerm ? `
+                                    <button class="search-clear" onclick="window.pageManager.clearSearch()">
                                         <i class="fas fa-times"></i>
-                                        <span class="btn-text">Effacer (${selectedCount})</span>
                                     </button>
                                 ` : ''}
                             </div>
                         </div>
-
-                        <!-- Filtres de catégories avec priorité Newsletter/Spam -->
-                        <div class="status-filters-compact">
-                            ${this.buildPriorityCompactCategoryTabs(categoryCounts, totalEmails, categories)}
+                        
+                        <!-- Modes de vue -->
+                        <div class="view-modes">
+                            <button class="view-mode ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                    onclick="window.pageManager.changeViewMode('grouped-domain')">
+                                <i class="fas fa-globe"></i>
+                                <span>Domaine</span>
+                            </button>
+                            <button class="view-mode ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                                    onclick="window.pageManager.changeViewMode('grouped-sender')">
+                                <i class="fas fa-user"></i>
+                                <span>Expéditeur</span>
+                            </button>
+                            <button class="view-mode ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                    onclick="window.pageManager.changeViewMode('flat')">
+                                <i class="fas fa-list"></i>
+                                <span>Liste</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Actions principales -->
+                        <div class="action-buttons">
+                            <button class="btn-action btn-selection-toggle" 
+                                    onclick="window.pageManager.toggleAllSelection()">
+                                <i class="fas fa-check-square"></i>
+                                <span class="btn-text">Sélectionner tous</span>
+                                <span class="btn-count">(${this.getVisibleEmails().length})</span>
+                            </button>
+                            
+                            <button class="btn-action btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
+                                    onclick="window.pageManager.createTasksFromSelection()"
+                                    ${selectedCount === 0 ? 'disabled' : ''}>
+                                <i class="fas fa-tasks"></i>
+                                <span class="btn-text">Créer tâche${selectedCount > 1 ? 's' : ''}</span>
+                                ${selectedCount > 0 ? `<span class="count-badge">${selectedCount}</span>` : ''}
+                            </button>
+                            
+                            ${selectedCount > 0 ? `
+                                <button class="btn-action btn-clear" 
+                                        onclick="window.pageManager.clearSelection()">
+                                    <i class="fas fa-times"></i>
+                                    <span class="btn-text">Effacer (${selectedCount})</span>
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
 
-                    <!-- Container fixe (clone) -->
-                    <div class="sticky-controls-container">
-                        <!-- Contenu cloné dynamiquement -->
-                    </div>
-
-                    <!-- CONTENU DES EMAILS -->
-                    <div class="tasks-container-harmonized">
-                        ${this.renderEmailsList()}
+                    <!-- Filtres de catégories avec priorité Newsletter/Spam -->
+                    <div class="status-filters-compact">
+                        ${this.buildPriorityCompactCategoryTabs(categoryCounts, totalEmails, categories)}
                     </div>
                 </div>
-            `;
 
-            this.addExpandedEmailStyles();
-            this.setupEmailsEventListeners();
-            this.setupStickyControls();
-        };
+                <!-- Container fixe (clone) -->
+                <div class="sticky-controls-container">
+                    <!-- Contenu cloné dynamiquement -->
+                </div>
 
-        renderEmailsPage();
+                <!-- CONTENU DES EMAILS -->
+                <div class="tasks-container-harmonized">
+                    ${this.renderEmailsList()}
+                </div>
+            </div>
+        `;
+
+        this.addEmailStyles();
+        this.setupEmailsEventListeners();
+        this.setupStickyControls();
         
         // Auto-analyze si activé
         if (this.autoAnalyzeEnabled && emails.length > 0) {
@@ -722,86 +1067,143 @@ class PageManager {
     }
 
     // ================================================
-    // PRIORITÉ NEWSLETTER/SPAM - NOUVELLE MÉTHODE
+    // PRIORITÉ NEWSLETTER/SPAM - MÉTHODE RENFORCÉE
     // ================================================
     ensureNewsletterSpamPriority(emails) {
-        console.log('[PageManager] 🔍 Vérification priorité Newsletter/Spam...');
+        console.log('[PageManager] 🔍 Vérification PRIORITÉ Newsletter/Spam ULTRA-RENFORCÉE...');
         
         let corrected = 0;
         
         emails.forEach(email => {
             const originalCategory = email.category;
-            const correctedCategory = this.detectNewsletterSpamPriority(email);
+            const correctedCategory = this.detectNewsletterSpamPriorityEnhanced(email);
             
             if (correctedCategory && correctedCategory !== originalCategory) {
-                console.log(`[PageManager] 📰 Correction: "${email.subject?.substring(0, 40)}" ${originalCategory} → ${correctedCategory}`);
+                console.log(`[PageManager] 📰 CORRECTION PRIORITÉ: "${email.subject?.substring(0, 40)}" ${originalCategory} → ${correctedCategory}`);
                 email.category = correctedCategory;
-                email.categoryScore = (email.categoryScore || 0) + 50;
-                email.categoryConfidence = Math.max(email.categoryConfidence || 0, 0.9);
+                email.categoryScore = (email.categoryScore || 0) + 100; // Bonus important
+                email.categoryConfidence = Math.max(email.categoryConfidence || 0, 0.95);
                 email.priorityCorrection = true;
+                email.correctionMethod = 'priority_enhanced';
                 corrected++;
             }
         });
         
         if (corrected > 0) {
-            console.log(`[PageManager] ✅ ${corrected} emails corrigés avec priorité Newsletter/Spam`);
+            console.log(`[PageManager] ✅ ${corrected} emails CORRIGÉS avec priorité Newsletter/Spam ULTRA-RENFORCÉE`);
         }
     }
 
-    detectNewsletterSpamPriority(email) {
+    detectNewsletterSpamPriorityEnhanced(email) {
         const content = this.extractEmailContentForAnalysis(email);
         
-        // Patterns Newsletter - PRIORITÉ ABSOLUE
+        // PATTERNS NEWSLETTER ULTRA-RENFORCÉS
         const newsletterPatterns = [
-            /unsubscribe|désabonner|se désinscrire/i,
-            /newsletter|bulletin|lettre d'information/i,
-            /mailing list|liste de diffusion/i,
-            /view in browser|voir dans le navigateur/i,
-            /email preferences|préférences email/i,
-            /promotion|promo|offre spéciale|special offer/i,
-            /limited offer|offre limitée|flash sale/i,
-            /shop now|acheter maintenant|buy now/i,
-            /you are receiving this|vous recevez cet email/i,
-            /manage subscription|gérer abonnement/i
+            // Désabonnement - ABSOLU
+            /unsubscribe|désabonner|se désinscrire|opt[-\s]?out/i,
+            /ne plus recevoir|stop emails|arreter.*emails/i,
+            /email preferences|préférences email|gérer.*abonnement/i,
+            /view in browser|voir.*navigateur|version web/i,
+            /mailing list|liste.*diffusion|newsletter/i,
+            
+            // Services spécifiques - ULTRA-PRIORITÉ
+            /google cloud|twitch|youtube|netflix|spotify|amazon/i,
+            /microsoft|apple|github|linkedin|facebook/i,
+            
+            // Adresses noreply - PRIORITÉ ABSOLUE
+            /noreply@|no[-\s]?reply@|donotreply@|notifications@/i,
+            /updates@|news@|newsletter@|marketing@|promo@/i,
+            
+            // Contenu promotionnel
+            /promotion|promo|offer|offre|deal|sale|vente/i,
+            /shop now|buy now|acheter|commande|order/i,
+            /limited.*time|temps.*limité|expire.*soon/i,
+            
+            // Structure newsletter
+            /follow us|suivez[-\s]?nous|social media|réseaux sociaux/i,
+            /you.*receiving.*email|vous recevez.*email/i,
+            
+            // Encodage défectueux (courrier Microsoft, etc.)
+            /sÃ©curitÃ©|notificatÃ©|prÃ©fÃ©rences|dÃ©sabonner/i,
+            /confidentialitÃ©|Ã©quipe|rÃ©ception/i
         ];
         
-        // Patterns Spam
+        // PATTERNS SPAM
         const spamPatterns = [
-            /urgent|urgence.*action/i,
-            /félicitations.*gagné|congratulations.*won/i,
-            /cliquez ici immédiatement|click here immediately/i,
-            /réclamez maintenant|claim now/i,
-            /offre exclusive.*expire/i,
-            /100% gratuit.*aucun frais/i
+            /urgent.*action|action.*urgente|immediately.*click/i,
+            /félicitations.*gagné|congratulations.*won|winner/i,
+            /claim.*prize|réclamez.*prix|free.*money/i,
+            /100%.*gratuit.*aucun.*frais|completely free/i,
+            /limited.*offer.*expires|offre.*expire.*rapidement/i
         ];
         
-        // Vérifier Newsletter en premier
-        const hasNewsletterPattern = newsletterPatterns.some(pattern => 
-            pattern.test(content.text) || 
-            pattern.test(content.subject) ||
-            pattern.test(content.sender)
-        );
+        // VÉRIFICATION ULTRA-PRIORITAIRE NEWSLETTER
+        let newsletterScore = 0;
+        newsletterPatterns.forEach(pattern => {
+            if (pattern.test(content.text) || 
+                pattern.test(content.subject) ||
+                pattern.test(content.sender)) {
+                newsletterScore += 50;
+            }
+        });
         
-        if (hasNewsletterPattern) {
+        // Bonus pour domaines newsletter
+        if (this.isNewsletterDomain(content.domain)) {
+            newsletterScore += 100;
+        }
+        
+        // Bonus pour adresses noreply
+        if (/noreply|no[-\s]?reply|donotreply|notifications|updates|news|newsletter|marketing|promo/.test(content.sender)) {
+            newsletterScore += 80;
+        }
+        
+        // Bonus pour services connus
+        const knownServices = ['google', 'microsoft', 'twitch', 'youtube', 'netflix', 'spotify', 'amazon', 'apple'];
+        if (knownServices.some(service => 
+            content.sender.includes(service) || 
+            content.subject.includes(service) ||
+            content.domain.includes(service)
+        )) {
+            newsletterScore += 120;
+        }
+        
+        // DÉCISION NEWSLETTER avec seuil TRÈS PERMISSIF
+        if (newsletterScore >= 50) { // Seuil très bas
             return 'marketing_news';
         }
         
-        // Vérifier Spam
-        const hasSpamPattern = spamPatterns.some(pattern => 
-            pattern.test(content.text) || 
-            pattern.test(content.subject)
-        );
+        // VÉRIFICATION SPAM
+        let spamScore = 0;
+        spamPatterns.forEach(pattern => {
+            if (pattern.test(content.text) || pattern.test(content.subject)) {
+                spamScore += 30;
+            }
+        });
         
-        if (hasSpamPattern) {
-            return 'spam';
-        }
-        
-        // Vérifier domaine suspect
         if (this.isSuspiciousDomain(content.domain)) {
+            spamScore += 50;
+        }
+        
+        if (spamScore >= 60) {
             return 'spam';
         }
         
-        return null; // Pas de correction nécessaire
+        return null; // Pas de correction
+    }
+
+    isNewsletterDomain(domain) {
+        const newsletterDomains = [
+            'mailchimp.com', 'sendgrid.net', 'constantcontact.com',
+            'aweber.com', 'getresponse.com', 'campaign-monitor.com',
+            'sendinblue.com', 'klaviyo.com', 'convertkit.com',
+            'activecampaign.com', 'drip.com', 'infusionsoft.com',
+            'pardot.com', 'hubspot.com', 'marketo.com',
+            'google.com', 'microsoft.com', 'twitch.tv',
+            'youtube.com', 'netflix.com', 'spotify.com',
+            'amazon.com', 'apple.com'
+        ];
+        
+        return newsletterDomains.some(nd => domain.includes(nd));
     }
 
     extractEmailContentForAnalysis(email) {
@@ -822,131 +1224,299 @@ class PageManager {
     isSuspiciousDomain(domain) {
         const suspiciousDomains = [
             'temp-mail', 'guerrillamail', '10minutemail', 'mailinator',
-            'throwaway', 'fakeinbox', 'yopmail', 'maildrop'
+            'throwaway', 'fakeinbox', 'yopmail', 'maildrop',
+            'temp', 'disposable', 'spam', 'fake'
         ];
         
         return suspiciousDomains.some(suspicious => domain.includes(suspicious));
     }
 
     // ================================================
-    // PROVIDER STATUS RENDERING
+    // RENDU LISTE EMAILS CORRIGÉ
     // ================================================
-    renderProviderStatus(providerInfo) {
-        const statusClass = providerInfo.status === 'connected' ? 'connected' : 'disconnected';
-        const optimizedBadge = providerInfo.optimized ? 
-            '<span class="optimization-badge">🚀 Optimisé</span>' : '';
+    renderEmailsList() {
+        const emails = this.getAllEmails();
+        let filteredEmails = emails;
         
+        console.log(`[PageManager] 📧 Rendu liste: ${emails.length} total, catégorie: ${this.currentCategory}`);
+        
+        // Filtrage par catégorie
+        if (this.currentCategory && this.currentCategory !== 'all') {
+            if (this.currentCategory === 'other') {
+                filteredEmails = filteredEmails.filter(email => {
+                    const cat = email.category;
+                    return !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
+                });
+            } else {
+                filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
+            }
+        }
+        
+        // Filtrage par recherche
+        if (this.searchTerm) {
+            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        }
+        
+        console.log(`[PageManager] 📧 Emails filtrés: ${filteredEmails.length}`);
+        
+        if (filteredEmails.length === 0) {
+            return this.renderEmptyState();
+        }
+
+        switch (this.currentViewMode) {
+            case 'flat':
+                return this.renderFlatView(filteredEmails);
+            case 'grouped-domain':
+            case 'grouped-sender':
+                return this.renderGroupedView(filteredEmails, this.currentViewMode);
+            default:
+                return this.renderFlatView(filteredEmails);
+        }
+    }
+
+    renderFlatView(emails) {
         return `
-            <div class="provider-info ${statusClass}" style="color: ${providerInfo.color};">
-                <i class="${providerInfo.icon}"></i>
-                <span>${providerInfo.name}</span>
-                ${optimizedBadge}
+            <div class="tasks-harmonized-list">
+                ${emails.map(email => this.renderEmailRowEnhanced(email)).join('')}
             </div>
         `;
     }
 
-    // ================================================
-    // FILTRES CATÉGORIES AVEC PRIORITÉ
-    // ================================================
-    buildPriorityCompactCategoryTabs(categoryCounts, totalEmails, categories) {
+    renderEmailRowEnhanced(email) {
+        const hasTask = this.createdTasks.has(email.id);
+        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
+        
         const preselectedCategories = this.getTaskPreselectedCategories();
+        let isPreselectedForTasks = email.isPreselectedForTasks === true;
         
-        // ORDRE PRIORITAIRE: Newsletter/Spam d'abord
-        const priorityOrder = [
-            'all',
-            'marketing_news', // NEWSLETTER EN PREMIER
-            'spam',           // SPAM EN SECOND
-            'security',
-            'finance', 
-            'tasks',
-            'meetings',
-            'commercial',
-            'support',
-            'hr',
-            'notifications',
-            'reminders',
-            'project',
-            'internal',
-            'cc',
-            'other'
-        ];
+        if (!isPreselectedForTasks && preselectedCategories.includes(email.category)) {
+            isPreselectedForTasks = true;
+            email.isPreselectedForTasks = true;
+        }
         
-        const tabs = [];
+        const isSelected = this.selectedEmails.has(email.id) || isPreselectedForTasks;
         
-        // Ajouter "Tous" en premier
-        tabs.push({
-            id: 'all',
-            name: 'Tous',
-            icon: '📧',
-            count: totalEmails,
-            isPreselected: false,
-            priority: 1000
-        });
+        if (isPreselectedForTasks && !this.selectedEmails.has(email.id)) {
+            this.selectedEmails.add(email.id);
+        }
         
-        // Ajouter les catégories dans l'ordre de priorité
-        priorityOrder.slice(1).forEach(catId => {
-            const count = categoryCounts[catId] || 0;
-            const category = categories[catId];
-            
-            if (count > 0 && category) {
-                const isPreselected = preselectedCategories.includes(catId);
-                const priority = this.categoryPriority[catId] || 0;
+        // Classes spéciales ULTRA-RENFORCÉES
+        let specialClasses = '';
+        let priorityBadge = '';
+        
+        if (email.category === 'marketing_news') {
+            specialClasses = 'newsletter-email ultra-enhanced';
+            priorityBadge = '<span class="priority-badge newsletter">📰 Newsletter</span>';
+        } else if (email.category === 'spam') {
+            specialClasses = 'spam-email ultra-enhanced';
+            priorityBadge = '<span class="priority-badge spam">🚫 Spam</span>';
+        } else if (email.priorityCorrection) {
+            specialClasses = 'priority-corrected';
+            priorityBadge = '<span class="priority-badge corrected">✅ Corrigé</span>';
+        }
+        
+        const cardClasses = [
+            'task-harmonized-card',
+            'email-card-enhanced',
+            isSelected ? 'selected' : '',
+            hasTask ? 'has-task' : '',
+            isPreselectedForTasks ? 'preselected-task' : '',
+            specialClasses
+        ].filter(Boolean).join(' ');
+        
+        return `
+            <div class="${cardClasses}" 
+                 data-email-id="${email.id}"
+                 data-category="${email.category}"
+                 data-preselected="${isPreselectedForTasks}"
+                 onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
                 
-                // Icônes spéciales pour Newsletter et Spam
-                let icon = category.icon;
-                let specialClass = '';
+                <input type="checkbox" 
+                       class="task-checkbox-harmonized" 
+                       ${isSelected ? 'checked' : ''}
+                       onchange="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
                 
-                if (catId === 'marketing_news') {
-                    icon = '📰';
-                    specialClass = 'newsletter-priority';
-                } else if (catId === 'spam') {
-                    icon = '🚫';
-                    specialClass = 'spam-priority';
-                }
+                <div class="priority-bar-harmonized" 
+                     style="background-color: ${isPreselectedForTasks ? '#8b5cf6' : this.getEmailPriorityColor(email)}"></div>
                 
-                tabs.push({
-                    id: catId,
-                    name: category.name,
-                    icon: icon,
-                    color: category.color,
-                    count: count,
-                    isPreselected: isPreselected,
-                    priority: priority,
-                    specialClass: specialClass
-                });
-            }
-        });
-        
-        // Trier par priorité décroissante
-        tabs.sort((a, b) => (b.priority || 0) - (a.priority || 0));
-        
-        return tabs.map(tab => {
-            const isCurrentCategory = this.currentCategory === tab.id;
-            const baseClasses = `status-pill-compact ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''} ${tab.specialClass || ''}`;
-            
-            return `
-                <button class="${baseClasses}" 
-                        onclick="window.pageManager.filterByCategory('${tab.id}')"
-                        data-category-id="${tab.id}"
-                        title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
-                    <div class="pill-content-twolines">
-                        <div class="pill-first-line-twolines">
-                            <span class="pill-icon-twolines">${tab.icon}</span>
-                            <span class="pill-count-twolines">${tab.count}</span>
-                        </div>
-                        <div class="pill-second-line-twolines">
-                            <span class="pill-text-twolines">${tab.name}</span>
+                <div class="task-main-content-harmonized">
+                    <div class="task-header-harmonized">
+                        <h3 class="task-title-harmonized">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
+                        <div class="task-meta-harmonized">
+                            <span class="task-type-badge-harmonized">📧 Email</span>
+                            <span class="deadline-badge-harmonized">
+                                📅 ${this.formatEmailDate(email.receivedDateTime)}
+                            </span>
+                            ${email.categoryScore ? `
+                                <span class="confidence-badge-harmonized">
+                                    🎯 ${Math.round(email.categoryConfidence * 100)}%
+                                </span>
+                            ` : ''}
+                            ${priorityBadge}
+                            ${isPreselectedForTasks ? `
+                                <span class="preselected-badge-harmonized">
+                                    ⭐ Pré-sélectionné
+                                </span>
+                            ` : ''}
                         </div>
                     </div>
-                    ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
+                    
+                    <div class="task-recipient-harmonized">
+                        <i class="fas fa-envelope"></i>
+                        <span class="recipient-name-harmonized">${this.escapeHtml(senderName)}</span>
+                        <span class="recipient-email-harmonized">${this.escapeHtml(senderEmail)}</span>
+                        ${email.hasAttachments ? '<span class="attachment-indicator">📎 Pièce jointe</span>' : ''}
+                        ${email.category && email.category !== 'other' ? `
+                            <span class="category-indicator-harmonized enhanced ${email.category === 'marketing_news' ? 'newsletter-category' : ''} ${email.category === 'spam' ? 'spam-category' : ''}" 
+                                  style="background: ${this.getCategoryColor(email.category)}20; 
+                                         color: ${this.getCategoryColor(email.category)};
+                                         ${isPreselectedForTasks ? 'font-weight: 700;' : ''}">
+                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                                ${isPreselectedForTasks ? ' ⭐' : ''}
+                            </span>
+                        ` : ''}
+                        
+                        <!-- Informations de détection -->
+                        ${email.detectionMethod ? `
+                            <span class="detection-info" title="Méthode: ${email.detectionMethod}">
+                                🔍 ${email.detectionMethod}
+                            </span>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- Preview du contenu -->
+                    ${email.bodyPreview ? `
+                        <div class="email-preview-content">
+                            <p class="preview-text">${this.escapeHtml(email.bodyPreview.substring(0, 150))}${email.bodyPreview.length > 150 ? '...' : ''}</p>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="task-actions-harmonized">
+                    ${this.renderEmailActionsEnhanced(email)}
+                </div>
+            </div>
+        `;
+    }
+
+    renderEmailActionsEnhanced(email) {
+        const hasTask = this.createdTasks.has(email.id);
+        const actions = [];
+        
+        if (!hasTask) {
+            actions.push(`
+                <button class="action-btn-harmonized create-task enhanced" 
+                        onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')"
+                        title="Créer une tâche">
+                    <i class="fas fa-tasks"></i>
                 </button>
-            `;
-        }).join('');
+            `);
+        } else {
+            actions.push(`
+                <button class="action-btn-harmonized view-task enhanced" 
+                        onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')"
+                        title="Voir la tâche créée">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+            `);
+        }
+        
+        actions.push(`
+            <button class="action-btn-harmonized details enhanced" 
+                    onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')"
+                    title="Voir l'email complet">
+                <i class="fas fa-eye"></i>
+            </button>
+        `);
+        
+        return actions.join('');
     }
 
     // ================================================
-    // CLICK EMAIL - CORRIGÉ
+    // GESTION SÉLECTION ET INTERACTIONS
     // ================================================
+    
+    toggleAllSelection() {
+        const visibleEmails = this.getVisibleEmails();
+        const allSelected = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
+        
+        if (allSelected) {
+            visibleEmails.forEach(email => {
+                this.selectedEmails.delete(email.id);
+            });
+            window.uiManager?.showToast(`${visibleEmails.length} emails désélectionnés`, 'info');
+        } else {
+            visibleEmails.forEach(email => {
+                this.selectedEmails.add(email.id);
+            });
+            window.uiManager?.showToast(`${visibleEmails.length} emails sélectionnés`, 'success');
+        }
+        
+        this.refreshEmailsView();
+    }
+
+    toggleEmailSelection(emailId) {
+        console.log('[PageManager] Toggle sélection:', emailId);
+        
+        if (this.selectedEmails.has(emailId)) {
+            this.selectedEmails.delete(emailId);
+        } else {
+            this.selectedEmails.add(emailId);
+        }
+        
+        const checkbox = document.querySelector(`[data-email-id="${emailId}"] .task-checkbox-harmonized`);
+        if (checkbox) {
+            checkbox.checked = this.selectedEmails.has(emailId);
+        }
+        
+        this.updateControlsBarOnly();
+        console.log('[PageManager] Total sélectionnés:', this.selectedEmails.size);
+    }
+
+    clearSelection() {
+        this.selectedEmails.clear();
+        this.refreshEmailsView();
+        window.uiManager?.showToast('Sélection effacée', 'info');
+    }
+
+    getVisibleEmails() {
+        const emails = this.getAllEmails();
+        let filteredEmails = emails;
+        
+        if (this.currentCategory && this.currentCategory !== 'all') {
+            if (this.currentCategory === 'other') {
+                filteredEmails = filteredEmails.filter(email => {
+                    const cat = email.category;
+                    return !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
+                });
+            } else {
+                filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
+            }
+        }
+        
+        if (this.searchTerm) {
+            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        }
+        
+        return filteredEmails;
+    }
+
+    matchesSearch(email, searchTerm) {
+        if (!searchTerm) return true;
+        
+        const search = searchTerm.toLowerCase();
+        const subject = (email.subject || '').toLowerCase();
+        const sender = (email.from?.emailAddress?.name || '').toLowerCase();
+        const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
+        const preview = (email.bodyPreview || '').toLowerCase();
+        
+        return subject.includes(search) || 
+               sender.includes(search) || 
+               senderEmail.includes(search) || 
+               preview.includes(search);
+    }
+
     handleEmailClick(event, emailId) {
         // Éviter les double-clics sur la checkbox
         if (event.target.type === 'checkbox') {
@@ -987,7 +1557,7 @@ class PageManager {
     }
 
     /**
-     * Affiche la modal d'un email - VERSION CORRIGÉE
+     * Affiche la modal d'un email - VERSION ULTRA-COMPLÈTE
      */
     showEmailModal(emailId) {
         const email = this.getEmailById(emailId);
@@ -1002,67 +1572,230 @@ class PageManager {
         
         const providerInfo = this.getProviderInfo();
         const uniqueId = 'email_modal_' + Date.now();
+        
+        // Informations détaillées de l'email
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
+        const hasAttachments = email.hasAttachments || false;
+        const importance = email.importance || 'normal';
+        
+        // Destinataires
+        const toRecipients = email.toRecipients || [];
+        const ccRecipients = email.ccRecipients || [];
+        
+        // Analyse et catégorisation
+        const categoryInfo = this.getCategoryInfo(email.category);
+        const detectionInfo = this.getDetectionInfo(email);
+        
         const modalHTML = `
             <div id="${uniqueId}" 
                  style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
                         z-index: 99999999; display: flex; align-items: center; justify-content: center; 
                         padding: 20px; backdrop-filter: blur(4px);">
-                <div style="background: white; border-radius: 16px; max-width: 800px; width: 100%; 
+                <div style="background: white; border-radius: 16px; max-width: 900px; width: 100%; 
                            max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
+                    
+                    <!-- En-tête modal -->
+                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
                             <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">Email Complet</h2>
-                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; color: ${providerInfo.color};">
-                                <i class="${providerInfo.icon}"></i>
-                                <span style="font-size: 14px; font-weight: 600;">${providerInfo.name}</span>
-                                ${email.category === 'marketing_news' ? '<span style="background: #f97316; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">📰 Newsletter</span>' : ''}
-                                ${email.category === 'spam' ? '<span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">🚫 Spam</span>' : ''}
-                                ${email.priorityCorrection ? '<span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">✅ Corrigé</span>' : ''}
+                            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px;">
+                                <!-- Provider -->
+                                <span style="background: ${providerInfo.color}; color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                                    <i class="${providerInfo.icon}"></i> ${providerInfo.name}
+                                </span>
+                                
+                                <!-- Catégorie -->
+                                ${categoryInfo ? `
+                                    <span style="background: ${categoryInfo.color}20; color: ${categoryInfo.color}; border: 1px solid ${categoryInfo.color}40; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                                        ${categoryInfo.icon} ${categoryInfo.name}
+                                    </span>
+                                ` : ''}
+                                
+                                <!-- Badges spéciaux -->
+                                ${email.category === 'marketing_news' ? '<span style="background: #f97316; color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">📰 Newsletter</span>' : ''}
+                                ${email.category === 'spam' ? '<span style="background: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">🚫 Spam</span>' : ''}
+                                ${email.priorityCorrection ? '<span style="background: #10b981; color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">✅ Corrigé</span>' : ''}
+                                ${email.isPreselectedForTasks ? '<span style="background: #8b5cf6; color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">⭐ Pré-sélectionné</span>' : ''}
+                                
+                                <!-- Importance -->
+                                ${importance === 'high' ? '<span style="background: #ef4444; color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">🔥 Important</span>' : ''}
+                                
+                                <!-- Pièces jointes -->
+                                ${hasAttachments ? '<span style="background: #0ea5e9; color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">📎 Pièces jointes</span>' : ''}
                             </div>
                         </div>
                         <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; flex-shrink: 0;">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
+                    
+                    <!-- Contenu principal -->
                     <div style="padding: 24px; overflow-y: auto; flex: 1;">
+                        
+                        <!-- Informations de base -->
                         <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
-                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                                <span style="font-weight: 700; color: #374151; min-width: 60px;">De:</span>
-                                <span style="color: #1f2937;">${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
-                            </div>
-                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                                <span style="font-weight: 700; color: #374151; min-width: 60px;">Date:</span>
-                                <span style="color: #1f2937;">${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-weight: 700; color: #374151; min-width: 60px;">Sujet:</span>
-                                <span style="color: #1f2937; font-weight: 600;">${email.subject || 'Sans sujet'}</span>
-                            </div>
-                            ${email.category && email.category !== 'other' ? `
-                                <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
-                                    <span style="font-weight: 700; color: #374151; min-width: 60px;">Catégorie:</span>
-                                    <span style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">
-                                        ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
-                                    </span>
+                            <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #374151;">Informations de l'email</h3>
+                            
+                            <div style="display: grid; gap: 12px;">
+                                <!-- De -->
+                                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                    <span style="font-weight: 700; color: #374151; min-width: 80px;">De:</span>
+                                    <div style="flex: 1;">
+                                        <div style="font-weight: 600; color: #1f2937;">${this.escapeHtml(senderName)}</div>
+                                        <div style="font-size: 14px; color: #6b7280; font-family: monospace;">&lt;${this.escapeHtml(senderEmail)}&gt;</div>
+                                    </div>
                                 </div>
-                            ` : ''}
+                                
+                                <!-- À -->
+                                ${toRecipients.length > 0 ? `
+                                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                        <span style="font-weight: 700; color: #374151; min-width: 80px;">À:</span>
+                                        <div style="flex: 1;">
+                                            ${toRecipients.map(recipient => `
+                                                <div style="margin-bottom: 4px;">
+                                                    <span style="font-weight: 500;">${this.escapeHtml(recipient.emailAddress?.name || recipient.emailAddress?.address || '')}</span>
+                                                    ${recipient.emailAddress?.name ? `<span style="color: #6b7280; font-size: 14px; font-family: monospace;"> &lt;${this.escapeHtml(recipient.emailAddress.address)}&gt;</span>` : ''}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                <!-- Cc -->
+                                ${ccRecipients.length > 0 ? `
+                                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                        <span style="font-weight: 700; color: #374151; min-width: 80px;">Cc:</span>
+                                        <div style="flex: 1;">
+                                            ${ccRecipients.map(recipient => `
+                                                <div style="margin-bottom: 4px;">
+                                                    <span style="font-weight: 500;">${this.escapeHtml(recipient.emailAddress?.name || recipient.emailAddress?.address || '')}</span>
+                                                    ${recipient.emailAddress?.name ? `<span style="color: #6b7280; font-size: 14px; font-family: monospace;"> &lt;${this.escapeHtml(recipient.emailAddress.address)}&gt;</span>` : ''}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                <!-- Date -->
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-weight: 700; color: #374151; min-width: 80px;">Date:</span>
+                                    <span style="color: #1f2937;">${new Date(email.receivedDateTime).toLocaleString('fr-FR', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}</span>
+                                </div>
+                                
+                                <!-- Sujet -->
+                                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                                    <span style="font-weight: 700; color: #374151; min-width: 80px;">Sujet:</span>
+                                    <span style="color: #1f2937; font-weight: 600; flex: 1; word-break: break-word;">${this.escapeHtml(email.subject || 'Sans sujet')}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div style="background: white; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; max-height: 400px; overflow-y: auto; line-height: 1.6; color: #374151;">
-                            ${this.getEmailContent(email)}
+                        
+                        <!-- Analyse et catégorisation -->
+                        ${detectionInfo ? `
+                            <div style="margin-bottom: 24px; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 12px; padding: 20px;">
+                                <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #0c4a6e; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-brain"></i> Analyse IA
+                                </h3>
+                                
+                                <div style="display: grid; gap: 12px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-weight: 600;">Score de catégorisation:</span>
+                                        <span style="background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 700;">
+                                            ${email.categoryScore || 0} points
+                                        </span>
+                                    </div>
+                                    
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-weight: 600;">Confiance:</span>
+                                        <span style="background: #3b82f6; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 700;">
+                                            ${Math.round((email.categoryConfidence || 0) * 100)}%
+                                        </span>
+                                    </div>
+                                    
+                                    ${email.detectionMethod ? `
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-weight: 600;">Méthode de détection:</span>
+                                            <span style="background: #8b5cf6; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 12px;">
+                                                ${this.escapeHtml(email.detectionMethod)}
+                                            </span>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    ${email.hasAbsolute ? `
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-weight: 600;">Correspondance absolue:</span>
+                                            <span style="background: #ef4444; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 700;">
+                                                ✅ OUI
+                                            </span>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    ${email.matchedPatterns && email.matchedPatterns.length > 0 ? `
+                                        <div>
+                                            <span style="font-weight: 600; display: block; margin-bottom: 8px;">Patterns détectés (${email.matchedPatterns.length}):</span>
+                                            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                                ${email.matchedPatterns.slice(0, 10).map(pattern => `
+                                                    <span style="background: #f3f4f6; color: #374151; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-family: monospace;">
+                                                        ${this.escapeHtml(pattern.keyword || pattern)}
+                                                    </span>
+                                                `).join('')}
+                                                ${email.matchedPatterns.length > 10 ? `<span style="color: #6b7280; font-size: 12px;">... et ${email.matchedPatterns.length - 10} autres</span>` : ''}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <!-- Contenu de l'email -->
+                        <div style="background: white; border: 1px solid #e5e7eb; border-radius: 12px; max-height: 400px; overflow-y: auto;">
+                            <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; background: #f8fafc;">
+                                <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #374151; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-envelope-open"></i> Contenu de l'email
+                                </h3>
+                            </div>
+                            <div style="padding: 20px; line-height: 1.6; color: #374151; word-break: break-word;">
+                                ${this.getEmailContentForModal(email)}
+                            </div>
                         </div>
                     </div>
-                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
-                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                            Fermer
-                        </button>
-                        ${!this.createdTasks.has(emailId) ? `
-                            <button onclick="document.getElementById('${uniqueId}').remove(); window.pageManager.showTaskCreationModal('${emailId}');"
-                                    style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                                <i class="fas fa-tasks"></i> Créer une tâche
+                    
+                    <!-- Actions -->
+                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                        <div style="display: flex; gap: 12px;">
+                            <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                    style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                Fermer
                             </button>
-                        ` : ''}
+                            
+                            <button onclick="window.pageManager.toggleEmailSelection('${emailId}'); document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                    style="padding: 12px 20px; background: ${this.selectedEmails.has(emailId) ? '#ef4444' : '#10b981'}; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                <i class="fas fa-${this.selectedEmails.has(emailId) ? 'minus' : 'plus'}"></i> 
+                                ${this.selectedEmails.has(emailId) ? 'Désélectionner' : 'Sélectionner'}
+                            </button>
+                        </div>
+                        
+                        <div style="display: flex; gap: 12px;">
+                            ${!this.createdTasks.has(emailId) ? `
+                                <button onclick="document.getElementById('${uniqueId}').remove(); window.pageManager.showTaskCreationModal('${emailId}');"
+                                        style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    <i class="fas fa-tasks"></i> Créer une tâche
+                                </button>
+                            ` : `
+                                <button onclick="document.getElementById('${uniqueId}').remove(); window.pageManager.openCreatedTask('${emailId}');"
+                                        style="padding: 12px 20px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    <i class="fas fa-check-circle"></i> Voir la tâche
+                                </button>
+                            `}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1072,284 +1805,488 @@ class PageManager {
         document.body.style.overflow = 'hidden';
     }
 
-    // ================================================
-    // RENDU LISTE EMAILS - CORRIGÉ
-    // ================================================
-    renderEmailsList() {
-        const emails = this.getAllEmails();
-        let filteredEmails = emails;
+    getCategoryInfo(categoryId) {
+        if (!categoryId) return null;
         
-        console.log(`[PageManager] 📧 Rendu liste emails: ${emails.length} total, catégorie: ${this.currentCategory}`);
+        const category = this.getCategory(categoryId);
+        if (!category) return null;
         
-        if (this.currentCategory && this.currentCategory !== 'all') {
-            if (this.currentCategory === 'other') {
-                filteredEmails = filteredEmails.filter(email => {
-                    const cat = email.category;
-                    const isOther = !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
-                    return isOther;
-                });
-                console.log(`[PageManager] 📌 Emails "Autre" trouvés: ${filteredEmails.length}`);
-            } else {
-                filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
-                console.log(`[PageManager] 🏷️ Emails dans catégorie "${this.currentCategory}": ${filteredEmails.length}`);
+        return {
+            name: category.name,
+            icon: category.icon,
+            color: category.color
+        };
+    }
+
+    getDetectionInfo(email) {
+        if (!email.categoryScore && !email.detectionMethod) return null;
+        
+        return {
+            score: email.categoryScore || 0,
+            confidence: email.categoryConfidence || 0,
+            method: email.detectionMethod || 'unknown',
+            hasAbsolute: email.hasAbsolute || false,
+            patterns: email.matchedPatterns || []
+        };
+    }
+
+    getEmailContentForModal(email) {
+        // Priorité: body complet, puis preview
+        let content = '';
+        
+        if (email.body?.content) {
+            content = email.body.content;
+            
+            // Si c'est du HTML, le nettoyer mais préserver la structure
+            if (content.includes('<')) {
+                content = this.cleanHtmlForDisplay(content);
             }
-        }
-        
-        if (this.searchTerm) {
-            const beforeSearch = filteredEmails.length;
-            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
-            console.log(`[PageManager] 🔍 Après recherche "${this.searchTerm}": ${filteredEmails.length} (était ${beforeSearch})`);
-        }
-        
-        if (filteredEmails.length === 0) {
-            return this.renderEmptyState();
-        }
-
-        switch (this.currentViewMode) {
-            case 'flat':
-                return this.renderFlatView(filteredEmails);
-            case 'grouped-domain':
-            case 'grouped-sender':
-                return this.renderGroupedView(filteredEmails, this.currentViewMode);
-            default:
-                return this.renderFlatView(filteredEmails);
-        }
-    }
-
-    renderFlatView(emails) {
-        return `
-            <div class="tasks-harmonized-list">
-                ${emails.map(email => this.renderHarmonizedEmailRow(email)).join('')}
-            </div>
-        `;
-    }
-
-    renderHarmonizedEmailRow(email) {
-        const hasTask = this.createdTasks.has(email.id);
-        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
-        const senderEmail = email.from?.emailAddress?.address || '';
-        
-        const preselectedCategories = this.getTaskPreselectedCategories();
-        let isPreselectedForTasks = email.isPreselectedForTasks === true;
-        
-        if (!isPreselectedForTasks && preselectedCategories.includes(email.category)) {
-            isPreselectedForTasks = true;
-            email.isPreselectedForTasks = true;
-        }
-        
-        const isSelected = this.selectedEmails.has(email.id) || isPreselectedForTasks;
-        
-        if (isPreselectedForTasks && !this.selectedEmails.has(email.id)) {
-            this.selectedEmails.add(email.id);
-        }
-        
-        // Classes spéciales pour Newsletter/Spam
-        let specialClasses = '';
-        if (email.category === 'marketing_news') {
-            specialClasses = 'newsletter-email';
-        } else if (email.category === 'spam') {
-            specialClasses = 'spam-email';
-        } else if (email.priorityCorrection) {
-            specialClasses = 'priority-corrected';
-        }
-        
-        const cardClasses = [
-            'task-harmonized-card',
-            isSelected ? 'selected' : '',
-            hasTask ? 'has-task' : '',
-            isPreselectedForTasks ? 'preselected-task' : '',
-            specialClasses
-        ].filter(Boolean).join(' ');
-        
-        return `
-            <div class="${cardClasses}" 
-                 data-email-id="${email.id}"
-                 data-category="${email.category}"
-                 data-preselected="${isPreselectedForTasks}"
-                 onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
-                
-                <input type="checkbox" 
-                       class="task-checkbox-harmonized" 
-                       ${isSelected ? 'checked' : ''}
-                       onchange="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
-                
-                <div class="priority-bar-harmonized" 
-                     style="background-color: ${isPreselectedForTasks ? '#8b5cf6' : this.getEmailPriorityColor(email)}"></div>
-                
-                <div class="task-main-content-harmonized">
-                    <div class="task-header-harmonized">
-                        <h3 class="task-title-harmonized">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
-                        <div class="task-meta-harmonized">
-                            <span class="task-type-badge-harmonized">📧 Email</span>
-                            <span class="deadline-badge-harmonized">
-                                📅 ${this.formatEmailDate(email.receivedDateTime)}
-                            </span>
-                            ${email.categoryScore ? `
-                                <span class="confidence-badge-harmonized">
-                                    🎯 ${Math.round(email.categoryConfidence * 100)}%
-                                </span>
-                            ` : ''}
-                            ${isPreselectedForTasks ? `
-                                <span class="preselected-badge-harmonized">
-                                    ⭐ Pré-sélectionné
-                                </span>
-                            ` : ''}
-                            ${email.priorityCorrection ? `
-                                <span class="correction-badge-harmonized">
-                                    ✅ Corrigé
-                                </span>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="task-recipient-harmonized">
-                        <i class="fas fa-envelope"></i>
-                        <span class="recipient-name-harmonized">${this.escapeHtml(senderName)}</span>
-                        ${email.hasAttachments ? '<span class="reply-indicator-harmonized">• Pièce jointe</span>' : ''}
-                        ${email.category && email.category !== 'other' ? `
-                            <span class="category-indicator-harmonized ${email.category === 'marketing_news' ? 'newsletter-category' : ''} ${email.category === 'spam' ? 'spam-category' : ''}" 
-                                  style="background: ${this.getCategoryColor(email.category)}20; 
-                                         color: ${this.getCategoryColor(email.category)};
-                                         ${isPreselectedForTasks ? 'font-weight: 700;' : ''}">
-                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
-                                ${isPreselectedForTasks ? ' ⭐' : ''}
-                            </span>
-                        ` : ''}
-                    </div>
-                </div>
-                
-                <div class="task-actions-harmonized">
-                    ${this.renderHarmonizedEmailActions(email)}
-                </div>
-            </div>
-        `;
-    }
-
-    renderHarmonizedEmailActions(email) {
-        const hasTask = this.createdTasks.has(email.id);
-        const actions = [];
-        
-        if (!hasTask) {
-            actions.push(`
-                <button class="action-btn-harmonized create-task" 
-                        onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')"
-                        title="Créer une tâche">
-                    <i class="fas fa-tasks"></i>
-                </button>
-            `);
+        } else if (email.bodyPreview) {
+            content = `<p><em>Aperçu:</em></p><p>${this.escapeHtml(email.bodyPreview)}</p>`;
         } else {
-            actions.push(`
-                <button class="action-btn-harmonized view-task" 
-                        onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')"
-                        title="Voir la tâche">
-                    <i class="fas fa-check-circle"></i>
-                </button>
-            `);
+            content = '<p><em>Aucun contenu disponible</em></p>';
         }
         
-        actions.push(`
-            <button class="action-btn-harmonized details" 
-                    onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')"
-                    title="Voir l'email">
-                <i class="fas fa-eye"></i>
-            </button>
-        `);
+        return content;
+    }
+
+    cleanHtmlForDisplay(html) {
+        if (!html) return '';
         
-        return actions.join('');
+        // Préserver certaines balises importantes
+        let cleaned = html;
+        
+        // Supprimer les éléments dangereux
+        cleaned = cleaned
+            .replace(/<script[^>]*>.*?<\/script>/gis, '')
+            .replace(/<style[^>]*>.*?<\/style>/gis, '')
+            .replace(/<iframe[^>]*>.*?<\/iframe>/gis, '')
+            .replace(/on\w+="[^"]*"/gi, '') // Supprimer les event handlers
+            .replace(/javascript:/gi, ''); // Supprimer javascript:
+        
+        // Convertir certaines balises en équivalents sécurisés
+        cleaned = cleaned
+            .replace(/<h[1-6][^>]*>/gi, '<h3 style="font-weight: bold; margin: 16px 0 8px 0;">')
+            .replace(/<\/h[1-6]>/gi, '</h3>')
+            .replace(/<strong[^>]*>/gi, '<span style="font-weight: bold;">')
+            .replace(/<\/strong>/gi, '</span>')
+            .replace(/<b[^>]*>/gi, '<span style="font-weight: bold;">')
+            .replace(/<\/b>/gi, '</span>')
+            .replace(/<em[^>]*>/gi, '<span style="font-style: italic;">')
+            .replace(/<\/em>/gi, '</span>')
+            .replace(/<i[^>]*>/gi, '<span style="font-style: italic;">')
+            .replace(/<\/i>/gi, '</span>')
+            .replace(/<br[^>]*>/gi, '<br>')
+            .replace(/<hr[^>]*>/gi, '<hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;">')
+            .replace(/<a\s+href="([^"]+)"[^>]*>/gi, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #3b82f6; text-decoration: underline;">')
+            .replace(/<img[^>]*src="([^"]+)"[^>]*>/gi, '<img src="$1" style="max-width: 100%; height: auto; margin: 8px 0;" alt="Image">');
+        
+        return cleaned;
     }
 
     // ================================================
-    // MÉTHODES RESTANTES (simplifiées pour éviter la troncature)
+    // GROUPES ET VUES
     // ================================================
     
-    toggleAllSelection() {
-        const visibleEmails = this.getVisibleEmails();
-        const allSelected = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
+    renderGroupedView(emails, groupMode) {
+        const groups = this.createEmailGroups(emails, groupMode);
         
-        if (allSelected) {
-            visibleEmails.forEach(email => {
-                this.selectedEmails.delete(email.id);
-            });
-            window.uiManager?.showToast(`${visibleEmails.length} emails désélectionnés`, 'info');
-        } else {
-            visibleEmails.forEach(email => {
-                this.selectedEmails.add(email.id);
-            });
-            window.uiManager?.showToast(`${visibleEmails.length} emails sélectionnés`, 'success');
-        }
-        
-        this.refreshEmailsView();
+        return `
+            <div class="tasks-grouped-harmonized">
+                ${groups.map(group => this.renderEmailGroup(group, groupMode)).join('')}
+            </div>
+        `;
     }
 
-    toggleEmailSelection(emailId) {
-        console.log('[PageManager] Toggle sélection email:', emailId);
+    renderEmailGroup(group, groupType) {
+        const displayName = groupType === 'grouped-domain' ? `@${group.name}` : group.name;
+        const avatarColor = this.generateAvatarColor(group.name);
         
-        if (this.selectedEmails.has(emailId)) {
-            this.selectedEmails.delete(emailId);
-        } else {
-            this.selectedEmails.add(emailId);
-        }
-        
-        const checkbox = document.querySelector(`[data-email-id="${emailId}"] .task-checkbox-harmonized`);
-        if (checkbox) {
-            checkbox.checked = this.selectedEmails.has(emailId);
-        }
-        
-        this.updateControlsBarOnly();
-        console.log('[PageManager] Total sélectionnés:', this.selectedEmails.size);
+        return `
+            <div class="task-group-harmonized" data-group-key="${group.key}">
+                <div class="group-header-harmonized" onclick="event.preventDefault(); event.stopPropagation(); window.pageManager.toggleGroup('${group.key}', event)">
+                    <div class="group-avatar-harmonized" style="background: ${avatarColor}">
+                        ${groupType === 'grouped-domain' ? 
+                            '<i class="fas fa-globe"></i>' : 
+                            group.name.charAt(0).toUpperCase()
+                        }
+                    </div>
+                    <div class="group-info-harmonized">
+                        <div class="group-name-harmonized">${displayName}</div>
+                        <div class="group-meta-harmonized">${group.count} email${group.count > 1 ? 's' : ''} • ${this.formatEmailDate(group.latestDate)}</div>
+                    </div>
+                    <div class="group-expand-harmonized" onclick="event.preventDefault(); event.stopPropagation();">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                
+                <div class="group-content-harmonized" style="display: none;">
+                    ${group.emails.map(email => this.renderEmailRowEnhanced(email)).join('')}
+                </div>
+            </div>
+        `;
     }
 
-    clearSelection() {
-        this.selectedEmails.clear();
-        this.refreshEmailsView();
-        window.uiManager?.showToast('Sélection effacée', 'info');
-    }
-
-    getVisibleEmails() {
-        const emails = this.getAllEmails();
-        let filteredEmails = emails;
+    createEmailGroups(emails, groupMode) {
+        const groups = {};
         
-        if (this.currentCategory && this.currentCategory !== 'all') {
-            if (this.currentCategory === 'other') {
-                filteredEmails = filteredEmails.filter(email => {
-                    const cat = email.category;
-                    const isOther = !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
-                    return isOther;
-                });
+        emails.forEach(email => {
+            let groupKey, groupName;
+            
+            if (groupMode === 'grouped-domain') {
+                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
+                groupKey = domain;
+                groupName = domain;
             } else {
-                filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
+                const senderEmail = email.from?.emailAddress?.address || 'unknown';
+                const senderName = email.from?.emailAddress?.name || senderEmail;
+                groupKey = senderEmail;
+                groupName = senderName;
             }
-        }
+            
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    key: groupKey,
+                    name: groupName,
+                    emails: [],
+                    count: 0,
+                    latestDate: null
+                };
+            }
+            
+            groups[groupKey].emails.push(email);
+            groups[groupKey].count++;
+            
+            const emailDate = new Date(email.receivedDateTime);
+            if (!groups[groupKey].latestDate || emailDate > groups[groupKey].latestDate) {
+                groups[groupKey].latestDate = emailDate;
+            }
+        });
         
-        if (this.searchTerm) {
-            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
-        }
-        
-        return filteredEmails;
+        return Object.values(groups).sort((a, b) => {
+            if (!a.latestDate && !b.latestDate) return 0;
+            if (!a.latestDate) return 1;
+            if (!b.latestDate) return -1;
+            return b.latestDate - a.latestDate;
+        });
     }
 
-    matchesSearch(email, searchTerm) {
-        if (!searchTerm) return true;
+    toggleGroup(groupKey, event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
         
-        const search = searchTerm.toLowerCase();
-        const subject = (email.subject || '').toLowerCase();
-        const sender = (email.from?.emailAddress?.name || '').toLowerCase();
-        const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
-        const preview = (email.bodyPreview || '').toLowerCase();
+        const group = document.querySelector(`[data-group-key="${groupKey}"]`);
+        if (!group) return;
         
-        return subject.includes(search) || 
-               sender.includes(search) || 
-               senderEmail.includes(search) || 
-               preview.includes(search);
+        const content = group.querySelector('.group-content-harmonized');
+        const icon = group.querySelector('.group-expand-harmonized i');
+        const header = group.querySelector('.group-header-harmonized');
+        
+        if (!content || !icon || !header) return;
+        
+        const isExpanded = content.style.display !== 'none';
+        
+        if (isExpanded) {
+            content.style.display = 'none';
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+            group.classList.remove('expanded');
+            header.classList.remove('expanded-header');
+        } else {
+            content.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+            group.classList.add('expanded');
+            header.classList.add('expanded-header');
+        }
+    }
+
+    generateAvatarColor(text) {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        const hue = Math.abs(hash) % 360;
+        const saturation = 65 + (Math.abs(hash) % 20);
+        const lightness = 45 + (Math.abs(hash) % 15);
+        
+        return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
     }
 
     // ================================================
-    // MÉTHODES UTILITAIRES CRITIQUES
+    // ACTIONS BULK ET CRÉATION DE TÂCHES
+    // ================================================
+    
+    async createTasksFromSelection() {
+        if (this.selectedEmails.size === 0) {
+            window.uiManager?.showToast('Aucun email sélectionné', 'warning');
+            return;
+        }
+        
+        let created = 0;
+        window.uiManager?.showLoading(`Création de ${this.selectedEmails.size} tâches...`);
+        
+        for (const emailId of this.selectedEmails) {
+            const email = this.getEmailById(emailId);
+            if (!email || this.createdTasks.has(emailId)) continue;
+            
+            try {
+                if (window.taskManager) {
+                    const taskData = this.buildTaskFromEmail(email);
+                    const task = window.taskManager.createTaskFromEmail(taskData, email);
+                    this.createdTasks.set(emailId, task.id);
+                    created++;
+                }
+            } catch (error) {
+                console.error('[PageManager] Erreur création tâche:', emailId, error);
+            }
+        }
+        
+        window.uiManager?.hideLoading();
+        
+        if (created > 0) {
+            window.taskManager?.saveTasks();
+            window.uiManager?.showToast(`${created} tâche${created > 1 ? 's' : ''} créée${created > 1 ? 's' : ''} (${this.currentProvider})`, 'success');
+            this.clearSelection();
+            this.refreshEmailsView();
+        } else {
+            window.uiManager?.showToast('Aucune tâche créée', 'warning');
+        }
+    }
+
+    buildTaskFromEmail(email) {
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
+        const senderDomain = senderEmail.split('@')[1] || 'unknown';
+        
+        return {
+            id: this.generateTaskId(),
+            title: `Email de ${senderName}: ${email.subject || 'Sans sujet'}`,
+            description: this.buildTaskDescription(email),
+            priority: this.determinePriority(email),
+            dueDate: null,
+            status: 'todo',
+            emailId: email.id,
+            category: email.category || 'other',
+            createdAt: new Date().toISOString(),
+            emailFrom: senderEmail,
+            emailFromName: senderName,
+            emailSubject: email.subject,
+            emailDomain: senderDomain,
+            emailDate: email.receivedDateTime,
+            hasAttachments: email.hasAttachments || false,
+            tags: [senderDomain, email.category].filter(Boolean),
+            method: 'enhanced',
+            provider: this.currentProvider || 'unknown',
+            
+            // Informations d'analyse enrichies
+            categoryScore: email.categoryScore || 0,
+            categoryConfidence: email.categoryConfidence || 0,
+            detectionMethod: email.detectionMethod || 'standard',
+            priorityCorrection: email.priorityCorrection || false
+        };
+    }
+
+    buildTaskDescription(email) {
+        let description = email.bodyPreview || 'Aucune description disponible';
+        
+        // Ajouter des infos contextuelles
+        const contextInfo = [];
+        
+        if (email.category && email.category !== 'other') {
+            const categoryName = this.getCategoryName(email.category);
+            contextInfo.push(`Catégorie: ${categoryName}`);
+        }
+        
+        if (email.hasAttachments) {
+            contextInfo.push('Contient des pièces jointes');
+        }
+        
+        if (email.importance === 'high') {
+            contextInfo.push('Marqué comme important');
+        }
+        
+        if (email.categoryScore > 80) {
+            contextInfo.push(`Score de catégorisation: ${email.categoryScore}pts`);
+        }
+        
+        if (email.priorityCorrection) {
+            contextInfo.push('Email recatégorisé automatiquement');
+        }
+        
+        if (contextInfo.length > 0) {
+            description += '\n\n--- Informations automatiques ---\n' + contextInfo.join('\n');
+        }
+        
+        return description;
+    }
+
+    determinePriority(email) {
+        // Priorité basée sur l'importance et la catégorie
+        if (email.importance === 'high') return 'urgent';
+        if (email.category === 'security') return 'high';
+        if (email.category === 'finance') return 'high';
+        if (email.category === 'tasks') return 'high';
+        if (email.categoryScore > 120) return 'high';
+        if (email.category === 'meetings') return 'medium';
+        if (email.category === 'marketing_news') return 'low';
+        if (email.category === 'notifications') return 'low';
+        
+        return 'medium';
+    }
+
+    generateTaskId() {
+        return `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    async showTaskCreationModal(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) {
+            window.uiManager?.showToast('Email non trouvé', 'error');
+            return;
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        
+        const uniqueId = 'task_creation_modal_' + Date.now();
+        const providerInfo = this.getProviderInfo();
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const suggestedPriority = this.determinePriority(email);
+        
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 16px; max-width: 600px; width: 100%; 
+                            max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">Créer une tâche</h2>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; color: ${providerInfo.color};">
+                                <i class="${providerInfo.icon}"></i>
+                                <span style="font-size: 14px; font-weight: 600;">${providerInfo.name}</span>
+                                ${email.category ? `<span style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}</span>` : ''}
+                            </div>
+                        </div>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Titre de la tâche</label>
+                            <input type="text" id="task-title" 
+                                   style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                                   value="Email de ${senderName}: ${email.subject || 'Sans sujet'}">
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Description</label>
+                            <textarea id="task-description" 
+                                      style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 120px;"
+                                      rows="5">${this.buildTaskDescription(email)}</textarea>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Priorité (suggérée: ${suggestedPriority})</label>
+                            <select id="task-priority" 
+                                    style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                                <option value="urgent" ${suggestedPriority === 'urgent' ? 'selected' : ''}>🚨 Urgent</option>
+                                <option value="high" ${suggestedPriority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                                <option value="medium" ${suggestedPriority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                                <option value="low" ${suggestedPriority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Échéance (optionnelle)</label>
+                            <input type="date" id="task-due-date" 
+                                   style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                        </div>
+                    </div>
+                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Annuler
+                        </button>
+                        <button onclick="window.pageManager.createTaskFromModal('${email.id}'); document.getElementById('${uniqueId}').remove();"
+                                style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            <i class="fas fa-check"></i> Créer la tâche
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    async createTaskFromModal(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) {
+            window.uiManager?.showToast('Email non trouvé', 'error');
+            return;
+        }
+
+        const title = document.getElementById('task-title')?.value;
+        const description = document.getElementById('task-description')?.value;
+        const priority = document.getElementById('task-priority')?.value;
+        const dueDate = document.getElementById('task-due-date')?.value;
+
+        if (!title) {
+            window.uiManager?.showToast('Le titre est requis', 'warning');
+            return;
+        }
+
+        try {
+            const taskData = {
+                ...this.buildTaskFromEmail(email),
+                title,
+                description,
+                priority,
+                dueDate: dueDate ? new Date(dueDate).toISOString() : null
+            };
+
+            const task = window.taskManager?.createTaskFromEmail(taskData, email);
+            if (task) {
+                this.createdTasks.set(emailId, task.id);
+                window.taskManager?.saveTasks();
+                window.uiManager?.showToast(`Tâche créée avec succès (${this.currentProvider})`, 'success');
+                this.refreshEmailsView();
+            } else {
+                throw new Error('Erreur lors de la création de la tâche');
+            }
+            
+        } catch (error) {
+            console.error('Error creating task:', error);
+            window.uiManager?.showToast('Erreur lors de la création', 'error');
+        }
+    }
+
+    openCreatedTask(emailId) {
+        const taskId = this.createdTasks.get(emailId);
+        if (!taskId) return;
+        
+        this.loadPage('tasks').then(() => {
+            setTimeout(() => {
+                if (window.tasksView?.showTaskDetails) {
+                    window.tasksView.showTaskDetails(taskId);
+                }
+            }, 100);
+        });
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES
     // ================================================
     
     calculateCategoryCounts(emails) {
-        console.log('[PageManager] 📊 Calcul des comptages de catégories...');
-        
         const counts = {};
         let uncategorizedCount = 0;
         
@@ -1365,25 +2302,106 @@ class PageManager {
         
         if (uncategorizedCount > 0) {
             counts.other = uncategorizedCount;
-            console.log(`[PageManager] 📌 ${uncategorizedCount} emails dans la catégorie "Autre"`);
         }
         
-        console.log('[PageManager] 📊 Comptages finaux:', {
-            categories: counts,
-            totalEmails: emails.length,
-            sumCounts: Object.values(counts).reduce((sum, count) => sum + count, 0)
+        return counts;
+    }
+
+    buildPriorityCompactCategoryTabs(categoryCounts, totalEmails, categories) {
+        const preselectedCategories = this.getTaskPreselectedCategories();
+        
+        // ORDRE PRIORITAIRE: Newsletter/Spam d'abord
+        const priorityOrder = [
+            'all',
+            'marketing_news', // NEWSLETTER EN PREMIER
+            'spam',           // SPAM EN SECOND
+            'security',
+            'finance', 
+            'tasks',
+            'meetings',
+            'commercial',
+            'support',
+            'hr',
+            'notifications',
+            'reminders',
+            'project',
+            'internal',
+            'cc',
+            'other'
+        ];
+        
+        const tabs = [];
+        
+        tabs.push({
+            id: 'all',
+            name: 'Tous',
+            icon: '📧',
+            count: totalEmails,
+            isPreselected: false,
+            priority: 1000
         });
         
-        return counts;
+        priorityOrder.slice(1).forEach(catId => {
+            const count = categoryCounts[catId] || 0;
+            const category = categories[catId];
+            
+            if (count > 0 && category) {
+                const isPreselected = preselectedCategories.includes(catId);
+                const priority = this.categoryPriority[catId] || 0;
+                
+                let icon = category.icon;
+                let specialClass = '';
+                
+                if (catId === 'marketing_news') {
+                    icon = '📰';
+                    specialClass = 'newsletter-priority';
+                } else if (catId === 'spam') {
+                    icon = '🚫';
+                    specialClass = 'spam-priority';
+                }
+                
+                tabs.push({
+                    id: catId,
+                    name: category.name,
+                    icon: icon,
+                    color: category.color,
+                    count: count,
+                    isPreselected: isPreselected,
+                    priority: priority,
+                    specialClass: specialClass
+                });
+            }
+        });
+        
+        tabs.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+        
+        return tabs.map(tab => {
+            const isCurrentCategory = this.currentCategory === tab.id;
+            const baseClasses = `status-pill-compact ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''} ${tab.specialClass || ''}`;
+            
+            return `
+                <button class="${baseClasses}" 
+                        onclick="window.pageManager.filterByCategory('${tab.id}')"
+                        data-category-id="${tab.id}"
+                        title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
+                    <div class="pill-content-twolines">
+                        <div class="pill-first-line-twolines">
+                            <span class="pill-icon-twolines">${tab.icon}</span>
+                            <span class="pill-count-twolines">${tab.count}</span>
+                        </div>
+                        <div class="pill-second-line-twolines">
+                            <span class="pill-text-twolines">${tab.name}</span>
+                        </div>
+                    </div>
+                    ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
+                </button>
+            `;
+        }).join('');
     }
 
     getTaskPreselectedCategories() {
         if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
             return window.categoryManager.getTaskPreselectedCategories();
-        }
-        
-        if (window.categoriesPage && typeof window.categoriesPage.getTaskPreselectedCategories === 'function') {
-            return window.categoriesPage.getTaskPreselectedCategories();
         }
         
         try {
@@ -1410,13 +2428,8 @@ class PageManager {
         return category?.name || categoryId || 'Autre';
     }
 
-    getEmailContent(email) {
-        if (email.body?.content) {
-            let content = email.body.content;
-            content = content.replace(/<meta[^>]*>/gi, '');
-            return content;
-        }
-        return `<p>${this.escapeHtml(email.bodyPreview || 'Aucun contenu disponible')}</p>`;
+    getCategory(categoryId) {
+        return window.categoryManager?.getCategory(categoryId);
     }
 
     escapeHtml(text) {
@@ -1454,9 +2467,108 @@ class PageManager {
     }
 
     // ================================================
-    // MÉTHODES DE MISE À JOUR ET CONTRÔLES
+    // FILTRES ET RECHERCHE
     // ================================================
     
+    filterByCategory(categoryId) {
+        console.log(`[PageManager] 🔍 Filtrage par catégorie: ${categoryId}`);
+        
+        this.currentCategory = categoryId;
+        this.refreshEmailsView();
+        
+        ['', 'Sticky'].forEach(suffix => {
+            const containerSelector = suffix ? '.sticky-controls-container' : '.controls-and-filters-container';
+            const container = document.querySelector(containerSelector);
+            if (container) {
+                container.querySelectorAll('.status-pill-compact').forEach(pill => {
+                    const pillCategoryId = pill.dataset.categoryId;
+                    if (pillCategoryId === categoryId) {
+                        pill.classList.add('active');
+                    } else {
+                        pill.classList.remove('active');
+                    }
+                });
+            }
+        });
+    }
+
+    changeViewMode(mode) {
+        this.currentViewMode = mode;
+        this.refreshEmailsView();
+    }
+
+    handleSearch(term) {
+        this.searchTerm = term.trim();
+        this.refreshEmailsView();
+        
+        const stickySearchInput = document.getElementById('emailSearchInputSticky');
+        if (stickySearchInput && stickySearchInput.value !== term) {
+            stickySearchInput.value = term;
+        }
+    }
+
+    clearSearch() {
+        this.searchTerm = '';
+        const searchInput = document.getElementById('emailSearchInput');
+        if (searchInput) searchInput.value = '';
+        
+        const stickySearchInput = document.getElementById('emailSearchInputSticky');
+        if (stickySearchInput) stickySearchInput.value = '';
+        
+        this.refreshEmailsView();
+    }
+
+    // ================================================
+    // CONTRÔLES ET ÉVÉNEMENTS
+    // ================================================
+    
+    setupEmailsEventListeners() {
+        const searchInput = document.getElementById('emailSearchInput');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.handleSearch(e.target.value);
+                }, 300);
+            });
+        }
+    }
+
+    setupStickyControls() {
+        const originalContainer = document.querySelector('.controls-and-filters-container');
+        const stickyContainer = document.querySelector('.sticky-controls-container');
+        
+        if (!originalContainer || !stickyContainer) return;
+
+        stickyContainer.innerHTML = originalContainer.innerHTML;
+        this.setupEventListenersForStickyClone(stickyContainer);
+    }
+
+    setupEventListenersForStickyClone(stickyContainer) {
+        const searchInput = stickyContainer.querySelector('#emailSearchInput');
+        if (searchInput) {
+            searchInput.id = 'emailSearchInputSticky';
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.handleSearch(e.target.value);
+                }, 300);
+            });
+        }
+
+        stickyContainer.querySelectorAll('button[onclick]').forEach(btn => {
+            const onclickAttr = btn.getAttribute('onclick');
+            if (onclickAttr && onclickAttr.includes('window.pageManager')) {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    eval(onclickAttr);
+                });
+            }
+        });
+    }
+
     updateControlsBarOnly() {
         const selectedCount = this.selectedEmails.size;
         const visibleEmails = this.getVisibleEmails();
@@ -1524,17 +2636,6 @@ class PageManager {
                 }
             }
             
-            const actionsBtn = container.querySelector('.dropdown-toggle[onclick*="toggleBulkActions"]');
-            if (actionsBtn) {
-                if (selectedCount === 0) {
-                    actionsBtn.classList.add('disabled');
-                    actionsBtn.disabled = true;
-                } else {
-                    actionsBtn.classList.remove('disabled');
-                    actionsBtn.disabled = false;
-                }
-            }
-            
             const existingClearBtn = container.querySelector('.btn-clear');
             const actionButtonsContainer = container.querySelector('.action-buttons');
             
@@ -1569,267 +2670,42 @@ class PageManager {
     refreshEmailsView() {
         console.log('[PageManager] Rafraîchissement vue emails...');
         
-        const expandedGroups = new Set();
-        document.querySelectorAll('.task-group-harmonized.expanded').forEach(group => {
-            const groupKey = group.dataset.groupKey;
-            if (groupKey) {
-                expandedGroups.add(groupKey);
-            }
-        });
-        
-        const searchInput = document.getElementById('emailSearchInput');
-        const currentSearchValue = searchInput ? searchInput.value : this.searchTerm;
-        
         const emailsContainer = document.querySelector('.tasks-container-harmonized');
         if (emailsContainer) {
             emailsContainer.innerHTML = this.renderEmailsList();
-            
-            expandedGroups.forEach(groupKey => {
-                const group = document.querySelector(`[data-group-key="${groupKey}"]`);
-                if (group) {
-                    const content = group.querySelector('.group-content-harmonized');
-                    const icon = group.querySelector('.group-expand-harmonized i');
-                    const header = group.querySelector('.group-header-harmonized');
-                    
-                    if (content && icon && header) {
-                        content.style.display = 'block';
-                        icon.classList.remove('fa-chevron-down');
-                        icon.classList.add('fa-chevron-up');
-                        group.classList.add('expanded');
-                        header.classList.add('expanded-header');
-                    }
-                }
-            });
         }
         
         this.updateControlsBarOnly();
-        
-        setTimeout(() => {
-            const newSearchInput = document.getElementById('emailSearchInput');
-            if (newSearchInput && currentSearchValue && newSearchInput.value !== currentSearchValue) {
-                newSearchInput.value = currentSearchValue;
-            }
-            const stickySearchInput = document.getElementById('emailSearchInputSticky');
-            if (stickySearchInput && currentSearchValue && stickySearchInput.value !== currentSearchValue) {
-                stickySearchInput.value = currentSearchValue;
-            }
-        }, 50);
-        
-        console.log('[PageManager] Vue emails rafraîchie avec', this.selectedEmails.size, 'sélectionnés');
     }
 
-    // ================================================
-    // GESTION FILTRES ET RECHERCHE
-    // ================================================
-    
-    filterByCategory(categoryId) {
-        console.log(`[PageManager] 🔍 Filtrage par catégorie: ${categoryId}`);
+    handleScrollForSticky() {
+        if (this.currentPage !== 'emails') return;
+
+        const stickyContainer = document.querySelector('.sticky-controls-container');
+        const originalContainer = document.querySelector('.controls-and-filters-container');
         
-        this.currentCategory = categoryId;
+        if (!stickyContainer || !originalContainer) return;
+
+        const scrollY = window.scrollY;
+        const containerTop = originalContainer.offsetTop;
         
-        const emails = this.getAllEmails();
-        let filteredEmails;
-        
-        if (categoryId === 'all') {
-            filteredEmails = emails;
-            console.log(`[PageManager] 📧 Affichage de tous les emails: ${emails.length}`);
-        } else if (categoryId === 'other') {
-            filteredEmails = emails.filter(email => {
-                const cat = email.category;
-                return !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
-            });
-            console.log(`[PageManager] 📌 Emails "Autre" trouvés: ${filteredEmails.length}`);
+        if (scrollY > containerTop - 20) {
+            stickyContainer.classList.add('sticky-active');
+            const content = document.querySelector('.tasks-container-harmonized');
+            if (content) {
+                content.style.paddingTop = stickyContainer.offsetHeight + 'px';
+            }
         } else {
-            filteredEmails = emails.filter(email => email.category === categoryId);
-            console.log(`[PageManager] 🏷️ Emails dans catégorie "${categoryId}": ${filteredEmails.length}`);
-        }
-        
-        this.refreshEmailsView();
-        
-        ['', 'Sticky'].forEach(suffix => {
-            const containerSelector = suffix ? '.sticky-controls-container' : '.controls-and-filters-container';
-            const container = document.querySelector(containerSelector);
-            if (container) {
-                container.querySelectorAll('.status-pill-compact').forEach(pill => {
-                    const pillCategoryId = pill.dataset.categoryId;
-                    if (pillCategoryId === categoryId) {
-                        pill.classList.add('active');
-                    } else {
-                        pill.classList.remove('active');
-                    }
-                });
+            stickyContainer.classList.remove('sticky-active');
+            const content = document.querySelector('.tasks-container-harmonized');
+            if (content) {
+                content.style.paddingTop = '0';
             }
-        });
-    }
-
-    changeViewMode(mode) {
-        this.currentViewMode = mode;
-        this.refreshEmailsView();
-    }
-
-    handleSearch(term) {
-        this.searchTerm = term.trim();
-        this.refreshEmailsView();
-        
-        const stickySearchInput = document.getElementById('emailSearchInputSticky');
-        if (stickySearchInput && stickySearchInput.value !== term) {
-            stickySearchInput.value = term;
         }
-    }
-
-    clearSearch() {
-        this.searchTerm = '';
-        const searchInput = document.getElementById('emailSearchInput');
-        if (searchInput) searchInput.value = '';
-        
-        const stickySearchInput = document.getElementById('emailSearchInputSticky');
-        if (stickySearchInput) stickySearchInput.value = '';
-        
-        this.refreshEmailsView();
     }
 
     // ================================================
-    // GROUPES ET VUES GROUPÉES
-    // ================================================
-    
-    renderGroupedView(emails, groupMode) {
-        const groups = this.createEmailGroups(emails, groupMode);
-        
-        return `
-            <div class="tasks-grouped-harmonized">
-                ${groups.map(group => this.renderEmailGroup(group, groupMode)).join('')}
-            </div>
-        `;
-    }
-
-    renderEmailGroup(group, groupType) {
-        const displayName = groupType === 'grouped-domain' ? `@${group.name}` : group.name;
-        const avatarColor = this.generateAvatarColor(group.name);
-        
-        return `
-            <div class="task-group-harmonized" data-group-key="${group.key}">
-                <div class="group-header-harmonized" onclick="event.preventDefault(); event.stopPropagation(); window.pageManager.toggleGroup('${group.key}', event)">
-                    <div class="group-avatar-harmonized" style="background: ${avatarColor}">
-                        ${groupType === 'grouped-domain' ? 
-                            '<i class="fas fa-globe"></i>' : 
-                            group.name.charAt(0).toUpperCase()
-                        }
-                    </div>
-                    <div class="group-info-harmonized">
-                        <div class="group-name-harmonized">${displayName}</div>
-                        <div class="group-meta-harmonized">${group.count} email${group.count > 1 ? 's' : ''} • ${this.formatEmailDate(group.latestDate)}</div>
-                    </div>
-                    <div class="group-expand-harmonized" onclick="event.preventDefault(); event.stopPropagation();">
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                </div>
-                
-                <div class="group-content-harmonized" style="display: none;">
-                    ${group.emails.map(email => this.renderHarmonizedEmailRow(email)).join('')}
-                </div>
-            </div>
-        `;
-    }
-
-    createEmailGroups(emails, groupMode) {
-        const groups = {};
-        
-        emails.forEach(email => {
-            let groupKey, groupName;
-            
-            if (groupMode === 'grouped-domain') {
-                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
-                groupKey = domain;
-                groupName = domain;
-            } else {
-                const senderEmail = email.from?.emailAddress?.address || 'unknown';
-                const senderName = email.from?.emailAddress?.name || senderEmail;
-                groupKey = senderEmail;
-                groupName = senderName;
-            }
-            
-            if (!groups[groupKey]) {
-                groups[groupKey] = {
-                    key: groupKey,
-                    name: groupName,
-                    emails: [],
-                    count: 0,
-                    latestDate: null
-                };
-            }
-            
-            groups[groupKey].emails.push(email);
-            groups[groupKey].count++;
-            
-            const emailDate = new Date(email.receivedDateTime);
-            if (!groups[groupKey].latestDate || emailDate > groups[groupKey].latestDate) {
-                groups[groupKey].latestDate = emailDate;
-            }
-        });
-        
-        return Object.values(groups).sort((a, b) => {
-            if (!a.latestDate && !b.latestDate) return 0;
-            if (!a.latestDate) return 1;
-            if (!b.latestDate) return -1;
-            return b.latestDate - a.latestDate;
-        });
-    }
-
-    toggleGroup(groupKey, event) {
-        if (event) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        
-        console.log('[PageManager] Toggle groupe:', groupKey);
-        
-        const group = document.querySelector(`[data-group-key="${groupKey}"]`);
-        if (!group) {
-            console.error('[PageManager] Groupe non trouvé:', groupKey);
-            return;
-        }
-        
-        const content = group.querySelector('.group-content-harmonized');
-        const icon = group.querySelector('.group-expand-harmonized i');
-        const header = group.querySelector('.group-header-harmonized');
-        
-        if (!content || !icon || !header) {
-            console.error('[PageManager] Éléments du groupe manquants');
-            return;
-        }
-        
-        const isExpanded = content.style.display !== 'none';
-        
-        if (isExpanded) {
-            content.style.display = 'none';
-            icon.classList.remove('fa-chevron-up');
-            icon.classList.add('fa-chevron-down');
-            group.classList.remove('expanded');
-            header.classList.remove('expanded-header');
-        } else {
-            content.style.display = 'block';
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-up');
-            group.classList.add('expanded');
-            header.classList.add('expanded-header');
-        }
-    }
-
-    generateAvatarColor(text) {
-        let hash = 0;
-        for (let i = 0; i < text.length; i++) {
-            hash = text.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        
-        const hue = Math.abs(hash) % 360;
-        const saturation = 65 + (Math.abs(hash) % 20);
-        const lightness = 45 + (Math.abs(hash) % 15);
-        
-        return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
-    }
-
-    // ================================================
-    // ÉTATS VIDES ET ERREURS
+    // ÉTATS VIDES
     // ================================================
     
     renderEmptyState() {
@@ -1873,7 +2749,11 @@ class PageManager {
             
             if (providerInfo.status === 'connected') {
                 action = `
-                    <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                    <button class="btn btn-primary" onclick="window.pageManager.refreshEmails()">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Actualiser les emails</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.pageManager.loadPage('scanner')">
                         <i class="fas fa-search"></i>
                         <span>Aller au scanner</span>
                     </button>
@@ -1923,7 +2803,11 @@ class PageManager {
                 </p>
                 <div class="empty-state-actions">
                     ${providerInfo.status === 'connected' ? `
-                        <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                        <button class="btn btn-primary" onclick="window.pageManager.refreshEmails()">
+                            <i class="fas fa-sync-alt"></i>
+                            Actualiser
+                        </button>
+                        <button class="btn btn-secondary" onclick="window.pageManager.loadPage('scanner')">
                             <i class="fas fa-search"></i>
                             Aller au scanner
                         </button>
@@ -1949,121 +2833,14 @@ class PageManager {
     }
 
     // ================================================
-    // SETUP CONTRÔLES ET ÉVÉNEMENTS
+    // STYLES CSS ULTRA-COMPLETS
     // ================================================
     
-    setupEmailsEventListeners() {
-        const searchInput = document.getElementById('emailSearchInput');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.handleSearch(e.target.value);
-                }, 300);
-            });
-        }
-    }
-
-    setupStickyControls() {
-        const originalContainer = document.querySelector('.controls-and-filters-container');
-        const stickyContainer = document.querySelector('.sticky-controls-container');
-        
-        if (!originalContainer || !stickyContainer) return;
-
-        stickyContainer.innerHTML = originalContainer.innerHTML;
-        this.setupEventListenersForStickyClone(stickyContainer);
-        
-        const observer = new MutationObserver(() => {
-            setTimeout(() => {
-                this.syncStickyControls();
-            }, 100);
-        });
-        
-        observer.observe(originalContainer, {
-            childList: true,
-            subtree: true,
-            attributes: true
-        });
-    }
-
-    setupEventListenersForStickyClone(stickyContainer) {
-        const searchInput = stickyContainer.querySelector('#emailSearchInput');
-        if (searchInput) {
-            searchInput.id = 'emailSearchInputSticky';
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.handleSearch(e.target.value);
-                }, 300);
-            });
-        }
-
-        stickyContainer.querySelectorAll('.view-mode').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const mode = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-                if (mode) {
-                    this.changeViewMode(mode);
-                }
-            });
-        });
-
-        stickyContainer.querySelectorAll('button[onclick]').forEach(btn => {
-            const onclickAttr = btn.getAttribute('onclick');
-            if (onclickAttr && onclickAttr.includes('window.pageManager')) {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    eval(onclickAttr);
-                });
-            }
-        });
-
-        stickyContainer.querySelectorAll('.status-pill-compact').forEach(pill => {
-            pill.addEventListener('click', (e) => {
-                e.preventDefault();
-                const categoryId = pill.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-                if (categoryId) {
-                    this.filterByCategory(categoryId);
-                }
-            });
-        });
-    }
-
-    syncStickyControls() {
-        const originalContainer = document.querySelector('.controls-and-filters-container');
-        const stickyContainer = document.querySelector('.sticky-controls-container');
-        
-        if (!originalContainer || !stickyContainer) return;
-
-        const originalSearch = originalContainer.querySelector('#emailSearchInput');
-        const stickySearch = stickyContainer.querySelector('#emailSearchInputSticky');
-        
-        if (originalSearch && stickySearch && originalSearch.value !== stickySearch.value) {
-            stickySearch.value = originalSearch.value;
-        }
-
-        const originalButtons = originalContainer.querySelectorAll('.active, .disabled');
-        const stickyButtons = stickyContainer.querySelectorAll('button, .status-pill-compact');
-        
-        originalButtons.forEach((origBtn, index) => {
-            const stickyBtn = stickyButtons[index];
-            if (stickyBtn) {
-                stickyBtn.className = origBtn.className;
-            }
-        });
-    }
-
-    // ================================================
-    // STYLES CSS COMPLETS
-    // ================================================
-    
-    addExpandedEmailStyles() {
-        if (document.getElementById('expandedEmailStyles')) return;
+    addEmailStyles() {
+        if (document.getElementById('emailPageStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'expandedEmailStyles';
+        styles.id = 'emailPageStyles';
         styles.textContent = `
             /* Variables CSS de base */
             :root {
@@ -2073,8 +2850,8 @@ class PageManager {
                 --btn-border-radius: 10px;
                 --btn-font-weight: 600;
                 --btn-gap: 8px;
-                --card-height: 76px;
-                --card-padding: 14px;
+                --card-height: 88px; /* Augmenté pour plus de contenu */
+                --card-padding: 16px; /* Augmenté */
                 --card-border-radius: 12px;
                 --action-btn-size: 36px;
                 --gap-small: 8px;
@@ -2086,7 +2863,7 @@ class PageManager {
                 --preselect-color: #8b5cf6;
                 --newsletter-color: #f97316;
                 --spam-color: #ef4444;
-                --sticky-height: 180px;
+                --sticky-height: 200px; /* Augmenté */
             }
             
             .tasks-page-modern {
@@ -2097,7 +2874,85 @@ class PageManager {
                 font-size: var(--btn-font-size);
             }
 
-            /* Styles d'explication et provider */
+            /* Cache et provider status */
+            .cache-status-info {
+                background: rgba(255, 255, 255, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: var(--card-border-radius);
+                padding: var(--gap-medium);
+                margin-bottom: var(--gap-medium);
+                backdrop-filter: blur(20px);
+                box-shadow: var(--shadow-base);
+            }
+
+            .cache-indicators {
+                display: flex;
+                gap: var(--gap-medium);
+                align-items: center;
+                flex-wrap: wrap;
+            }
+
+            .cache-indicator,
+            .provider-indicator,
+            .scan-indicator {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 600;
+                border: 1px solid;
+                transition: all 0.3s ease;
+            }
+
+            .cache-indicator.active {
+                background: rgba(16, 185, 129, 0.1);
+                border-color: #10b981;
+                color: #065f46;
+            }
+
+            .cache-indicator:not(.active) {
+                background: rgba(107, 114, 128, 0.1);
+                border-color: #9ca3af;
+                color: #6b7280;
+            }
+
+            .provider-indicator.connected {
+                background: rgba(16, 185, 129, 0.1);
+                border-color: #10b981;
+                color: #065f46;
+            }
+
+            .provider-indicator.disconnected {
+                background: rgba(239, 68, 68, 0.1);
+                border-color: #ef4444;
+                color: #991b1b;
+            }
+
+            .scan-indicator.scanning {
+                background: rgba(59, 130, 246, 0.1);
+                border-color: #3b82f6;
+                color: #1e40af;
+            }
+
+            .scan-indicator:not(.scanning) {
+                background: rgba(34, 197, 94, 0.1);
+                border-color: #22c55e;
+                color: #15803d;
+            }
+
+            .opt-badge {
+                background: linear-gradient(135deg, #f59e0b, #d97706);
+                color: white;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 700;
+                margin-left: 4px;
+            }
+
+            /* Explanation styles */
             .explanation-text-harmonized {
                 background: rgba(59, 130, 246, 0.1);
                 border: 1px solid rgba(59, 130, 246, 0.2);
@@ -2198,50 +3053,7 @@ class PageManager {
                 transform: scale(1.1);
             }
 
-            /* Provider Status Display */
-            .provider-status-display {
-                flex-shrink: 0;
-                margin-right: var(--gap-medium);
-            }
-
-            .provider-info {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                padding: 8px 12px;
-                background: rgba(255, 255, 255, 0.9);
-                border: 1px solid rgba(0, 0, 0, 0.1);
-                border-radius: var(--btn-border-radius);
-                font-size: 12px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-            }
-
-            .provider-info.connected {
-                border-color: #10b981;
-                background: rgba(16, 185, 129, 0.1);
-            }
-
-            .provider-info.disconnected {
-                border-color: #ef4444;
-                background: rgba(239, 68, 68, 0.1);
-            }
-
-            .optimization-badge {
-                position: absolute;
-                top: -6px;
-                right: -6px;
-                background: linear-gradient(135deg, #10b981, #059669);
-                color: white;
-                font-size: 9px;
-                padding: 2px 4px;
-                border-radius: 6px;
-                font-weight: 700;
-                border: 1px solid white;
-                box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
-            }
-
-            /* ===== CONTAINERS POUR POSITION FIXE ===== */
+            /* Contrôles */
             .controls-and-filters-container {
                 position: relative;
                 z-index: 100;
@@ -2272,7 +3084,6 @@ class PageManager {
                 visibility: visible;
             }
 
-            /* ===== BARRE DE CONTRÔLES UNIFIÉE ===== */
             .controls-bar-single-line {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
@@ -2287,6 +3098,35 @@ class PageManager {
                 position: relative;
                 z-index: 1000;
                 min-height: var(--btn-height);
+                flex-wrap: wrap;
+            }
+
+            /* Contrôles de scan */
+            .scan-controls {
+                display: flex;
+                gap: var(--gap-small);
+                flex-shrink: 0;
+            }
+
+            .btn-scan,
+            .btn-force-scan {
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                border: none;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+            }
+
+            .btn-scan:hover,
+            .btn-force-scan:hover {
+                background: linear-gradient(135deg, #059669, #047857);
+                box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+            }
+
+            .btn-scan:disabled,
+            .btn-force-scan:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                pointer-events: none;
             }
             
             /* Section de recherche */
@@ -2415,6 +3255,7 @@ class PageManager {
                 flex-shrink: 0;
                 position: relative;
                 z-index: 1001;
+                flex-wrap: wrap;
             }
             
             .btn-action {
@@ -2545,67 +3386,7 @@ class PageManager {
                 50% { transform: scale(1.1); }
             }
 
-            /* Dropdown */
-            .dropdown-action {
-                position: relative;
-                display: inline-block;
-                z-index: 1002;
-            }
-            
-            .dropdown-menu {
-                position: absolute;
-                top: calc(100% + 8px);
-                right: 0;
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: var(--btn-border-radius);
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-                min-width: 200px;
-                z-index: 9999;
-                padding: 8px 0;
-                opacity: 0;
-                visibility: hidden;
-                transform: translateY(-10px);
-                transition: all 0.2s ease;
-            }
-            
-            .dropdown-menu.show {
-                opacity: 1;
-                visibility: visible;
-                transform: translateY(0);
-            }
-            
-            .dropdown-item {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                padding: 10px 16px;
-                background: none;
-                border: none;
-                width: 100%;
-                text-align: left;
-                color: #374151;
-                font-size: var(--btn-font-size);
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-            
-            .dropdown-item:hover {
-                background: #f8fafc;
-                color: #1f2937;
-            }
-            
-            .dropdown-item.danger {
-                color: #dc2626;
-            }
-            
-            .dropdown-item.danger:hover {
-                background: #fef2f2;
-                color: #b91c1c;
-            }
-
-            /* ===== FILTRES CATÉGORIES AVEC PRIORITÉ NEWSLETTER/SPAM ===== */
+            /* Filtres de catégories ULTRA-RENFORCÉS */
             .status-filters-compact {
                 display: flex;
                 gap: var(--gap-small);
@@ -2641,7 +3422,7 @@ class PageManager {
                 z-index: 11;
             }
 
-            /* Styles spéciaux pour Newsletter et Spam */
+            /* Styles spéciaux Newsletter et Spam */
             .status-pill-compact.newsletter-priority {
                 border-width: 2px;
                 border-color: var(--newsletter-color);
@@ -2823,10 +3604,10 @@ class PageManager {
                 gap: 0;
             }
 
-            /* ===== CARTES D'EMAILS AVEC NEWSLETTER/SPAM STYLING ===== */
+            /* Cartes d'emails ULTRA-RENFORCÉES */
             .task-harmonized-card {
                 display: flex;
-                align-items: center;
+                align-items: stretch; /* Changé pour étirer */
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
@@ -2836,35 +3617,59 @@ class PageManager {
                 transition: all 0.3s ease;
                 position: relative;
                 min-height: var(--card-height);
-                max-height: var(--card-height);
                 border-bottom: 1px solid #e5e7eb;
                 z-index: 1;
             }
 
-            /* Styles spéciaux Newsletter */
-            .task-harmonized-card.newsletter-email {
-                border-left: 4px solid var(--newsletter-color);
-                background: linear-gradient(135deg, rgba(249, 115, 22, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%);
+            /* Amélioration pour les emails enhanced */
+            .email-card-enhanced {
+                min-height: calc(var(--card-height) + 20px); /* Plus haut */
             }
 
-            .task-harmonized-card.newsletter-email:hover {
+            /* Styles spéciaux Newsletter ULTRA-ENHANCED */
+            .task-harmonized-card.newsletter-email.ultra-enhanced {
                 border-left: 5px solid var(--newsletter-color);
-                box-shadow: 0 8px 24px rgba(249, 115, 22, 0.15);
-                background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(255, 255, 255, 1) 100%);
+                background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(255, 255, 255, 0.95) 100%);
+                animation: newsletterEmailGlow 4s ease-in-out infinite;
             }
 
-            /* Styles spéciaux Spam */
-            .task-harmonized-card.spam-email {
-                border-left: 4px solid var(--spam-color);
-                background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%);
-                opacity: 0.8;
+            .task-harmonized-card.newsletter-email.ultra-enhanced:hover {
+                border-left: 6px solid var(--newsletter-color);
+                box-shadow: 0 10px 30px rgba(249, 115, 22, 0.2);
+                background: linear-gradient(135deg, rgba(249, 115, 22, 0.12) 0%, rgba(255, 255, 255, 1) 100%);
             }
 
-            .task-harmonized-card.spam-email:hover {
+            @keyframes newsletterEmailGlow {
+                0%, 100% { 
+                    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1);
+                }
+                50% { 
+                    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.15);
+                }
+            }
+
+            /* Styles spéciaux Spam ULTRA-ENHANCED */
+            .task-harmonized-card.spam-email.ultra-enhanced {
                 border-left: 5px solid var(--spam-color);
-                box-shadow: 0 8px 24px rgba(239, 68, 68, 0.15);
-                background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(255, 255, 255, 1) 100%);
+                background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(255, 255, 255, 0.95) 100%);
+                opacity: 0.85;
+                animation: spamEmailGlow 4s ease-in-out infinite;
+            }
+
+            .task-harmonized-card.spam-email.ultra-enhanced:hover {
+                border-left: 6px solid var(--spam-color);
+                box-shadow: 0 10px 30px rgba(239, 68, 68, 0.2);
+                background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(255, 255, 255, 1) 100%);
                 opacity: 1;
+            }
+
+            @keyframes spamEmailGlow {
+                0%, 100% { 
+                    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+                }
+                50% { 
+                    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.15);
+                }
             }
 
             /* Emails corrigés par priorité */
@@ -2942,6 +3747,7 @@ class PageManager {
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                margin-top: 4px; /* Alignement top */
             }
             
             .task-checkbox-harmonized:checked {
@@ -2978,6 +3784,7 @@ class PageManager {
                 margin-right: var(--gap-medium);
                 transition: all 0.3s ease;
                 flex-shrink: 0;
+                margin-top: 4px; /* Alignement top */
             }
             
             .task-main-content-harmonized {
@@ -2985,9 +3792,10 @@ class PageManager {
                 min-width: 0;
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
-                gap: 4px;
+                justify-content: flex-start; /* Alignement top */
+                gap: 6px; /* Augmenté */
                 height: 100%;
+                padding: 2px 0; /* Petit padding */
             }
             
             .task-header-harmonized {
@@ -2995,7 +3803,7 @@ class PageManager {
                 justify-content: space-between;
                 align-items: flex-start;
                 gap: var(--gap-medium);
-                margin-bottom: 4px;
+                margin-bottom: 6px; /* Augmenté */
             }
             
             .task-title-harmonized {
@@ -3016,6 +3824,7 @@ class PageManager {
                 align-items: center;
                 gap: var(--gap-small);
                 flex-shrink: 0;
+                flex-wrap: wrap; /* Permet le wrap */
             }
             
             .task-type-badge-harmonized,
@@ -3026,9 +3835,9 @@ class PageManager {
                 gap: 3px;
                 background: #f8fafc;
                 color: #64748b;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 11px;
+                padding: 3px 6px; /* Réduit */
+                border-radius: 4px; /* Réduit */
+                font-size: 10px; /* Réduit */
                 font-weight: 600;
                 border: 1px solid #e2e8f0;
                 white-space: nowrap;
@@ -3039,6 +3848,46 @@ class PageManager {
                 color: #16a34a;
                 border-color: #bbf7d0;
             }
+
+            /* Badges priorité spéciaux */
+            .priority-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 3px 8px;
+                border-radius: 6px;
+                font-size: 10px;
+                font-weight: 700;
+                white-space: nowrap;
+                border: 1px solid;
+                animation: priorityBadgePulse 2s ease-in-out infinite;
+            }
+
+            .priority-badge.newsletter {
+                background: linear-gradient(135deg, var(--newsletter-color), #ea580c);
+                color: white;
+                border-color: var(--newsletter-color);
+                box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
+            }
+
+            .priority-badge.spam {
+                background: linear-gradient(135deg, var(--spam-color), #dc2626);
+                color: white;
+                border-color: var(--spam-color);
+                box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+            }
+
+            .priority-badge.corrected {
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                border-color: #10b981;
+                box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+            }
+
+            @keyframes priorityBadgePulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+            }
             
             .preselected-badge-harmonized {
                 display: flex;
@@ -3046,29 +3895,14 @@ class PageManager {
                 gap: 3px;
                 background: linear-gradient(135deg, var(--preselect-color) 0%, #7c3aed 100%);
                 color: white !important;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 11px;
+                padding: 3px 6px; /* Réduit */
+                border-radius: 4px; /* Réduit */
+                font-size: 10px; /* Réduit */
                 font-weight: 700 !important;
                 border: none !important;
                 white-space: nowrap;
                 box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
                 animation: badgePulse 2s ease-in-out infinite;
-            }
-
-            .correction-badge-harmonized {
-                display: flex;
-                align-items: center;
-                gap: 3px;
-                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                color: white !important;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 11px;
-                font-weight: 700 !important;
-                border: none !important;
-                white-space: nowrap;
-                box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
             }
             
             .task-recipient-harmonized {
@@ -3079,17 +3913,31 @@ class PageManager {
                 font-size: 12px;
                 font-weight: 500;
                 line-height: 1.2;
+                flex-wrap: wrap; /* Permet le wrap */
             }
             
             .recipient-name-harmonized {
                 font-weight: 600;
                 color: #374151;
             }
-            
-            .reply-indicator-harmonized {
-                color: #dc2626;
+
+            .recipient-email-harmonized {
+                font-family: monospace;
+                font-size: 11px;
+                color: #6b7280;
+                background: #f3f4f6;
+                padding: 2px 4px;
+                border-radius: 3px;
+            }
+
+            .attachment-indicator {
+                color: #f59e0b;
                 font-weight: 600;
                 font-size: 10px;
+                background: rgba(245, 158, 11, 0.1);
+                padding: 2px 4px;
+                border-radius: 3px;
+                border: 1px solid rgba(245, 158, 11, 0.3);
             }
             
             .category-indicator-harmonized {
@@ -3101,6 +3949,11 @@ class PageManager {
                 align-items: center;
                 gap: 3px;
                 transition: all 0.2s ease;
+            }
+
+            .category-indicator-harmonized.enhanced {
+                border: 1px solid;
+                box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
             }
 
             .category-indicator-harmonized.newsletter-category {
@@ -3132,6 +3985,33 @@ class PageManager {
                     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4);
                 }
             }
+
+            .detection-info {
+                font-family: monospace;
+                font-size: 9px;
+                background: #e0f2fe;
+                color: #0369a1;
+                padding: 2px 4px;
+                border-radius: 3px;
+                border: 1px solid #0ea5e9;
+            }
+
+            /* Preview du contenu */
+            .email-preview-content {
+                margin-top: 8px;
+                padding: 8px 12px;
+                background: #f8fafc;
+                border-radius: 6px;
+                border-left: 3px solid #e2e8f0;
+            }
+
+            .preview-text {
+                margin: 0;
+                font-size: 12px;
+                line-height: 1.4;
+                color: #6b7280;
+                font-style: italic;
+            }
             
             .task-harmonized-card.preselected-task .category-indicator-harmonized {
                 box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
@@ -3149,12 +4029,13 @@ class PageManager {
             
             .task-actions-harmonized {
                 display: flex;
-                align-items: center;
+                align-items: flex-start; /* Alignement top */
                 gap: 4px;
                 margin-left: var(--gap-medium);
                 flex-shrink: 0;
                 z-index: 10;
                 position: relative;
+                margin-top: 4px; /* Alignement top */
             }
             
             .action-btn-harmonized {
@@ -3175,6 +4056,12 @@ class PageManager {
                 z-index: 11;
                 position: relative;
             }
+
+            .action-btn-harmonized.enhanced {
+                border-width: 1px;
+                border-color: rgba(0, 0, 0, 0.1);
+                background: rgba(255, 255, 255, 0.95);
+            }
             
             .action-btn-harmonized:hover {
                 background: white;
@@ -3190,6 +4077,11 @@ class PageManager {
                 background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
                 border-color: #3b82f6;
                 color: #2563eb;
+            }
+
+            .action-btn-harmonized.create-task.enhanced:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.2);
             }
             
             .task-harmonized-card.preselected-task .action-btn-harmonized.create-task {
@@ -3229,6 +4121,10 @@ class PageManager {
                 color: #16a34a;
                 background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
             }
+
+            .action-btn-harmonized.view-task.enhanced {
+                border-color: rgba(34, 197, 94, 0.3);
+            }
             
             .action-btn-harmonized.view-task:hover {
                 background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
@@ -3239,6 +4135,11 @@ class PageManager {
             .action-btn-harmonized.details {
                 color: #8b5cf6;
             }
+
+            .action-btn-harmonized.details.enhanced {
+                background: rgba(139, 92, 246, 0.05);
+                border-color: rgba(139, 92, 246, 0.2);
+            }
             
             .action-btn-harmonized.details:hover {
                 background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
@@ -3246,109 +4147,7 @@ class PageManager {
                 color: #7c3aed;
             }
 
-            /* Vue groupée - inchangée mais compatible */
-            .tasks-grouped-harmonized {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-            }
-            
-            .task-group-harmonized {
-                background: transparent;
-                border: none;
-                border-radius: 0;
-                overflow: visible;
-                margin: 0;
-                padding: 0;
-                z-index: 1;
-            }
-            
-            .group-header-harmonized {
-                display: flex;
-                align-items: center;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 0;
-                padding: var(--card-padding);
-                cursor: pointer;
-                transition: all 0.3s ease;
-                position: relative;
-                min-height: var(--card-height);
-                max-height: var(--card-height);
-                border-bottom: 1px solid #e5e7eb;
-                gap: var(--gap-medium);
-                z-index: 1;
-            }
-            
-            .group-avatar-harmonized {
-                width: 40px;
-                height: 40px;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: 700;
-                font-size: 16px;
-                flex-shrink: 0;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            }
-            
-            .group-info-harmonized {
-                flex: 1;
-                min-width: 0;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                gap: 4px;
-                height: 100%;
-            }
-            
-            .group-name-harmonized {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 15px;
-                margin: 0;
-                line-height: 1.3;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            .group-meta-harmonized {
-                color: #6b7280;
-                font-size: 12px;
-                font-weight: 500;
-                line-height: 1.2;
-            }
-            
-            .group-expand-harmonized {
-                width: var(--action-btn-size);
-                height: var(--action-btn-size);
-                border: 2px solid transparent;
-                border-radius: var(--btn-border-radius);
-                background: rgba(255, 255, 255, 0.9);
-                color: #6b7280;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-                font-size: 13px;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-                flex-shrink: 0;
-            }
-            
-            .group-content-harmonized {
-                background: transparent;
-                margin: 0;
-                padding: 0;
-                display: none;
-            }
-
-            /* État vide harmonisé */
+            /* États vides harmonisés */
             .empty-state-harmonized {
                 text-align: center;
                 padding: 60px 30px;
@@ -3471,12 +4270,118 @@ class PageManager {
                 box-shadow: var(--shadow-hover);
             }
 
-            /* RESPONSIVE ÉTENDU */
+            /* Vue groupée */
+            .tasks-grouped-harmonized {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .task-group-harmonized {
+                background: transparent;
+                border: none;
+                border-radius: 0;
+                overflow: visible;
+                margin: 0;
+                padding: 0;
+                z-index: 1;
+            }
+            
+            .group-header-harmonized {
+                display: flex;
+                align-items: center;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 0;
+                padding: var(--card-padding);
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                min-height: var(--card-height);
+                max-height: var(--card-height);
+                border-bottom: 1px solid #e5e7eb;
+                gap: var(--gap-medium);
+                z-index: 1;
+            }
+            
+            .group-avatar-harmonized {
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+                font-size: 16px;
+                flex-shrink: 0;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            }
+            
+            .group-info-harmonized {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: 4px;
+                height: 100%;
+            }
+            
+            .group-name-harmonized {
+                font-weight: 700;
+                color: #1f2937;
+                font-size: 15px;
+                margin: 0;
+                line-height: 1.3;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .group-meta-harmonized {
+                color: #6b7280;
+                font-size: 12px;
+                font-weight: 500;
+                line-height: 1.2;
+            }
+            
+            .group-expand-harmonized {
+                width: var(--action-btn-size);
+                height: var(--action-btn-size);
+                border: 2px solid transparent;
+                border-radius: var(--btn-border-radius);
+                background: rgba(255, 255, 255, 0.9);
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                font-size: 13px;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+                flex-shrink: 0;
+            }
+            
+            .group-content-harmonized {
+                background: transparent;
+                margin: 0;
+                padding: 0;
+                display: none;
+            }
+
+            /* RESPONSIVE ULTRA-COMPLET */
             @media (max-width: 1400px) {
                 .status-pill-compact {
                     flex: 0 1 calc(20% - var(--gap-small));
                     min-width: 100px;
                     max-width: 160px;
+                }
+
+                .controls-bar-single-line {
+                    gap: var(--gap-medium);
                 }
             }
             
@@ -3485,6 +4390,10 @@ class PageManager {
                     flex: 0 1 calc(25% - var(--gap-small));
                     min-width: 80px;
                     max-width: 140px;
+                }
+
+                .action-buttons {
+                    flex-wrap: wrap;
                 }
             }
             
@@ -3502,6 +4411,11 @@ class PageManager {
                     align-items: stretch;
                 }
                 
+                .scan-controls {
+                    order: 0;
+                    justify-content: center;
+                }
+
                 .search-section {
                     max-width: none;
                     order: 1;
@@ -3519,16 +4433,20 @@ class PageManager {
                     flex-wrap: wrap;
                     order: 3;
                 }
-
-                .provider-status-display {
-                    order: 0;
-                    margin-right: 0;
-                    margin-bottom: var(--gap-small);
-                }
                 
                 .dropdown-menu {
                     right: auto;
                     left: 0;
+                }
+
+                /* Cartes plus compactes sur tablette */
+                .task-harmonized-card {
+                    min-height: calc(var(--card-height) - 10px);
+                    padding: 12px;
+                }
+
+                .email-card-enhanced {
+                    min-height: var(--card-height);
                 }
             }
             
@@ -3589,6 +4507,50 @@ class PageManager {
                     font-size: 11px;
                     padding: 3px 6px;
                 }
+
+                .cache-indicators {
+                    justify-content: center;
+                    gap: var(--gap-small);
+                }
+
+                .cache-indicator,
+                .provider-indicator,
+                .scan-indicator {
+                    font-size: 11px;
+                    padding: 4px 8px;
+                }
+
+                /* Cartes mobiles optimisées */
+                .task-harmonized-card {
+                    padding: 10px;
+                    min-height: 70px;
+                }
+
+                .email-card-enhanced {
+                    min-height: 80px;
+                }
+
+                .task-main-content-harmonized {
+                    gap: 4px;
+                }
+
+                .task-meta-harmonized {
+                    gap: 4px;
+                }
+
+                .task-recipient-harmonized {
+                    gap: 4px;
+                    font-size: 11px;
+                }
+
+                .email-preview-content {
+                    margin-top: 6px;
+                    padding: 6px 8px;
+                }
+
+                .preview-text {
+                    font-size: 11px;
+                }
             }
             
             @media (max-width: 480px) {
@@ -3603,6 +4565,7 @@ class PageManager {
                     border-radius: var(--btn-border-radius);
                     border: 1px solid #e5e7eb;
                     box-shadow: var(--shadow-base);
+                    height: 50px;
                 }
                 
                 .controls-bar-single-line {
@@ -3621,15 +4584,6 @@ class PageManager {
                     justify-content: center;
                 }
                 
-                .dropdown-menu {
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    width: 90vw;
-                    max-width: 300px;
-                }
-                
                 .sticky-controls-container {
                     padding: var(--gap-small);
                 }
@@ -3643,326 +4597,43 @@ class PageManager {
                     align-items: center;
                     gap: var(--gap-small);
                 }
+
+                .cache-indicators {
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                /* Très petit mobile - cartes ultra-compactes */
+                .task-harmonized-card {
+                    padding: 8px;
+                    min-height: 60px;
+                }
+
+                .email-card-enhanced {
+                    min-height: 70px;
+                }
+
+                .task-title-harmonized {
+                    font-size: 14px;
+                }
+
+                .task-actions-harmonized {
+                    gap: 2px;
+                }
+
+                .action-btn-harmonized {
+                    width: 32px;
+                    height: 32px;
+                    font-size: 12px;
+                }
+
+                .email-preview-content {
+                    display: none; /* Masquer sur très petit écran */
+                }
             }
         `;
         
         document.head.appendChild(styles);
-    }
-
-    // ================================================
-    // ACTIONS BULK SIMPLIFIÉES
-    // ================================================
-    
-    toggleBulkActions(event) {
-        event.stopPropagation();
-        event.preventDefault();
-        
-        const menu = document.getElementById('bulkActionsMenu');
-        const button = event.currentTarget;
-        
-        if (!menu || !button) return;
-        
-        if (menu.classList.contains('show')) {
-            menu.classList.remove('show');
-            button.classList.remove('show');
-        } else {
-            menu.classList.add('show');
-            button.classList.add('show');
-        }
-    }
-
-    async bulkMarkAsRead() {
-        const selectedEmails = Array.from(this.selectedEmails);
-        if (selectedEmails.length === 0) return;
-        
-        window.uiManager?.showToast(`${selectedEmails.length} emails marqués comme lus`, 'success');
-        this.clearSelection();
-    }
-
-    async bulkArchive() {
-        const selectedEmails = Array.from(this.selectedEmails);
-        if (selectedEmails.length === 0) return;
-        
-        if (confirm(`Archiver ${selectedEmails.length} email(s) ?`)) {
-            window.uiManager?.showToast(`${selectedEmails.length} emails archivés`, 'success');
-            this.clearSelection();
-        }
-    }
-
-    async bulkDelete() {
-        const selectedEmails = Array.from(this.selectedEmails);
-        if (selectedEmails.length === 0) return;
-        
-        if (confirm(`Supprimer définitivement ${selectedEmails.length} email(s) ?\n\nCette action est irréversible.`)) {
-            window.uiManager?.showToast(`${selectedEmails.length} emails supprimés`, 'success');
-            this.clearSelection();
-            this.refreshEmailsView();
-        }
-    }
-
-    async bulkExport() {
-        const selectedEmails = Array.from(this.selectedEmails);
-        if (selectedEmails.length === 0) return;
-        
-        const emails = selectedEmails.map(id => this.getEmailById(id)).filter(Boolean);
-        
-        const csvContent = [
-            ['De', 'Sujet', 'Date', 'Catégorie', 'Provider', 'Contenu'].join(','),
-            ...emails.map(email => [
-                `"${email.from?.emailAddress?.name || email.from?.emailAddress?.address || ''}"`,
-                `"${email.subject || ''}"`,
-                email.receivedDateTime ? new Date(email.receivedDateTime).toLocaleDateString('fr-FR') : '',
-                `"${this.getCategoryName(email.category)}"`,
-                `"${this.currentProvider || 'unknown'}"`,
-                `"${(email.bodyPreview || '').substring(0, 100)}"`
-            ].join(','))
-        ].join('\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `emails_${this.currentProvider || 'scan'}_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        window.uiManager?.showToast('Export terminé', 'success');
-        this.clearSelection();
-    }
-
-    // ================================================
-    // CRÉATION DE TÂCHES SIMPLIFIÉE
-    // ================================================
-    
-    async createTasksFromSelection() {
-        if (this.selectedEmails.size === 0) {
-            window.uiManager?.showToast('Aucun email sélectionné', 'warning');
-            return;
-        }
-        
-        let created = 0;
-        window.uiManager?.showLoading(`Création de ${this.selectedEmails.size} tâches...`);
-        
-        for (const emailId of this.selectedEmails) {
-            const email = this.getEmailById(emailId);
-            if (!email || this.createdTasks.has(emailId)) continue;
-            
-            try {
-                if (window.taskManager) {
-                    const taskData = this.buildBasicTaskFromEmail(email);
-                    const task = window.taskManager.createTaskFromEmail(taskData, email);
-                    this.createdTasks.set(emailId, task.id);
-                    created++;
-                }
-            } catch (error) {
-                console.error('[PageManager] Erreur création tâche:', emailId, error);
-            }
-        }
-        
-        window.uiManager?.hideLoading();
-        
-        if (created > 0) {
-            window.taskManager?.saveTasks();
-            window.uiManager?.showToast(`${created} tâche${created > 1 ? 's' : ''} créée${created > 1 ? 's' : ''} (${this.currentProvider || 'scan'})`, 'success');
-            this.clearSelection();
-            this.refreshEmailsView();
-        } else {
-            window.uiManager?.showToast('Aucune tâche créée', 'warning');
-        }
-    }
-
-    buildBasicTaskFromEmail(email) {
-        const senderName = email.from?.emailAddress?.name || 'Inconnu';
-        const senderEmail = email.from?.emailAddress?.address || '';
-        const senderDomain = senderEmail.split('@')[1] || 'unknown';
-        
-        return {
-            id: this.generateTaskId(),
-            title: `Email de ${senderName}: ${email.subject || 'Sans sujet'}`,
-            description: email.bodyPreview || 'Aucune description disponible',
-            priority: 'medium',
-            dueDate: null,
-            status: 'todo',
-            emailId: email.id,
-            category: email.category || 'other',
-            createdAt: new Date().toISOString(),
-            emailFrom: senderEmail,
-            emailFromName: senderName,
-            emailSubject: email.subject,
-            emailDomain: senderDomain,
-            emailDate: email.receivedDateTime,
-            hasAttachments: email.hasAttachments || false,
-            tags: [senderDomain, email.category].filter(Boolean),
-            method: 'basic',
-            provider: this.currentProvider || 'unknown'
-        };
-    }
-
-    generateTaskId() {
-        return `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    }
-
-    // ================================================
-    // MODALES SIMPLIFIÉES
-    // ================================================
-    
-    async showTaskCreationModal(emailId) {
-        const email = this.getEmailById(emailId);
-        if (!email) {
-            window.uiManager?.showToast('Email non trouvé', 'error');
-            return;
-        }
-
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        
-        const uniqueId = 'task_creation_modal_' + Date.now();
-        const providerInfo = this.getProviderInfo();
-        const senderName = email.from?.emailAddress?.name || 'Inconnu';
-        
-        const modalHTML = `
-            <div id="${uniqueId}" 
-                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
-                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
-                        padding: 20px; backdrop-filter: blur(4px);">
-                <div style="background: white; border-radius: 16px; max-width: 600px; width: 100%; 
-                            max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">Créer une tâche</h2>
-                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; color: ${providerInfo.color};">
-                                <i class="${providerInfo.icon}"></i>
-                                <span style="font-size: 14px; font-weight: 600;">${providerInfo.name}</span>
-                            </div>
-                        </div>
-                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
-                        <div>
-                            <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Titre de la tâche</label>
-                            <input type="text" id="task-title" 
-                                   style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
-                                   value="Email de ${senderName}: ${email.subject || 'Sans sujet'}">
-                        </div>
-                        
-                        <div style="margin-top: 20px;">
-                            <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Description</label>
-                            <textarea id="task-description" 
-                                      style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 100px;"
-                                      rows="4">${email.bodyPreview || 'Traiter cet email'}</textarea>
-                        </div>
-                        
-                        <div style="margin-top: 20px;">
-                            <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Priorité</label>
-                            <select id="task-priority" 
-                                    style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
-                                <option value="urgent">🚨 Urgent</option>
-                                <option value="high">⚡ Haute</option>
-                                <option value="medium" selected>📌 Normale</option>
-                                <option value="low">📄 Basse</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
-                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                            Annuler
-                        </button>
-                        <button onclick="window.pageManager.createTaskFromModal('${email.id}'); document.getElementById('${uniqueId}').remove();"
-                                style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                            <i class="fas fa-check"></i> Créer la tâche
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-    }
-
-    async createTaskFromModal(emailId) {
-        const email = this.getEmailById(emailId);
-        if (!email) {
-            window.uiManager?.showToast('Email non trouvé', 'error');
-            return;
-        }
-
-        const title = document.getElementById('task-title')?.value;
-        const description = document.getElementById('task-description')?.value;
-        const priority = document.getElementById('task-priority')?.value;
-
-        if (!title) {
-            window.uiManager?.showToast('Le titre est requis', 'warning');
-            return;
-        }
-
-        try {
-            const taskData = {
-                ...this.buildBasicTaskFromEmail(email),
-                title,
-                description,
-                priority
-            };
-
-            const task = window.taskManager?.createTaskFromEmail(taskData, email);
-            if (task) {
-                this.createdTasks.set(emailId, task.id);
-                window.taskManager?.saveTasks();
-                window.uiManager?.showToast(`Tâche créée avec succès (${this.currentProvider || 'email'})`, 'success');
-                this.refreshEmailsView();
-            } else {
-                throw new Error('Erreur lors de la création de la tâche');
-            }
-            
-        } catch (error) {
-            console.error('Error creating task:', error);
-            window.uiManager?.showToast('Erreur lors de la création', 'error');
-        }
-    }
-
-    // ================================================
-    // MÉTHODES REFRESH ET ACTUALISATION
-    // ================================================
-    
-    async refreshEmails() {
-        window.uiManager?.showLoading('Actualisation...');
-        
-        try {
-            // Recharger depuis EmailScanner si possible
-            if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
-                const emails = window.emailScanner.getAllEmails();
-                this.updateEmailsData(emails);
-                
-                if (typeof window.emailScanner.recategorizeEmails === 'function') {
-                    await window.emailScanner.recategorizeEmails();
-                }
-            }
-            
-            await this.loadPage('emails');
-            window.uiManager?.showToast(`Emails actualisés (${this.currentProvider || 'provider'})`, 'success');
-            
-        } catch (error) {
-            window.uiManager?.hideLoading();
-            window.uiManager?.showToast('Erreur d\'actualisation', 'error');
-        }
-    }
-
-    openCreatedTask(emailId) {
-        const taskId = this.createdTasks.get(emailId);
-        if (!taskId) return;
-        
-        this.loadPage('tasks').then(() => {
-            setTimeout(() => {
-                if (window.tasksView?.showTaskDetails) {
-                    window.tasksView.showTaskDetails(taskId);
-                }
-            }, 100);
-        });
     }
 
     // ================================================
@@ -4010,7 +4681,14 @@ class PageManager {
                             Se connecter à Outlook
                         </button>
                     </div>
-                ` : ''}
+                ` : `
+                    <div class="empty-state-actions">
+                        <button class="btn btn-primary" onclick="window.pageManager.refreshEmails()">
+                            <i class="fas fa-sync-alt"></i>
+                            Scan direct
+                        </button>
+                    </div>
+                `}
             </div>
         `;
     }
@@ -4029,6 +4707,12 @@ class PageManager {
                     </div>
                     <h3 class="empty-title">Aucune tâche</h3>
                     <p class="empty-text">Créez des tâches à partir de vos emails ${this.currentProvider || 'scannés'}</p>
+                    <div class="empty-state-actions">
+                        <button class="btn btn-primary" onclick="window.pageManager.loadPage('emails')">
+                            <i class="fas fa-envelope"></i>
+                            Voir les emails
+                        </button>
+                    </div>
                 </div>
             `;
         }
@@ -4050,7 +4734,7 @@ class PageManager {
                         </div>
                         <h3>${cat.name}</h3>
                         <p>${cat.description || ''}</p>
-                        ${id === 'marketing_news' ? '<span class="priority-badge">🚀 Priorité Newsletter/Spam</span>' : ''}
+                        ${id === 'marketing_news' ? '<span class="priority-badge newsletter">🚀 Priorité Newsletter/Spam ULTRA-RENFORCÉE</span>' : ''}
                     </div>
                 `).join('')}
             </div>
@@ -4070,6 +4754,7 @@ class PageManager {
                 <div class="settings-card">
                     <h3>Configuration IA</h3>
                     <p>Provider actuel: <strong style="color: ${providerInfo.color};">${providerInfo.name}</strong></p>
+                    <p>Emails en cache: <strong>${this.emailsCache.processedEmails.length}</strong></p>
                     <button class="btn primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">
                         <i class="fas fa-cog"></i> Configurer Claude AI
                     </button>
@@ -4101,9 +4786,127 @@ class PageManager {
     }
 
     // ================================================
-    // MÉTHODES DE DISPATCH ET DEBUG
+    // NAVIGATION ET CHARGEMENT PAGES
+    // ================================================
+    async loadPage(pageName) {
+        console.log(`[PageManager] Chargement page: ${pageName}`);
+
+        if (pageName === 'dashboard') {
+            console.log('[PageManager] Dashboard ignoré - géré par index.html');
+            this.updateNavigation(pageName);
+            
+            const pageContent = document.getElementById('pageContent');
+            if (pageContent) {
+                pageContent.style.display = 'block';
+                pageContent.style.opacity = '1';
+            }
+            return;
+        }
+
+        const pageContent = document.getElementById('pageContent');
+        if (!pageContent) {
+            console.error('[PageManager] Container de contenu non trouvé');
+            return;
+        }
+
+        this.updateNavigation(pageName);
+        window.uiManager?.showLoading(`Chargement ${pageName}...`);
+
+        try {
+            pageContent.innerHTML = '';
+            
+            if (this.pages[pageName]) {
+                await this.pages[pageName](pageContent);
+                this.currentPage = pageName;
+            } else {
+                throw new Error(`Page ${pageName} non trouvée`);
+            }
+
+            window.uiManager?.hideLoading();
+
+        } catch (error) {
+            console.error(`[PageManager] Erreur chargement page:`, error);
+            window.uiManager?.hideLoading();
+            window.uiManager?.showToast(`Erreur: ${error.message}`, 'error');
+            
+            pageContent.innerHTML = this.renderErrorPage(error);
+        }
+    }
+
+    renderErrorPage(error) {
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 class="empty-state-title">Erreur de chargement</h3>
+                <p class="empty-state-text">${error.message}</p>
+                <button class="btn btn-primary" onclick="window.pageManager.loadPage('emails')">
+                    Voir les emails
+                </button>
+            </div>
+        `;
+    }
+
+    updateNavigation(activePage) {
+        document.querySelectorAll('.nav-item').forEach(item => {
+            if (item.dataset.page === activePage) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    startPeriodicProviderCheck() {
+        setInterval(() => {
+            const oldProvider = this.currentProvider;
+            const newProvider = this.detectProviders();
+            
+            if (oldProvider !== newProvider) {
+                console.log(`[PageManager] 🔄 Provider changé: ${oldProvider} → ${newProvider}`);
+                this.updateProviderStatus();
+            }
+        }, 30000);
+    }
+
+    updateProviderStatus() {
+        if (this.currentPage === 'emails') {
+            this.updateProviderInfoDisplay();
+        }
+        
+        this.dispatchEvent('providerChanged', {
+            provider: this.currentProvider,
+            connectionStatus: this.connectionStatus
+        });
+    }
+
+    updateProviderInfoDisplay() {
+        const providerDisplays = document.querySelectorAll('.provider-status-display, .provider-indicator');
+        const providerInfo = this.getProviderInfo();
+        
+        providerDisplays.forEach(display => {
+            if (display && display.classList.contains('provider-indicator')) {
+                const statusClass = providerInfo.status === 'connected' ? 'connected' : 'disconnected';
+                display.className = `provider-indicator ${statusClass}`;
+                display.innerHTML = `
+                    <i class="${providerInfo.icon}"></i>
+                    <span>${providerInfo.name}</span>
+                    ${providerInfo.optimized ? '<span class="opt-badge">✨</span>' : ''}
+                `;
+            }
+        });
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES ET ANALYSE
     // ================================================
     
+    analyzeFirstEmails(emails) {
+        console.log(`[PageManager] Analyse de ${emails.length} emails pré-sélectionnés`);
+        // Méthode pour analyse IA si nécessaire
+    }
+
     dispatchEvent(eventName, detail) {
         try {
             window.dispatchEvent(new CustomEvent(eventName, { 
@@ -4111,17 +4914,13 @@ class PageManager {
                     ...detail,
                     source: 'PageManager',
                     timestamp: Date.now(),
-                    provider: this.currentProvider
+                    provider: this.currentProvider,
+                    version: '14.0'
                 }
             }));
         } catch (error) {
             console.error(`[PageManager] Erreur dispatch ${eventName}:`, error);
         }
-    }
-
-    analyzeFirstEmails(emails) {
-        // Méthode simplifiée - peut être étendue si besoin
-        console.log(`[PageManager] Analyse de ${emails.length} emails pré-sélectionnés`);
     }
 
     // ================================================
@@ -4133,7 +4932,13 @@ class PageManager {
         this.selectedEmails.clear();
         this.aiAnalysisResults.clear();
         this.createdTasks.clear();
-        this.emailsData = [];
+        this.emailsCache = {
+            rawEmails: [],
+            processedEmails: [],
+            lastUpdate: null,
+            scanInProgress: false,
+            errors: []
+        };
     }
 
     destroy() {
@@ -4156,7 +4961,7 @@ if (window.pageManager) {
     }
 }
 
-console.log('[PageManager] 🚀 Création nouvelle instance v13.1...');
+console.log('[PageManager] 🚀 Création nouvelle instance v14.0 SCAN ET AFFICHAGE CORRIGÉS...');
 window.pageManager = new PageManager();
 
 // Bind des méthodes pour préserver le contexte
@@ -4167,29 +4972,43 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
 });
 
 // ================================================
-// FONCTIONS DE TEST GLOBALES
+// FONCTIONS DE TEST GLOBALES CORRIGÉES
 // ================================================
-window.testPageManagerFixed = function() {
-    console.group('🧪 TEST PageManager v13.1 - CORRIGÉ');
+
+window.testPageManagerComplete = function() {
+    console.group('🧪 TEST PageManager v14.0 - SCAN ET AFFICHAGE CORRIGÉS');
     
     const debugInfo = {
         currentProvider: window.pageManager.currentProvider,
         connectionStatus: window.pageManager.connectionStatus,
         providerInfo: window.pageManager.getProviderInfo(),
-        emailsCount: window.pageManager.getAllEmails().length,
-        emailsDataCached: window.pageManager.emailsData.length
+        emailsInCache: window.pageManager.emailsCache.processedEmails.length,
+        rawEmailsInCache: window.pageManager.emailsCache.rawEmails.length,
+        scanInProgress: window.pageManager.emailsCache.scanInProgress,
+        cacheErrors: window.pageManager.emailsCache.errors.length
     };
     
-    console.log('Debug Info:', debugInfo);
-    console.log('✅ getEmailById disponible:', typeof window.pageManager.getEmailById === 'function');
-    console.log('✅ getAllEmails disponible:', typeof window.pageManager.getAllEmails === 'function');
+    console.log('Debug Info COMPLET:', debugInfo);
+    console.log('✅ getAllEmailsRobust disponible:', typeof window.pageManager.getAllEmailsRobust === 'function');
+    console.log('✅ getEmailById ULTRA-ROBUSTE disponible:', typeof window.pageManager.getEmailById === 'function');
+    console.log('✅ forceEmailScan disponible:', typeof window.pageManager.forceEmailScan === 'function');
     
-    // Test getEmailById
-    const emails = window.pageManager.getAllEmails();
-    if (emails.length > 0) {
-        const firstEmail = emails[0];
-        const foundEmail = window.pageManager.getEmailById(firstEmail.id);
-        console.log('Test getEmailById:', foundEmail ? '✅ Réussi' : '❌ Échec');
+    // Test des méthodes robustes
+    try {
+        const emails = window.pageManager.getAllEmails();
+        console.log(`✅ getAllEmails retourne ${emails.length} emails`);
+        
+        if (emails.length > 0) {
+            const firstEmail = emails[0];
+            const foundEmail = window.pageManager.getEmailById(firstEmail.id);
+            console.log('✅ Test getEmailById:', foundEmail ? 'RÉUSSI' : 'ÉCHEC');
+            
+            // Test scan des providers
+            const providerMethods = window.pageManager.checkEmailRetrievalMethods?.() || { available: false };
+            console.log('✅ Méthodes de scan disponibles:', providerMethods.available);
+        }
+    } catch (error) {
+        console.error('❌ Erreur lors des tests:', error);
     }
     
     console.groupEnd();
@@ -4197,9 +5016,55 @@ window.testPageManagerFixed = function() {
         success: true, 
         provider: debugInfo.currentProvider,
         connected: debugInfo.providerInfo.status === 'connected',
-        version: '13.1-CORRIGÉ',
-        emailsAvailable: emails.length > 0
+        version: '14.0-SCAN-CORRIGÉ',
+        emailsAvailable: debugInfo.emailsInCache > 0,
+        scanCapable: debugInfo.providerInfo.canScan || false,
+        cacheStatus: {
+            processed: debugInfo.emailsInCache,
+            raw: debugInfo.rawEmailsInCache,
+            scanning: debugInfo.scanInProgress,
+            errors: debugInfo.cacheErrors
+        }
     };
 };
 
-console.log('✅ PageManager v13.1 loaded - CORRIGÉ - Gmail Compatible avec gestion email robuste!');
+window.debugEmailCache = function() {
+    console.group('🔍 DEBUG Email Cache v14.0');
+    const cache = window.pageManager.emailsCache;
+    
+    console.log('État du cache:', {
+        processedEmails: cache.processedEmails.length,
+        rawEmails: cache.rawEmails.length,
+        lastUpdate: cache.lastUpdate ? new Date(cache.lastUpdate).toLocaleString() : 'Jamais',
+        scanInProgress: cache.scanInProgress,
+        source: cache.source || 'Non définie',
+        errors: cache.errors.length
+    });
+    
+    if (cache.errors.length > 0) {
+        console.log('Erreurs du cache:');
+        cache.errors.forEach((error, index) => {
+            console.log(`  ${index + 1}. ${error.error} (${error.provider}, ${new Date(error.timestamp).toLocaleString()})`);
+        });
+    }
+    
+    if (cache.processedEmails.length > 0) {
+        const firstEmail = cache.processedEmails[0];
+        console.log('Premier email traité:', {
+            id: firstEmail.id,
+            subject: firstEmail.subject?.substring(0, 50),
+            category: firstEmail.category,
+            from: firstEmail.from?.emailAddress?.address,
+            processedAt: firstEmail.processedAt ? new Date(firstEmail.processedAt).toLocaleString() : 'Non défini'
+        });
+    }
+    
+    console.groupEnd();
+};
+
+console.log('✅ PageManager v14.0 loaded - SCAN ET AFFICHAGE CORRIGÉS COMPLETS!');
+console.log('🔥 Detection Newsletter/Spam ULTRA-RENFORCÉE avec priorité absolue');
+console.log('📧 Système de cache email robuste avec scan direct multi-provider');
+console.log('🎨 Interface utilisateur complète avec modal détaillée et preview');
+console.log('📧 Utilisez testPageManagerComplete() pour tester');
+console.log('📧 Utilisez debugEmailCache() pour voir l\'état du cache');
