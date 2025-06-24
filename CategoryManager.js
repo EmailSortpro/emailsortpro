@@ -167,7 +167,7 @@ class CategoryManager {
                 exclusions: []
             },
 
-            // TÂCHES - Mots-clés uniques
+            // TÂCHES - Mots-clés uniques + TAGS
             tasks: {
                 absolute: [
                     // Actions requises (unique à tâches)
@@ -188,7 +188,10 @@ class CategoryManager {
                     
                     // Validation (unique à tâches)
                     'merci de valider', 'validation requise', 'approval needed',
-                    'approbation requise', 'please approve', 'veuillez approuver'
+                    'approbation requise', 'please approve', 'veuillez approuver',
+                    
+                    // Tags utilisateur (unique à tâches)
+                    '@team', '@tous', '@all', '@urgent'
                 ],
                 strong: [
                     // Urgence (unique à tâches)
@@ -198,7 +201,10 @@ class CategoryManager {
                     // Actions tâches (unique à tâches)
                     'task', 'tâche', 'todo', 'à faire', 'pending',
                     'en attente', 'awaiting', 'correction', 'corriger',
-                    'révision', 'review', 'réviser', 'valider', 'validate'
+                    'révision', 'review', 'réviser', 'valider', 'validate',
+                    
+                    // Indicateurs de tag
+                    'assigner', 'assign', 'attribuer', 'pour toi', 'for you'
                 ],
                 weak: [
                     'demande', 'request', 'besoin', 'need',
@@ -551,6 +557,26 @@ class CategoryManager {
             return { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
         }
         
+        // DÉTECTION PAR TAG (@) - PRIORITÉ ABSOLUE POUR TÂCHES
+        const tagDetection = this.detectUserTag(content, email);
+        if (tagDetection.hasTag) {
+            console.log(`[CategoryManager] 👤 TAG DÉTECTÉ: @${tagDetection.taggedUser} - Catégorisation automatique en tâche`);
+            return {
+                category: 'tasks',
+                score: 500, // Score très élevé pour priorité absolue
+                confidence: 0.99,
+                matchedPatterns: [{
+                    keyword: `@${tagDetection.taggedUser}`,
+                    type: 'user_tag',
+                    score: 500
+                }],
+                hasAbsolute: true,
+                detectionMethod: 'user_tag',
+                taggedUser: tagDetection.taggedUser,
+                tagContext: tagDetection.context
+            };
+        }
+        
         const newsletterResult = this.detectNewsletterEnhanced(content, email);
         if (newsletterResult && newsletterResult.score >= 80) {
             return newsletterResult;
@@ -559,18 +585,106 @@ class CategoryManager {
         const allResults = this.analyzeAllCategories(content, email);
         const selectedResult = this.selectBestCategory(allResults);
         
-        if (!selectedResult || selectedResult.category === 'other' || selectedResult.score === 0) {
+        // Si aucune catégorie n'est trouvée, retourner "other"
+        if (!selectedResult || selectedResult.score === 0) {
             return {
                 category: 'other',
                 score: 0,
                 confidence: 0,
                 matchedPatterns: [],
                 hasAbsolute: false,
-                reason: 'no_category_matched'
+                reason: 'no_category_matched',
+                detectionMethod: 'default_other'
             };
         }
         
         return selectedResult;
+    }
+
+    // ================================================
+    // DÉTECTION DES TAGS UTILISATEUR (@)
+    // ================================================
+    detectUserTag(content, email) {
+        const result = {
+            hasTag: false,
+            taggedUser: null,
+            context: null,
+            matches: []
+        };
+        
+        // Patterns pour détecter les tags
+        // Format: @nom ou @prenom.nom ou @nom-compose
+        const tagPattern = /@([a-zA-Z0-9\-_.]+)/g;
+        
+        // Chercher dans le sujet
+        const subjectMatches = email.subject?.match(tagPattern);
+        if (subjectMatches && subjectMatches.length > 0) {
+            const taggedUser = subjectMatches[0].substring(1); // Enlever le @
+            result.hasTag = true;
+            result.taggedUser = taggedUser;
+            result.context = 'subject';
+            result.matches.push({
+                tag: subjectMatches[0],
+                location: 'subject',
+                fullText: email.subject
+            });
+            return result;
+        }
+        
+        // Chercher dans le corps (début du message)
+        if (content.text) {
+            // Extraire les 500 premiers caractères pour la performance
+            const bodyStart = content.text.substring(0, 500);
+            const bodyMatches = bodyStart.match(tagPattern);
+            
+            if (bodyMatches && bodyMatches.length > 0) {
+                // Vérifier que ce n'est pas une adresse email
+                const tag = bodyMatches[0];
+                const beforeTag = bodyStart.substring(Math.max(0, bodyStart.indexOf(tag) - 1), bodyStart.indexOf(tag));
+                
+                // Si ce n'est pas précédé par un caractère d'email, c'est un tag valide
+                if (beforeTag !== '.' && beforeTag !== '-' && !bodyStart.includes(tag + '@')) {
+                    const taggedUser = tag.substring(1);
+                    result.hasTag = true;
+                    result.taggedUser = taggedUser;
+                    result.context = 'body';
+                    result.matches.push({
+                        tag: tag,
+                        location: 'body',
+                        snippet: bodyStart.substring(
+                            Math.max(0, bodyStart.indexOf(tag) - 30),
+                            Math.min(bodyStart.length, bodyStart.indexOf(tag) + 30)
+                        )
+                    });
+                }
+            }
+        }
+        
+        // Chercher dans le preview
+        if (!result.hasTag && email.bodyPreview) {
+            const previewMatches = email.bodyPreview.match(tagPattern);
+            if (previewMatches && previewMatches.length > 0) {
+                const tag = previewMatches[0];
+                const beforeTag = email.bodyPreview.substring(
+                    Math.max(0, email.bodyPreview.indexOf(tag) - 1), 
+                    email.bodyPreview.indexOf(tag)
+                );
+                
+                if (beforeTag !== '.' && beforeTag !== '-' && !email.bodyPreview.includes(tag + '@')) {
+                    const taggedUser = tag.substring(1);
+                    result.hasTag = true;
+                    result.taggedUser = taggedUser;
+                    result.context = 'preview';
+                    result.matches.push({
+                        tag: tag,
+                        location: 'preview',
+                        snippet: email.bodyPreview
+                    });
+                }
+            }
+        }
+        
+        return result;
     }
 
     // ================================================
@@ -1080,8 +1194,8 @@ class CategoryManager {
                 name: 'Actions Requises',
                 icon: '✅',
                 color: '#ef4444',
-                description: 'Tâches à faire et demandes d\'action',
-                priority: 80,
+                description: 'Tâches à faire, demandes d\'action et messages avec @tags',
+                priority: 95, // Priorité augmentée pour les tags
                 isCustom: false
             },
             meetings: {
@@ -1155,10 +1269,18 @@ class CategoryManager {
                 description: 'Notifications automatiques système',
                 priority: 20,
                 isCustom: false
+            },
+            other: {
+                name: 'Autres',
+                icon: '📧',
+                color: '#6b7280',
+                description: 'Emails non catégorisés',
+                priority: 10,
+                isCustom: false
             }
         };
         
-        console.log('[CategoryManager] 📚 Catégories initialisées');
+        console.log('[CategoryManager] 📚 Catégories initialisées avec catégorie "other"');
     }
 
     // ================================================
@@ -1667,7 +1789,11 @@ class CategoryManager {
         console.log(`Category: ${result.category} (expected: ${expectedCategory || 'any'})`);
         console.log(`Score: ${result.score}pts`);
         console.log(`Confidence: ${Math.round(result.confidence * 100)}%`);
-        console.log(`Keywords matched: ${result.keywordMatches || 0}`);
+        console.log(`Detection Method:`, result.detectionMethod || 'keyword_matching');
+        if (result.taggedUser) {
+            console.log(`Tagged User: @${result.taggedUser}`);
+        }
+        console.log(`Keywords matched: ${result.keywordMatches || result.matchedPatterns?.length || 0}`);
         
         if (expectedCategory && result.category !== expectedCategory) {
             console.log(`❌ FAILED - Expected ${expectedCategory}, got ${result.category}`);
@@ -1684,6 +1810,8 @@ class CategoryManager {
         console.group('📂 Catégories');
         const allCategories = Object.keys(this.categories);
         console.log('Total catégories:', allCategories.length);
+        console.log('Catégorie "other" présente:', this.categories.other ? '✅' : '❌');
+        console.log('Support des tags (@):', '✅');
         console.groupEnd();
         
         console.group('🔍 Catalogue mots-clés');
@@ -1696,11 +1824,19 @@ class CategoryManager {
         });
         console.groupEnd();
         
+        console.group('✨ Fonctionnalités');
+        console.log('Détection par tags (@):', '✅ Activée');
+        console.log('Catégorie "other" par défaut:', '✅ Activée');
+        console.log('Mots-clés uniques par catégorie:', '✅');
+        console.groupEnd();
+        
         console.groupEnd();
         
         return {
             version: 'v27.1',
             categoriesCount: allCategories.length,
+            hasOtherCategory: !!this.categories.other,
+            hasTagDetection: true,
             isInitialized: this.isInitialized
         };
     }
@@ -1758,9 +1894,22 @@ try {
 // FONCTIONS DE TEST GLOBALES
 // ================================================
 window.testCategoryManagerV27 = function() {
-    console.group('🧪 TEST CategoryManager v27.1');
+    console.group('🧪 TEST CategoryManager v27.1 - Tags et catégorie Other');
     
     const tests = [
+        // Tests avec tags
+        {
+            subject: "@jean peux-tu regarder ça ?",
+            body: "J'ai besoin de ton avis sur ce document.",
+            from: "colleague@company.com",
+            expected: "tasks"
+        },
+        {
+            subject: "Rapport mensuel",
+            body: "@marie voici le rapport que tu m'as demandé. Peux-tu le valider ?",
+            from: "team@company.com",
+            expected: "tasks"
+        },
         {
             subject: "Email test",
             body: "Cliquez ici pour vous désabonner de notre newsletter. View in browser.",
@@ -1784,6 +1933,18 @@ window.testCategoryManagerV27 = function() {
             body: "Code de vérification: 123456. Nouvelle connexion détectée sur votre compte.",
             from: "security@bank.com",
             expected: "security"
+        },
+        {
+            subject: "Message général",
+            body: "Bonjour, j'espère que vous allez bien. Cordialement.",
+            from: "contact@example.com",
+            expected: "other"
+        },
+        {
+            subject: "Simple email",
+            body: "Merci pour votre message. Bonne journée.",
+            from: "info@test.com",
+            expected: "other"
         }
     ];
     
@@ -1801,5 +1962,7 @@ window.testCategoryManagerV27 = function() {
     };
 };
 
-console.log('✅ CategoryManager v27.1 loaded - Syntaxe corrigée');
+console.log('✅ CategoryManager v27.1 loaded - Avec détection @tags et catégorie Other');
 console.log('📧 Utilisez testCategoryManagerV27() pour tester la détection');
+console.log('👤 Les emails avec @nom seront automatiquement catégorisés comme tâches');
+console.log('📂 Les emails non catégorisés iront dans "Autres"');
