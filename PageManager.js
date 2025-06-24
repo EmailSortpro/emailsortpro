@@ -619,12 +619,14 @@ class PageManager {
     }
 
     // ================================================
-    // PRIORITÉ NEWSLETTER/SPAM - NOUVELLE MÉTHODE
+    // PRIORITÉ NEWSLETTER/SPAM - MÉTHODE AMÉLIORÉE
     // ================================================
     ensureNewsletterSpamPriority(emails) {
         console.log('[PageManager] 🔍 Vérification priorité Newsletter/Spam...');
         
         let corrected = 0;
+        let newsletterDetected = 0;
+        let spamDetected = 0;
         
         emails.forEach(email => {
             const originalCategory = email.category;
@@ -637,64 +639,192 @@ class PageManager {
                 email.categoryConfidence = Math.max(email.categoryConfidence || 0, 0.9);
                 email.priorityCorrection = true;
                 corrected++;
+                
+                if (correctedCategory === 'marketing_news') newsletterDetected++;
+                if (correctedCategory === 'spam') spamDetected++;
             }
         });
         
         if (corrected > 0) {
-            console.log(`[PageManager] ✅ ${corrected} emails corrigés avec priorité Newsletter/Spam`);
+            console.log(`[PageManager] ✅ ${corrected} emails corrigés: ${newsletterDetected} newsletters, ${spamDetected} spam`);
         }
+        
+        // Vérifier aussi la catégorisation existante et la renforcer
+        this.reinforceCategorization(emails);
+    }
+
+    reinforceCategorization(emails) {
+        console.log('[PageManager] 🔧 Renforcement de la catégorisation...');
+        
+        emails.forEach(email => {
+            if (!email.category || email.category === 'other' || email.category === 'undefined') {
+                // Essayer une catégorisation de base
+                const basicCategory = this.performBasicCategorization(email);
+                if (basicCategory && basicCategory !== 'other') {
+                    email.category = basicCategory;
+                    email.categoryScore = 60;
+                    email.categoryConfidence = 0.7;
+                    email.basicCategorization = true;
+                    console.log(`[PageManager] 🔧 Catégorisation de base: "${email.subject?.substring(0, 30)}" → ${basicCategory}`);
+                }
+            }
+        });
+    }
+
+    performBasicCategorization(email) {
+        const content = this.extractEmailContentForAnalysis(email);
+        const text = content.text.toLowerCase();
+        const subject = content.subject.toLowerCase();
+        const sender = content.sender.toLowerCase();
+        
+        // Patterns de base pour catégorisation rapide
+        const basicPatterns = {
+            marketing_news: [
+                /newsletter|bulletin|lettre d'information/i,
+                /unsubscribe|désabonner|se désinscrire/i,
+                /promotion|promo|offre|special|exclusive/i,
+                /mailing|marketing|publicité/i,
+                /shop|boutique|acheter|buy/i,
+                /noreply|no-reply|donotreply/i
+            ],
+            spam: [
+                /urgent.*gagné|won.*urgent/i,
+                /félicitations.*prix|congratulations.*prize/i,
+                /gratuit.*maintenant|free.*now/i,
+                /cliquez.*immédiatement|click.*immediately/i
+            ],
+            finance: [
+                /facture|invoice|payment|paiement/i,
+                /virement|transfer|banking|bancaire/i,
+                /fiscal|tax|impôt/i,
+                /€|euro|\$|dollar|montant/i
+            ],
+            security: [
+                /sécurité|security|mot de passe|password/i,
+                /connexion|login|compte|account/i,
+                /vérification|verification|code/i,
+                /alerte|alert|suspicious/i
+            ],
+            tasks: [
+                /urgent|asap|action requise|action required/i,
+                /deadline|échéance|livrable/i,
+                /compléter|complete|faire|todo/i,
+                /demande|request|besoin|need/i
+            ],
+            meetings: [
+                /réunion|meeting|rendez-vous|appointment/i,
+                /calendrier|calendar|agenda/i,
+                /teams|zoom|meet|skype/i,
+                /invitation|invite/i
+            ]
+        };
+        
+        // Tester chaque catégorie
+        for (const [category, patterns] of Object.entries(basicPatterns)) {
+            const matches = patterns.filter(pattern => 
+                pattern.test(text) || 
+                pattern.test(subject) || 
+                pattern.test(sender)
+            ).length;
+            
+            if (matches >= 1) {
+                return category;
+            }
+        }
+        
+        return 'other';
     }
 
     detectNewsletterSpamPriority(email) {
         const content = this.extractEmailContentForAnalysis(email);
         
-        // Patterns Newsletter - PRIORITÉ ABSOLUE
+        // Patterns Newsletter - PRIORITÉ ABSOLUE - AMÉLIORÉS
         const newsletterPatterns = [
-            /unsubscribe|désabonner|se désinscrire/i,
-            /newsletter|bulletin|lettre d'information/i,
-            /mailing list|liste de diffusion/i,
-            /view in browser|voir dans le navigateur/i,
-            /email preferences|préférences email/i,
-            /promotion|promo|offre spéciale|special offer/i,
-            /limited offer|offre limitée|flash sale/i,
-            /shop now|acheter maintenant|buy now/i,
-            /you are receiving this|vous recevez cet email/i,
-            /manage subscription|gérer abonnement/i
+            // Patterns de désabonnement - TRÈS FORTS
+            /unsubscribe|désabonner|se désinscrire|opt.?out/i,
+            /email preferences|préférences email|manage.*subscription/i,
+            /you are receiving this|vous recevez cet email|this email was sent/i,
+            /ne plus recevoir|stop.*emails|arreter.*emails/i,
+            /view in browser|voir dans le navigateur|version web/i,
+            
+            // Patterns Newsletter explicites
+            /newsletter|bulletin|lettre d'information|infolettre/i,
+            /mailing.?list|liste de diffusion|email.?list/i,
+            /weekly|monthly|daily.*newsletter/i,
+            /newsletter.*hebdomadaire|newsletter.*mensuelle/i,
+            
+            // Patterns marketing
+            /promotion|promo|offre spéciale|special offer|limited offer/i,
+            /flash sale|vente flash|soldes|discount|réduction/i,
+            /shop now|acheter maintenant|buy now|commander/i,
+            /new arrivals|nouveautés|latest|dernier/i,
+            /exclusive|exclusif|member|membre/i,
+            
+            // Patterns structure marketing
+            /follow us|suivez.?nous|social media|réseaux sociaux/i,
+            /facebook|twitter|instagram|linkedin.*follow/i,
+            /forward.*friend|transférer.*ami|share.*social/i,
+            
+            // Patterns techniques marketing
+            /mailchimp|sendgrid|constant.?contact|aweber/i,
+            /campaign|campagne.*email|email.*marketing/i,
+            /automation|automatisation.*email/i,
+            
+            // Patterns expéditeur marketing
+            /noreply|no.?reply|donotreply|do.?not.?reply/i,
+            /info@|contact@|newsletter@|marketing@|promo@/i
         ];
         
-        // Patterns Spam
+        // Patterns Spam - PRIORITÉ ÉLEVÉE
         const spamPatterns = [
-            /urgent|urgence.*action/i,
-            /félicitations.*gagné|congratulations.*won/i,
-            /cliquez ici immédiatement|click here immediately/i,
-            /réclamez maintenant|claim now/i,
-            /offre exclusive.*expire/i,
-            /100% gratuit.*aucun frais/i
+            /urgent.*action.*required|action.*urgent.*required/i,
+            /félicitations.*gagné|congratulations.*won|you.*won/i,
+            /cliquez.*ici.*immédiatement|click.*here.*immediately/i,
+            /réclamez.*maintenant|claim.*now|claim.*immediately/i,
+            /offre.*exclusive.*expire|exclusive.*offer.*expires/i,
+            /100%.*gratuit.*aucun.*frais|100%.*free.*no.*cost/i,
+            /risque.*perdre|risk.*losing|limited.*time.*only/i,
+            /dernière.*chance|last.*chance|final.*notice/i,
+            /votre.*compte.*suspendu|account.*suspended|urgent.*verification/i
         ];
         
-        // Vérifier Newsletter en premier
-        const hasNewsletterPattern = newsletterPatterns.some(pattern => 
-            pattern.test(content.text) || 
-            pattern.test(content.subject) ||
-            pattern.test(content.sender)
-        );
+        // Tester Newsletter en premier (priorité absolue)
+        let newsletterScore = 0;
+        newsletterPatterns.forEach(pattern => {
+            if (pattern.test(content.text)) newsletterScore += 2;
+            if (pattern.test(content.subject)) newsletterScore += 3; // Subject plus important
+            if (pattern.test(content.sender)) newsletterScore += 2;
+        });
         
-        if (hasNewsletterPattern) {
+        // Bonus pour domaines noreply
+        if (/noreply|no.?reply|donotreply/i.test(content.sender)) {
+            newsletterScore += 3;
+        }
+        
+        // Bonus pour emails avec beaucoup de destinataires (approx via BCC)
+        if (email.toRecipients && email.toRecipients.length > 3) {
+            newsletterScore += 2;
+        }
+        
+        if (newsletterScore >= 3) {
+            console.log(`[PageManager] 📰 Newsletter détectée (score: ${newsletterScore}): ${email.subject?.substring(0, 50)}`);
             return 'marketing_news';
         }
         
-        // Vérifier Spam
-        const hasSpamPattern = spamPatterns.some(pattern => 
-            pattern.test(content.text) || 
-            pattern.test(content.subject)
-        );
-        
-        if (hasSpamPattern) {
-            return 'spam';
-        }
+        // Tester Spam
+        let spamScore = 0;
+        spamPatterns.forEach(pattern => {
+            if (pattern.test(content.text)) spamScore += 3;
+            if (pattern.test(content.subject)) spamScore += 4; // Subject critique pour spam
+        });
         
         // Vérifier domaine suspect
         if (this.isSuspiciousDomain(content.domain)) {
+            spamScore += 3;
+        }
+        
+        if (spamScore >= 3) {
+            console.log(`[PageManager] 🚫 Spam détecté (score: ${spamScore}): ${email.subject?.substring(0, 50)}`);
             return 'spam';
         }
         
@@ -748,7 +878,7 @@ class PageManager {
     buildPriorityCompactCategoryTabs(categoryCounts, totalEmails, categories) {
         const preselectedCategories = this.getTaskPreselectedCategories();
         
-        // ORDRE PRIORITAIRE: Newsletter/Spam d'abord
+        // ORDRE PRIORITAIRE: Newsletter/Spam d'abord, puis "Autre" toujours visible
         const priorityOrder = [
             'all',
             'marketing_news', // NEWSLETTER EN PREMIER
@@ -765,7 +895,7 @@ class PageManager {
             'project',
             'internal',
             'cc',
-            'other'
+            'other'          // AUTRE EN DERNIER mais TOUJOURS VISIBLE
         ];
         
         const tabs = [];
@@ -785,27 +915,41 @@ class PageManager {
             const count = categoryCounts[catId] || 0;
             const category = categories[catId];
             
-            if (count > 0 && category) {
+            // FORCER l'affichage de "other" même avec 0 emails
+            const shouldShow = count > 0 || catId === 'other';
+            
+            if (shouldShow) {
                 const isPreselected = preselectedCategories.includes(catId);
                 const priority = this.categoryPriority[catId] || 0;
                 
-                // Icônes spéciales pour Newsletter et Spam
-                let icon = category.icon;
-                let specialClass = '';
+                // Icônes et noms spéciaux
+                let icon, name, specialClass = '';
                 
                 if (catId === 'marketing_news') {
                     icon = '📰';
+                    name = category?.name || 'Marketing & News';
                     specialClass = 'newsletter-priority';
                 } else if (catId === 'spam') {
                     icon = '🚫';
+                    name = category?.name || 'Spam';
                     specialClass = 'spam-priority';
+                } else if (catId === 'other') {
+                    icon = '❓';
+                    name = 'Non classé';
+                    specialClass = '';
+                } else if (category) {
+                    icon = category.icon;
+                    name = category.name;
+                } else {
+                    // Catégorie non définie, on l'ignore
+                    return;
                 }
                 
                 tabs.push({
                     id: catId,
-                    name: category.name,
+                    name: name,
                     icon: icon,
-                    color: category.color,
+                    color: category?.color || '#64748b',
                     count: count,
                     isPreselected: isPreselected,
                     priority: priority,
@@ -814,8 +958,36 @@ class PageManager {
             }
         });
         
-        // Trier par priorité décroissante
-        tabs.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+        // Ajouter toutes les catégories qui ne sont pas dans priorityOrder mais qui ont des emails
+        Object.keys(categoryCounts).forEach(catId => {
+            if (!priorityOrder.includes(catId) && categoryCounts[catId] > 0) {
+                const category = categories[catId];
+                if (category) {
+                    const isPreselected = preselectedCategories.includes(catId);
+                    tabs.push({
+                        id: catId,
+                        name: category.name,
+                        icon: category.icon,
+                        color: category.color,
+                        count: categoryCounts[catId],
+                        isPreselected: isPreselected,
+                        priority: this.categoryPriority[catId] || 0,
+                        specialClass: ''
+                    });
+                }
+            }
+        });
+        
+        // Trier par priorité décroissante mais garder "other" à la fin
+        tabs.sort((a, b) => {
+            if (a.id === 'all') return -1;
+            if (b.id === 'all') return 1;
+            if (a.id === 'other') return 1;
+            if (b.id === 'other') return -1;
+            return (b.priority || 0) - (a.priority || 0);
+        });
+        
+        console.log('[PageManager] 📊 Onglets générés:', tabs.map(t => `${t.name}(${t.count})`).join(', '));
         
         return tabs.map(tab => {
             const isCurrentCategory = this.currentCategory === tab.id;
@@ -1301,7 +1473,10 @@ class PageManager {
                  data-email-id="${email.id}"
                  data-category="${email.category}"
                  data-preselected="${isPreselectedForTasks}"
-                 onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
+                 onclick="window.pageManager.handleEmailClick(event, '${email.id}')" 
+                 style="cursor: pointer;"
+                 onmouseenter="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 8px 24px rgba(0, 0, 0, 0.12)'"
+                 onmouseleave="this.style.transform=''; this.style.boxShadow=''">>
                 
                 <input type="checkbox" 
                        class="task-checkbox-harmonized" 
@@ -3110,36 +3285,31 @@ class PageManager {
     }
 
     handleEmailClick(event, emailId) {
+        console.log('[PageManager] Clic email:', emailId, 'Target:', event.target);
+        
+        // Empêcher la propagation si c'est un clic sur checkbox
         if (event.target.type === 'checkbox') {
+            console.log('[PageManager] Clic checkbox détecté, arrêt propagation');
             return;
         }
         
+        // Empêcher la propagation si c'est un clic sur les actions
         if (event.target.closest('.task-actions-harmonized')) {
+            console.log('[PageManager] Clic action détecté, arrêt propagation');
             return;
         }
         
+        // Empêcher la propagation si c'est un clic dans un group header
         if (event.target.closest('.group-header-harmonized')) {
+            console.log('[PageManager] Clic dans group header, arrêt propagation');
             return;
         }
         
-        const now = Date.now();
-        const lastClick = this.lastEmailClick || 0;
-        
-        if (now - lastClick < 300) {
-            event.preventDefault();
-            event.stopPropagation();
-            this.toggleEmailSelection(emailId);
-            this.lastEmailClick = 0;
-            return;
-        }
-        
-        this.lastEmailClick = now;
-        
-        setTimeout(() => {
-            if (Date.now() - this.lastEmailClick >= 250) {
-                this.showEmailModal(emailId);
-            }
-        }, 250);
+        // Simple clic = ouvrir modal directement (suppression du double-clic)
+        console.log('[PageManager] Ouverture modal email');
+        event.preventDefault();
+        event.stopPropagation();
+        this.showEmailModal(emailId);
     }
 
     renderGroupedView(emails, groupMode) {
@@ -4261,11 +4431,11 @@ window.testPageManagerGmail = function() {
     };
 };
 
-window.debugNewsletterSpamDetection = function() {
-    console.group('🔍 DEBUG Détection Newsletter/Spam');
+window.debugCategorization = function() {
+    console.group('🔍 DEBUG Catégorisation v13.1');
     
     if (!window.emailScanner?.getAllEmails) {
-        console.log('❌ Aucun email disponible pour le test');
+        console.log('❌ Aucun email disponible');
         console.groupEnd();
         return;
     }
@@ -4273,35 +4443,79 @@ window.debugNewsletterSpamDetection = function() {
     const emails = window.emailScanner.getAllEmails();
     console.log(`📧 Total emails: ${emails.length}`);
     
-    // Analyser par catégorie
-    const categories = {};
-    emails.forEach(email => {
+    // Analyser la distribution
+    const distribution = {};
+    const problems = [];
+    
+    emails.forEach((email, index) => {
         const cat = email.category || 'undefined';
-        categories[cat] = (categories[cat] || 0) + 1;
+        distribution[cat] = (distribution[cat] || 0) + 1;
+        
+        // Détecter les problèmes
+        if (!email.category || email.category === 'undefined') {
+            problems.push({
+                index,
+                subject: email.subject?.substring(0, 50),
+                sender: email.from?.emailAddress?.address,
+                issue: 'Pas de catégorie'
+            });
+        }
+        
+        // Vérifier si des newsletters sont mal catégorisées
+        const subject = (email.subject || '').toLowerCase();
+        const hasNewsletterKeywords = /newsletter|unsubscribe|désabonner|promo|marketing/i.test(subject);
+        if (hasNewsletterKeywords && email.category !== 'marketing_news') {
+            problems.push({
+                index,
+                subject: email.subject?.substring(0, 50),
+                category: email.category,
+                issue: 'Newsletter mal catégorisée'
+            });
+        }
     });
     
-    console.log('📊 Distribution par catégorie:');
-    Object.entries(categories)
+    console.log('📊 Distribution actuelle:');
+    Object.entries(distribution)
         .sort(([,a], [,b]) => b - a)
         .forEach(([cat, count]) => {
-            const priority = window.pageManager.categoryPriority[cat] || 0;
-            console.log(`  ${cat}: ${count} emails (priorité: ${priority})`);
+            console.log(`  ${cat}: ${count} emails`);
         });
     
-    // Tester la correction automatique
-    const testEmails = [
-        { subject: "Newsletter hebdomadaire - Unsubscribe here", category: 'other' },
-        { subject: "Promotion spéciale 50% - Désabonnez-vous", category: 'tasks' },
-        { subject: "Spam: Félicitations vous avez gagné!", category: 'notifications' }
-    ];
+    if (problems.length > 0) {
+        console.log('⚠️ Problèmes détectés:');
+        problems.slice(0, 10).forEach(p => {
+            console.log(`  - ${p.issue}: "${p.subject}" (${p.category || 'aucune'})`);
+        });
+        console.log(`Total problèmes: ${problems.length}`);
+    }
     
-    console.log('🧪 Test correction automatique:');
-    testEmails.forEach(email => {
-        const correction = window.pageManager.detectNewsletterSpamPriority(email);
-        console.log(`  "${email.subject}" → ${email.category} → ${correction || 'pas de correction'}`);
+    // Test de correction automatique
+    console.log('🔧 Test correction automatique...');
+    window.pageManager.ensureNewsletterSpamPriority(emails);
+    
+    // Nouvelle distribution après correction
+    const newDistribution = {};
+    emails.forEach(email => {
+        const cat = email.category || 'undefined';
+        newDistribution[cat] = (newDistribution[cat] || 0) + 1;
     });
     
+    console.log('📊 Distribution après correction:');
+    Object.entries(newDistribution)
+        .sort(([,a], [,b]) => b - a)
+        .forEach(([cat, count]) => {
+            const change = (newDistribution[cat] || 0) - (distribution[cat] || 0);
+            const changeStr = change > 0 ? `(+${change})` : change < 0 ? `(${change})` : '';
+            console.log(`  ${cat}: ${count} emails ${changeStr}`);
+        });
+    
     console.groupEnd();
+    
+    return {
+        totalEmails: emails.length,
+        problems: problems.length,
+        distribution: newDistribution
+    };
 };
 
 console.log('✅ PageManager v13.0 loaded - Gmail Compatible avec priorité Newsletter/Spam fonctionnelle!');
