@@ -1,586 +1,143 @@
-// app.js - Application EmailSortPro Dual Provider Optimisée v2.1
-// Support Outlook et Gmail avec gestion correcte des scanners
+// app.js - Application EmailSortPro avec authentification dual provider (Microsoft + Google) v4.0
 
 class App {
     constructor() {
         this.user = null;
         this.isAuthenticated = false;
-        this.activeProvider = null; // 'outlook' ou 'gmail'
+        this.activeProvider = null; // 'microsoft' ou 'google'
+        this.initializationAttempts = 0;
+        this.maxInitAttempts = 3;
         this.isInitializing = false;
+        this.initializationPromise = null;
         this.currentPage = 'dashboard';
         
-        console.log('[App] ✅ EmailSortPro v2.1 - Dual Provider avec gestion scanners');
+        console.log('[App] Constructor - EmailSortPro starting with dual provider support...');
     }
 
     async init() {
-        console.log('[App] Initialisation de l\'application...');
+        console.log('[App] Initializing dual provider application...');
+        
+        if (this.initializationPromise) {
+            console.log('[App] Already initializing, waiting...');
+            return this.initializationPromise;
+        }
         
         if (this.isInitializing) {
-            console.log('[App] Initialisation déjà en cours');
+            console.log('[App] Already initializing, skipping...');
             return;
         }
         
-        this.isInitializing = true;
-        
-        try {
-            // 1. Vérifier les prérequis
-            if (!this.checkPrerequisites()) {
-                throw new Error('Prérequis manquants');
-            }
-
-            // 2. Initialiser les scanners AVANT les autres modules
-            await this.initializeScanners();
-
-            // 3. Initialiser les services d'authentification
-            await this.initializeAuthServices();
-            
-            // 4. Initialiser les modules critiques
-            await this.initializeCriticalModules();
-            
-            // 5. Vérifier l'authentification
-            await this.checkAuthenticationStatus();
-            
-            // 6. Configurer les événements
-            this.setupEventListeners();
-            
-            // 7. Initialiser la gestion du scroll
-            this.initializeScrollManager();
-            
-            console.log('[App] ✅ Initialisation terminée');
-            
-        } catch (error) {
-            console.error('[App] ❌ Erreur d\'initialisation:', error);
-            this.handleInitializationError(error);
-        } finally {
-            this.isInitializing = false;
-        }
+        this.initializationPromise = this._doInit();
+        return this.initializationPromise;
     }
 
-    // ===== INITIALISATION DES SCANNERS =====
-    async initializeScanners() {
-        console.log('[App] 🔍 Initialisation des scanners email...');
+    async _doInit() {
+        this.isInitializing = true;
+        this.initializationAttempts++;
         
-        // Attendre que les classes de scanners soient disponibles
-        const scannerChecks = [
-            { name: 'EmailScannerOutlook', global: 'EmailScannerOutlook', instance: 'emailScannerOutlook' },
-            { name: 'EmailScannerGmail', global: 'EmailScannerGmail', instance: 'emailScannerGmail' },
-            { name: 'EmailScanner', global: 'EmailScanner', instance: 'emailScanner' }
-        ];
-        
-        // Attendre jusqu'à 5 secondes pour les scanners
-        let attempts = 0;
-        const maxAttempts = 50;
-        
-        while (attempts < maxAttempts) {
-            let foundScanner = false;
-            
-            // Vérifier et créer les instances si nécessaire
-            for (const scanner of scannerChecks) {
-                if (window[scanner.global] && !window[scanner.instance]) {
-                    console.log(`[App] 📦 Création de l'instance ${scanner.instance}`);
-                    window[scanner.instance] = new window[scanner.global]();
-                    foundScanner = true;
-                }
-            }
-            
-            // Vérifier si au moins un scanner est disponible
-            if (window.emailScannerOutlook || window.emailScannerGmail || window.emailScanner) {
-                console.log('[App] ✅ Scanners disponibles:', {
-                    outlook: !!window.emailScannerOutlook,
-                    gmail: !!window.emailScannerGmail,
-                    generic: !!window.emailScanner
-                });
-                
-                // Déclencher l'événement scannersReady
-                window.dispatchEvent(new CustomEvent('scannersReady', {
-                    detail: {
-                        outlook: !!window.emailScannerOutlook,
-                        gmail: !!window.emailScannerGmail,
-                        generic: !!window.emailScanner
-                    }
-                }));
-                
+        try {
+            if (!this.checkPrerequisites()) {
                 return;
             }
+
+            console.log('[App] Initializing auth services...');
             
-            attempts++;
-            if (attempts % 10 === 0) {
-                console.log(`[App] ⏳ Attente des scanners... (${attempts}/${maxAttempts})`);
-                console.log('[App] État actuel:', {
-                    EmailScannerOutlook: !!window.EmailScannerOutlook,
-                    emailScannerOutlook: !!window.emailScannerOutlook,
-                    EmailScannerGmail: !!window.EmailScannerGmail,
-                    emailScannerGmail: !!window.emailScannerGmail,
-                    EmailScanner: !!window.EmailScanner,
-                    emailScanner: !!window.emailScanner
-                });
-            }
+            const initTimeout = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Initialization timeout')), 30000)
+            );
             
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        console.warn('[App] ⚠️ Aucun scanner trouvé après 5 secondes - continuation sans scanners');
-    }
-
-    // ===== VÉRIFICATION DES PRÉREQUIS =====
-    checkPrerequisites() {
-        console.log('[App] Vérification des prérequis...');
-        
-        // Vérifier MSAL pour Outlook
-        if (!window.msal) {
-            this.showError('Bibliothèque MSAL non chargée');
-            return false;
-        }
-
-        // Vérifier la configuration
-        if (!window.AppConfig) {
-            this.showError('Configuration non chargée');
-            return false;
-        }
-
-        const validation = window.AppConfig.validate();
-        if (!validation.valid) {
-            this.showConfigurationError(validation.issues);
-            return false;
-        }
-
-        // Vérifier au moins un service d'auth
-        if (!window.authService && !window.googleAuthService) {
-            this.showError('Aucun service d\'authentification disponible');
-            return false;
-        }
-
-        console.log('[App] ✅ Prérequis validés');
-        return true;
-    }
-
-    // ===== INITIALISATION DES SERVICES D'AUTHENTIFICATION =====
-    async initializeAuthServices() {
-        console.log('[App] Initialisation des services d\'authentification...');
-        
-        const promises = [];
-        
-        // Initialiser Outlook si disponible
-        if (window.authService) {
-            promises.push(
-                window.authService.initialize()
-                    .then(() => {
-                        console.log('[App] ✅ Service Outlook initialisé');
-                        return 'outlook';
-                    })
-                    .catch(error => {
-                        console.warn('[App] ⚠️ Service Outlook non disponible:', error.message);
+            // Initialiser les deux services d'authentification en parallèle
+            const authPromises = [];
+            
+            if (window.authService) {
+                authPromises.push(
+                    window.authService.initialize().then(() => {
+                        console.log('[App] ✅ Microsoft auth service initialized');
+                        return 'microsoft';
+                    }).catch(error => {
+                        console.warn('[App] ⚠️ Microsoft auth service failed:', error.message);
                         return null;
                     })
-            );
-        }
-        
-        // Initialiser Gmail si disponible
-        if (window.googleAuthService) {
-            promises.push(
-                window.googleAuthService.initialize()
-                    .then(() => {
-                        console.log('[App] ✅ Service Gmail initialisé');
-                        return 'gmail';
-                    })
-                    .catch(error => {
-                        console.warn('[App] ⚠️ Service Gmail non disponible:', error.message);
+                );
+            }
+            
+            if (window.googleAuthService) {
+                authPromises.push(
+                    window.googleAuthService.initialize().then(() => {
+                        console.log('[App] ✅ Google auth service initialized');
+                        return 'google';
+                    }).catch(error => {
+                        console.warn('[App] ⚠️ Google auth service failed:', error.message);
                         return null;
                     })
-            );
-        }
-        
-        const results = await Promise.allSettled(promises);
-        const availableProviders = results
-            .filter(r => r.status === 'fulfilled' && r.value)
-            .map(r => r.value);
-        
-        if (availableProviders.length === 0) {
-            throw new Error('Aucun service d\'authentification disponible');
-        }
-        
-        console.log('[App] ✅ Services disponibles:', availableProviders);
-    }
-
-    // ===== INITIALISATION DES MODULES CRITIQUES =====
-    async initializeCriticalModules() {
-        console.log('[App] Initialisation des modules critiques...');
-        
-        // Modules requis
-        await this.waitForModule('taskManager', 'TaskManager', true);
-        await this.waitForModule('categoryManager', 'CategoryManager', true);
-        await this.waitForModule('dashboardModule', 'DashboardModule', true);
-        
-        // PageManager dynamique selon le provider
-        // Sera chargé après l'authentification
-        
-        // Modules optionnels
-        await this.waitForModule('tasksView', 'TasksView', false);
-        await this.waitForModule('uiManager', 'UIManager', false);
-        
-        console.log('[App] ✅ Modules critiques initialisés');
-    }
-
-    async waitForModule(moduleName, displayName, required = true) {
-        console.log(`[App] Attente du module ${displayName}...`);
-        
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        while (!window[moduleName] && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        if (!window[moduleName]) {
-            if (required) {
-                throw new Error(`Module ${displayName} non disponible`);
-            } else {
-                console.warn(`[App] Module ${displayName} non disponible - continuer sans`);
-            }
-        } else {
-            console.log(`[App] ✅ Module ${displayName} prêt`);
-        }
-    }
-
-    // ===== VÉRIFICATION DE L'AUTHENTIFICATION =====
-    async checkAuthenticationStatus() {
-        console.log('[App] Vérification de l\'authentification...');
-        
-        // Vérifier d'abord un callback Google OAuth
-        if (await this.handleGoogleCallback()) {
-            return;
-        }
-        
-        // Vérifier Outlook
-        if (window.authService && window.authService.isAuthenticated()) {
-            try {
-                const account = window.authService.getAccount();
-                if (account) {
-                    this.user = await window.authService.getUserInfo();
-                    this.user.provider = 'outlook';
-                    this.isAuthenticated = true;
-                    this.activeProvider = 'outlook';
-                    console.log('[App] ✅ Utilisateur Outlook authentifié:', this.user.displayName);
-                    await this.showApp();
-                    return;
-                }
-            } catch (error) {
-                console.error('[App] Erreur Outlook:', error);
-                await window.authService.reset();
-            }
-        }
-        
-        // Vérifier Gmail
-        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-            try {
-                const account = window.googleAuthService.getAccount();
-                if (account) {
-                    this.user = await window.googleAuthService.getUserInfo();
-                    this.user.provider = 'gmail';
-                    this.isAuthenticated = true;
-                    this.activeProvider = 'gmail';
-                    console.log('[App] ✅ Utilisateur Gmail authentifié:', this.user.displayName);
-                    await this.showApp();
-                    return;
-                }
-            } catch (error) {
-                console.error('[App] Erreur Gmail:', error);
-                await window.googleAuthService.reset();
-            }
-        }
-        
-        // Aucune authentification
-        console.log('[App] Aucune authentification trouvée');
-        this.showLogin();
-    }
-
-    // ===== GESTION DU CALLBACK GOOGLE =====
-    async handleGoogleCallback() {
-        // Vérifier si on revient d'un callback Google
-        const hash = window.location.hash;
-        if (!hash || !hash.includes('access_token')) {
-            return false;
-        }
-        
-        try {
-            console.log('[App] Traitement du callback Google OAuth...');
-            
-            if (!window.googleAuthService) {
-                throw new Error('Service Google non disponible');
+                );
             }
             
-            const success = await window.googleAuthService.handleOAuthCallback(hash);
+            // Attendre au moins un service d'auth
+            const initResults = await Promise.race([
+                Promise.allSettled(authPromises),
+                initTimeout
+            ]);
             
-            if (success) {
-                this.user = await window.googleAuthService.getUserInfo();
-                this.user.provider = 'gmail';
-                this.isAuthenticated = true;
-                this.activeProvider = 'gmail';
-                
-                // Nettoyer l'URL
-                window.history.replaceState(null, null, window.location.pathname);
-                
-                console.log('[App] ✅ Authentification Gmail réussie via callback');
-                await this.showApp();
-                return true;
-            }
-        } catch (error) {
-            console.error('[App] Erreur callback Google:', error);
-            window.uiManager?.showToast('Erreur d\'authentification Gmail', 'error');
-        }
-        
-        return false;
-    }
-
-    // ===== MÉTHODES DE CONNEXION =====
-    async loginOutlook() {
-        console.log('[App] Connexion Outlook...');
-        
-        try {
-            this.showLoading('Connexion à Outlook...');
+            console.log('[App] Auth services initialization results:', initResults);
             
-            if (!window.authService) {
-                throw new Error('Service Outlook non disponible');
-            }
+            // INITIALISER LES MODULES CRITIQUES
+            await this.initializeCriticalModules();
             
-            await window.authService.login();
-            
-            // Recharger l'état après connexion
             await this.checkAuthenticationStatus();
             
         } catch (error) {
-            console.error('[App] Erreur connexion Outlook:', error);
-            this.hideLoading();
-            
-            let message = 'Échec de la connexion Outlook';
-            if (error.errorCode === 'popup_window_error') {
-                message = 'Popup bloqué. Autorisez les popups et réessayez.';
-            } else if (error.errorCode === 'user_cancelled') {
-                message = 'Connexion annulée';
-            }
-            
-            window.uiManager?.showToast(message, 'error');
+            await this.handleInitializationError(error);
+        } finally {
+            this.isInitializing = false;
+            this.setupEventListeners();
         }
     }
 
-    async loginGmail() {
-        console.log('[App] Connexion Gmail...');
+    // =====================================
+    // INITIALISATION DES MODULES CRITIQUES
+    // =====================================
+    async initializeCriticalModules() {
+        console.log('[App] Initializing critical modules...');
         
-        try {
-            this.showLoading('Redirection vers Gmail...');
-            
-            if (!window.googleAuthService) {
-                throw new Error('Service Gmail non disponible');
-            }
-            
-            // Gmail redirige automatiquement
-            await window.googleAuthService.login();
-            
-        } catch (error) {
-            console.error('[App] Erreur connexion Gmail:', error);
-            this.hideLoading();
-            window.uiManager?.showToast('Échec de la connexion Gmail', 'error');
-        }
+        // 1. Vérifier TaskManager
+        await this.ensureTaskManagerReady();
+        
+        // 2. Vérifier PageManager
+        await this.ensurePageManagerReady();
+        
+        // 3. Vérifier TasksView
+        await this.ensureTasksViewReady();
+        
+        // 4. Vérifier DashboardModule
+        await this.ensureDashboardModuleReady();
+        
+        // 5. Bind methods
+        this.bindModuleMethods();
+        
+        // 6. Initialiser la gestion du scroll
+        this.initializeScrollManager();
+        
+        console.log('[App] Critical modules initialized');
     }
 
-    async logout() {
-        console.log('[App] Déconnexion...');
-        
-        const confirmed = confirm('Êtes-vous sûr de vouloir vous déconnecter ?');
-        if (!confirmed) return;
-        
-        try {
-            this.showLoading('Déconnexion...');
-            
-            if (this.activeProvider === 'outlook' && window.authService) {
-                await window.authService.logout();
-            } else if (this.activeProvider === 'gmail' && window.googleAuthService) {
-                await window.googleAuthService.logout();
-            }
-            
-        } catch (error) {
-            console.error('[App] Erreur déconnexion:', error);
-            this.forceCleanup();
-        }
-    }
-
-    // ===== AFFICHAGE DE L'APPLICATION =====
-    async showApp() {
-        console.log('[App] Affichage de l\'application -', this.activeProvider);
-        
-        // Charger le PageManager approprié
-        await this.loadPageManager();
-        
-        // Configurer le scanner approprié
-        await this.configureEmailScanner();
-        
-        this.hideLoading();
-        
-        // Basculer en mode app
-        document.body.classList.remove('login-mode');
-        document.body.classList.add('app-active', `provider-${this.activeProvider}`);
-        
-        // Masquer login et afficher app
-        const loginPage = document.getElementById('loginPage');
-        if (loginPage) loginPage.style.display = 'none';
-        
-        // Afficher les éléments de l'app
-        ['app-header', 'app-nav', 'pageContent'].forEach(className => {
-            const element = document.querySelector(`.${className}`) || document.getElementById(className);
-            if (element) {
-                element.style.display = 'block';
-                element.style.opacity = '1';
-                element.style.visibility = 'visible';
-            }
-        });
-        
-        // Mettre à jour l'UI
-        if (window.uiManager) {
-            window.uiManager.updateAuthStatus(this.user);
-        }
-        
-        // Afficher le badge provider
-        this.showProviderBadge();
-        
-        // Charger le dashboard
-        this.currentPage = 'dashboard';
-        if (window.setPageMode) {
-            window.setPageMode('dashboard');
-        }
-        
-        if (window.dashboardModule) {
-            setTimeout(() => {
-                window.dashboardModule.render();
-                console.log('[App] ✅ Dashboard chargé');
-            }, 100);
-        }
-        
-        console.log('[App] ✅ Application affichée -', this.activeProvider);
-    }
-
-    async loadPageManager() {
-        // PageManager est déjà chargé (version Outlook)
-        if (window.pageManager) {
-            console.log('[App] PageManager déjà chargé');
-            return;
-        }
-        
-        console.log('[App] Chargement PageManager...');
-        
-        // Pour cette version, on utilise le PageManagerOutlook pour les deux
-        // Dans une version complète, on pourrait charger dynamiquement selon le provider
-        
-        await this.waitForModule('pageManager', 'PageManager', true);
-    }
-
-    async configureEmailScanner() {
-        console.log('[App] Configuration du scanner pour', this.activeProvider);
-        
-        // S'assurer que les scanners sont disponibles
-        if (this.activeProvider === 'outlook') {
-            if (!window.emailScannerOutlook && window.EmailScannerOutlook) {
-                console.log('[App] 📦 Création du scanner Outlook');
-                window.emailScannerOutlook = new window.EmailScannerOutlook();
-            }
-            
-            // Définir emailScanner comme alias pour compatibilité
-            if (window.emailScannerOutlook && !window.emailScanner) {
-                window.emailScanner = window.emailScannerOutlook;
-                console.log('[App] ✅ Scanner Outlook configuré comme scanner principal');
-            }
-        } else if (this.activeProvider === 'gmail') {
-            if (!window.emailScannerGmail && window.EmailScannerGmail) {
-                console.log('[App] 📦 Création du scanner Gmail');
-                window.emailScannerGmail = new window.EmailScannerGmail();
-            }
-            
-            // Définir emailScanner comme alias pour compatibilité
-            if (window.emailScannerGmail) {
-                window.emailScanner = window.emailScannerGmail;
-                console.log('[App] ✅ Scanner Gmail configuré comme scanner principal');
-            }
-        }
-        
-        // Vérification finale
-        console.log('[App] 📊 État des scanners:', {
-            provider: this.activeProvider,
-            emailScanner: !!window.emailScanner,
-            emailScannerOutlook: !!window.emailScannerOutlook,
-            emailScannerGmail: !!window.emailScannerGmail
-        });
-    }
-
-    showProviderBadge() {
-        const userInfo = document.querySelector('.user-info');
-        if (!userInfo) return;
-        
-        const existingBadge = userInfo.querySelector('.provider-badge');
-        if (existingBadge) {
-            existingBadge.remove();
-        }
-        
-        const badge = document.createElement('span');
-        badge.className = 'provider-badge';
-        badge.style.cssText = `
-            background: ${this.activeProvider === 'outlook' ? '#0078d4' : '#ea4335'};
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            margin-left: 8px;
-            font-weight: 600;
-        `;
-        badge.textContent = this.activeProvider === 'outlook' ? 'Outlook' : 'Gmail';
-        
-        userInfo.appendChild(badge);
-    }
-
-    showLogin() {
-        console.log('[App] Affichage page de connexion');
-        
-        document.body.classList.add('login-mode');
-        document.body.classList.remove('app-active', 'provider-outlook', 'provider-gmail');
-        
-        const loginPage = document.getElementById('loginPage');
-        if (loginPage) {
-            loginPage.style.display = 'flex';
-        }
-        
-        this.hideLoading();
-        
-        if (window.uiManager) {
-            window.uiManager.updateAuthStatus(null);
-        }
-    }
-
-    // ===== GESTION DU SCROLL =====
+    // =====================================
+    // GESTION INTELLIGENTE DU SCROLL
+    // =====================================
     initializeScrollManager() {
-        console.log('[App] Initialisation du gestionnaire de scroll...');
+        console.log('[App] Initializing scroll manager...');
         
+        // Variables pour éviter les boucles infinies
         let scrollCheckInProgress = false;
+        let lastScrollState = null;
+        let lastContentHeight = 0;
+        let lastViewportHeight = 0;
         
-        window.setPageMode = (pageName) => {
-            if (!pageName || this.currentPage === pageName) return;
-            
-            const body = document.body;
-            this.currentPage = pageName;
-            
-            // Nettoyer les classes
-            body.className = body.className.replace(/page-\w+/g, '');
-            body.classList.add(`page-${pageName}`);
-            
-            // Dashboard = pas de scroll
-            if (pageName === 'dashboard') {
-                body.style.overflow = 'hidden';
-            } else {
-                body.style.overflow = '';
-                setTimeout(() => this.checkScrollNeeded(), 300);
-            }
-        };
-        
+        // Fonction pour vérifier si le scroll est nécessaire
         this.checkScrollNeeded = () => {
-            if (scrollCheckInProgress || this.currentPage === 'dashboard') return;
+            if (scrollCheckInProgress) {
+                return;
+            }
             
             scrollCheckInProgress = true;
             
@@ -589,40 +146,505 @@ class App {
                     const body = document.body;
                     const contentHeight = document.documentElement.scrollHeight;
                     const viewportHeight = window.innerHeight;
+                    const currentPage = this.currentPage || 'dashboard';
                     
-                    if (this.currentPage !== 'dashboard') {
-                        const needsScroll = contentHeight > viewportHeight + 100;
-                        body.style.overflow = needsScroll ? '' : 'hidden';
+                    // Vérifier si les dimensions ont réellement changé
+                    const dimensionsChanged = 
+                        Math.abs(contentHeight - lastContentHeight) > 10 || 
+                        Math.abs(viewportHeight - lastViewportHeight) > 10;
+                    
+                    lastContentHeight = contentHeight;
+                    lastViewportHeight = viewportHeight;
+                    
+                    // Dashboard: JAMAIS de scroll
+                    if (currentPage === 'dashboard') {
+                        const newState = 'dashboard-no-scroll';
+                        if (lastScrollState !== newState) {
+                            body.classList.remove('needs-scroll');
+                            body.style.overflow = 'hidden';
+                            body.style.overflowY = 'hidden';
+                            body.style.overflowX = 'hidden';
+                            lastScrollState = newState;
+                        }
+                        scrollCheckInProgress = false;
+                        return;
                     }
+                    
+                    // Autres pages: scroll seulement si vraiment nécessaire
+                    const threshold = 100;
+                    const needsScroll = contentHeight > viewportHeight + threshold;
+                    const newState = needsScroll ? 'scroll-enabled' : 'scroll-disabled';
+                    
+                    if (lastScrollState !== newState || dimensionsChanged) {
+                        if (needsScroll) {
+                            body.classList.add('needs-scroll');
+                            body.style.overflow = '';
+                            body.style.overflowY = '';
+                            body.style.overflowX = '';
+                        } else {
+                            body.classList.remove('needs-scroll');
+                            body.style.overflow = 'hidden';
+                            body.style.overflowY = 'hidden';
+                            body.style.overflowX = 'hidden';
+                        }
+                        lastScrollState = newState;
+                    }
+                    
+                } catch (error) {
+                    console.error('[SCROLL_MANAGER] Error checking scroll:', error);
                 } finally {
                     scrollCheckInProgress = false;
                 }
             }, 150);
         };
-        
-        // Observer pour changements de taille
-        if (window.ResizeObserver) {
-            new ResizeObserver(() => {
-                if (this.currentPage !== 'dashboard') {
+
+        // Fonction pour définir le mode de page
+        window.setPageMode = (pageName) => {
+            if (!pageName || this.currentPage === pageName) {
+                return;
+            }
+            
+            const body = document.body;
+            
+            // Mettre à jour la page actuelle
+            const previousPage = this.currentPage;
+            this.currentPage = pageName;
+            
+            // Nettoyer les anciennes classes de page
+            body.classList.remove(
+                'page-dashboard', 'page-scanner', 'page-emails', 
+                'page-tasks', 'page-ranger', 'page-settings', 
+                'needs-scroll', 'login-mode'
+            );
+            
+            // Ajouter la nouvelle classe de page
+            body.classList.add(`page-${pageName}`);
+            
+            // Réinitialiser l'état du scroll
+            lastScrollState = null;
+            lastContentHeight = 0;
+            lastViewportHeight = 0;
+            
+            // Dashboard: configuration immédiate
+            if (pageName === 'dashboard') {
+                body.style.overflow = 'hidden';
+                body.style.overflowY = 'hidden';
+                body.style.overflowX = 'hidden';
+                lastScrollState = 'dashboard-no-scroll';
+                return;
+            }
+            
+            // Autres pages: vérifier après stabilisation du contenu
+            setTimeout(() => {
+                if (this.currentPage === pageName) {
                     this.checkScrollNeeded();
                 }
-            }).observe(document.body);
+            }, 300);
+        };
+
+        // Observer pour les changements de contenu
+        if (window.MutationObserver) {
+            let observerTimeout;
+            let pendingMutations = false;
+            
+            const contentObserver = new MutationObserver((mutations) => {
+                if (this.currentPage === 'dashboard') {
+                    return;
+                }
+                
+                const significantChanges = mutations.some(mutation => {
+                    if (mutation.type === 'attributes') {
+                        const attrName = mutation.attributeName;
+                        const target = mutation.target;
+                        
+                        if (attrName === 'style' && target === document.body) {
+                            return false;
+                        }
+                        if (attrName === 'class' && target === document.body) {
+                            return false;
+                        }
+                    }
+                    
+                    if (mutation.type === 'childList') {
+                        return mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0;
+                    }
+                    
+                    return false;
+                });
+                
+                if (significantChanges && !pendingMutations) {
+                    pendingMutations = true;
+                    clearTimeout(observerTimeout);
+                    
+                    observerTimeout = setTimeout(() => {
+                        if (this.currentPage !== 'dashboard' && !scrollCheckInProgress) {
+                            this.checkScrollNeeded();
+                        }
+                        pendingMutations = false;
+                    }, 250);
+                }
+            });
+
+            contentObserver.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['style', 'class'],
+                attributeOldValue: false
+            });
         }
+
+        // Gestionnaire de redimensionnement
+        let resizeTimeout;
+        let lastWindowSize = { width: window.innerWidth, height: window.innerHeight };
         
         window.addEventListener('resize', () => {
-            if (this.currentPage !== 'dashboard') {
-                this.checkScrollNeeded();
+            const currentSize = { width: window.innerWidth, height: window.innerHeight };
+            
+            const sizeChanged = 
+                Math.abs(currentSize.width - lastWindowSize.width) > 10 ||
+                Math.abs(currentSize.height - lastWindowSize.height) > 10;
+            
+            if (!sizeChanged || this.currentPage === 'dashboard') {
+                return;
             }
+            
+            lastWindowSize = currentSize;
+            
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (this.currentPage !== 'dashboard' && !scrollCheckInProgress) {
+                    this.checkScrollNeeded();
+                }
+            }, 300);
         });
+
+        console.log('[App] ✅ Scroll manager initialized');
     }
 
-    // ===== GESTION DES ÉVÉNEMENTS =====
-    setupEventListeners() {
-        console.log('[App] Configuration des événements...');
+    async ensureTaskManagerReady() {
+        console.log('[App] Ensuring TaskManager is ready...');
         
-        // Navigation
+        if (window.taskManager && window.taskManager.initialized) {
+            console.log('[App] ✅ TaskManager already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while ((!window.taskManager || !window.taskManager.initialized) && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.taskManager || !window.taskManager.initialized) {
+            console.error('[App] TaskManager not ready after 5 seconds');
+            return false;
+        }
+        
+        const essentialMethods = ['createTaskFromEmail', 'createTask', 'updateTask', 'deleteTask', 'getStats'];
+        for (const method of essentialMethods) {
+            if (typeof window.taskManager[method] !== 'function') {
+                console.error(`[App] TaskManager missing essential method: ${method}`);
+                return false;
+            }
+        }
+        
+        console.log('[App] ✅ TaskManager ready with', window.taskManager.getAllTasks().length, 'tasks');
+        return true;
+    }
+
+    async ensurePageManagerReady() {
+        console.log('[App] Ensuring PageManager is ready...');
+        
+        if (window.pageManager) {
+            console.log('[App] ✅ PageManager already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.pageManager && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.pageManager) {
+            console.error('[App] PageManager not ready after 3 seconds');
+            return false;
+        }
+        
+        console.log('[App] ✅ PageManager ready');
+        return true;
+    }
+
+    async ensureTasksViewReady() {
+        console.log('[App] Ensuring TasksView is ready...');
+        
+        if (window.tasksView) {
+            console.log('[App] ✅ TasksView already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.tasksView && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.tasksView) {
+            console.warn('[App] TasksView not ready after 3 seconds - will work without it');
+            return false;
+        }
+        
+        console.log('[App] ✅ TasksView ready');
+        return true;
+    }
+
+    async ensureDashboardModuleReady() {
+        console.log('[App] Ensuring DashboardModule is ready...');
+        
+        if (window.dashboardModule) {
+            console.log('[App] ✅ DashboardModule already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.dashboardModule && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.dashboardModule) {
+            console.error('[App] DashboardModule not ready after 3 seconds');
+            return false;
+        }
+        
+        console.log('[App] ✅ DashboardModule ready');
+        return true;
+    }
+
+    bindModuleMethods() {
+        // Bind TaskManager methods
+        if (window.taskManager) {
+            try {
+                Object.getOwnPropertyNames(Object.getPrototypeOf(window.taskManager)).forEach(name => {
+                    if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
+                        window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
+                    }
+                });
+                console.log('[App] ✅ TaskManager methods bound');
+            } catch (error) {
+                console.warn('[App] Error binding TaskManager methods:', error);
+            }
+        }
+        
+        // Bind autres modules...
+        if (window.pageManager) {
+            try {
+                Object.getOwnPropertyNames(Object.getPrototypeOf(window.pageManager)).forEach(name => {
+                    if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
+                        window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
+                    }
+                });
+                console.log('[App] ✅ PageManager methods bound');
+            } catch (error) {
+                console.warn('[App] Error binding PageManager methods:', error);
+            }
+        }
+    }
+
+    checkPrerequisites() {
+        if (typeof msal === 'undefined') {
+            console.error('[App] MSAL library not loaded');
+            this.showError('MSAL library not loaded. Please refresh the page.');
+            return false;
+        }
+
+        if (!window.AppConfig) {
+            console.error('[App] Configuration not loaded');
+            this.showError('Configuration not loaded. Please refresh the page.');
+            return false;
+        }
+
+        const validation = window.AppConfig.validate();
+        if (!validation.valid) {
+            console.error('[App] Configuration invalid:', validation.issues);
+            this.showConfigurationError(validation.issues);
+            return false;
+        }
+
+        if (!window.authService && !window.googleAuthService) {
+            console.error('[App] No authentication service available');
+            this.showError('Authentication service not available. Please refresh the page.');
+            return false;
+        }
+
+        return true;
+    }
+
+    // =====================================
+    // VÉRIFICATION DE L'AUTHENTIFICATION DUAL PROVIDER
+    // =====================================
+    async checkAuthenticationStatus() {
+        console.log('[App] Checking authentication status for both providers...');
+        
+        // Vérifier d'abord s'il y a un callback Google à traiter
+        const googleCallbackHandled = await this.handleGoogleCallback();
+        if (googleCallbackHandled) {
+            this.showAppWithTransition();
+            return;
+        }
+        
+        // Vérifier Microsoft d'abord
+        if (window.authService && window.authService.isAuthenticated()) {
+            const account = window.authService.getAccount();
+            if (account) {
+                console.log('[App] Microsoft authentication found, getting user info...');
+                try {
+                    this.user = await window.authService.getUserInfo();
+                    this.user.provider = 'microsoft';
+                    this.isAuthenticated = true;
+                    this.activeProvider = 'microsoft';
+                    console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
+                    this.showAppWithTransition();
+                    return;
+                } catch (userInfoError) {
+                    console.error('[App] Error getting Microsoft user info:', userInfoError);
+                    if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
+                        console.log('[App] Microsoft token seems invalid, clearing auth');
+                        await window.authService.reset();
+                    }
+                }
+            }
+        }
+        
+        // Vérifier Google ensuite
+        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            const account = window.googleAuthService.getAccount();
+            if (account) {
+                console.log('[App] Google authentication found, getting user info...');
+                try {
+                    this.user = await window.googleAuthService.getUserInfo();
+                    this.user.provider = 'google';
+                    this.isAuthenticated = true;
+                    this.activeProvider = 'google';
+                    console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
+                    this.showAppWithTransition();
+                    return;
+                } catch (userInfoError) {
+                    console.error('[App] Error getting Google user info:', userInfoError);
+                    await window.googleAuthService.reset();
+                }
+            }
+        }
+        
+        // Aucune authentification trouvée
+        console.log('[App] No valid authentication found');
+        this.showLogin();
+    }
+
+    // =====================================
+    // GESTION DU CALLBACK GOOGLE OAuth2
+    // =====================================
+    async handleGoogleCallback() {
+        console.log('[App] Handling Google OAuth2 callback...');
+        
+        try {
+            // Vérifier s'il y a des données de callback Google
+            const callbackDataStr = sessionStorage.getItem('google_callback_data');
+            if (!callbackDataStr) {
+                console.log('[App] No Google callback data found');
+                return false;
+            }
+            
+            const callbackData = JSON.parse(callbackDataStr);
+            console.log('[App] Found Google callback data:', callbackData);
+            
+            // Nettoyer les données de callback
+            sessionStorage.removeItem('google_callback_data');
+            
+            // Traiter le callback avec le service Google
+            const urlParams = new URLSearchParams();
+            urlParams.set('code', callbackData.code);
+            urlParams.set('state', callbackData.state);
+            
+            const success = await window.googleAuthService.handleOAuthCallback(urlParams);
+            
+            if (success) {
+                console.log('[App] ✅ Google callback handled successfully');
+                
+                // Obtenir les informations utilisateur
+                this.user = await window.googleAuthService.getUserInfo();
+                this.user.provider = 'google';
+                this.isAuthenticated = true;
+                this.activeProvider = 'google';
+                
+                console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
+                return true;
+            } else {
+                throw new Error('Google callback processing failed');
+            }
+            
+        } catch (error) {
+            console.error('[App] ❌ Error handling Google callback:', error);
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(
+                    'Erreur de traitement Google: ' + error.message,
+                    'error',
+                    8000
+                );
+            }
+            
+            return false;
+        }
+    }
+
+    async handleInitializationError(error) {
+        console.error('[App] Initialization error:', error);
+        
+        if (error.message.includes('unauthorized_client')) {
+            this.showConfigurationError([
+                'Configuration Azure incorrecte',
+                'Vérifiez votre Client ID dans la configuration',
+                'Consultez la documentation Azure App Registration'
+            ]);
+            return;
+        }
+        
+        if (error.message.includes('Configuration invalid')) {
+            this.showConfigurationError(['Configuration invalide - vérifiez la configuration']);
+            return;
+        }
+        
+        if (this.initializationAttempts < this.maxInitAttempts && 
+            (error.message.includes('timeout') || error.message.includes('network'))) {
+            console.log(`[App] Retrying initialization (${this.initializationAttempts}/${this.maxInitAttempts})...`);
+            this.isInitializing = false;
+            this.initializationPromise = null;
+            setTimeout(() => this.init(), 3000);
+            return;
+        }
+        
+        this.showError('Failed to initialize the application. Please check the configuration and refresh the page.');
+    }
+
+    setupEventListeners() {
+        console.log('[App] Setting up event listeners...');
+        
+        // NAVIGATION CORRIGÉE
         document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', (e) => {
+            const newItem = item.cloneNode(true);
+            item.parentNode.replaceChild(newItem, item);
+            
+            newItem.addEventListener('click', (e) => {
                 const page = e.currentTarget.dataset.page;
                 if (page && window.pageManager) {
                     this.currentPage = page;
@@ -635,127 +657,479 @@ class App {
                 }
             });
         });
-        
-        // Écouter l'événement scannersReady
-        window.addEventListener('scannersReady', (event) => {
-            console.log('[App] 📨 Scanners prêts:', event.detail);
-        });
-        
-        // Gestion des erreurs
+
         window.addEventListener('error', (event) => {
-            console.error('[App] Erreur globale:', event.error);
+            console.error('[App] Global error:', event.error);
+            
+            if (event.error && event.error.message) {
+                const message = event.error.message;
+                if (message.includes('unauthorized_client')) {
+                    if (window.uiManager) {
+                        window.uiManager.showToast(
+                            'Erreur de configuration Azure. Vérifiez votre Client ID.',
+                            'error',
+                            10000
+                        );
+                    }
+                }
+            }
         });
-        
+
         window.addEventListener('unhandledrejection', (event) => {
-            console.error('[App] Promise rejetée:', event.reason);
+            console.error('[App] Unhandled promise rejection:', event.reason);
+            
+            if (event.reason && event.reason.message && 
+                event.reason.message.includes('Cannot read properties of undefined')) {
+                
+                if (event.reason.message.includes('createTaskFromEmail')) {
+                    console.error('[App] TaskManager createTaskFromEmail error detected');
+                    
+                    if (window.uiManager) {
+                        window.uiManager.showToast(
+                            'Erreur du gestionnaire de tâches. Veuillez actualiser la page.',
+                            'warning'
+                        );
+                    }
+                }
+            }
+            
+            if (event.reason && event.reason.errorCode) {
+                console.log('[App] MSAL promise rejection:', event.reason.errorCode);
+            }
         });
     }
 
-    // ===== GESTION DES ERREURS =====
-    handleInitializationError(error) {
-        console.error('[App] Erreur d\'initialisation:', error);
+    // =====================================
+    // MÉTHODES DE CONNEXION DUAL PROVIDER
+    // =====================================
+
+    // Méthode de connexion unifiée (backward compatibility)
+    async login() {
+        console.log('[App] Unified login attempted - defaulting to Microsoft...');
+        return this.loginMicrosoft();
+    }
+
+    // Connexion Microsoft spécifique
+    async loginMicrosoft() {
+        console.log('[App] Microsoft login attempted...');
         
-        if (error.message.includes('unauthorized_client')) {
-            this.showConfigurationError([
-                'Configuration incorrecte',
-                'Vérifiez vos Client IDs dans la configuration'
-            ]);
+        try {
+            this.showModernLoading('Connexion à Outlook...');
+            
+            if (!window.authService.isInitialized) {
+                console.log('[App] Microsoft AuthService not initialized, initializing...');
+                await window.authService.initialize();
+            }
+            
+            await window.authService.login();
+            
+        } catch (error) {
+            console.error('[App] Microsoft login error:', error);
+            
+            this.hideModernLoading();
+            
+            let errorMessage = 'Échec de la connexion Microsoft. Veuillez réessayer.';
+            
+            if (error.errorCode) {
+                const errorCode = error.errorCode;
+                if (window.AppConfig.errors && window.AppConfig.errors[errorCode]) {
+                    errorMessage = window.AppConfig.errors[errorCode];
+                } else {
+                    switch (errorCode) {
+                        case 'popup_window_error':
+                            errorMessage = 'Popup bloqué. Autorisez les popups pour Outlook et réessayez.';
+                            break;
+                        case 'user_cancelled':
+                            errorMessage = 'Connexion Outlook annulée.';
+                            break;
+                        case 'network_error':
+                            errorMessage = 'Erreur réseau. Vérifiez votre connexion.';
+                            break;
+                        case 'unauthorized_client':
+                            errorMessage = 'Configuration incorrecte. Vérifiez votre Azure Client ID.';
+                            break;
+                        default:
+                            errorMessage = `Erreur Microsoft: ${errorCode}`;
+                    }
+                }
+            } else if (error.message.includes('unauthorized_client')) {
+                errorMessage = 'Configuration Azure incorrecte. Vérifiez votre Client ID.';
+            }
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(errorMessage, 'error', 8000);
+            }
+            
+            throw error;
+        }
+    }
+
+    // Connexion Google spécifique - SANS IFRAME
+    async loginGoogle() {
+        console.log('[App] Google login attempted...');
+        
+        try {
+            this.showModernLoading('Connexion à Gmail...');
+            
+            if (!window.googleAuthService.isInitialized) {
+                console.log('[App] Google AuthService not initialized, initializing...');
+                await window.googleAuthService.initialize();
+            }
+            
+            // Le service Google redirige automatiquement, pas besoin d'attendre
+            await window.googleAuthService.login();
+            
+            // Cette ligne ne sera jamais atteinte car login() redirige
+            console.log('[App] This should not be reached due to redirect');
+            
+        } catch (error) {
+            console.error('[App] Google login error:', error);
+            
+            this.hideModernLoading();
+            
+            let errorMessage = 'Échec de la connexion Gmail. Veuillez réessayer.';
+            
+            if (error.message) {
+                if (error.message.includes('cookies')) {
+                    errorMessage = 'Cookies tiers bloqués. Autorisez les cookies pour accounts.google.com et réessayez.';
+                } else if (error.message.includes('domain') || error.message.includes('origin')) {
+                    errorMessage = 'Erreur de domaine Gmail. Vérifiez la configuration Google Console.';
+                } else if (error.message.includes('client')) {
+                    errorMessage = 'Configuration Google incorrecte. Vérifiez votre Client ID.';
+                } else {
+                    errorMessage = `Erreur Gmail: ${error.message}`;
+                }
+            }
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(errorMessage, 'error', 8000);
+            }
+            
+            throw error;
+        }
+    }
+
+    async logout() {
+        console.log('[App] Logout attempted...');
+        
+        try {
+            const confirmed = confirm('Êtes-vous sûr de vouloir vous déconnecter ?');
+            if (!confirmed) return;
+            
+            this.showModernLoading('Déconnexion...');
+            
+            // Déconnexion selon le provider actif
+            if (this.activeProvider === 'microsoft' && window.authService) {
+                await window.authService.logout();
+            } else if (this.activeProvider === 'google' && window.googleAuthService) {
+                await window.googleAuthService.logout();
+            } else {
+                // Fallback: essayer les deux
+                if (window.authService) {
+                    try { await window.authService.logout(); } catch (e) {}
+                }
+                if (window.googleAuthService) {
+                    try { await window.googleAuthService.logout(); } catch (e) {}
+                }
+                this.forceCleanup();
+            }
+            
+        } catch (error) {
+            console.error('[App] Logout error:', error);
+            this.hideModernLoading();
+            if (window.uiManager) {
+                window.uiManager.showToast('Erreur de déconnexion. Nettoyage forcé...', 'warning');
+            }
+            this.forceCleanup();
+        }
+    }
+
+    forceCleanup() {
+        console.log('[App] Force cleanup dual provider...');
+        
+        this.user = null;
+        this.isAuthenticated = false;
+        this.activeProvider = null;
+        this.isInitializing = false;
+        this.initializationPromise = null;
+        this.currentPage = 'dashboard';
+        
+        // Nettoyer les deux services d'authentification
+        if (window.authService) {
+            window.authService.forceCleanup();
+        }
+        
+        if (window.googleAuthService) {
+            window.googleAuthService.forceCleanup();
+        }
+        
+        // Nettoyer le localStorage sélectivement
+        const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
+        const allKeys = Object.keys(localStorage);
+        
+        allKeys.forEach(key => {
+            if (!keysToKeep.includes(key)) {
+                try {
+                    localStorage.removeItem(key);
+                } catch (e) {
+                    console.warn('[App] Error removing key:', key);
+                }
+            }
+        });
+        
+        // Nettoyer sessionStorage aussi
+        try {
+            sessionStorage.removeItem('google_callback_data');
+            sessionStorage.removeItem('google_oauth_state');
+            sessionStorage.removeItem('direct_token_data');
+        } catch (e) {
+            console.warn('[App] Error cleaning sessionStorage:', e);
+        }
+        
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    }
+
+    showLogin() {
+        console.log('[App] Showing login page');
+        
+        document.body.classList.add('login-mode');
+        document.body.classList.remove('app-active');
+        
+        const loginPage = document.getElementById('loginPage');
+        if (loginPage) {
+            loginPage.style.display = 'flex';
+        }
+        
+        this.hideModernLoading();
+        
+        if (window.uiManager) {
+            window.uiManager.updateAuthStatus(null);
+        }
+    }
+
+    showAppWithTransition() {
+        console.log('[App] Showing application with transition - Provider:', this.activeProvider);
+        
+        this.hideModernLoading();
+        
+        // Retirer le mode login et activer le mode app
+        document.body.classList.remove('login-mode');
+        document.body.classList.add('app-active');
+        console.log('[App] App mode activated');
+        
+        // Afficher les éléments
+        const loginPage = document.getElementById('loginPage');
+        const appHeader = document.querySelector('.app-header');
+        const appNav = document.querySelector('.app-nav');
+        const pageContent = document.getElementById('pageContent');
+        
+        if (loginPage) {
+            loginPage.style.display = 'none';
+            console.log('[App] Login page hidden');
+        }
+        
+        if (appHeader) {
+            appHeader.style.display = 'block';
+            appHeader.style.opacity = '1';
+            appHeader.style.visibility = 'visible';
+            console.log('[App] Header displayed');
+        }
+        
+        if (appNav) {
+            appNav.style.display = 'block';
+            appNav.style.opacity = '1';
+            appNav.style.visibility = 'visible';
+            console.log('[App] Navigation displayed');
+        }
+        
+        if (pageContent) {
+            pageContent.style.display = 'block';
+            pageContent.style.opacity = '1';
+            pageContent.style.visibility = 'visible';
+            console.log('[App] Page content displayed');
+        }
+        
+        // Mettre à jour l'interface utilisateur avec le provider
+        if (window.uiManager) {
+            window.uiManager.updateAuthStatus(this.user);
+        }
+        
+        // Mettre à jour l'affichage utilisateur avec badge provider
+        if (window.updateUserDisplay) {
+            window.updateUserDisplay(this.user);
+        }
+        
+        // INITIALISATION DASHBOARD VIA MODULE
+        this.currentPage = 'dashboard';
+        if (window.setPageMode) {
+            window.setPageMode('dashboard');
+        }
+        
+        // Forcer immédiatement pas de scroll pour le dashboard
+        document.body.style.overflow = 'hidden';
+        document.body.style.overflowY = 'hidden';
+        console.log('[App] Dashboard scroll forcé à hidden');
+        
+        // CHARGER LE DASHBOARD VIA LE MODULE
+        if (window.dashboardModule) {
+            console.log('[App] Loading dashboard via dashboardModule...');
+            setTimeout(() => {
+                window.dashboardModule.render();
+                console.log('[App] Dashboard loaded via module for provider:', this.activeProvider);
+            }, 100);
         } else {
-            this.showError(error.message || 'Erreur d\'initialisation');
+            console.warn('[App] Dashboard module not available, will retry...');
+            setTimeout(() => {
+                if (window.dashboardModule) {
+                    window.dashboardModule.render();
+                }
+            }, 500);
+        }
+        
+        // Forcer l'affichage avec CSS
+        this.forceAppDisplay();
+        
+        console.log(`[App] ✅ Application fully displayed with ${this.activeProvider} provider`);
+    }
+
+    forceAppDisplay() {
+        const forceDisplayStyle = document.createElement('style');
+        forceDisplayStyle.id = 'force-app-display';
+        forceDisplayStyle.textContent = `
+            body.app-active #loginPage {
+                display: none !important;
+            }
+            body.app-active .app-header {
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            body.app-active .app-nav {
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            body.app-active #pageContent {
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+        `;
+        
+        const oldStyle = document.getElementById('force-app-display');
+        if (oldStyle) {
+            oldStyle.remove();
+        }
+        
+        document.head.appendChild(forceDisplayStyle);
+        console.log('[App] Force display CSS injected');
+    }
+
+    showModernLoading(message = 'Chargement...') {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            const loadingText = loadingOverlay.querySelector('.login-loading-text');
+            if (loadingText) {
+                loadingText.innerHTML = `
+                    <div>${message}</div>
+                    <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">Authentification en cours</div>
+                `;
+            }
+            loadingOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    hideModernLoading() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
         }
     }
 
     showError(message) {
+        console.error('[App] Showing error:', message);
+        
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.innerHTML = `
                 <div class="login-container">
-                    <div style="text-align: center; max-width: 600px; margin: 0 auto;">
-                        <div style="font-size: 48px; color: #ef4444; margin-bottom: 20px;">
-                            <i class="fas fa-exclamation-triangle"></i>
+                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: #1f2937;">
+                        <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
+                            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
                         </div>
-                        <h1 style="margin-bottom: 20px;">Erreur</h1>
-                        <p style="font-size: 18px; margin-bottom: 30px;">${message}</p>
-                        <button onclick="location.reload()" class="login-button">
-                            <i class="fas fa-refresh"></i> Actualiser
-                        </button>
+                        <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Erreur d'application</h1>
+                        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 30px; border-radius: 20px; margin: 30px 0;">
+                            <p style="font-size: 1.2rem; line-height: 1.6; color: #1f2937;">${message}</p>
+                        </div>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="location.reload()" class="login-button">
+                                <i class="fas fa-refresh"></i>
+                                Actualiser la page
+                            </button>
+                            <button onclick="window.app.forceCleanup()" class="login-button" style="background: rgba(107, 114, 128, 0.2); color: #374151; border: 1px solid rgba(107, 114, 128, 0.3);">
+                                <i class="fas fa-undo"></i>
+                                Réinitialiser
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
             loginPage.style.display = 'flex';
         }
-        this.hideLoading();
+        
+        this.hideModernLoading();
     }
 
     showConfigurationError(issues) {
+        console.error('[App] Configuration error:', issues);
+        
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.innerHTML = `
                 <div class="login-container">
-                    <div style="text-align: center; max-width: 600px; margin: 0 auto;">
-                        <div style="font-size: 48px; color: #f59e0b; margin-bottom: 20px;">
-                            <i class="fas fa-cog"></i>
+                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: #1f2937;">
+                        <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
+                            <i class="fas fa-exclamation-triangle" style="color: #fbbf24;"></i>
                         </div>
-                        <h1 style="margin-bottom: 20px;">Configuration requise</h1>
-                        <ul style="text-align: left; margin: 20px 0;">
-                            ${issues.map(issue => `<li>${issue}</li>`).join('')}
-                        </ul>
-                        <a href="setup.html" class="login-button" style="background: #f59e0b;">
-                            <i class="fas fa-cog"></i> Configurer
-                        </a>
+                        <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: #1f2937;">Configuration requise</h1>
+                        <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); padding: 30px; border-radius: 20px; margin: 30px 0; text-align: left;">
+                            <h3 style="color: #fbbf24; margin-bottom: 15px;">Problèmes détectés :</h3>
+                            <ul style="margin-left: 20px;">
+                                ${issues.map(issue => `<li style="margin: 8px 0;">${issue}</li>`).join('')}
+                            </ul>
+                            <div style="margin-top: 20px; padding: 20px; background: rgba(251, 191, 36, 0.05); border-radius: 10px;">
+                                <h4 style="margin-bottom: 10px;">Pour résoudre :</h4>
+                                <ol style="margin-left: 20px;">
+                                    <li>Cliquez sur "Configurer l'application"</li>
+                                    <li>Suivez l'assistant de configuration</li>
+                                    <li>Entrez vos Client IDs Azure et Google</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <a href="setup.html" class="login-button" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
+                                <i class="fas fa-cog"></i>
+                                Configurer l'application
+                            </a>
+                            <button onclick="location.reload()" class="login-button" style="background: rgba(107, 114, 128, 0.2); color: #374151; border: 1px solid rgba(107, 114, 128, 0.3);">
+                                <i class="fas fa-refresh"></i>
+                                Actualiser
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
         }
-        this.hideLoading();
+        
+        this.hideModernLoading();
     }
 
-    // ===== UTILITAIRES =====
-    showLoading(message = 'Chargement...') {
-        const overlay = document.getElementById('loadingOverlay');
-        if (overlay) {
-            const text = overlay.querySelector('.login-loading-text');
-            if (text) text.textContent = message;
-            overlay.classList.add('active');
-        }
-    }
-
-    hideLoading() {
-        const overlay = document.getElementById('loadingOverlay');
-        if (overlay) {
-            overlay.classList.remove('active');
-        }
-    }
-
-    forceCleanup() {
-        console.log('[App] Nettoyage forcé...');
-        
-        this.user = null;
-        this.isAuthenticated = false;
-        this.activeProvider = null;
-        
-        // Nettoyer les services
-        if (window.authService) {
-            window.authService.forceCleanup();
-        }
-        if (window.googleAuthService) {
-            window.googleAuthService.forceCleanup();
-        }
-        
-        // Nettoyer le stockage
-        const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
-        Object.keys(localStorage).forEach(key => {
-            if (!keysToKeep.includes(key)) {
-                localStorage.removeItem(key);
-            }
-        });
-        
-        sessionStorage.clear();
-        
-        setTimeout(() => window.location.reload(), 1000);
-    }
-
-    // ===== DIAGNOSTIC =====
+    // =====================================
+    // DIAGNOSTIC ET INFORMATIONS DUAL PROVIDER
+    // =====================================
     getDiagnosticInfo() {
         return {
             isAuthenticated: this.isAuthenticated,
@@ -766,144 +1140,208 @@ class App {
                 provider: this.user.provider
             } : null,
             currentPage: this.currentPage,
-            services: {
-                outlook: window.authService ? {
-                    isInitialized: window.authService.isInitialized,
-                    isAuthenticated: window.authService.isAuthenticated()
-                } : null,
-                gmail: window.googleAuthService ? {
-                    isInitialized: window.googleAuthService.isInitialized,
-                    isAuthenticated: window.googleAuthService.isAuthenticated(),
-                    scanLimits: window.googleAuthService.getScanLimits?.()
-                } : null
-            },
-            modules: {
-                taskManager: !!window.taskManager,
-                pageManager: !!window.pageManager,
-                categoryManager: !!window.categoryManager,
-                dashboardModule: !!window.dashboardModule,
-                emailScanner: !!window.emailScanner,
-                emailScannerOutlook: !!window.emailScannerOutlook,
-                emailScannerGmail: !!window.emailScannerGmail
-            },
-            scanners: {
-                primary: window.emailScanner ? window.emailScanner.constructor.name : null,
-                outlook: !!window.emailScannerOutlook,
-                gmail: !!window.emailScannerGmail,
-                generic: !!window.emailScanner
+            isInitialized: !this.isInitializing,
+            microsoftAuthService: window.authService ? {
+                isInitialized: window.authService.isInitialized,
+                isAuthenticated: window.authService.isAuthenticated()
+            } : null,
+            googleAuthService: window.googleAuthService ? {
+                isInitialized: window.googleAuthService.isInitialized,
+                isAuthenticated: window.googleAuthService.isAuthenticated(),
+                method: 'Direct OAuth2 (sans iframe)',
+                avoidsiFrameError: true
+            } : null,
+            services: window.checkServices ? window.checkServices() : null,
+            googleCallbackData: sessionStorage.getItem('google_callback_data'),
+            sessionData: {
+                googleCallback: !!sessionStorage.getItem('google_callback_data'),
+                googleToken: !!localStorage.getItem('google_token_emailsortpro'),
+                directToken: !!sessionStorage.getItem('direct_token_data')
             }
         };
     }
 }
 
-// ===== INITIALISATION =====
+// =====================================
+// FONCTIONS GLOBALES D'URGENCE DUAL PROVIDER
+// =====================================
+
+window.emergencyReset = function() {
+    console.log('[App] Emergency reset triggered for dual provider');
+    
+    const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
+    const allKeys = Object.keys(localStorage);
+    
+    allKeys.forEach(key => {
+        if (!keysToKeep.includes(key)) {
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {
+                console.warn('[Emergency] Error removing key:', key);
+            }
+        }
+    });
+    
+    // Nettoyer sessionStorage
+    try {
+        sessionStorage.clear();
+    } catch (e) {
+        console.warn('[Emergency] Error clearing sessionStorage:', e);
+    }
+    
+    window.location.reload();
+};
+
+window.forceShowApp = function() {
+    console.log('[Global] Force show app triggered');
+    if (window.app && typeof window.app.showAppWithTransition === 'function') {
+        window.app.showAppWithTransition();
+    } else {
+        document.body.classList.add('app-active');
+        document.body.classList.remove('login-mode');
+        const loginPage = document.getElementById('loginPage');
+        if (loginPage) loginPage.style.display = 'none';
+        
+        if (window.setPageMode) {
+            window.setPageMode('dashboard');
+        }
+        
+        if (window.dashboardModule) {
+            window.dashboardModule.render();
+        }
+    }
+};
+
+// =====================================
+// VÉRIFICATION DES SERVICES DUAL PROVIDER
+// =====================================
+function checkServicesReady() {
+    const requiredServices = ['uiManager'];
+    const authServices = ['authService', 'googleAuthService'];
+    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule'];
+    
+    const missingRequired = requiredServices.filter(service => !window[service]);
+    const availableAuthServices = authServices.filter(service => window[service]);
+    const missingOptional = optionalServices.filter(service => !window[service]);
+    
+    if (missingRequired.length > 0) {
+        console.error('[App] Missing REQUIRED services:', missingRequired);
+        return false;
+    }
+    
+    if (availableAuthServices.length === 0) {
+        console.error('[App] No authentication services available:', authServices);
+        return false;
+    }
+    
+    if (missingOptional.length > 0) {
+        console.warn('[App] Missing optional services:', missingOptional);
+    }
+    
+    if (!window.AppConfig) {
+        console.error('[App] Missing AppConfig');
+        return false;
+    }
+    
+    console.log('[App] Available auth services:', availableAuthServices);
+    return true;
+}
+
+// =====================================
+// INITIALISATION PRINCIPALE DUAL PROVIDER
+// =====================================
+
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM chargé, création de l\'instance...');
+    console.log('[App] DOM loaded, creating dual provider app instance...');
     
     document.body.classList.add('login-mode');
     
     window.app = new App();
     
-    // Attendre les services
-    const checkServices = () => {
-        const required = ['uiManager'];
-        const authServices = ['authService', 'googleAuthService'];
+    const waitForServices = (attempts = 0) => {
+        const maxAttempts = 50;
         
-        const hasRequiredServices = required.every(s => window[s]);
-        const hasAuthService = authServices.some(s => window[s]);
-        
-        if (hasRequiredServices && hasAuthService) {
-            console.log('[App] Services prêts, initialisation...');
-            setTimeout(() => window.app.init(), 100);
+        if (checkServicesReady()) {
+            console.log('[App] All required services ready, initializing dual provider app...');
+            
+            setTimeout(() => {
+                window.app.init();
+            }, 100);
+        } else if (attempts < maxAttempts) {
+            console.log(`[App] Waiting for services... (${attempts + 1}/${maxAttempts})`);
+            setTimeout(() => waitForServices(attempts + 1), 100);
         } else {
-            console.log('[App] En attente des services...');
-            setTimeout(checkServices, 100);
+            console.error('[App] Timeout waiting for services, initializing anyway...');
+            setTimeout(() => {
+                window.app.init();
+            }, 100);
         }
     };
     
-    checkServices();
+    waitForServices();
 });
 
-// ===== FONCTIONS GLOBALES DE CONNEXION =====
-window.loginWithOutlook = () => {
-    if (window.app && window.app.loginOutlook) {
-        window.app.loginOutlook();
-    } else {
-        console.error('[App] loginOutlook non disponible');
-    }
-};
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        if (!window.app) {
+            console.error('[App] App instance not created, creating fallback...');
+            document.body.classList.add('login-mode');
+            window.app = new App();
+            window.app.init();
+        } else if (!window.app.isAuthenticated && !window.app.isInitializing) {
+            console.log('[App] Fallback initialization check...');
+            
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage && loginPage.style.display === 'none') {
+                loginPage.style.display = 'flex';
+                document.body.classList.add('login-mode');
+            }
+        }
+    }, 5000);
+});
 
-window.loginWithGoogle = () => {
-    if (window.app && window.app.loginGmail) {
-        window.app.loginGmail();
-    } else {
-        console.error('[App] loginGmail non disponible');
-    }
-};
-
-// ===== FONCTIONS GLOBALES DE DIAGNOSTIC =====
-window.emergencyReset = () => {
-    console.log('[App] Réinitialisation d\'urgence');
-    if (window.app) {
-        window.app.forceCleanup();
-    }
-};
-
-window.diagnoseApp = () => {
-    console.group('🔍 DIAGNOSTIC APPLICATION');
+// =====================================
+// DIAGNOSTIC GLOBAL DUAL PROVIDER
+// =====================================
+window.diagnoseApp = function() {
+    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER - EmailSortPro');
+    
     try {
         if (window.app) {
-            const diag = window.app.getDiagnosticInfo();
-            console.log('📱 État:', diag);
+            const appDiag = window.app.getDiagnosticInfo();
+            console.log('📱 App Status:', appDiag);
             
-            // Diagnostic supplémentaire des scanners
-            console.log('📊 Scanners disponibles:');
-            console.log('  - EmailScannerOutlook:', !!window.EmailScannerOutlook, '/ instance:', !!window.emailScannerOutlook);
-            console.log('  - EmailScannerGmail:', !!window.EmailScannerGmail, '/ instance:', !!window.emailScannerGmail);
-            console.log('  - EmailScanner:', !!window.EmailScanner, '/ instance:', !!window.emailScanner);
-            console.log('  - Scanner principal:', window.emailScanner ? window.emailScanner.constructor.name : 'Aucun');
+            // Services
+            if (appDiag.services) {
+                console.log('🛠️ Services:', appDiag.services);
+            }
             
-            return diag;
+            // Microsoft
+            if (appDiag.microsoftAuthService) {
+                console.log('🔵 Microsoft Auth:', appDiag.microsoftAuthService);
+            }
+            
+            // Google
+            if (appDiag.googleAuthService) {
+                console.log('🔴 Google Auth:', appDiag.googleAuthService);
+            }
+            
+            // Session Data
+            if (appDiag.sessionData) {
+                console.log('💾 Session Data:', appDiag.sessionData);
+            }
+            
+            return appDiag;
+        } else {
+            console.log('❌ App instance not available');
+            return { error: 'App instance not available' };
         }
-        return { error: 'App non disponible' };
+    } catch (error) {
+        console.error('❌ Diagnostic error:', error);
+        return { error: error.message };
     } finally {
         console.groupEnd();
     }
 };
 
-window.checkScanners = () => {
-    console.group('🔍 VÉRIFICATION DES SCANNERS');
-    
-    const scanners = {
-        EmailScannerOutlook: window.EmailScannerOutlook,
-        emailScannerOutlook: window.emailScannerOutlook,
-        EmailScannerGmail: window.EmailScannerGmail,
-        emailScannerGmail: window.emailScannerGmail,
-        EmailScanner: window.EmailScanner,
-        emailScanner: window.emailScanner,
-        unifiedScanModule: window.unifiedScanModule
-    };
-    
-    Object.entries(scanners).forEach(([name, scanner]) => {
-        if (scanner) {
-            console.log(`✅ ${name}:`, {
-                exists: true,
-                type: typeof scanner,
-                constructor: scanner.constructor?.name,
-                isInstance: scanner.constructor !== scanner
-            });
-        } else {
-            console.log(`❌ ${name}: Non disponible`);
-        }
-    });
-    
-    if (window.unifiedScanModule && typeof window.unifiedScanModule.getDebugInfo === 'function') {
-        console.log('📊 État UnifiedScanModule:', window.unifiedScanModule.getDebugInfo());
-    }
-    
-    console.groupEnd();
-    
-    return scanners;
-};
-
-console.log('✅ App v2.1 - Dual Provider avec gestion scanners');
+console.log('✅ App v4.0 loaded - DUAL PROVIDER (Microsoft + Google) with direct OAuth2 - NO IFRAME ERRORS');
