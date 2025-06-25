@@ -1,5 +1,5 @@
-// app.js - Application EmailSortPro Dual Provider Optimisée v2.0
-// Support Outlook et Gmail avec architecture simplifiée
+// app.js - Application EmailSortPro Dual Provider Optimisée v2.1
+// Support Outlook et Gmail avec gestion correcte des scanners
 
 class App {
     constructor() {
@@ -9,7 +9,7 @@ class App {
         this.isInitializing = false;
         this.currentPage = 'dashboard';
         
-        console.log('[App] ✅ EmailSortPro v2.0 - Dual Provider Optimisé');
+        console.log('[App] ✅ EmailSortPro v2.1 - Dual Provider avec gestion scanners');
     }
 
     async init() {
@@ -28,19 +28,22 @@ class App {
                 throw new Error('Prérequis manquants');
             }
 
-            // 2. Initialiser les services d'authentification
+            // 2. Initialiser les scanners AVANT les autres modules
+            await this.initializeScanners();
+
+            // 3. Initialiser les services d'authentification
             await this.initializeAuthServices();
             
-            // 3. Initialiser les modules critiques
+            // 4. Initialiser les modules critiques
             await this.initializeCriticalModules();
             
-            // 4. Vérifier l'authentification
+            // 5. Vérifier l'authentification
             await this.checkAuthenticationStatus();
             
-            // 5. Configurer les événements
+            // 6. Configurer les événements
             this.setupEventListeners();
             
-            // 6. Initialiser la gestion du scroll
+            // 7. Initialiser la gestion du scroll
             this.initializeScrollManager();
             
             console.log('[App] ✅ Initialisation terminée');
@@ -51,6 +54,72 @@ class App {
         } finally {
             this.isInitializing = false;
         }
+    }
+
+    // ===== INITIALISATION DES SCANNERS =====
+    async initializeScanners() {
+        console.log('[App] 🔍 Initialisation des scanners email...');
+        
+        // Attendre que les classes de scanners soient disponibles
+        const scannerChecks = [
+            { name: 'EmailScannerOutlook', global: 'EmailScannerOutlook', instance: 'emailScannerOutlook' },
+            { name: 'EmailScannerGmail', global: 'EmailScannerGmail', instance: 'emailScannerGmail' },
+            { name: 'EmailScanner', global: 'EmailScanner', instance: 'emailScanner' }
+        ];
+        
+        // Attendre jusqu'à 5 secondes pour les scanners
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while (attempts < maxAttempts) {
+            let foundScanner = false;
+            
+            // Vérifier et créer les instances si nécessaire
+            for (const scanner of scannerChecks) {
+                if (window[scanner.global] && !window[scanner.instance]) {
+                    console.log(`[App] 📦 Création de l'instance ${scanner.instance}`);
+                    window[scanner.instance] = new window[scanner.global]();
+                    foundScanner = true;
+                }
+            }
+            
+            // Vérifier si au moins un scanner est disponible
+            if (window.emailScannerOutlook || window.emailScannerGmail || window.emailScanner) {
+                console.log('[App] ✅ Scanners disponibles:', {
+                    outlook: !!window.emailScannerOutlook,
+                    gmail: !!window.emailScannerGmail,
+                    generic: !!window.emailScanner
+                });
+                
+                // Déclencher l'événement scannersReady
+                window.dispatchEvent(new CustomEvent('scannersReady', {
+                    detail: {
+                        outlook: !!window.emailScannerOutlook,
+                        gmail: !!window.emailScannerGmail,
+                        generic: !!window.emailScanner
+                    }
+                }));
+                
+                return;
+            }
+            
+            attempts++;
+            if (attempts % 10 === 0) {
+                console.log(`[App] ⏳ Attente des scanners... (${attempts}/${maxAttempts})`);
+                console.log('[App] État actuel:', {
+                    EmailScannerOutlook: !!window.EmailScannerOutlook,
+                    emailScannerOutlook: !!window.emailScannerOutlook,
+                    EmailScannerGmail: !!window.EmailScannerGmail,
+                    emailScannerGmail: !!window.emailScannerGmail,
+                    EmailScanner: !!window.EmailScanner,
+                    emailScanner: !!window.emailScanner
+                });
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        console.warn('[App] ⚠️ Aucun scanner trouvé après 5 secondes - continuation sans scanners');
     }
 
     // ===== VÉRIFICATION DES PRÉREQUIS =====
@@ -343,8 +412,8 @@ class App {
         // Charger le PageManager approprié
         await this.loadPageManager();
         
-        // Charger le scanner approprié
-        await this.loadEmailScanner();
+        // Configurer le scanner approprié
+        await this.configureEmailScanner();
         
         this.hideLoading();
         
@@ -405,17 +474,41 @@ class App {
         await this.waitForModule('pageManager', 'PageManager', true);
     }
 
-    async loadEmailScanner() {
+    async configureEmailScanner() {
         console.log('[App] Configuration du scanner pour', this.activeProvider);
         
-        if (this.activeProvider === 'gmail') {
-            // Si Gmail, créer une instance du scanner Gmail
-            if (!window.emailScanner && window.EmailScannerGmail) {
-                window.emailScanner = new window.EmailScannerGmail();
-                console.log('[App] ✅ Scanner Gmail créé');
+        // S'assurer que les scanners sont disponibles
+        if (this.activeProvider === 'outlook') {
+            if (!window.emailScannerOutlook && window.EmailScannerOutlook) {
+                console.log('[App] 📦 Création du scanner Outlook');
+                window.emailScannerOutlook = new window.EmailScannerOutlook();
+            }
+            
+            // Définir emailScanner comme alias pour compatibilité
+            if (window.emailScannerOutlook && !window.emailScanner) {
+                window.emailScanner = window.emailScannerOutlook;
+                console.log('[App] ✅ Scanner Outlook configuré comme scanner principal');
+            }
+        } else if (this.activeProvider === 'gmail') {
+            if (!window.emailScannerGmail && window.EmailScannerGmail) {
+                console.log('[App] 📦 Création du scanner Gmail');
+                window.emailScannerGmail = new window.EmailScannerGmail();
+            }
+            
+            // Définir emailScanner comme alias pour compatibilité
+            if (window.emailScannerGmail) {
+                window.emailScanner = window.emailScannerGmail;
+                console.log('[App] ✅ Scanner Gmail configuré comme scanner principal');
             }
         }
-        // Pour Outlook, emailScanner est déjà configuré
+        
+        // Vérification finale
+        console.log('[App] 📊 État des scanners:', {
+            provider: this.activeProvider,
+            emailScanner: !!window.emailScanner,
+            emailScannerOutlook: !!window.emailScannerOutlook,
+            emailScannerGmail: !!window.emailScannerGmail
+        });
     }
 
     showProviderBadge() {
@@ -541,6 +634,11 @@ class App {
                     window.pageManager.loadPage(page);
                 }
             });
+        });
+        
+        // Écouter l'événement scannersReady
+        window.addEventListener('scannersReady', (event) => {
+            console.log('[App] 📨 Scanners prêts:', event.detail);
         });
         
         // Gestion des erreurs
@@ -684,7 +782,15 @@ class App {
                 pageManager: !!window.pageManager,
                 categoryManager: !!window.categoryManager,
                 dashboardModule: !!window.dashboardModule,
-                emailScanner: !!window.emailScanner
+                emailScanner: !!window.emailScanner,
+                emailScannerOutlook: !!window.emailScannerOutlook,
+                emailScannerGmail: !!window.emailScannerGmail
+            },
+            scanners: {
+                primary: window.emailScanner ? window.emailScanner.constructor.name : null,
+                outlook: !!window.emailScannerOutlook,
+                gmail: !!window.emailScannerGmail,
+                generic: !!window.emailScanner
             }
         };
     }
@@ -718,7 +824,24 @@ document.addEventListener('DOMContentLoaded', () => {
     checkServices();
 });
 
-// ===== FONCTIONS GLOBALES =====
+// ===== FONCTIONS GLOBALES DE CONNEXION =====
+window.loginWithOutlook = () => {
+    if (window.app && window.app.loginOutlook) {
+        window.app.loginOutlook();
+    } else {
+        console.error('[App] loginOutlook non disponible');
+    }
+};
+
+window.loginWithGoogle = () => {
+    if (window.app && window.app.loginGmail) {
+        window.app.loginGmail();
+    } else {
+        console.error('[App] loginGmail non disponible');
+    }
+};
+
+// ===== FONCTIONS GLOBALES DE DIAGNOSTIC =====
 window.emergencyReset = () => {
     console.log('[App] Réinitialisation d\'urgence');
     if (window.app) {
@@ -732,6 +855,14 @@ window.diagnoseApp = () => {
         if (window.app) {
             const diag = window.app.getDiagnosticInfo();
             console.log('📱 État:', diag);
+            
+            // Diagnostic supplémentaire des scanners
+            console.log('📊 Scanners disponibles:');
+            console.log('  - EmailScannerOutlook:', !!window.EmailScannerOutlook, '/ instance:', !!window.emailScannerOutlook);
+            console.log('  - EmailScannerGmail:', !!window.EmailScannerGmail, '/ instance:', !!window.emailScannerGmail);
+            console.log('  - EmailScanner:', !!window.EmailScanner, '/ instance:', !!window.emailScanner);
+            console.log('  - Scanner principal:', window.emailScanner ? window.emailScanner.constructor.name : 'Aucun');
+            
             return diag;
         }
         return { error: 'App non disponible' };
@@ -740,4 +871,39 @@ window.diagnoseApp = () => {
     }
 };
 
-console.log('✅ App v2.0 - Dual Provider Optimisé');
+window.checkScanners = () => {
+    console.group('🔍 VÉRIFICATION DES SCANNERS');
+    
+    const scanners = {
+        EmailScannerOutlook: window.EmailScannerOutlook,
+        emailScannerOutlook: window.emailScannerOutlook,
+        EmailScannerGmail: window.EmailScannerGmail,
+        emailScannerGmail: window.emailScannerGmail,
+        EmailScanner: window.EmailScanner,
+        emailScanner: window.emailScanner,
+        unifiedScanModule: window.unifiedScanModule
+    };
+    
+    Object.entries(scanners).forEach(([name, scanner]) => {
+        if (scanner) {
+            console.log(`✅ ${name}:`, {
+                exists: true,
+                type: typeof scanner,
+                constructor: scanner.constructor?.name,
+                isInstance: scanner.constructor !== scanner
+            });
+        } else {
+            console.log(`❌ ${name}: Non disponible`);
+        }
+    });
+    
+    if (window.unifiedScanModule && typeof window.unifiedScanModule.getDebugInfo === 'function') {
+        console.log('📊 État UnifiedScanModule:', window.unifiedScanModule.getDebugInfo());
+    }
+    
+    console.groupEnd();
+    
+    return scanners;
+};
+
+console.log('✅ App v2.1 - Dual Provider avec gestion scanners');
