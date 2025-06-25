@@ -1,5 +1,4 @@
-// MailService.js - Service unifié de récupération des emails Microsoft Graph et Gmail API v4.1
-// SANS LIMITES DE SCAN - Même structure qu'Outlook
+// MailService.js - Service unifié de récupération des emails Microsoft Graph et Gmail API v4.0
 
 class MailService {
     constructor() {
@@ -15,23 +14,7 @@ class MailService {
             'archive': 'archive'
         };
         
-        // NOUVEAU: Configuration pour scan illimité
-        this.scanConfig = {
-            microsoft: {
-                maxEmails: Number.MAX_SAFE_INTEGER,
-                batchSize: 1000,
-                defaultTop: 1000
-            },
-            google: {
-                maxEmails: Number.MAX_SAFE_INTEGER,
-                batchSize: 500, // Gmail recommande max 500 par requête
-                defaultTop: 500,
-                maxResults: 500 // Limite par page Gmail API
-            }
-        };
-        
-        console.log('[MailService] Constructor - Service unifié Outlook/Gmail v4.1');
-        console.log('[MailService] 🚀 Mode scan: ILLIMITÉ pour tous les providers');
+        console.log('[MailService] Constructor - Service unifié Outlook/Gmail');
     }
 
     async initialize() {
@@ -46,10 +29,10 @@ class MailService {
             // Détecter le provider utilisé
             if (window.authService && window.authService.isAuthenticated()) {
                 this.provider = 'microsoft';
-                console.log('[MailService] Using Microsoft provider - UNLIMITED SCAN');
+                console.log('[MailService] Using Microsoft provider');
             } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
                 this.provider = 'google';
-                console.log('[MailService] Using Google provider - UNLIMITED SCAN');
+                console.log('[MailService] Using Google provider');
             } else {
                 console.warn('[MailService] No authentication service available');
                 return;
@@ -60,7 +43,6 @@ class MailService {
             await this.loadMailFolders();
 
             console.log('[MailService] ✅ Initialization complete');
-            console.log('[MailService] 🚀 Scan capabilities:', this.getScanCapabilities());
             this.isInitialized = true;
 
         } catch (error) {
@@ -180,11 +162,6 @@ class MailService {
     // ================================================
     async getEmailsFromFolder(folderName, options = {}) {
         console.log(`[MailService] Getting emails from folder: ${folderName}`);
-        console.log('[MailService] 🚀 Options:', {
-            ...options,
-            provider: this.provider,
-            maxCapacity: this.scanConfig[this.provider]?.maxEmails
-        });
         
         try {
             // Initialiser si nécessaire
@@ -221,19 +198,8 @@ class MailService {
         // Obtenir l'ID réel du dossier
         const folderId = await this.resolveFolderId(folderName);
         
-        // Configuration avec support illimité
-        const config = this.scanConfig.microsoft;
-        const requestedTop = options.top || options.maxEmails || config.defaultTop;
-        const actualTop = Math.min(requestedTop, config.maxEmails);
-        
-        console.log(`[MailService] 📊 Microsoft scan config:`, {
-            requested: requestedTop,
-            actual: actualTop,
-            unlimited: actualTop === config.maxEmails
-        });
-        
         // Construire l'URL de l'API Microsoft Graph
-        const graphUrl = this.buildMicrosoftGraphUrl(folderId, { ...options, top: actualTop });
+        const graphUrl = this.buildMicrosoftGraphUrl(folderId, options);
         console.log(`[MailService] Microsoft query endpoint: ${graphUrl}`);
 
         // Effectuer la requête
@@ -275,75 +241,31 @@ class MailService {
             throw new Error('Unable to get Google access token');
         }
 
-        // Configuration avec support illimité
-        const config = this.scanConfig.google;
-        const requestedTop = options.top || options.maxEmails || config.defaultTop;
-        
-        // Gmail nécessite la pagination pour récupérer plus de 500 emails
-        let allMessages = [];
-        let pageToken = null;
-        let totalRetrieved = 0;
-        
-        console.log(`[MailService] 📊 Gmail scan config:`, {
-            requested: requestedTop,
-            batchSize: config.batchSize,
-            unlimited: requestedTop === config.maxEmails
+        // Construire la requête Gmail
+        const gmailUrl = this.buildGmailUrl(folderName, options);
+        console.log(`[MailService] Gmail query endpoint: ${gmailUrl}`);
+
+        // Effectuer la requête pour obtenir la liste des messages
+        const response = await fetch(gmailUrl, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
         });
 
-        do {
-            const batchSize = Math.min(config.maxResults, requestedTop - totalRetrieved);
-            
-            // Construire la requête Gmail
-            const gmailUrl = this.buildGmailUrl(folderName, { 
-                ...options, 
-                top: batchSize,
-                pageToken: pageToken 
-            });
-            
-            console.log(`[MailService] Gmail batch ${Math.floor(totalRetrieved / config.maxResults) + 1}: ${gmailUrl}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[MailService] ❌ Gmail API error:', response.status, errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+        }
 
-            // Effectuer la requête pour obtenir la liste des messages
-            const response = await fetch(gmailUrl, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+        const data = await response.json();
+        const messages = data.messages || [];
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('[MailService] ❌ Gmail API error:', response.status, errorText);
-                throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-            }
+        console.log(`[MailService] ✅ Found ${messages.length} Gmail messages`);
 
-            const data = await response.json();
-            const messages = data.messages || [];
-            
-            allMessages = allMessages.concat(messages);
-            totalRetrieved += messages.length;
-            pageToken = data.nextPageToken;
-            
-            console.log(`[MailService] ✅ Batch retrieved: ${messages.length} messages (total: ${totalRetrieved})`);
-            
-            // Respecter la limite demandée
-            if (totalRetrieved >= requestedTop || !pageToken) {
-                break;
-            }
-            
-            // Petit délai pour éviter le rate limiting
-            if (pageToken) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-        } while (pageToken && totalRetrieved < requestedTop);
-
-        console.log(`[MailService] ✅ Total Gmail messages found: ${allMessages.length}`);
-
-        // Limiter au nombre demandé
-        const messagesToProcess = allMessages.slice(0, requestedTop);
-        
         // Récupérer les détails de chaque message
-        const detailedEmails = await this.getGmailMessageDetails(messagesToProcess);
+        const detailedEmails = await this.getGmailMessageDetails(messages.slice(0, options.top || 50));
         
         // Traiter et enrichir les emails
         const processedEmails = this.processGmailEmails(detailedEmails, folderName);
@@ -354,48 +276,28 @@ class MailService {
     async getGmailMessageDetails(messages) {
         const accessToken = await window.googleAuthService.getAccessToken();
         const detailedEmails = [];
-        
-        // Traiter par batches pour éviter trop de requêtes simultanées
-        const batchSize = 50;
-        
-        for (let i = 0; i < messages.length; i += batchSize) {
-            const batch = messages.slice(i, i + batchSize);
-            
-            const batchPromises = batch.map(async message => {
-                try {
-                    const response = await fetch(
-                        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${message.id}?format=full`,
-                        {
-                            headers: {
-                                'Authorization': `Bearer ${accessToken}`,
-                                'Content-Type': 'application/json'
-                            }
-                        }
-                    );
 
-                    if (response.ok) {
-                        return await response.json();
+        for (const message of messages) {
+            try {
+                const response = await fetch(
+                    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${message.id}?format=full`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        }
                     }
-                    return null;
-                } catch (error) {
-                    console.warn('[MailService] Error fetching Gmail message details:', error);
-                    return null;
+                );
+
+                if (response.ok) {
+                    const emailData = await response.json();
+                    detailedEmails.push(emailData);
                 }
-            });
-            
-            const batchResults = await Promise.all(batchPromises);
-            const validResults = batchResults.filter(Boolean);
-            detailedEmails.push(...validResults);
-            
-            console.log(`[MailService] Gmail details batch ${Math.floor(i / batchSize) + 1}: ${validResults.length}/${batch.length} success`);
-            
-            // Petit délai entre les batches
-            if (i + batchSize < messages.length) {
-                await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (error) {
+                console.warn('[MailService] Error fetching Gmail message details:', error);
             }
         }
 
-        console.log(`[MailService] ✅ Retrieved details for ${detailedEmails.length}/${messages.length} Gmail messages`);
         return detailedEmails;
     }
 
@@ -406,7 +308,7 @@ class MailService {
         const {
             startDate,
             endDate,
-            top = this.scanConfig.microsoft.defaultTop,
+            top = 100,
             orderBy = 'receivedDateTime desc'
         } = options;
 
@@ -423,9 +325,7 @@ class MailService {
         // Paramètres de requête
         const params = new URLSearchParams();
         
-        // Supporter les requêtes illimitées
-        const actualTop = Math.min(top, this.scanConfig.microsoft.batchSize);
-        params.append('$top', actualTop.toString());
+        params.append('$top', Math.min(top, 1000).toString());
         params.append('$orderby', orderBy);
         
         // Sélection des champs nécessaires
@@ -463,21 +363,14 @@ class MailService {
         const {
             startDate,
             endDate,
-            top = this.scanConfig.google.defaultTop,
-            pageToken
+            top = 50
         } = options;
 
         let baseUrl = 'https://gmail.googleapis.com/gmail/v1/users/me/messages';
         const params = new URLSearchParams();
 
         // Paramètres de base
-        const maxResults = Math.min(top, this.scanConfig.google.maxResults);
-        params.append('maxResults', maxResults.toString());
-        
-        // Token de pagination si fourni
-        if (pageToken) {
-            params.append('pageToken', pageToken);
-        }
+        params.append('maxResults', Math.min(top, 500).toString());
 
         // Query pour le dossier/label
         let query = '';
@@ -887,89 +780,6 @@ class MailService {
         }
     }
 
-    // ================================================
-    // NOUVELLES MÉTHODES POUR SCAN ILLIMITÉ
-    // ================================================
-    getScanCapabilities() {
-        if (!this.provider) {
-            return {
-                provider: 'none',
-                unlimited: false,
-                maxEmails: 0
-            };
-        }
-        
-        const config = this.scanConfig[this.provider];
-        return {
-            provider: this.provider,
-            unlimited: true,
-            maxEmails: config.maxEmails,
-            batchSize: config.batchSize,
-            defaultTop: config.defaultTop
-        };
-    }
-
-    async getEmailCount(folderName = 'inbox') {
-        console.log(`[MailService] Getting email count for folder: ${folderName}`);
-        
-        try {
-            if (!this.isInitialized) {
-                await this.initialize();
-            }
-
-            if (this.provider === 'microsoft') {
-                return await this.getMicrosoftEmailCount(folderName);
-            } else if (this.provider === 'google') {
-                return await this.getGmailEmailCount(folderName);
-            }
-            
-            return 0;
-        } catch (error) {
-            console.error('[MailService] Error getting email count:', error);
-            return 0;
-        }
-    }
-
-    async getMicrosoftEmailCount(folderName) {
-        const accessToken = await window.authService.getAccessToken();
-        if (!accessToken) return 0;
-
-        const folderId = await this.resolveFolderId(folderName);
-        let url = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}`;
-
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) return 0;
-
-        const data = await response.json();
-        return data.totalItemCount || 0;
-    }
-
-    async getGmailEmailCount(folderName) {
-        // Gmail ne fournit pas de comptage direct, on doit faire une requête minimale
-        const accessToken = await window.googleAuthService.getAccessToken();
-        if (!accessToken) return 0;
-
-        const url = this.buildGmailUrl(folderName, { top: 1 });
-        
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) return 0;
-
-        const data = await response.json();
-        return data.resultSizeEstimate || 0;
-    }
-
     async testConnection() {
         console.log('[MailService] Testing API connection...');
         
@@ -1009,14 +819,12 @@ class MailService {
 
         const user = await response.json();
         console.log('[MailService] ✅ Microsoft connection test successful:', user.displayName);
-        console.log('[MailService] 🚀 Scan capabilities:', this.getScanCapabilities());
         
         return {
             success: true,
             provider: 'microsoft',
             user: user.displayName,
-            email: user.mail || user.userPrincipalName,
-            scanCapabilities: this.getScanCapabilities()
+            email: user.mail || user.userPrincipalName
         };
     }
 
@@ -1039,14 +847,12 @@ class MailService {
 
         const profile = await response.json();
         console.log('[MailService] ✅ Google connection test successful:', profile.emailAddress);
-        console.log('[MailService] 🚀 Scan capabilities:', this.getScanCapabilities());
         
         return {
             success: true,
             provider: 'google',
             user: profile.emailAddress,
-            email: profile.emailAddress,
-            scanCapabilities: this.getScanCapabilities()
+            email: profile.emailAddress
         };
     }
 
@@ -1073,7 +879,6 @@ class MailService {
             hasToken: authService ? !!authService.getAccessToken : false,
             foldersCount: this.folders.size,
             cacheSize: this.cache.size,
-            scanCapabilities: this.getScanCapabilities(),
             folders: Array.from(this.folders.entries()).map(([name, folder]) => ({
                 name,
                 id: folder.id,
@@ -1087,7 +892,6 @@ class MailService {
 try {
     window.mailService = new MailService();
     console.log('[MailService] ✅ Global unified instance created successfully');
-    console.log('[MailService] 🚀 Unlimited scan mode enabled for all providers');
 } catch (error) {
     console.error('[MailService] ❌ Failed to create global instance:', error);
     
@@ -1099,7 +903,6 @@ try {
         initialize: async () => {
             throw new Error('MailService failed to initialize - Check AuthService');
         },
-        getScanCapabilities: () => ({ unlimited: false, maxEmails: 0 }),
         getDiagnosticInfo: () => ({ 
             error: 'MailService failed to create',
             microsoftAuthServiceAvailable: !!window.authService,
@@ -1110,5 +913,4 @@ try {
     };
 }
 
-console.log('✅ MailService v4.1 loaded - Unified Outlook/Gmail support');
-console.log('🚀 UNLIMITED SCAN MODE - No restrictions!');
+console.log('✅ MailService v4.0 loaded - Unified Outlook/Gmail support');
