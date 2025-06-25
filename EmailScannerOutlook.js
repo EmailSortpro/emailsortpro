@@ -1,7 +1,7 @@
 // EmailScannerOutlook.js - Scanner spécifique Outlook avec toutes les fonctionnalités
-// Version 1.1 - Corrigé pour chargement et scan 30 jours
+// Version 1.2 - Corrigé pour fonctionner sans getCustomCategories
 
-console.log('[EmailScannerOutlook] 📧 Chargement du scanner Outlook v1.1...');
+console.log('[EmailScannerOutlook] 📧 Chargement du scanner Outlook v1.2...');
 
 class EmailScannerOutlook {
     constructor() {
@@ -37,7 +37,7 @@ class EmailScannerOutlook {
         // Initialiser avec synchronisation immédiate
         this.initializeWithSync();
         
-        console.log('[EmailScannerOutlook] ✅ Version 1.1 - Scanner Outlook prêt');
+        console.log('[EmailScannerOutlook] ✅ Version 1.2 - Scanner Outlook prêt (sans getCustomCategories)');
     }
 
     // ================================================
@@ -156,17 +156,18 @@ class EmailScannerOutlook {
         if (!window.categoryManager) return;
         
         try {
-            const currentManagerCategories = window.categoryManager.getTaskPreselectedCategories();
-            const currentManagerSettings = window.categoryManager.getSettings();
+            const currentManagerCategories = window.categoryManager.getTaskPreselectedCategories ? 
+                window.categoryManager.getTaskPreselectedCategories() : [];
+            const currentManagerSettings = window.categoryManager.getSettings ? 
+                window.categoryManager.getSettings() : {};
             
             // Vérifier si les catégories pré-sélectionnées ont changé
             const categoriesChanged = JSON.stringify([...this.taskPreselectedCategories].sort()) !== 
                                     JSON.stringify([...currentManagerCategories].sort());
             
             // Vérifier aussi si de nouvelles catégories ont été créées
-            const allCategories = window.categoryManager.getCategories();
-            const customCategoriesCount = (typeof window.categoryManager.getCustomCategories === 'function') ? 
-                Object.keys(window.categoryManager.getCustomCategories() || {}).length : 0;
+            const allCategories = window.categoryManager.getCategories ? 
+                window.categoryManager.getCategories() : {};
             
             // Forcer la re-catégorisation si nouvelles catégories détectées
             let needsRecategorization = categoriesChanged;
@@ -183,7 +184,6 @@ class EmailScannerOutlook {
                 console.log('  - EmailScannerOutlook:', this.taskPreselectedCategories);
                 console.log('  - CategoryManager:', currentManagerCategories);
                 console.log('  - Catégories totales:', Object.keys(allCategories).length);
-                console.log('  - Catégories personnalisées:', customCategoriesCount);
                 
                 // Forcer la synchronisation
                 this.taskPreselectedCategories = [...currentManagerCategories];
@@ -210,7 +210,9 @@ class EmailScannerOutlook {
         if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
             try {
                 this.settings = window.categoryManager.getSettings();
-                this.taskPreselectedCategories = window.categoryManager.getTaskPreselectedCategories();
+                this.taskPreselectedCategories = typeof window.categoryManager.getTaskPreselectedCategories === 'function' ?
+                    window.categoryManager.getTaskPreselectedCategories() : 
+                    (this.settings.taskPreselectedCategories || []);
                 
                 console.log('[EmailScannerOutlook] ✅ Paramètres chargés depuis CategoryManager');
                 console.log('[EmailScannerOutlook] 📊 Settings:', this.settings);
@@ -267,8 +269,10 @@ class EmailScannerOutlook {
             console.log('[EmailScannerOutlook] ✅ Catégories synchronisées depuis CategoryManager:', this.taskPreselectedCategories);
             
             // Vérifier aussi les settings complets
-            const freshSettings = window.categoryManager.getSettings();
-            this.settings = { ...this.settings, ...freshSettings };
+            if (typeof window.categoryManager.getSettings === 'function') {
+                const freshSettings = window.categoryManager.getSettings();
+                this.settings = { ...this.settings, ...freshSettings };
+            }
         }
         
         // Si des catégories sont passées dans les options, les utiliser en priorité
@@ -310,13 +314,16 @@ class EmailScannerOutlook {
             // Afficher les noms des catégories pour plus de clarté
             if (window.categoryManager && this.taskPreselectedCategories.length > 0) {
                 const categoryNames = this.taskPreselectedCategories.map(catId => {
-                    const cat = window.categoryManager.getCategory(catId);
+                    const cat = window.categoryManager.getCategory ? 
+                        window.categoryManager.getCategory(catId) : null;
                     return cat ? `${cat.icon} ${cat.name}` : catId;
                 });
                 console.log('[EmailScannerOutlook] 📌 Noms des catégories pré-sélectionnées:', categoryNames);
             }
             
-            console.log('[EmailScannerOutlook] 🎯 Catégories actives:', window.categoryManager?.getActiveCategories());
+            console.log('[EmailScannerOutlook] 🎯 Catégories actives:', 
+                window.categoryManager?.getActiveCategories ? 
+                    window.categoryManager.getActiveCategories() : 'N/A');
 
             if (!window.mailService) {
                 throw new Error('MailService non disponible');
@@ -472,9 +479,10 @@ class EmailScannerOutlook {
 
         const categoryStats = {};
         const keywordStats = {};
-        const categories = window.categoryManager?.getCategories() || {};
+        const categories = window.categoryManager?.getCategories ? 
+            window.categoryManager.getCategories() : {};
         
-        // Initialiser TOUTES les catégories (standard + personnalisées + spéciales)
+        // Initialiser TOUTES les catégories (standard + spéciales)
         Object.keys(categories).forEach(catId => {
             categoryStats[catId] = 0;
             keywordStats[catId] = {
@@ -484,22 +492,6 @@ class EmailScannerOutlook {
                 exclusionMatches: 0
             };
         });
-        
-        // Ajouter les catégories personnalisées si la méthode existe
-        if (window.categoryManager && typeof window.categoryManager.getCustomCategories === 'function') {
-            const customCategories = window.categoryManager.getCustomCategories() || {};
-            Object.keys(customCategories).forEach(catId => {
-                if (!categoryStats[catId]) {
-                    categoryStats[catId] = 0;
-                    keywordStats[catId] = {
-                        absoluteMatches: 0,
-                        strongMatches: 0,
-                        weakMatches: 0,
-                        exclusionMatches: 0
-                    };
-                }
-            });
-        }
         
         // CORRECTION CRITIQUE: Initialiser explicitement les catégories spéciales
         ['other', 'excluded', 'spam', 'personal'].forEach(specialCat => {
@@ -525,7 +517,9 @@ class EmailScannerOutlook {
             
             for (const email of batch) {
                 try {
-                    const analysis = window.categoryManager.analyzeEmail(email);
+                    const analysis = window.categoryManager.analyzeEmail ? 
+                        window.categoryManager.analyzeEmail(email) : 
+                        { category: 'other', score: 0, confidence: 0 };
                     
                     // CORRECTION: S'assurer qu'on a toujours une catégorie valide
                     const finalCategory = analysis.category || 'other';
@@ -553,7 +547,8 @@ class EmailScannerOutlook {
                     }
                     
                     // Log pour les catégories personnalisées ET pré-sélectionnées
-                    const categoryInfo = window.categoryManager?.getCategory(finalCategory);
+                    const categoryInfo = window.categoryManager?.getCategory ? 
+                        window.categoryManager.getCategory(finalCategory) : null;
                     if (categoryInfo && categoryInfo.isCustom && i < 5) {
                         console.log(`[EmailScannerOutlook] 🎨 Email catégorie personnalisée:`, {
                             subject: email.subject?.substring(0, 50),
@@ -926,7 +921,8 @@ class EmailScannerOutlook {
         
         console.log('[EmailScannerOutlook] Distribution par catégorie:');
         
-        const categories = window.categoryManager?.getCategories() || {};
+        const categories = window.categoryManager?.getCategories ? 
+            window.categoryManager.getCategories() : {};
         const categoryOrder = Object.keys(categories).sort((a, b) => {
             return (categories[b].priority || 50) - (categories[a].priority || 50);
         });
@@ -936,12 +932,14 @@ class EmailScannerOutlook {
             if (results.breakdown[cat] !== undefined && results.breakdown[cat] > 0) {
                 const count = results.breakdown[cat];
                 const percentage = Math.round((count / results.total) * 100);
-                const categoryInfo = window.categoryManager?.getCategory(cat) || { name: cat, icon: '📌' };
+                const categoryInfo = window.categoryManager?.getCategory ? 
+                    window.categoryManager.getCategory(cat) : null;
+                const catData = categoryInfo || { name: cat, icon: '📌' };
                 const isPreselected = this.taskPreselectedCategories.includes(cat);
                 const preselectedMark = isPreselected ? ' ⭐ PRÉ-SÉLECTIONNÉ' : '';
                 const effectiveness = results.keywordEffectiveness[cat];
                 const efficiencyMark = effectiveness ? ` (${effectiveness.efficiency}% eff.)` : '';
-                console.log(`[EmailScannerOutlook]   ${categoryInfo.icon} ${categoryInfo.name}: ${count} emails (${percentage}%)${preselectedMark}${efficiencyMark}`);
+                console.log(`[EmailScannerOutlook]   ${catData.icon} ${catData.name}: ${count} emails (${percentage}%)${preselectedMark}${efficiencyMark}`);
             }
         });
         
@@ -951,8 +949,10 @@ class EmailScannerOutlook {
         this.taskPreselectedCategories.forEach(catId => {
             const categoryEmails = this.emails.filter(e => e.category === catId);
             const preselectedInCategory = categoryEmails.filter(e => e.isPreselectedForTasks);
-            const categoryInfo = window.categoryManager?.getCategory(catId) || { name: catId, icon: '📂' };
-            console.log(`[EmailScannerOutlook]   ${categoryInfo.icon} ${categoryInfo.name}: ${preselectedInCategory.length}/${categoryEmails.length} pré-sélectionnés`);
+            const categoryInfo = window.categoryManager?.getCategory ? 
+                window.categoryManager.getCategory(catId) : null;
+            const catData = categoryInfo || { name: catId, icon: '📂' };
+            console.log(`[EmailScannerOutlook]   ${catData.icon} ${catData.name}: ${preselectedInCategory.length}/${categoryEmails.length} pré-sélectionnés`);
         });
         
         console.log('[EmailScannerOutlook] ===============================');
@@ -987,11 +987,13 @@ class EmailScannerOutlook {
         
         console.log('[EmailScannerOutlook] 🎯 Efficacité des mots-clés par catégorie:');
         Object.entries(effectiveness).forEach(([categoryId, stats]) => {
-            const category = window.categoryManager?.getCategory(categoryId);
+            const category = window.categoryManager?.getCategory ? 
+                window.categoryManager.getCategory(categoryId) : null;
             if (stats.totalMatches > 0) {
                 const isPreselected = this.taskPreselectedCategories.includes(categoryId);
                 const preselectedMark = isPreselected ? ' ⭐' : '';
-                console.log(`  ${category?.icon || '📂'} ${category?.name || categoryId}${preselectedMark}:`);
+                const catData = category || { icon: '📂', name: categoryId };
+                console.log(`  ${catData.icon} ${catData.name}${preselectedMark}:`);
                 console.log(`    - Matches totaux: ${stats.totalMatches}`);
                 console.log(`    - Ratio absolus: ${stats.absoluteRatio}%`);
                 console.log(`    - Exclusions: ${stats.exclusionImpact}`);
@@ -1133,7 +1135,9 @@ class EmailScannerOutlook {
 
         console.log('[EmailScannerOutlook] 🔄 === DÉBUT RE-CATÉGORISATION ===');
         console.log('[EmailScannerOutlook] ⭐ Catégories pré-sélectionnées actuelles:', this.taskPreselectedCategories);
-        console.log('[EmailScannerOutlook] 🎯 Catégories actives:', window.categoryManager?.getActiveCategories());
+        console.log('[EmailScannerOutlook] 🎯 Catégories actives:', 
+            window.categoryManager?.getActiveCategories ? 
+                window.categoryManager.getActiveCategories() : 'N/A');
         
         // Réinitialiser les métriques
         this.scanMetrics.startTime = Date.now();
@@ -1197,23 +1201,13 @@ class EmailScannerOutlook {
         
         // Initialiser avec toutes les catégories du CategoryManager
         if (window.categoryManager) {
-            const categories = window.categoryManager.getCategories();
+            const categories = window.categoryManager.getCategories ? 
+                window.categoryManager.getCategories() : {};
             
             // Initialiser toutes les catégories standard
             Object.keys(categories).forEach(catId => {
                 this.categorizedEmails[catId] = [];
             });
-            
-            // Ajouter les catégories personnalisées si la méthode existe
-            if (typeof window.categoryManager.getCustomCategories === 'function') {
-                const customCategories = window.categoryManager.getCustomCategories() || {};
-                Object.keys(customCategories).forEach(catId => {
-                    if (!this.categorizedEmails[catId]) {
-                        console.log(`[EmailScannerOutlook] 🆕 Ajout catégorie personnalisée: ${customCategories[catId].name} (${catId})`);
-                        this.categorizedEmails[catId] = [];
-                    }
-                });
-            }
         }
         
         // S'assurer que les catégories spéciales existent TOUJOURS
@@ -1324,7 +1318,9 @@ class EmailScannerOutlook {
     }
 
     verifyCategoriesSync() {
-        if (!window.categoryManager) return false;
+        if (!window.categoryManager || typeof window.categoryManager.getTaskPreselectedCategories !== 'function') {
+            return false;
+        }
         
         const managerCategories = window.categoryManager.getTaskPreselectedCategories();
         return JSON.stringify([...this.taskPreselectedCategories].sort()) === 
@@ -1435,4 +1431,4 @@ if (!window.emailScannerOutlook) {
     console.log('[EmailScannerOutlook] ✅ Instance globale créée');
 }
 
-console.log('[EmailScannerOutlook] ✅ EmailScannerOutlook v1.1 chargé - Scanner complet pour Outlook avec toutes les fonctionnalités');
+console.log('[EmailScannerOutlook] ✅ EmailScannerOutlook v1.2 chargé - Scanner complet pour Outlook (sans getCustomCategories)');
