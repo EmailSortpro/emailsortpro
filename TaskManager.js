@@ -579,12 +579,11 @@ class TasksView {
                     </div>
                     <div class="task-meta-line">
                         <span class="client">${this.escape(task.client)}</span>
-                        <span class="separator">•</span>
-                        <span class="due ${due.class}">${due.text}</span>
                     </div>
                 </div>
                 <div class="task-right">
                     <div class="task-badges">
+                        <span class="due-text ${due.class}">${due.text}</span>
                         <span class="status-badge ${task.status}">${this.getStatusLabel(task.status)}</span>
                         ${task.hasEmail && task.needsReply && !task.emailReplied ? 
                             '<span class="reply-badge">📧 À répondre</span>' : ''}
@@ -1518,7 +1517,8 @@ class TasksView {
             }
 
             .status-badge,
-            .reply-badge {
+            .reply-badge,
+            .due-text {
                 padding: 4px 10px;
                 border-radius: 4px;
                 font-size: 11px;
@@ -1541,15 +1541,42 @@ class TasksView {
                 animation: pulse 2s infinite;
             }
 
-            @keyframes pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.7; }
+            .due-text {
+                background: transparent;
+                padding: 4px 8px;
+                border: 1px solid var(--border);
+                color: var(--text-secondary);
             }
 
-            .due.overdue { color: var(--danger); font-weight: 600; }
-            .due.today { color: var(--warning); font-weight: 600; }
-            .due.tomorrow { color: var(--warning); }
-            .due.week { color: var(--primary); }
+            .due-text.overdue { 
+                color: var(--danger); 
+                font-weight: 700;
+                border-color: var(--danger);
+                background: #fef2f2;
+            }
+            
+            .due-text.today { 
+                color: var(--warning); 
+                font-weight: 700;
+                border-color: var(--warning);
+                background: #fef3c7;
+            }
+            
+            .due-text.tomorrow { 
+                color: var(--warning);
+                border-color: var(--warning);
+            }
+            
+            .due-text.week { 
+                color: var(--primary);
+                border-color: var(--primary);
+            }
+            
+            .due-text.no-due {
+                color: #9ca3af;
+                border-color: #d1d5db;
+                font-style: italic;
+            }
 
             /* Actions */
             .task-actions {
