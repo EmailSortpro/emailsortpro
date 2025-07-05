@@ -569,23 +569,28 @@ class TasksView {
             <div class="task-item ${task.status === 'completed' ? 'completed' : ''} ${selected ? 'selected' : ''}" 
                  data-id="${task.id}"
                  onclick="window.tasksView.showDetails('${task.id}')">
-                <input type="checkbox" ${selected ? 'checked' : ''} 
-                       onclick="event.stopPropagation(); window.tasksView.toggleSelect('${task.id}')">
-                <div class="task-info">
-                    <div class="task-header">
+                <div class="task-left">
+                    <input type="checkbox" ${selected ? 'checked' : ''} 
+                           onclick="event.stopPropagation(); window.tasksView.toggleSelect('${task.id}')">
+                </div>
+                <div class="task-middle">
+                    <div class="task-title-line">
                         <h3>${this.escape(task.title)}</h3>
-                        <div class="badges">
-                            <span class="status-badge ${task.status}">${this.getStatusLabel(task.status)}</span>
-                            ${task.hasEmail && task.needsReply && !task.emailReplied ? 
-                                '<span class="reply-badge">📧 À répondre</span>' : ''}
-                        </div>
                     </div>
-                    <div class="task-meta">
+                    <div class="task-meta-line">
                         <span class="client">${this.escape(task.client)}</span>
+                        <span class="separator">•</span>
                         <span class="due ${due.class}">${due.text}</span>
                     </div>
                 </div>
-                ${this.renderActions(task)}
+                <div class="task-right">
+                    <div class="task-badges">
+                        <span class="status-badge ${task.status}">${this.getStatusLabel(task.status)}</span>
+                        ${task.hasEmail && task.needsReply && !task.emailReplied ? 
+                            '<span class="reply-badge">📧 À répondre</span>' : ''}
+                    </div>
+                    ${this.renderActions(task)}
+                </div>
             </div>
         `;
     }
@@ -1409,7 +1414,7 @@ class TasksView {
             .tasks-list {
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
+                gap: 2px;
                 background: rgba(255,255,255,0.8);
                 border-radius: 12px;
                 padding: 8px;
@@ -1418,18 +1423,14 @@ class TasksView {
             .task-item {
                 background: white;
                 border-radius: 8px;
-                padding: 16px;
+                padding: 12px 16px;
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 16px;
                 transition: all 0.2s;
                 cursor: pointer;
                 position: relative;
-            }
-
-            .task-item > input[type="checkbox"] {
-                align-self: flex-start;
-                margin-top: 2px;
+                min-height: 60px;
             }
 
             .task-item:hover {
@@ -1450,43 +1451,75 @@ class TasksView {
                 text-decoration: line-through;
             }
 
-            .task-info {
-                flex: 1;
+            .task-left {
+                display: flex;
+                align-items: center;
+                flex-shrink: 0;
+            }
+
+            .task-left input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
                 cursor: pointer;
+            }
+
+            .task-middle {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
                 min-width: 0;
             }
 
-            .task-header {
+            .task-title-line {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                margin-bottom: 8px;
-                width: 100%;
             }
 
-            .task-header h3 {
+            .task-title-line h3 {
                 margin: 0;
                 font-size: 15px;
                 font-weight: 600;
                 color: var(--text);
                 cursor: pointer;
                 transition: color 0.2s;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
-            .task-header h3:hover {
+            .task-title-line h3:hover {
                 color: var(--primary);
-                text-decoration: underline;
             }
 
-            .badges {
+            .task-meta-line {
                 display: flex;
-                gap: 6px;
                 align-items: center;
+                gap: 8px;
+                font-size: 12px;
+                color: var(--text-secondary);
+            }
+
+            .task-meta-line .separator {
+                color: #d1d5db;
+            }
+
+            .task-right {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                flex-shrink: 0;
+            }
+
+            .task-badges {
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
 
             .status-badge,
             .reply-badge {
-                padding: 3px 8px;
+                padding: 4px 10px;
                 border-radius: 4px;
                 font-size: 11px;
                 font-weight: 600;
@@ -1494,6 +1527,7 @@ class TasksView {
                 align-items: center;
                 justify-content: center;
                 white-space: nowrap;
+                height: 24px;
             }
 
             .status-badge.todo { background: #fef3c7; color: #d97706; }
@@ -1505,21 +1539,11 @@ class TasksView {
                 background: #fef2f2;
                 color: #dc2626;
                 animation: pulse 2s infinite;
-                line-height: 1;
-                padding: 4px 10px;
             }
 
             @keyframes pulse {
                 0%, 100% { opacity: 1; }
                 50% { opacity: 0.7; }
-            }
-
-            .task-meta {
-                display: flex;
-                gap: 16px;
-                font-size: 12px;
-                color: var(--text-secondary);
-                align-items: center;
             }
 
             .due.overdue { color: var(--danger); font-weight: 600; }
