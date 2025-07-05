@@ -567,9 +567,10 @@ class TasksView {
         
         return `
             <div class="task-item ${task.status === 'completed' ? 'completed' : ''} ${selected ? 'selected' : ''}" 
-                 data-id="${task.id}">
+                 data-id="${task.id}"
+                 onclick="window.tasksView.showDetails('${task.id}')">
                 <input type="checkbox" ${selected ? 'checked' : ''} 
-                       onclick="window.tasksView.toggleSelect('${task.id}')">
+                       onclick="event.stopPropagation(); window.tasksView.toggleSelect('${task.id}')">
                 <div class="task-info">
                     <div class="task-header">
                         <h3>${this.escape(task.title)}</h3>
@@ -788,6 +789,15 @@ class TasksView {
                     </div>
                 </div>
                 
+                ${task.description ? `
+                    <div class="section">
+                        <h3><i class="fas fa-align-left"></i> Description</h3>
+                        <div class="section-content">
+                            <p>${this.escape(task.description).replace(/\n/g, '<br>')}</p>
+                        </div>
+                    </div>
+                ` : ''}
+                
                 ${task.checklist?.length > 0 ? `
                     <div class="section">
                         <h3><i class="fas fa-check-square"></i> Checklist</h3>
@@ -812,25 +822,67 @@ class TasksView {
                     <h3><i class="fas fa-info-circle"></i> Informations</h3>
                     <div class="info-grid">
                         <div><strong>Client:</strong> ${this.escape(task.client)}</div>
+                        <div><strong>Catégorie:</strong> ${task.category || 'work'}</div>
                         <div><strong>Créé le:</strong> ${new Date(task.createdAt).toLocaleString('fr-FR')}</div>
                         <div><strong>Modifié le:</strong> ${new Date(task.updatedAt).toLocaleString('fr-FR')}</div>
+                        ${task.completedAt ? `<div><strong>Terminé le:</strong> ${new Date(task.completedAt).toLocaleString('fr-FR')}</div>` : ''}
                     </div>
                 </div>
                 
                 ${task.hasEmail ? `
-                    <div class="section">
+                    <div class="section email-section">
                         <h3><i class="fas fa-envelope"></i> Email</h3>
                         <div class="email-details">
-                            <div><strong>De:</strong> ${this.escape(task.emailFromName || task.emailFrom || '')}</div>
-                            <div><strong>Sujet:</strong> ${this.escape(task.emailSubject || '')}</div>
-                            <div><strong>Date:</strong> ${task.emailDate ? new Date(task.emailDate).toLocaleString('fr-FR') : ''}</div>
-                            <div><strong>Répondu:</strong> ${task.emailReplied ? '✅ Oui' : '❌ Non'}</div>
-                        </div>
-                        ${task.emailContent ? `
-                            <div class="email-content">
-                                <div class="email-box">${task.emailHtmlContent || this.escape(task.emailContent).replace(/\n/g, '<br>')}</div>
+                            <div class="email-meta">
+                                <div><strong>De:</strong> ${this.escape(task.emailFromName || task.emailFrom || 'Inconnu')}</div>
+                                <div><strong>Email:</strong> ${this.escape(task.emailFrom || 'Non disponible')}</div>
+                                <div><strong>Sujet:</strong> ${this.escape(task.emailSubject || 'Sans sujet')}</div>
+                                <div><strong>Date:</strong> ${task.emailDate ? new Date(task.emailDate).toLocaleString('fr-FR') : 'Non spécifiée'}</div>
+                                <div><strong>Répondu:</strong> ${task.emailReplied ? '✅ Oui' : '❌ Non'}</div>
+                                ${task.needsReply ? '<div><strong>Réponse requise:</strong> ✅ Oui</div>' : ''}
                             </div>
-                        ` : ''}
+                        </div>
+                        ${task.emailContent || task.emailHtmlContent ? `
+                            <div class="email-content-section">
+                                <h4>Contenu de l'email</h4>
+                                <div class="email-box">
+                                    ${task.emailHtmlContent || `
+                                        <div class="email-plain-content">
+                                            ${this.escape(task.emailContent).replace(/\n/g, '<br>')}
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        ` : '<div class="email-no-content">Contenu de l\'email non disponible</div>'}
+                    </div>
+                ` : ''}
+                
+                ${task.actions && task.actions.length > 0 ? `
+                    <div class="section">
+                        <h3><i class="fas fa-tasks"></i> Actions requises</h3>
+                        <div class="actions-list">
+                            ${task.actions.map((action, idx) => `
+                                <div class="action-item">
+                                    <span class="action-number">${idx + 1}</span>
+                                    <span class="action-text">${this.escape(action.text || action)}</span>
+                                    ${action.deadline ? `<span class="action-deadline">${this.formatDueDate(action.deadline).text}</span>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                ${task.keyInfo && task.keyInfo.length > 0 ? `
+                    <div class="section">
+                        <h3><i class="fas fa-lightbulb"></i> Informations clés</h3>
+                        <div class="key-info-list">
+                            ${task.keyInfo.map(info => `
+                                <div class="key-info-item">
+                                    <i class="fas fa-chevron-right"></i>
+                                    <span>${this.escape(info)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
                 ` : ''}
             </div>
@@ -1372,6 +1424,7 @@ class TasksView {
                 gap: 12px;
                 transition: all 0.2s;
                 cursor: pointer;
+                position: relative;
             }
 
             .task-item:hover {
@@ -1394,6 +1447,8 @@ class TasksView {
 
             .task-info {
                 flex: 1;
+                cursor: pointer;
+                min-width: 0;
             }
 
             .task-header {
@@ -1408,6 +1463,13 @@ class TasksView {
                 font-size: 15px;
                 font-weight: 600;
                 color: var(--text);
+                cursor: pointer;
+                transition: color 0.2s;
+            }
+
+            .task-header h3:hover {
+                color: var(--primary);
+                text-decoration: underline;
             }
 
             .badges {
@@ -1523,7 +1585,7 @@ class TasksView {
             .modal-container {
                 background: white;
                 border-radius: 16px;
-                max-width: 600px;
+                max-width: 800px;
                 width: 100%;
                 max-height: 90vh;
                 display: flex;
@@ -1828,21 +1890,129 @@ class TasksView {
                 font-size: 14px;
             }
 
-            .email-details {
+            .section-content {
+                padding: 16px 20px;
+            }
+
+            .section-content p {
+                margin: 0;
+                line-height: 1.6;
+                color: var(--text);
+            }
+
+            .email-section {
+                background: #f0f9ff;
+                border-color: #3b82f6;
+            }
+
+            .email-meta {
+                background: white;
+                padding: 16px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+            }
+
+            .email-meta > div {
+                margin-bottom: 8px;
+                font-size: 14px;
+            }
+
+            .email-meta > div:last-child {
+                margin-bottom: 0;
+            }
+
+            .email-content-section {
+                padding: 0 20px 20px;
+            }
+
+            .email-content-section h4 {
+                margin: 0 0 12px 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--text);
+            }
+
+            .email-plain-content {
+                padding: 16px;
+                background: #f8fafc;
+                border-radius: 8px;
+                font-family: monospace;
+                font-size: 13px;
+                line-height: 1.6;
+                white-space: pre-wrap;
+            }
+
+            .email-no-content {
+                padding: 20px;
+                text-align: center;
+                color: var(--text-secondary);
+                font-style: italic;
+            }
+
+            .actions-list {
                 padding: 16px 20px;
                 display: flex;
                 flex-direction: column;
                 gap: 12px;
             }
 
-            .email-details > div {
+            .action-item {
                 display: flex;
-                gap: 8px;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                background: white;
+                border-radius: 6px;
+                border: 1px solid var(--border);
+            }
+
+            .action-number {
+                width: 24px;
+                height: 24px;
+                background: #667eea;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: 600;
+                flex-shrink: 0;
+            }
+
+            .action-text {
+                flex: 1;
                 font-size: 14px;
             }
 
-            .email-content {
-                padding: 0 20px 16px;
+            .action-deadline {
+                font-size: 12px;
+                color: #dc2626;
+                font-weight: 600;
+                background: #fef2f2;
+                padding: 4px 8px;
+                border-radius: 4px;
+            }
+
+            .key-info-list {
+                padding: 16px 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .key-info-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+                font-size: 14px;
+                line-height: 1.4;
+            }
+
+            .key-info-item i {
+                color: var(--primary);
+                margin-top: 2px;
+                flex-shrink: 0;
             }
 
             .email-box {
