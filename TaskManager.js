@@ -1427,6 +1427,11 @@ class TasksView {
                 position: relative;
             }
 
+            .task-item > input[type="checkbox"] {
+                align-self: flex-start;
+                margin-top: 2px;
+            }
+
             .task-item:hover {
                 transform: translateY(-1px);
                 box-shadow: var(--shadow-lg);
@@ -1456,6 +1461,7 @@ class TasksView {
                 align-items: center;
                 justify-content: space-between;
                 margin-bottom: 8px;
+                width: 100%;
             }
 
             .task-header h3 {
@@ -1475,6 +1481,7 @@ class TasksView {
             .badges {
                 display: flex;
                 gap: 6px;
+                align-items: center;
             }
 
             .status-badge,
@@ -1483,6 +1490,10 @@ class TasksView {
                 border-radius: 4px;
                 font-size: 11px;
                 font-weight: 600;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                white-space: nowrap;
             }
 
             .status-badge.todo { background: #fef3c7; color: #d97706; }
@@ -1494,6 +1505,8 @@ class TasksView {
                 background: #fef2f2;
                 color: #dc2626;
                 animation: pulse 2s infinite;
+                line-height: 1;
+                padding: 4px 10px;
             }
 
             @keyframes pulse {
@@ -1506,6 +1519,7 @@ class TasksView {
                 gap: 16px;
                 font-size: 12px;
                 color: var(--text-secondary);
+                align-items: center;
             }
 
             .due.overdue { color: var(--danger); font-weight: 600; }
@@ -1517,6 +1531,8 @@ class TasksView {
             .task-actions {
                 display: flex;
                 gap: 4px;
+                align-items: center;
+                flex-shrink: 0;
             }
 
             .action-btn {
