@@ -77,7 +77,7 @@ class TaskManager {
             {
                 id: 'sample_1',
                 title: 'Répondre à l\'équipe marketing sur la campagne Q2',
-                description: 'Email de Sarah Martin concernant la validation de la campagne marketing Q2.',
+                description: '📧 Email de Sarah Martin\n📌 Sujet: Validation campagne marketing Q2\n\n🎯 Actions requises:\n1. Valider les visuels de la campagne\n2. Confirmer le budget alloué (50k€)\n3. Définir les dates de lancement\n\n💡 Points clés:\n• Cible : 25-45 ans\n• Canaux : LinkedIn, Google Ads',
                 priority: 'high',
                 status: 'todo',
                 category: 'email',
@@ -85,11 +85,22 @@ class TaskManager {
                 emailFrom: 'sarah.martin@acme-corp.com',
                 emailFromName: 'Sarah Martin',
                 emailSubject: 'Validation campagne marketing Q2',
+                emailContent: 'Bonjour,\n\nJ\'espère que vous allez bien. Je vous contacte concernant la campagne marketing Q2 que nous avons discutée lors de notre dernière réunion.\n\nNous avons finalisé les visuels et j\'aurais besoin de votre validation avant de procéder au lancement. Le budget proposé est de 50k€ et nous visons une audience de 25-45 ans principalement sur LinkedIn et Google Ads.\n\nPourriez-vous examiner les éléments ci-joints et me confirmer si nous pouvons procéder ?\n\nCordialement,\nSarah Martin\nDirectrice Marketing\nACME Corp',
                 emailDate: '2025-06-06T09:15:00Z',
                 emailDomain: 'acme-corp.com',
                 client: 'ACME Corp',
                 dueDate: '2025-06-20',
                 needsReply: true,
+                actions: [
+                    { text: 'Valider les visuels de la campagne' },
+                    { text: 'Confirmer le budget alloué' },
+                    { text: 'Définir les dates de lancement' }
+                ],
+                keyInfo: [
+                    'Budget proposé : 50k€',
+                    'Cible : 25-45 ans',
+                    'Canaux : LinkedIn, Google Ads'
+                ],
                 checklist: [
                     { id: 'cl1', text: 'Analyser les visuels proposés', completed: false },
                     { id: 'cl2', text: 'Vérifier le budget disponible', completed: true },
@@ -120,10 +131,17 @@ class TaskManager {
     createTaskFromEmail(taskData, email = null) {
         const emailInfo = this.extractEmailInfo(email, taskData);
         
+        // Créer une description succincte au lieu de copier tout l'email
+        let description = taskData.description || '';
+        if (!description || description === taskData.emailContent) {
+            description = this.createEmailSummary(email, taskData, emailInfo);
+        }
+        
         const task = this.ensureTaskProperties({
             ...taskData,
             id: taskData.id || this.generateId(),
             hasEmail: true,
+            description: description,
             emailContent: this.extractEmailContent(email, taskData),
             emailHtmlContent: this.extractHtmlContent(email, taskData),
             ...emailInfo,
@@ -135,6 +153,51 @@ class TaskManager {
         this.saveTasks();
         this.emitUpdate('create', task);
         return task;
+    }
+
+    createEmailSummary(email, taskData, emailInfo) {
+        // Créer un résumé succinct avec les éléments clés
+        const summary = [];
+        
+        // Ajouter l'expéditeur et le sujet
+        if (emailInfo.emailFromName || emailInfo.emailFrom) {
+            summary.push(`📧 Email de ${emailInfo.emailFromName || emailInfo.emailFrom}`);
+        }
+        
+        if (emailInfo.emailSubject) {
+            summary.push(`📌 Sujet: ${emailInfo.emailSubject}`);
+        }
+        
+        // Ajouter les actions si présentes
+        if (taskData.actions && taskData.actions.length > 0) {
+            summary.push('\n🎯 Actions requises:');
+            taskData.actions.slice(0, 3).forEach((action, i) => {
+                summary.push(`${i + 1}. ${action.text || action}`);
+            });
+        }
+        
+        // Ajouter les infos clés si présentes
+        if (taskData.keyInfo && taskData.keyInfo.length > 0) {
+            summary.push('\n💡 Points clés:');
+            taskData.keyInfo.slice(0, 3).forEach(info => {
+                summary.push(`• ${info}`);
+            });
+        }
+        
+        // Si on a des risques/points d'attention
+        if (taskData.risks && taskData.risks.length > 0) {
+            summary.push('\n⚠️ Points d\'attention:');
+            taskData.risks.slice(0, 2).forEach(risk => {
+                summary.push(`• ${risk}`);
+            });
+        }
+        
+        // Si on a un résumé IA
+        if (taskData.summary) {
+            summary.push(`\n📝 ${taskData.summary}`);
+        }
+        
+        return summary.join('\n');
     }
 
     updateTask(id, updates) {
@@ -1965,6 +2028,7 @@ class TasksView {
                 margin: 0;
                 line-height: 1.6;
                 color: var(--text);
+                white-space: pre-line;
             }
 
             .email-section {
