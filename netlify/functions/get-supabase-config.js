@@ -2,19 +2,6 @@
 // Fonction serverless pour récupérer la configuration Supabase de manière sécurisée
 
 exports.handler = async (event, context) => {
-    // Vérification de la méthode HTTP
-    if (event.httpMethod !== 'POST') {
-        return {
-            statusCode: 405,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type'
-            },
-            body: JSON.stringify({ error: 'Method Not Allowed' })
-        };
-    }
-
     // Gérer les requêtes OPTIONS pour CORS
     if (event.httpMethod === 'OPTIONS') {
         return {
@@ -27,7 +14,20 @@ exports.handler = async (event, context) => {
             body: ''
         };
     }
-
+    
+    // Vérification de la méthode HTTP
+    if (event.httpMethod !== 'POST') {
+        return {
+            statusCode: 405,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            },
+            body: JSON.stringify({ error: 'Method Not Allowed' })
+        };
+    }
+    
     try {
         // Parser le body de la requête
         const { accessKey } = JSON.parse(event.body || '{}');
@@ -43,14 +43,16 @@ exports.handler = async (event, context) => {
                 body: JSON.stringify({ error: 'Unauthorized' })
             };
         }
-
+        
         // Récupérer les variables d'environnement
-        const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-        const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-
+        const supabaseUrl = process.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+        
         // Vérifier que les variables sont définies
         if (!supabaseUrl || !supabaseAnonKey) {
             console.error('Supabase configuration not found in environment variables');
+            console.error('Available env vars:', Object.keys(process.env).filter(key => key.includes('SUPABASE')));
+            
             return {
                 statusCode: 500,
                 headers: {
@@ -63,7 +65,7 @@ exports.handler = async (event, context) => {
                 })
             };
         }
-
+        
         // Retourner la configuration
         return {
             statusCode: 200,
