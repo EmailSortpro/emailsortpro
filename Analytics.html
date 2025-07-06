@@ -888,6 +888,24 @@
             margin-top: 8px;
         }
     </style>
+    
+    <!-- Script pour injecter les variables d'environnement Netlify -->
+    <script>
+        // Vérifier si on est sur Netlify et injecter les variables
+        if (!window.VITE_SUPABASE_URL && !window.VITE_SUPABASE_ANON_KEY) {
+            // Ces valeurs seront remplacées par Netlify au moment du build
+            window.VITE_SUPABASE_URL = '${VITE_SUPABASE_URL}';
+            window.VITE_SUPABASE_ANON_KEY = '${VITE_SUPABASE_ANON_KEY}';
+            
+            // Si les variables contiennent encore les placeholders, les effacer
+            if (window.VITE_SUPABASE_URL.includes('${')) {
+                window.VITE_SUPABASE_URL = '';
+            }
+            if (window.VITE_SUPABASE_ANON_KEY.includes('${')) {
+                window.VITE_SUPABASE_ANON_KEY = '';
+            }
+        }
+    </script>
 </head>
 <body>
     <!-- Page de connexion -->
@@ -1309,10 +1327,11 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Charger les scripts dans le bon ordre -->
     <script src="./config-supabase.js"></script>
     <script src="./LicenceService.js"></script>
     <script src="./analytics.js"></script>
+    
     <script>
         // Application Analytics
         class AnalyticsApp {
@@ -1419,7 +1438,7 @@
                     
                 } catch (error) {
                     console.error('Auth error:', error);
-                    this.showMessage('error', 'Erreur de connexion');
+                    this.showMessage('error', 'Erreur de connexion. Vérifiez votre connexion internet.');
                 } finally {
                     button.disabled = false;
                     button.innerHTML = originalText;
@@ -1460,7 +1479,6 @@
                     
                     if (this.pendingUser) {
                         // Mise à jour d'un utilisateur existant
-                        // TODO: Implémenter la mise à jour du type de compte
                         alert('Mise à jour du type de compte en cours de développement');
                     } else if (this.pendingEmail) {
                         // Création d'un nouvel utilisateur
@@ -2174,9 +2192,9 @@
                 const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
                 
                 if (days < 0) {
-                    return `Expirée (${Math.abs(days)}j)`;
+                    return `<span style="color: var(--danger);">Expirée (${Math.abs(days)}j)</span>`;
                 } else if (days === 0) {
-                    return 'Expire aujourd\'hui';
+                    return '<span style="color: var(--warning);">Expire aujourd\'hui</span>';
                 } else if (days <= 7) {
                     return `<span style="color: var(--warning);">${days} jour${days > 1 ? 's' : ''}</span>`;
                 } else {
