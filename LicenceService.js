@@ -1,5 +1,5 @@
-// LicenceService.js - Service de gestion des licences EmailSortPro
-// Version 6.0 - Compatible avec la nouvelle structure de base de données
+// LicenseService.js - Service de gestion des licences EmailSortPro avec blocage strict
+// Version 6.1 - Blocage effectif des licences expirées
 
 class LicenseService {
     constructor() {
@@ -19,7 +19,7 @@ class LicenseService {
             'wanadoo.fr', 'bbox.fr', 'hotmail.fr', 'live.fr', 'outlook.fr'
         ];
         
-        console.log('[LicenseService] Service created v6.0');
+        console.log('[LicenseService] Service created v6.1 - With strict license enforcement');
     }
 
     async initialize() {
@@ -118,15 +118,20 @@ class LicenseService {
             // Vérifier le statut de la licence
             const licenseStatus = await this.checkLicenseStatus(email);
             
-            // Mettre en cache le résultat (1 heure)
-            if (licenseStatus.valid || licenseStatus.status === 'expired') {
+            // IMPORTANT: Bloquer immédiatement si la licence est expirée (sauf super admin)
+            if (!licenseStatus.valid && licenseStatus.status === 'expired') {
+                console.warn('[LicenseService] ❌ LICENSE EXPIRED - Blocking access');
+                this.clearCache();
+                return licenseStatus;
+            }
+            
+            // Mettre en cache le résultat seulement si valide
+            if (licenseStatus.valid) {
                 this.cachedLicenseStatus = licenseStatus;
                 this.cacheExpiry = new Date(Date.now() + 60 * 60 * 1000);
                 this.currentUser = licenseStatus.user;
-            }
-            
-            // Mettre à jour la dernière connexion si valide
-            if (licenseStatus.valid && licenseStatus.user) {
+                
+                // Mettre à jour la dernière connexion
                 await this.updateLastLogin(licenseStatus.user.id);
             }
             
@@ -135,8 +140,10 @@ class LicenseService {
         } catch (error) {
             console.error('[LicenseService] Authentication error:', error);
             
-            // En cas d'erreur réseau, utiliser le cache si disponible
-            if (this.cachedLicenseStatus && error.message.includes('network')) {
+            // En cas d'erreur réseau, utiliser le cache si disponible ET valide
+            if (this.cachedLicenseStatus && 
+                this.cachedLicenseStatus.valid && 
+                error.message.includes('network')) {
                 console.log('[LicenseService] Network error, using cached status');
                 return { ...this.cachedLicenseStatus, offline: true };
             }
@@ -214,7 +221,7 @@ class LicenseService {
     processUserLicense(user) {
         // Les super admins ont toujours accès
         if (user.role === 'super_admin') {
-            console.log('[LicenseService] Super admin user');
+            console.log('[LicenseService] Super admin user - always valid');
             return {
                 valid: true,
                 status: 'active',
@@ -234,7 +241,9 @@ class LicenseService {
             status: status,
             role: user.role,
             account_type: user.account_type,
-            has_expiry: !!expiresAt
+            has_expiry: !!expiresAt,
+            expires_at: expiresAt ? expiresAt.toISOString() : null,
+            now: now.toISOString()
         });
 
         // Vérifier si bloqué
@@ -245,7 +254,8 @@ class LicenseService {
                 status: 'blocked',
                 message: 'Votre compte a été bloqué. Contactez votre administrateur.',
                 user: user,
-                adminContact: adminContact
+                adminContact: adminContact,
+                requiresAction: true
             };
         }
 
@@ -256,27 +266,47 @@ class LicenseService {
                 status: 'not_started',
                 message: `Votre licence commencera le ${startsAt.toLocaleDateString('fr-FR')}`,
                 startsAt: startsAt,
-                user: user
+                user: user,
+                requiresAction: true
             };
         }
 
-        // Vérifier l'expiration
+        // VÉRIFICATION CRITIQUE : Expiration de la licence
         if (expiresAt && expiresAt < now) {
             const adminContact = this.getAdminContact(user);
+            const daysExpired = Math.ceil((now - expiresAt) / (1000 * 60 * 60 * 24));
+            
+            console.warn(`[LicenseService] ❌ LICENSE EXPIRED ${daysExpired} days ago for:`, user.email);
+            
             return { 
                 valid: false, 
                 status: 'expired',
-                message: 'Votre licence a expiré',
+                message: `Votre licence a expiré depuis ${daysExpired} jour${daysExpired > 1 ? 's' : ''}`,
+                detailedMessage: `Votre période d'essai de 15 jours est terminée. Pour continuer à utiliser EmailSortPro, veuillez contacter votre administrateur ou le support pour renouveler votre licence.`,
                 expiredAt: expiresAt,
+                daysExpired: daysExpired,
                 user: user,
-                adminContact: adminContact
+                adminContact: adminContact,
+                requiresAction: true,
+                blockAccess: true // Flag explicite pour bloquer l'accès
             };
         }
 
         // Calculer les jours restants
         let daysRemaining = null;
+        let warningLevel = null;
+        
         if (expiresAt) {
             daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
+            
+            // Définir le niveau d'avertissement
+            if (daysRemaining <= 3) {
+                warningLevel = 'critical';
+            } else if (daysRemaining <= 7) {
+                warningLevel = 'warning';
+            } else if (daysRemaining <= 14) {
+                warningLevel = 'info';
+            }
         }
 
         // La licence est valide
@@ -286,8 +316,11 @@ class LicenseService {
             startsAt: startsAt,
             expiresAt: expiresAt,
             daysRemaining: daysRemaining,
+            warningLevel: warningLevel,
             user: user,
-            message: status === 'trial' ? `Période d'essai - ${daysRemaining} jours restants` : 'Licence active'
+            message: status === 'trial' ? 
+                `Période d'essai - ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''} restant${daysRemaining > 1 ? 's' : ''}` : 
+                'Licence active'
         };
     }
 
@@ -297,15 +330,17 @@ class LicenseService {
         if (user.account_type === 'individual') {
             return {
                 email: 'support@emailsortpro.com',
-                name: 'Support EmailSortPro'
+                name: 'Support EmailSortPro',
+                phone: '+33 1 xx xx xx xx'
             };
         }
 
-        // Pour les comptes professional, on devrait chercher l'admin de la société
-        // Mais sans faire une requête supplémentaire, on retourne un contact générique
+        // Pour les comptes professional, retourner un contact admin générique
+        const domain = user.email.split('@')[1];
         return {
-            email: 'admin@' + (user.email.split('@')[1] || 'emailsortpro.com'),
-            name: 'Administrateur'
+            email: `admin@${domain}`,
+            name: 'Administrateur de votre entreprise',
+            fallbackEmail: 'support@emailsortpro.com'
         };
     }
 
@@ -320,7 +355,7 @@ class LicenseService {
             
             const domain = email.split('@')[1];
             const name = email.split('@')[0];
-            const trialDays = 15;
+            const trialDays = 15; // Période d'essai fixe de 15 jours
             
             // Pour les comptes professionnels, gérer la société
             let companyId = null;
@@ -500,8 +535,7 @@ class LicenseService {
             if (error) throw error;
 
             // Invalider le cache
-            this.cachedLicenseStatus = null;
-            this.cacheExpiry = null;
+            this.clearCache();
 
             console.log('[LicenseService] Updated user license status to:', newStatus);
             return { success: true };
@@ -545,14 +579,52 @@ class LicenseService {
             if (error) throw error;
 
             // Invalider le cache
-            this.cachedLicenseStatus = null;
-            this.cacheExpiry = null;
+            this.clearCache();
 
             console.log('[LicenseService] ✅ License dates updated successfully');
             return { success: true };
 
         } catch (error) {
             console.error('[LicenseService] Error updating license dates:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Méthode pour prolonger une période d'essai (admin seulement)
+    async extendTrial(userId, additionalDays) {
+        try {
+            if (!this.isAdmin()) {
+                return { success: false, error: 'Seuls les administrateurs peuvent prolonger les essais' };
+            }
+
+            const { data: user, error: fetchError } = await this.supabase
+                .from('users')
+                .select('license_expires_at, license_status')
+                .eq('id', userId)
+                .single();
+
+            if (fetchError || !user) {
+                return { success: false, error: 'Utilisateur non trouvé' };
+            }
+
+            if (user.license_status !== 'trial' && user.license_status !== 'expired') {
+                return { success: false, error: 'Seuls les essais peuvent être prolongés' };
+            }
+
+            const currentExpiry = new Date(user.license_expires_at);
+            const newExpiry = new Date(Math.max(currentExpiry, new Date()));
+            newExpiry.setDate(newExpiry.getDate() + additionalDays);
+
+            const result = await this.updateUserLicenseStatus(userId, 'trial', newExpiry.toISOString());
+
+            if (result.success) {
+                console.log(`[LicenseService] Extended trial by ${additionalDays} days for user ${userId}`);
+            }
+
+            return result;
+
+        } catch (error) {
+            console.error('[LicenseService] Error extending trial:', error);
             return { success: false, error: error.message };
         }
     }
@@ -568,6 +640,10 @@ class LicenseService {
         
         return this.currentUser.role === 'company_admin' || 
                this.currentUser.role === 'super_admin';
+    }
+
+    isSuperAdmin() {
+        return this.currentUser && this.currentUser.role === 'super_admin';
     }
 
     async getCompanyUsers() {
@@ -658,8 +734,7 @@ class LicenseService {
         this.currentUser = null;
         this.initialized = false;
         this.initPromise = null;
-        this.cachedLicenseStatus = null;
-        this.cacheExpiry = null;
+        this.clearCache();
         console.log('[LicenseService] Service reset');
     }
 
@@ -672,7 +747,8 @@ class LicenseService {
                 status: this.currentUser.license_status,
                 role: this.currentUser.role,
                 company_id: this.currentUser.company_id,
-                accountType: this.currentUser.account_type
+                accountType: this.currentUser.account_type,
+                expiresAt: this.currentUser.license_expires_at
             } : null,
             hasCachedStatus: !!this.cachedLicenseStatus,
             cacheExpiry: this.cacheExpiry
@@ -683,4 +759,4 @@ class LicenseService {
 // Créer l'instance globale
 window.licenseService = new LicenseService();
 
-console.log('[LicenseService] ✅ Service loaded v6.0 - Simplified and compatible');
+console.log('[LicenseService] ✅ Service loaded v6.1 - With strict license enforcement');
