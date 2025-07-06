@@ -888,24 +888,6 @@
             margin-top: 8px;
         }
     </style>
-    
-    <!-- Script pour injecter les variables d'environnement Netlify -->
-    <script>
-        // Vérifier si on est sur Netlify et injecter les variables
-        if (!window.VITE_SUPABASE_URL && !window.VITE_SUPABASE_ANON_KEY) {
-            // Ces valeurs seront remplacées par Netlify au moment du build
-            window.VITE_SUPABASE_URL = '${VITE_SUPABASE_URL}';
-            window.VITE_SUPABASE_ANON_KEY = '${VITE_SUPABASE_ANON_KEY}';
-            
-            // Si les variables contiennent encore les placeholders, les effacer
-            if (window.VITE_SUPABASE_URL.includes('${')) {
-                window.VITE_SUPABASE_URL = '';
-            }
-            if (window.VITE_SUPABASE_ANON_KEY.includes('${')) {
-                window.VITE_SUPABASE_ANON_KEY = '';
-            }
-        }
-    </script>
 </head>
 <body>
     <!-- Page de connexion -->
