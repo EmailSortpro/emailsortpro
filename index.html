@@ -1333,41 +1333,52 @@
 
     <!-- Scripts - Ordre CORRIGÉ pour éviter le délai de 10 secondes -->
     
-    <!-- 1. UIManager EN PREMIER pour éviter l'attente -->
-    <script src="UIManager.js"></script>
-    
-    <!-- 2. Services Core -->
-    <script src="AuthService.js"></script>
-    <script src="GoogleAuthService.js"></script>
-    <script src="MailService.js"></script>
+  <!-- Scripts - Ordre CORRIGÉ pour éviter le délai de 10 secondes -->
 
-    <!-- 3. CategoryManager -->
-    <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
-    
-    <!-- 4. TaskManager AVANT PageManager -->
-    <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
-    
-    <!-- 5. Autres Managers -->
-    <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
-    <script src="EmailDeduplicationManager.js"></script>
-    <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
-    
-    <!-- 6. DASHBOARD MODULE -->
-    <script src="dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
-    
-    <!-- 7. Page Manager APRÈS Dashboard et TaskManager -->
-    <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
-    
-    <!-- 8. Modules de pages -->
-    <script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
-    <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
-    <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
-    
-    <!-- 9. Modules Optionnels -->
-    <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
-    
-    <!-- 10. Application Principal EN DERNIER -->
-    <script src="app.js"></script>
+<!-- 1. Configuration Supabase EN PREMIER -->
+<script src="config-supabase.js"></script>
+
+<!-- 2. UIManager EN DEUXIÈME pour éviter l'attente -->
+<script src="UIManager.js"></script>
+
+<!-- 3. Services Core -->
+<script src="AuthService.js"></script>
+<script src="GoogleAuthService.js"></script>
+<script src="LicenceService.js"></script>
+<script src="MailService.js"></script>
+
+<!-- 4. CategoryManager -->
+<script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
+
+<!-- 5. TaskManager AVANT PageManager -->
+<script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
+
+<!-- 6. Autres Managers -->
+<script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
+<script src="EmailDeduplicationManager.js"></script>
+<script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
+
+<!-- 7. Analytics -->
+<script src="analytics.js" onerror="console.error('analytics.js manquant')"></script>
+
+<!-- 8. DASHBOARD MODULE -->
+<script src="dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
+
+<!-- 9. Page Managers APRÈS Dashboard et TaskManager -->
+<script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
+<script src="PageManagerGmail.js" onerror="console.error('PageManagerGmail.js manquant')"></script>
+<script src="PageManagerOutlook.js" onerror="console.error('PageManagerOutlook.js manquant')"></script>
+
+<!-- 10. Modules de pages -->
+<script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
+<script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
+<script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
+
+<!-- 11. Modules Optionnels -->
+<script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
+
+<!-- 12. Application Principal EN DERNIER -->
+<script src="app.js"></script>
     
     <!-- Scripts de gestion des événements -->
     <script>
