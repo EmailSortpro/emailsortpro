@@ -1,5 +1,5 @@
-// config-supabase.js - Configuration Supabase avec auto-détection des variables d'environnement
-// Version 3.1 - Corrigé pour Netlify et développement local
+// config-supabase.js - Configuration Supabase avec récupération sécurisée des variables
+// Version 4.0 - Optimisé pour Netlify Functions
 
 (function() {
     'use strict';
@@ -11,36 +11,31 @@
             this.initialized = false;
             this.initializationError = null;
             
-            console.log('[SupabaseConfig] Initializing configuration detector...');
+            console.log('[SupabaseConfig] Initializing configuration detector v4.0...');
         }
 
         async detectEnvironmentVariables() {
             console.log('[SupabaseConfig] Detecting environment variables...');
             
+            // Vérifier les variables dans window (pour le développement local)
             const possibleLocations = [
-                // 1. Variables directement dans window
                 { 
                     url: window.VITE_SUPABASE_URL, 
                     key: window.VITE_SUPABASE_ANON_KEY,
                     source: 'window.VITE_*'
                 },
-                // 2. Variables dans window.env
                 { 
                     url: window.env?.VITE_SUPABASE_URL, 
                     key: window.env?.VITE_SUPABASE_ANON_KEY,
                     source: 'window.env'
-                },
-                // 3. Variables dans window.__env__
-                { 
-                    url: window.__env__?.VITE_SUPABASE_URL, 
-                    key: window.__env__?.VITE_SUPABASE_ANON_KEY,
-                    source: 'window.__env__'
                 }
             ];
 
-            // Tenter de trouver les variables
+            // Tenter de trouver les variables localement
             for (const location of possibleLocations) {
-                if (location.url && location.key) {
+                if (location.url && location.key && 
+                    !location.url.includes('${') && 
+                    !location.key.includes('${')) {
                     console.log(`[SupabaseConfig] ✅ Found variables in ${location.source}`);
                     this.url = location.url;
                     this.anonKey = location.key;
@@ -48,30 +43,12 @@
                 }
             }
 
-            // Si pas trouvé, chercher dans les scripts injectés
-            const scripts = document.getElementsByTagName('script');
-            for (let script of scripts) {
-                if (script.textContent && script.textContent.includes('VITE_SUPABASE_URL')) {
-                    console.log('[SupabaseConfig] Found variables in injected script');
-                    // Essayer d'extraire les variables avec regex
-                    const urlMatch = script.textContent.match(/VITE_SUPABASE_URL\s*=\s*["']([^"']+)["']/);
-                    const keyMatch = script.textContent.match(/VITE_SUPABASE_ANON_KEY\s*=\s*["']([^"']+)["']/);
-                    
-                    if (urlMatch && keyMatch) {
-                        this.url = urlMatch[1];
-                        this.anonKey = keyMatch[1];
-                        console.log('[SupabaseConfig] ✅ Extracted variables from script');
-                        return true;
-                    }
-                }
-            }
-
-            console.warn('[SupabaseConfig] ❌ No environment variables found');
+            console.log('[SupabaseConfig] No local environment variables found');
             return false;
         }
 
         async loadFromNetlifyFunction() {
-            console.log('[SupabaseConfig] Attempting to load from Netlify function...');
+            console.log('[SupabaseConfig] Loading from Netlify function...');
             
             try {
                 const response = await fetch('/.netlify/functions/get-supabase-config', {
@@ -84,23 +61,30 @@
                     })
                 });
 
+                console.log('[SupabaseConfig] Function response status:', response.status);
+
                 if (!response.ok) {
-                    throw new Error(`Function returned ${response.status}`);
+                    const errorText = await response.text();
+                    console.error('[SupabaseConfig] Function error response:', errorText);
+                    throw new Error(`Function returned ${response.status}: ${errorText}`);
                 }
 
                 const data = await response.json();
+                console.log('[SupabaseConfig] Function response received');
                 
                 if (data.url && data.anonKey) {
                     this.url = data.url;
                     this.anonKey = data.anonKey;
-                    console.log('[SupabaseConfig] ✅ Loaded from Netlify function');
+                    console.log('[SupabaseConfig] ✅ Configuration loaded from Netlify function');
+                    console.log('[SupabaseConfig] URL starts with:', this.url.substring(0, 20) + '...');
                     return true;
                 }
                 
-                throw new Error('Invalid response from function');
+                console.error('[SupabaseConfig] Invalid response data:', data);
+                throw new Error('Invalid response: missing url or anonKey');
                 
             } catch (error) {
-                console.warn('[SupabaseConfig] Netlify function failed:', error.message);
+                console.error('[SupabaseConfig] Netlify function error:', error);
                 return false;
             }
         }
@@ -108,6 +92,10 @@
         getConfig() {
             if (!this.initialized) {
                 throw new Error('SupabaseConfig not initialized. Call initialize() first.');
+            }
+
+            if (!this.url || !this.anonKey) {
+                throw new Error('Supabase configuration is incomplete');
             }
 
             return {
@@ -129,34 +117,35 @@
             try {
                 console.log('[SupabaseConfig] Starting initialization...');
                 
-                // 1. Essayer de détecter les variables d'environnement
+                // 1. Essayer de détecter les variables d'environnement locales
                 const envFound = await this.detectEnvironmentVariables();
                 
                 if (!envFound) {
-                    // 2. Si pas trouvé, essayer la fonction Netlify
-                    console.log('[SupabaseConfig] Environment variables not found, trying Netlify function...');
+                    // 2. Si pas trouvé localement, utiliser la fonction Netlify
+                    console.log('[SupabaseConfig] Trying Netlify function...');
                     const functionLoaded = await this.loadFromNetlifyFunction();
                     
                     if (!functionLoaded) {
                         throw new Error(
-                            'Supabase configuration not found. Please configure environment variables.'
+                            'Unable to load Supabase configuration. Please check your environment setup.'
                         );
                     }
                 }
 
                 // Valider la configuration
                 if (!this.url || !this.anonKey) {
-                    throw new Error('Invalid Supabase configuration');
+                    throw new Error('Invalid Supabase configuration: missing URL or key');
                 }
 
-                // Vérifier que ce ne sont pas des placeholders
-                if (this.url.includes('placeholder') || this.anonKey === 'placeholder-key') {
-                    console.warn('[SupabaseConfig] ⚠️ Using placeholder values - real connection will fail');
+                // Vérifier que l'URL est valide
+                try {
+                    new URL(this.url);
+                } catch (e) {
+                    throw new Error('Invalid Supabase URL format');
                 }
 
                 this.initialized = true;
                 console.log('[SupabaseConfig] ✅ Configuration initialized successfully');
-                console.log('[SupabaseConfig] URL:', this.url.substring(0, 30) + '...');
                 
                 return true;
                 
@@ -164,6 +153,11 @@
                 console.error('[SupabaseConfig] ❌ Initialization failed:', error);
                 this.initializationError = error;
                 this.initialized = false;
+                
+                // Reset values on error
+                this.url = '';
+                this.anonKey = '';
+                
                 throw error;
             }
         }
@@ -172,21 +166,29 @@
             return this.initialized && 
                    this.url && 
                    this.anonKey && 
-                   !this.url.includes('placeholder');
+                   this.url.startsWith('https://');
         }
 
         getStatus() {
             return {
                 initialized: this.initialized,
                 configured: this.isConfigured(),
-                url: this.url ? this.url.substring(0, 30) + '...' : null,
-                hasKey: !!this.anonKey,
+                hasUrl: !!this.url && this.url.startsWith('https://'),
+                hasKey: !!this.anonKey && this.anonKey.length > 20,
                 error: this.initializationError?.message || null
             };
         }
+
+        reset() {
+            this.url = '';
+            this.anonKey = '';
+            this.initialized = false;
+            this.initializationError = null;
+            console.log('[SupabaseConfig] Configuration reset');
+        }
     }
 
-    // Créer l'instance globale et l'initialiser
+    // Créer l'instance globale
     window.supabaseConfig = new SupabaseConfig();
 
     // Fonction d'initialisation globale
@@ -200,7 +202,7 @@
         }
     };
 
-    // Export des constantes de statut
+    // Export des constantes
     window.LICENSE_STATUS = {
         TRIAL: 'trial',
         ACTIVE: 'active',
@@ -214,5 +216,5 @@
         USER: 'user'
     };
 
-    console.log('[SupabaseConfig] ✅ Configuration module loaded v3.1');
+    console.log('[SupabaseConfig] ✅ Configuration module loaded v4.0');
 })();
