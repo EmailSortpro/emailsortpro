@@ -869,36 +869,31 @@ class PageManager {
         const preselectedCategories = this.getTaskPreselectedCategories();
         console.log('[PageManager] 📌 Catégories pré-sélectionnées pour affichage:', preselectedCategories);
         
-        // Construire l'onglet "Tous"
-        let tabsHTML = `
-            <button class="category-tab ${this.currentCategory === 'all' || !this.currentCategory ? 'active' : ''}" 
-                    onclick="window.pageManager.filterByCategory('all')"
-                    data-category-id="all">
-                <span class="tab-icon">📧</span>
-                <span class="tab-name">Tous</span>
-                <span class="tab-count">${totalEmails}</span>
-            </button>
-        `;
+        const tabs = [
+            { 
+                id: 'all', 
+                name: 'Tous', 
+                icon: '📧', 
+                count: totalEmails,
+                isPreselected: false 
+            }
+        ];
         
         // Ajouter les autres catégories
         Object.entries(categories).forEach(([catId, category]) => {
-            if (catId === 'all') return; // Déjà ajouté
+            if (catId === 'all') return;
             
             const count = categoryCounts[catId] || 0;
             if (count > 0) {
                 const isPreselected = preselectedCategories.includes(catId);
-                
-                tabsHTML += `
-                    <button class="category-tab ${this.currentCategory === catId ? 'active' : ''} ${isPreselected ? 'preselected' : ''}" 
-                            onclick="window.pageManager.filterByCategory('${catId}')"
-                            data-category-id="${catId}"
-                            title="${isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
-                        <span class="tab-icon">${category.icon}</span>
-                        <span class="tab-name">${category.name}</span>
-                        <span class="tab-count">${count}</span>
-                        ${isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
-                    </button>
-                `;
+                tabs.push({
+                    id: catId,
+                    name: category.name,
+                    icon: category.icon,
+                    color: category.color,
+                    count: count,
+                    isPreselected: isPreselected
+                });
                 
                 if (isPreselected) {
                     console.log(`[PageManager] ⭐ Catégorie pré-sélectionnée: ${category.name} (${count} emails)`);
@@ -906,18 +901,40 @@ class PageManager {
             }
         });
         
-        // Ajouter "Autre" s'il y a des emails non catégorisés
+        // Ajouter "Autre"
         const otherCount = categoryCounts.other || 0;
         if (otherCount > 0) {
-            tabsHTML += `
-                <button class="category-tab ${this.currentCategory === 'other' ? 'active' : ''}" 
-                        onclick="window.pageManager.filterByCategory('other')"
-                        data-category-id="other">
-                    <span class="tab-icon">📌</span>
-                    <span class="tab-name">Autre</span>
-                    <span class="tab-count">${otherCount}</span>
-                </button>
-            `;
+            tabs.push({
+                id: 'other',
+                name: 'Autre',
+                icon: '📌',
+                count: otherCount,
+                isPreselected: false
+            });
+        }
+        
+        // Diviser en lignes de 6 boutons maximum
+        let tabsHTML = '';
+        for (let i = 0; i < tabs.length; i += 6) {
+            const rowTabs = tabs.slice(i, i + 6);
+            tabsHTML += `<div class="category-row">`;
+            tabsHTML += rowTabs.map(tab => {
+                const isCurrentCategory = this.currentCategory === tab.id;
+                const baseClasses = `category-tab ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected' : ''}`;
+                
+                return `
+                    <button class="${baseClasses}" 
+                            onclick="window.pageManager.filterByCategory('${tab.id}')"
+                            data-category-id="${tab.id}"
+                            title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
+                        <span class="tab-icon">${tab.icon}</span>
+                        <span class="tab-name">${tab.name}</span>
+                        <span class="tab-count">${tab.count}</span>
+                        ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
+                    </button>
+                `;
+            }).join('');
+            tabsHTML += `</div>`;
         }
         
         return tabsHTML;
@@ -2605,7 +2622,7 @@ class PageManager {
         styles.id = 'emailsPageStyles';
         styles.textContent = `
             .emails-page-modern {
-                padding: 20px;
+                padding: 16px;
                 background: #f8fafc;
                 min-height: 100vh;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -2615,13 +2632,13 @@ class PageManager {
                 background: rgba(59, 130, 246, 0.1);
                 border: 1px solid rgba(59, 130, 246, 0.2);
                 border-radius: 8px;
-                padding: 12px 16px;
-                margin-bottom: 16px;
+                padding: 10px 14px;
+                margin-bottom: 12px;
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 10px;
                 color: #1e40af;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 500;
             }
             
@@ -2644,12 +2661,12 @@ class PageManager {
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: 12px;
-                padding: 16px;
-                margin-bottom: 16px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                padding: 12px;
+                margin-bottom: 12px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
                 display: flex;
                 flex-direction: column;
-                gap: 16px;
+                gap: 12px;
             }
 
             .search-section {
@@ -2895,31 +2912,35 @@ class PageManager {
                 position: sticky;
                 top: 0;
                 z-index: 100;
-                background: #f8fafc;
-                margin: 0 -20px 20px -20px;
-                padding: 16px 20px;
+                background: rgba(248, 250, 252, 0.98);
+                backdrop-filter: blur(20px);
+                margin: -8px -20px 16px -20px;
+                padding: 12px 20px;
                 border-bottom: 2px solid #e5e7eb;
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             }
 
             .category-filters {
                 display: flex;
-                gap: 12px;
-                flex-wrap: wrap;
-                justify-content: center;
-                align-items: center;
+                flex-direction: column;
+                gap: 6px;
                 max-width: 1200px;
                 margin: 0 auto;
             }
 
+            .category-row {
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 6px;
+                width: 100%;
+            }
+
             .category-tab {
-                height: 60px;
-                min-width: 120px;
-                max-width: 180px;
-                padding: 8px 16px;
+                height: 56px;
+                padding: 0;
                 background: white;
                 border: 2px solid #e5e7eb;
-                border-radius: 12px;
+                border-radius: 8px;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 position: relative;
@@ -2928,39 +2949,41 @@ class PageManager {
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 4px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-                flex: 0 1 auto;
+                gap: 2px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+                font-size: 12px;
             }
 
             .category-tab .tab-icon {
-                font-size: 20px;
+                font-size: 18px;
                 line-height: 1;
             }
 
             .category-tab .tab-name {
-                font-size: 13px;
+                font-size: 12px;
                 font-weight: 700;
                 color: #1f2937;
                 text-align: center;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                max-width: 100%;
+                max-width: 90%;
+                padding: 0 4px;
             }
 
             .category-tab .tab-count {
                 position: absolute;
-                top: 4px;
-                right: 4px;
+                top: 3px;
+                right: 3px;
                 background: #3b82f6;
                 color: white;
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 700;
-                padding: 2px 6px;
-                border-radius: 10px;
-                min-width: 20px;
+                padding: 1px 5px;
+                border-radius: 8px;
+                min-width: 18px;
                 text-align: center;
+                line-height: 1.2;
             }
 
             .category-tab.preselected {
@@ -2975,15 +2998,15 @@ class PageManager {
             .category-tab:hover {
                 border-color: #3b82f6;
                 background: #f0f9ff;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+                transform: translateY(-1px);
+                box-shadow: 0 3px 8px rgba(59, 130, 246, 0.15);
             }
 
             .category-tab.active {
                 background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
                 border-color: #3b82f6;
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
             }
 
             .category-tab.active .tab-name {
@@ -2996,24 +3019,24 @@ class PageManager {
 
             .preselected-star {
                 position: absolute;
-                top: -6px;
-                right: -6px;
-                width: 20px;
-                height: 20px;
+                top: -5px;
+                right: -5px;
+                width: 18px;
+                height: 18px;
                 background: #8b5cf6;
                 color: white;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 11px;
+                font-size: 10px;
                 border: 2px solid white;
-                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+                box-shadow: 0 2px 4px rgba(139, 92, 246, 0.4);
             }
 
             .emails-container {
                 background: transparent;
-                margin-top: 20px;
+                margin-top: 8px;
             }
 
             .emails-list {
@@ -3505,6 +3528,12 @@ class PageManager {
                 font-weight: 500;
             }
 
+            @media (max-width: 1200px) {
+                .category-row {
+                    grid-template-columns: repeat(4, 1fr);
+                }
+            }
+
             @media (max-width: 768px) {
                 .actions-section {
                     flex-direction: column;
@@ -3523,15 +3552,22 @@ class PageManager {
                     flex-wrap: wrap;
                 }
 
-                .category-filters {
-                    gap: 8px;
+                .category-filters-wrapper {
+                    padding: 8px 12px;
+                }
+
+                .category-row {
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 4px;
                 }
                 
                 .category-tab {
-                    min-width: 100px;
-                    max-width: 140px;
-                    height: 50px;
-                    padding: 6px 12px;
+                    height: 48px;
+                    font-size: 11px;
+                }
+
+                .category-tab .tab-icon {
+                    font-size: 16px;
                 }
 
                 .email-meta {
@@ -3543,6 +3579,16 @@ class PageManager {
                 .email-actions {
                     flex-direction: column;
                     gap: 2px;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .category-row {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                
+                .category-tab {
+                    height: 52px;
                 }
             }
         `;
