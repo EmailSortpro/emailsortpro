@@ -950,8 +950,9 @@ class PageManager {
         const emails = this.getAllEmails();
         let filteredEmails = emails;
         
-        console.log(`[PageManager] 📧 Rendu liste emails: ${emails.length} total, catégorie: ${this.currentCategory}`);
+        console.log(`[PageManager] 📧 Rendu liste emails: ${emails.length} total, catégorie: ${this.currentCategory}, recherche: "${this.searchTerm}"`);
         
+        // Filtrer par catégorie d'abord
         if (this.currentCategory && this.currentCategory !== 'all') {
             if (this.currentCategory === 'other') {
                 filteredEmails = filteredEmails.filter(email => {
@@ -966,16 +967,19 @@ class PageManager {
             }
         }
         
-        if (this.searchTerm) {
+        // Puis filtrer par recherche
+        if (this.searchTerm && this.searchTerm.length > 0) {
             const beforeSearch = filteredEmails.length;
             filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
-            console.log(`[PageManager] 🔍 Après recherche "${this.searchTerm}": ${filteredEmails.length} (était ${beforeSearch})`);
+            console.log(`[PageManager] 🔍 Après recherche "${this.searchTerm}": ${filteredEmails.length} emails (sur ${beforeSearch})`);
         }
         
         if (filteredEmails.length === 0) {
-            console.log('[PageManager] 📭 Aucun email à afficher');
+            console.log('[PageManager] 📭 Aucun email à afficher après filtrage');
             return this.renderEmptyState();
         }
+
+        console.log(`[PageManager] 📊 Affichage de ${filteredEmails.length} emails en mode ${this.currentViewMode}`);
 
         switch (this.currentViewMode) {
             case 'flat':
@@ -1265,7 +1269,8 @@ class PageManager {
     }
 
     refreshEmailsView() {
-        console.log('[PageManager] Rafraîchissement vue emails...');
+        console.log('[PageManager] 🔄 Rafraîchissement vue emails...');
+        console.log('[PageManager] 🔍 Terme de recherche actuel:', this.searchTerm);
         
         const expandedGroups = new Set();
         document.querySelectorAll('.email-group.expanded').forEach(group => {
@@ -1280,7 +1285,9 @@ class PageManager {
         
         const emailsContainer = document.querySelector('.emails-container');
         if (emailsContainer) {
-            emailsContainer.innerHTML = this.renderEmailsList();
+            const newContent = this.renderEmailsList();
+            console.log('[PageManager] 📧 Rendu du nouveau contenu emails');
+            emailsContainer.innerHTML = newContent;
             
             expandedGroups.forEach(groupKey => {
                 const group = document.querySelector(`[data-group-key="${groupKey}"]`);
@@ -1302,14 +1309,16 @@ class PageManager {
         
         this.updateControlsOnly();
         
+        // Restaurer la valeur de recherche
         setTimeout(() => {
             const newSearchInput = document.getElementById('emailSearchInput');
-            if (newSearchInput && currentSearchValue && newSearchInput.value !== currentSearchValue) {
+            if (newSearchInput && currentSearchValue) {
                 newSearchInput.value = currentSearchValue;
+                console.log('[PageManager] 🔍 Valeur de recherche restaurée:', currentSearchValue);
             }
         }, 50);
         
-        console.log('[PageManager] Vue emails rafraîchie avec', this.selectedEmails.size, 'sélectionnés');
+        console.log('[PageManager] ✅ Vue emails rafraîchie avec', this.selectedEmails.size, 'sélectionnés');
     }
 
     async refreshEmails() {
@@ -1443,28 +1452,54 @@ class PageManager {
     }
 
     setupEmailsEventListeners() {
+        console.log('[PageManager] 🎯 Configuration des événements emails...');
+        
         const searchInput = document.getElementById('emailSearchInput');
         if (searchInput) {
+            console.log('[PageManager] 🔍 Input de recherche trouvé, ajout du listener...');
+            
+            // Supprimer les anciens listeners
+            searchInput.removeEventListener('input', this.handleSearchInput);
+            searchInput.removeEventListener('keyup', this.handleSearchInput);
+            
+            // Créer la fonction de gestion avec debounce
             let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
+            this.handleSearchInput = (e) => {
+                const value = e.target.value;
+                console.log('[PageManager] 🔍 Recherche en cours:', value);
+                
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => {
-                    this.handleSearch(e.target.value);
+                    this.handleSearch(value);
                 }, 300);
-            });
+            };
+            
+            // Ajouter les nouveaux listeners
+            searchInput.addEventListener('input', this.handleSearchInput);
+            searchInput.addEventListener('keyup', this.handleSearchInput);
+            
+            // Forcer la valeur actuelle
+            if (this.searchTerm) {
+                searchInput.value = this.searchTerm;
+            }
+        } else {
+            console.warn('[PageManager] ⚠️ Input de recherche non trouvé!');
         }
     }
 
     handleSearch(term) {
+        console.log('[PageManager] 🔍 Exécution de la recherche:', term);
         this.searchTerm = term.trim();
         this.refreshEmailsView();
     }
 
     clearSearch() {
+        console.log('[PageManager] 🧹 Effacement de la recherche');
         this.searchTerm = '';
         const searchInput = document.getElementById('emailSearchInput');
-        if (searchInput) searchInput.value = '';
-        
+        if (searchInput) {
+            searchInput.value = '';
+        }
         this.refreshEmailsView();
     }
 
@@ -2352,15 +2387,25 @@ class PageManager {
         if (!searchTerm) return true;
         
         const search = searchTerm.toLowerCase();
+        console.log('[PageManager] 🔍 Vérification correspondance pour:', search);
+        
         const subject = (email.subject || '').toLowerCase();
         const sender = (email.from?.emailAddress?.name || '').toLowerCase();
         const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
         const preview = (email.bodyPreview || '').toLowerCase();
+        const category = this.getCategoryName(email.category).toLowerCase();
         
-        return subject.includes(search) || 
-               sender.includes(search) || 
-               senderEmail.includes(search) || 
-               preview.includes(search);
+        const matches = subject.includes(search) || 
+                       sender.includes(search) || 
+                       senderEmail.includes(search) || 
+                       preview.includes(search) ||
+                       category.includes(search);
+        
+        if (matches) {
+            console.log('[PageManager] ✅ Correspondance trouvée pour email:', email.subject);
+        }
+        
+        return matches;
     }
 
     calculateCategoryCounts(emails) {
