@@ -736,7 +736,7 @@ class PageManager {
                     </div>
                 ` : ''}
 
-                <div class="emails-page-content">
+                <div class="fixed-header-wrapper">
                     <div class="controls-bar">
                         <div class="search-section">
                             <div class="search-box">
@@ -836,6 +836,7 @@ class PageManager {
                             ${this.buildCategoryTabs(categoryCounts, totalEmails, categories)}
                         </div>
                     </div>
+                </div>
 
                     <div class="emails-container">
                         ${this.renderEmailsList()}
@@ -2664,7 +2665,6 @@ class PageManager {
                 border: 1px solid #e5e7eb;
                 border-radius: 12px;
                 padding: 12px;
-                margin-bottom: 12px;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
                 display: flex;
                 flex-direction: column;
@@ -2909,18 +2909,43 @@ class PageManager {
                 margin: 8px 0;
             }
 
-            /* Catégories fixes et centrées */
-            .category-filters-wrapper {
+            /* Wrapper pour tout le header fixe */
+            .fixed-header-wrapper {
                 position: sticky;
-                top: 60px; /* Ajusté pour être juste sous la navbar */
+                top: 60px; /* Juste sous la navbar */
                 z-index: 1000;
                 background: rgba(248, 250, 252, 0.98);
                 backdrop-filter: blur(20px);
                 -webkit-backdrop-filter: blur(20px);
-                margin: -8px -20px 16px -20px;
-                padding: 12px 20px;
+                margin: -8px -20px 0 -20px;
+                padding: 12px 20px 8px 20px;
                 border-bottom: 2px solid #e5e7eb;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            }
+
+            /* Controls bar dans le header fixe */
+            .fixed-header-wrapper .controls-bar {
+                margin-bottom: 8px;
+                box-shadow: none;
+                border: 1px solid #e5e7eb;
+            }
+
+            /* Catégories dans le header fixe */
+            .fixed-header-wrapper .category-filters-wrapper {
+                position: relative;
+                top: auto;
+                z-index: auto;
+                margin: 0;
+                padding: 0;
+                background: transparent;
+                border: none;
+                box-shadow: none;
+            }
+
+            /* Wrapper pour tout le contenu scrollable */
+            .emails-page-content {
+                position: relative;
+                overflow: visible;
             }
 
             /* S'assurer que le wrapper sticky fonctionne */
@@ -3057,7 +3082,8 @@ class PageManager {
 
             .emails-container {
                 background: transparent;
-                margin-top: 8px;
+                margin-top: 16px;
+                padding-top: 8px;
             }
 
             .emails-list {
