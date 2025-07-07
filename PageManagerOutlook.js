@@ -1,4 +1,3 @@
-
 // PageManager.js - Version 15.2 - Interface optimisée avec catégories fixes
 
 class PageManager {
@@ -3036,50 +3035,57 @@ class PageManager {
             .category-filters-container {
                 position: sticky;
                 top: 0;
-                z-index: 100;
-                background: #f8fafc;
-                padding: 16px 0;
-                margin-bottom: 16px;
+                z-index: 1000;
+                background: rgba(248, 250, 252, 0.98);
+                backdrop-filter: blur(12px);
+                border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+                padding: 16px 20px;
+                margin: 0 -20px 16px -20px;
                 transition: all 0.3s ease;
             }
 
             .category-filters-container.sticky-active {
                 background: rgba(248, 250, 252, 0.95);
-                backdrop-filter: blur(10px);
+                backdrop-filter: blur(16px);
                 border-bottom: 1px solid rgba(229, 231, 235, 0.8);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
             }
 
             .category-filters {
                 display: flex;
                 flex-direction: column;
                 gap: 8px;
+                max-width: 1200px;
+                margin: 0 auto;
             }
 
             .category-row {
                 display: grid;
                 grid-template-columns: repeat(6, 1fr);
-                gap: 8px;
+                gap: 12px;
                 width: 100%;
             }
 
             .category-tab {
-                height: 60px;
-                padding: 8px;
+                height: 70px;
+                padding: 8px 12px;
                 font-size: 12px;
                 font-weight: 700;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
                 transition: all 0.2s ease;
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 text-align: center;
                 background: white;
                 color: #374151;
-                border: 1px solid #e5e7eb;
+                border: 2px solid #e5e7eb;
                 cursor: pointer;
                 position: relative;
+                min-width: 0;
             }
 
             .category-tab.preselected {
