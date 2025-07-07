@@ -833,10 +833,8 @@ class PageManager {
                 </div>
 
                 <div class="category-filters-wrapper">
-                    <div class="category-filters-container">
-                        <div class="category-filters" id="categoryFilters">
-                            ${this.buildCategoryTabs(categoryCounts, totalEmails, categories)}
-                        </div>
+                    <div class="category-filters" id="categoryFilters">
+                        ${this.buildCategoryTabs(categoryCounts, totalEmails, categories)}
                     </div>
                 </div>
 
@@ -2635,7 +2633,6 @@ class PageManager {
         styles.textContent = `
             .emails-page-modern {
                 padding: 20px;
-                padding-top: 200px;
                 background: #f8fafc;
                 min-height: 100vh;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -3076,8 +3073,6 @@ class PageManager {
 
             .emails-container {
                 background: transparent;
-                margin-top: 24px;
-                padding-bottom: 40px;
             }
 
             .emails-list {
