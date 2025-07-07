@@ -1,4 +1,4 @@
-// PageManager.js - Version 15.1 - Détection newsletters améliorée
+// PageManager.js - Version 15.2 - Interface optimisée avec catégories fixes
 
 class PageManager {
     constructor() {
@@ -65,7 +65,7 @@ class PageManager {
             this.setupSyncListeners();
             this.setupCategoryManagerIntegration();
             this.isInitialized = true;
-            console.log('[PageManager] ✅ Version 15.1 - Détection newsletters améliorée');
+            console.log('[PageManager] ✅ Version 15.2 - Interface optimisée');
         } catch (error) {
             console.error('[PageManager] Erreur initialisation:', error);
         }
@@ -704,7 +704,7 @@ class PageManager {
     }
 
     // ================================================
-    // RENDU DE LA PAGE EMAILS CORRIGÉ
+    // RENDU DE LA PAGE EMAILS OPTIMISÉ
     // ================================================
     async renderEmails(container) {
         console.log('[PageManager] 📧 Rendu page emails...');
@@ -834,8 +834,10 @@ class PageManager {
                     </div>
                 </div>
 
-                <div class="category-filters">
-                    ${this.buildCategoryTabs(categoryCounts, totalEmails, categories)}
+                <div class="category-filters-container">
+                    <div class="category-filters" id="categoryFilters">
+                        ${this.buildCategoryTabs(categoryCounts, totalEmails, categories)}
+                    </div>
                 </div>
 
                 <div class="emails-container">
@@ -846,6 +848,7 @@ class PageManager {
 
         this.addEmailsStyles();
         this.setupEmailsEventListeners();
+        this.setupCategoryFiltersSticky();
         
         if (this.autoAnalyzeEnabled && emails.length > 0) {
             const preselectedCategories = this.getTaskPreselectedCategories();
@@ -865,6 +868,27 @@ class PageManager {
                 }
             }
         }
+    }
+
+    setupCategoryFiltersSticky() {
+        console.log('[PageManager] 🔧 Configuration des catégories fixes...');
+        
+        const categoryFiltersContainer = document.querySelector('.category-filters-container');
+        if (!categoryFiltersContainer) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    categoryFiltersContainer.classList.remove('sticky-active');
+                } else {
+                    categoryFiltersContainer.classList.add('sticky-active');
+                }
+            });
+        }, {
+            rootMargin: '-1px 0px 0px 0px'
+        });
+
+        observer.observe(categoryFiltersContainer);
     }
 
     renderSyncIndicator() {
@@ -966,26 +990,35 @@ class PageManager {
             });
         }
         
-        return tabs.map(tab => {
-            const isCurrentCategory = this.currentCategory === tab.id;
-            const baseClasses = `category-tab ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected' : ''}`;
-            
-            return `
-                <button class="${baseClasses}" 
-                        onclick="window.pageManager.filterByCategory('${tab.id}')"
-                        data-category-id="${tab.id}"
-                        title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
-                    <div class="tab-content">
-                        <div class="tab-header">
-                            <span class="tab-icon">${tab.icon}</span>
-                            <span class="tab-count">${tab.count}</span>
+        // Diviser les tabs en lignes de 6
+        let tabsHTML = '';
+        for (let i = 0; i < tabs.length; i += 6) {
+            const rowTabs = tabs.slice(i, i + 6);
+            tabsHTML += `<div class="category-row">`;
+            tabsHTML += rowTabs.map(tab => {
+                const isCurrentCategory = this.currentCategory === tab.id;
+                const baseClasses = `category-tab ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected' : ''}`;
+                
+                return `
+                    <button class="${baseClasses}" 
+                            onclick="window.pageManager.filterByCategory('${tab.id}')"
+                            data-category-id="${tab.id}"
+                            title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
+                        <div class="tab-content">
+                            <div class="tab-header">
+                                <span class="tab-icon">${tab.icon}</span>
+                                <span class="tab-count">${tab.count}</span>
+                            </div>
+                            <div class="tab-name">${tab.name}</div>
                         </div>
-                        <div class="tab-name">${tab.name}</div>
-                    </div>
-                    ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
-                </button>
-            `;
-        }).join('');
+                        ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
+                    </button>
+                `;
+            }).join('');
+            tabsHTML += `</div>`;
+        }
+        
+        return tabsHTML;
     }
 
     // ================================================
@@ -1514,7 +1547,7 @@ class PageManager {
     }
 
     // ================================================
-    // ACTIONS BULK
+    // ACTIONS BULK (continuant avec la même structure...)
     // ================================================
     toggleBulkActions(event) {
         event.stopPropagation();
@@ -2661,7 +2694,7 @@ class PageManager {
     }
 
     // ================================================
-    // STYLES CSS
+    // STYLES CSS OPTIMISÉS
     // ================================================
     addEmailsStyles() {
         if (document.getElementById('emailsPageStyles')) return;
@@ -2999,11 +3032,34 @@ class PageManager {
                 margin: 8px 0;
             }
 
+            .category-filters-container {
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                background: #f8fafc;
+                padding: 16px 0;
+                margin-bottom: 16px;
+                transition: all 0.3s ease;
+            }
+
+            .category-filters-container.sticky-active {
+                background: rgba(248, 250, 252, 0.95);
+                backdrop-filter: blur(10px);
+                border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
             .category-filters {
                 display: flex;
+                flex-direction: column;
                 gap: 8px;
-                margin-bottom: 16px;
-                flex-wrap: wrap;
+            }
+
+            .category-row {
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 8px;
+                width: 100%;
             }
 
             .category-tab {
@@ -3011,9 +3067,6 @@ class PageManager {
                 padding: 8px;
                 font-size: 12px;
                 font-weight: 700;
-                flex: 0 1 calc(16.666% - 8px);
-                min-width: 120px;
-                max-width: 180px;
                 border-radius: 8px;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
                 transition: all 0.2s ease;
@@ -3123,7 +3176,7 @@ class PageManager {
                 transition: all 0.3s ease;
                 position: relative;
                 min-height: 80px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: none;
             }
 
             .email-card:first-child {
@@ -3136,6 +3189,10 @@ class PageManager {
                 border-bottom-left-radius: 12px;
                 border-bottom-right-radius: 12px;
                 border-bottom: 1px solid #e5e7eb;
+            }
+
+            .email-card + .email-card {
+                border-top: 1px solid #e5e7eb;
             }
 
             .email-card:hover {
@@ -3441,8 +3498,18 @@ class PageManager {
                 transition: all 0.3s ease;
                 position: relative;
                 min-height: 80px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: none;
                 gap: 12px;
+            }
+
+            .group-header:first-child {
+                border-top-left-radius: 12px;
+                border-top-right-radius: 12px;
+                border-top: 1px solid #e5e7eb;
+            }
+
+            .group-header + .group-header {
+                border-top: 1px solid #e5e7eb;
             }
 
             .group-avatar {
@@ -3533,7 +3600,11 @@ class PageManager {
             .group-content .email-card {
                 border-radius: 0;
                 margin: 0;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: none;
+            }
+
+            .group-content .email-card + .email-card {
+                border-top: 1px solid #e5e7eb;
             }
 
             .group-content .email-card:last-child {
@@ -3577,6 +3648,12 @@ class PageManager {
                 font-weight: 500;
             }
 
+            @media (max-width: 1200px) {
+                .category-row {
+                    grid-template-columns: repeat(4, 1fr);
+                }
+            }
+
             @media (max-width: 768px) {
                 .actions-section {
                     flex-direction: column;
@@ -3595,13 +3672,8 @@ class PageManager {
                     flex-wrap: wrap;
                 }
 
-                .category-filters {
-                    justify-content: center;
-                }
-
-                .category-tab {
-                    flex: 0 1 calc(50% - 8px);
-                    min-width: 140px;
+                .category-row {
+                    grid-template-columns: repeat(3, 1fr);
                 }
 
                 .email-meta {
@@ -3613,6 +3685,12 @@ class PageManager {
                 .email-actions {
                     flex-direction: column;
                     gap: 2px;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .category-row {
+                    grid-template-columns: repeat(2, 1fr);
                 }
             }
         `;
@@ -3666,7 +3744,7 @@ if (window.pageManager) {
     window.pageManager.cleanup?.();
 }
 
-console.log('[PageManager] 🚀 Création nouvelle instance v15.1...');
+console.log('[PageManager] 🚀 Création nouvelle instance v15.2...');
 window.pageManager = new PageManager();
 
 Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
@@ -3688,4 +3766,4 @@ window.refreshPageManagerEmails = function() {
     return { success: false, message: 'Pas sur la page emails ou PageManager non disponible' };
 };
 
-console.log('✅ PageManager v15.1 loaded - Détection newsletters améliorée');
+console.log('✅ PageManager v15.2 loaded - Interface optimisée avec catégories fixes et 6 boutons par ligne');
