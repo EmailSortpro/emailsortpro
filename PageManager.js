@@ -1,1431 +1,4 @@
-.view-mode {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                padding: 8px 12px;
-                border: none;
-                background: transparent;
-                color: #6b7280;
-                border-radius: 6px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                font-size: 13px;
-                font-weight: 600;
-            }
-
-            .view-mode:hover {
-                background: rgba(255, 255, 255, 0.8);
-                color: #374151;
-            }
-
-            .view-mode.active {
-                background: white;
-                color: #1f2937;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
-
-            .action-buttons {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                flex-wrap: wrap;
-            }
-
-            .btn {
-                height: 44px;
-                background: white;
-                color: #374151;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 0 16px;
-                font-size: 13px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-                position: relative;
-            }
-
-            .btn:hover {
-                background: #f9fafb;
-                border-color: #6366f1;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-
-            .btn.disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-                pointer-events: none;
-            }
-
-            .btn-primary {
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                color: white;
-                border-color: transparent;
-                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-            }
-
-            .btn-primary:hover {
-                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
-            }
-
-            .btn-secondary {
-                background: #f8fafc;
-                color: #475569;
-                border-color: #e2e8f0;
-            }
-
-            .btn-clear {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-            }
-
-            .count-badge {
-                position: absolute;
-                top: -6px;
-                right: -6px;
-                background: #ef4444;
-                color: white;
-                font-size: 10px;
-                font-weight: 700;
-                padding: 2px 6px;
-                border-radius: 10px;
-                min-width: 16px;
-                text-align: center;
-                border: 2px solid white;
-            }
-
-            .dropdown-wrapper {
-                position: relative;
-            }
-
-            .dropdown-menu {
-                position: absolute;
-                top: calc(100% + 8px);
-                right: 0;
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-                min-width: 200px;
-                z-index: 9999;
-                padding: 8px 0;
-                opacity: 0;
-                visibility: hidden;
-                transform: translateY(-10px);
-                transition: all 0.2s ease;
-            }
-
-            .dropdown-menu.show {
-                opacity: 1;
-                visibility: visible;
-                transform: translateY(0);
-            }
-
-            .dropdown-item {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 12px 16px;
-                background: none;
-                border: none;
-                width: 100%;
-                text-align: left;
-                color: #374151;
-                font-size: 13px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-
-            .dropdown-item:hover {
-                background: #f8fafc;
-                color: #1f2937;
-            }
-
-            .dropdown-item.danger {
-                color: #dc2626;
-            }
-
-            .dropdown-item.danger:hover {
-                background: #fef2f2;
-                color: #b91c1c;
-            }
-
-            .dropdown-divider {
-                height: 1px;
-                background: #e5e7eb;
-                margin: 8px 0;
-            }
-
-            /* MODIFICATION: Grille 6 catégories par ligne */
-            .category-filters {
-                margin-bottom: 16px;
-            }
-
-            .category-grid {
-                display: grid;
-                grid-template-columns: repeat(6, 1fr);
-                gap: 8px;
-            }
-
-            .category-tab {
-                height: 50px;
-                padding: 6px;
-                font-size: 11px;
-                font-weight: 700;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-                transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                text-align: center;
-                background: white;
-                color: #374151;
-                border: 1px solid #e5e7eb;
-                cursor: pointer;
-                position: relative;
-            }
-
-            .category-tab.preselected {
-                border-color: #8b5cf6;
-                background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
-            }
-
-            .category-tab:hover {
-                border-color: #3b82f6;
-                background: #f0f9ff;
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
-            }
-
-            .category-tab.active {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                color: white;
-                border-color: #3b82f6;
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-                transform: translateY(-2px);
-            }
-
-            .tab-content {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 3px;
-                width: 100%;
-                height: 100%;
-                justify-content: center;
-            }
-
-            .tab-line-1 {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                position: relative;
-            }
-
-            .tab-line-2 {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .tab-icon {
-                font-size: 14px;
-            }
-
-            .tab-count {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 1px 4px;
-                border-radius: 4px;
-                font-size: 9px;
-                font-weight: 800;
-                min-width: 16px;
-                text-align: center;
-            }
-
-            .preselected-star {
-                position: absolute;
-                top: -6px;
-                right: -6px;
-                width: 16px;
-                height: 16px;
-                background: #8b5cf6;
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 8px;
-                border: 2px solid white;
-                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
-            }
-
-            .tab-name {
-                font-weight: 700;
-                font-size: 10px;
-                line-height: 1.1;
-                text-align: center;
-                max-width: 100%;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-
-            .emails-container {
-                background: transparent;
-            }
-
-            /* MODIFICATION: Emails sans espaces */
-            .emails-list {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-                background: white;
-                border-radius: 12px;
-                border: 1px solid #e5e7eb;
-                overflow: hidden;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            }
-
-            /* MODIFICATION: Emails condensés sur 2 lignes */
-            .email-card {
-                display: flex;
-                align-items: center;
-                background: white;
-                border: none;
-                border-bottom: 1px solid #f1f5f9;
-                padding: 8px 16px;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                position: relative;
-                min-height: 50px;
-            }
-
-            .email-card:last-child {
-                border-bottom: none;
-            }
-
-            .email-card:hover {
-                background: #f8fafc;
-                border-left: 3px solid #6366f1;
-                padding-left: 13px;
-                z-index: 2;
-            }
-
-            .email-card.selected {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border-left: 4px solid #3b82f6;
-                padding-left: 12px;
-                z-index: 3;
-            }
-
-            .email-card.has-task {
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-                border-left: 3px solid #22c55e;
-                padding-left: 13px;
-            }
-
-            .email-card.preselected {
-                background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
-                border-left: 3px solid #8b5cf6;
-                padding-left: 13px;
-            }
-
-            .email-card.preselected:hover {
-                border-left: 4px solid #8b5cf6;
-                padding-left: 12px;
-            }
-
-            .email-card.preselected.selected {
-                background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
-                border-left: 4px solid #8b5cf6;
-                padding-left: 12px;
-            }
-
-            .email-checkbox {
-                margin-right: 12px;
-                cursor: pointer;
-                width: 16px;
-                height: 16px;
-                border-radius: 4px;
-                border: 2px solid #d1d5db;
-                background: white;
-                transition: all 0.2s ease;
-                flex-shrink: 0;
-                appearance: none;
-                position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .email-checkbox:checked {
-                background: #6366f1;
-                border-color: #6366f1;
-            }
-
-            .email-checkbox:checked::after {
-                content: '✓';
-                color: white;
-                font-size: 10px;
-                font-weight: 700;
-            }
-
-            .email-card.preselected .email-checkbox:checked {
-                background: #8b5cf6;
-                border-color: #8b5cf6;
-            }
-
-            .priority-bar {
-                width: 3px;
-                height: 40px;
-                border-radius: 2px;
-                margin-right: 12px;
-                transition: all 0.3s ease;
-                flex-shrink: 0;
-            }
-
-            .email-content {
-                flex: 1;
-                min-width: 0;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                gap: 2px;
-                height: 100%;
-            }
-
-            /* MODIFICATION: Ligne 1 avec titre et meta compacte */
-            .email-line-1 {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 12px;
-            }
-
-            .email-title {
-                font-weight: 600;
-                color: #1f2937;
-                font-size: 13px;
-                margin: 0;
-                line-height: 1.2;
-                flex: 1;
-                min-width: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-
-            .email-meta-compact {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                flex-shrink: 0;
-                font-size: 11px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-
-            /* MODIFICATION: Ligne 2 avec expéditeur et actions */
-            .email-line-2 {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 12px;
-            }
-
-            .email-sender-info {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                flex: 1;
-                min-width: 0;
-            }
-
-            .sender-name {
-                font-weight: 500;
-                color: #6b7280;
-                font-size: 11px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                max-width: 200px;
-            }
-
-            .category-badge-compact {
-                padding: 1px 4px;
-                border-radius: 3px;
-                font-size: 9px;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                gap: 2px;
-                flex-shrink: 0;
-            }
-
-            .email-actions {
-                display: flex;
-                align-items: center;
-                gap: 2px;
-                flex-shrink: 0;
-                z-index: 10;
-                position: relative;
-            }
-
-            .action-btn {
-                width: 24px;
-                height: 24px;
-                border: 1px solid transparent;
-                border-radius: 4px;
-                background: rgba(255, 255, 255, 0.9);
-                color: #6b7280;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-                font-size: 10px;
-                backdrop-filter: blur(10px);
-            }
-
-            .action-btn:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-            }
-
-            .action-btn.create-task {
-                color: #3b82f6;
-            }
-
-            .action-btn.create-task:hover {
-                background: #dbeafe;
-                border-color: #3b82f6;
-                color: #2563eb;
-            }
-
-            .action-btn.view-task {
-                color: #16a34a;
-                background: #dcfce7;
-            }
-
-            .action-btn.view-task:hover {
-                background: #bbf7d0;
-                border-color: #16a34a;
-                color: #15803d;
-            }
-
-            .action-btn.details {
-                color: #8b5cf6;
-            }
-
-            .action-btn.details:hover {
-                background: #f3e8ff;
-                border-color: #8b5cf6;
-                color: #7c3aed;
-            }
-
-            .emails-grouped {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-                background: white;
-                border-radius: 12px;
-                border: 1px solid #e5e7eb;
-                overflow: hidden;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            }
-
-            .email-group {
-                background: transparent;
-                border: none;
-                border-radius: 0;
-                overflow: visible;
-                margin: 0;
-                padding: 0;
-            }
-
-            .group-header {
-                display: flex;
-                align-items: center;
-                background: white;
-                border: none;
-                border-bottom: 1px solid #f1f5f9;
-                padding: 12px 16px;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                position: relative;
-                min-height: 60px;
-                gap: 12px;
-            }
-
-            .group-avatar {
-                width: 32px;
-                height: 32px;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: 600;
-                font-size: 14px;
-                flex-shrink: 0;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            }
-
-            .group-info {
-                flex: 1;
-                min-width: 0;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                gap: 2px;
-                height: 100%;
-            }
-
-            .group-name {
-                font-weight: 600;
-                color: #1f2937;
-                font-size: 14px;
-                margin: 0;
-                line-height: 1.2;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-
-            .group-meta {
-                color: #6b7280;
-                font-size: 11px;
-                font-weight: 500;
-                line-height: 1.2;
-            }
-
-            .group-expand {
-                width: 28px;
-                height: 28px;
-                border: 1px solid transparent;
-                border-radius: 6px;
-                background: rgba(255, 255, 255, 0.9);
-                color: #6b7280;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-                font-size: 12px;
-                backdrop-filter: blur(10px);
-                flex-shrink: 0;
-            }
-
-            .group-expand:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-                color: #374151;
-            }
-
-            .email-group.expanded .group-expand {
-                transform: rotate(180deg) translateY(-1px);
-                color: #3b82f6;
-                background: #dbeafe;
-                border-color: #3b82f6;
-            }
-
-            .group-content {
-                background: transparent;
-                margin: 0;
-                padding: 0;
-                display: none;
-            }
-
-            .email-group.expanded .group-content {
-                display: block;
-            }
-
-            .group-content .email-card {
-                border-radius: 0;
-                margin: 0;
-                border-bottom: 1px solid #f1f5f9;
-            }
-
-            .group-content .email-card:last-child {
-                border-bottom: none;
-            }
-
-            .empty-state {
-                text-align: center;
-                padding: 60px 30px;
-                background: white;
-                border-radius: 12px;
-                border: 1px solid #e5e7eb;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-            }
-
-            .empty-state-icon {
-                font-size: 48px;
-                margin-bottom: 20px;
-                color: #d1d5db;
-            }
-
-            .empty-state-title {
-                font-size: 22px;
-                font-weight: 700;
-                color: #374151;
-                margin-bottom: 12px;
-            }
-
-            .empty-state-text {
-                font-size: 15px;
-                margin-bottom: 24px;
-                max-width: 400px;
-                line-height: 1.6;
-                color: #6b7280;
-                font-weight: 500;
-            }
-
-            @media (max-width: 1200px) {
-                .category-grid {
-                    grid-template-columns: repeat(4, 1fr);
-                }
-            }
-
-            @media (max-width: 768px) {
-                .category-grid {
-                    grid-template-columns: repeat(3, 1fr);
-                }
-
-                .actions-section {
-                    flex-direction: column;
-                    align-items: stretch;
-                    gap: 12px;
-                }
-
-                .view-modes {
-                    width: 100%;
-                    justify-content: space-around;
-                }
-
-                .action-buttons {
-                    width: 100%;
-                    justify-content: center;
-                    flex-wrap: wrap;
-                }
-
-                .email-line-1,
-                .email-line-2 {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 4px;
-                }
-
-                .email-meta-compact {
-                    order: -1;
-                    align-self: flex-end;
-                }
-
-                .email-actions {
-                    align-self: flex-end;
-                }
-            }
-
-            @media (max-width: 480px) {
-                .category-grid {
-                    grid-template-columns: repeat(2, 1fr);
-                }
-            }
-        `;
-        
-        document.head.appendChild(styles);
-    }
-
-    // ================================================
-    // DEBUG ET NETTOYAGE
-    // ================================================
-    getSyncStatus() {
-        return {
-            ...this.syncState,
-            emailScanner: {
-                available: !!window.emailScanner,
-                emails: window.emailScanner?.emails?.length || 0,
-                startScanSynced: window.emailScanner?.startScanSynced || false
-            },
-            categoryManager: {
-                available: !!window.categoryManager,
-                preselectedCategories: this.getTaskPreselectedCategories(),
-                categories: Object.keys(this.getCategories()).length
-            },
-            startScan: {
-                available: !!window.minimalScanModule,
-                settings: window.minimalScanModule?.settings || {}
-            },
-            lastScanData: this.lastScanData
-        };
-    }
-
-    cleanup() {
-        if (this.categoryManagerChangeListener) {
-            window.categoryManager?.removeChangeListener?.(this.categoryManagerChangeListener);
-        }
-        
-        this.invalidateTaskCategoriesCache();
-        this.selectedEmails.clear();
-        this.aiAnalysisResults.clear();
-        this.createdTasks.clear();
-        
-        console.log('[PageManager] 🧹 Nettoyage effectué');
-    }
-}
-
-// ================================================
-// INITIALISATION GLOBALE
-// ================================================
-if (window.pageManager) {
-    console.log('[PageManager] 🔄 Nettoyage ancienne instance...');
-    window.pageManager.cleanup?.();
-}
-
-console.log('[PageManager] 🚀 Création nouvelle instance v15.2...');
-window.pageManager = new PageManager();
-
-Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
-    if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
-        window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
-    }
-});
-
-// Fonctions de debug globales
-window.debugPageManagerSync = function() {
-    return window.pageManager?.getSyncStatus() || { error: 'PageManager non disponible' };
-};
-
-window.refreshPageManagerEmails = function() {
-    if (window.pageManager && window.pageManager.currentPage === 'emails') {
-        window.pageManager.refreshEmailsView();
-        return { success: true, message: 'Vue emails rafraîchie' };
-    }
-    return { success: false, message: 'Pas sur la page emails ou PageManager non disponible' };
-};
-
-console.log('✅ PageManager v15.2 loaded - Interface condensée avec 6 catégories par ligne');    async renderCategories(container) {
-        if (window.categoriesPage && window.categoriesPage.renderSettings) {
-            window.categoriesPage.renderSettings(container);
-        } else {
-            const categories = this.getCategories();
-            
-            container.innerHTML = `
-                <div class="categories-page">
-                    <div class="page-header">
-                        <h1><i class="fas fa-tags"></i> Catégories</h1>
-                    </div>
-                    
-                    <div class="categories-grid">
-                        ${Object.entries(categories).map(([id, cat]) => `
-                            <div class="category-card">
-                                <div class="category-icon" style="background: ${cat.color}20; color: ${cat.color}">
-                                    ${cat.icon}
-                                </div>
-                                <h3>${cat.name}</h3>
-                                <p>${cat.description || 'Pas de description'}</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-    }
-
-    async renderSettings(container) {
-        if (window.categoriesPage && window.categoriesPage.renderSettings) {
-            window.categoriesPage.renderSettings(container);
-        } else {
-            container.innerHTML = `
-                <div class="settings-page">
-                    <div class="page-header">
-                        <h1><i class="fas fa-cog"></i> Paramètres</h1>
-                    </div>
-                    
-                    <div class="settings-grid">
-                        <div class="settings-card">
-                            <h3><i class="fas fa-robot"></i> Configuration IA</h3>
-                            <p>Configurez l'analyseur IA Claude</p>
-                            <button class="btn btn-primary" onclick="window.pageManager.configureAI()">
-                                <i class="fas fa-cog"></i> Configurer
-                            </button>
-                        </div>
-                        
-                        <div class="settings-card">
-                            <h3><i class="fas fa-tags"></i> Catégories</h3>
-                            <p>Gérez vos catégories d'emails</p>
-                            <button class="btn btn-secondary" onclick="window.pageManager.loadPage('categories')">
-                                <i class="fas fa-tags"></i> Gérer
-                            </button>
-                        </div>
-                        
-                        <div class="settings-card">
-                            <h3><i class="fas fa-sync-alt"></i> Synchronisation</h3>
-                            <p>État: ${this.syncState.emailScannerSynced ? 'Synchronisé' : 'Non synchronisé'}</p>
-                            <div class="sync-status">
-                                ${this.syncState.startScanSynced ? '✅ StartScan' : '❌ StartScan'}
-                                ${this.syncState.emailScannerSynced ? '✅ EmailScanner' : '❌ EmailScanner'}
-                                ${this.syncState.categoryManagerSynced ? '✅ CategoryManager' : '❌ CategoryManager'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-    }
-
-    async renderScanner(container) {
-        console.log('[PageManager] Rendering scanner page...');
-        
-        const authStatus = await this.checkAuthenticationStatus();
-        
-        if (!authStatus.isAuthenticated) {
-            container.innerHTML = `
-                <div class="scanner-auth-required">
-                    <div class="scanner-header">
-                        <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
-                        <p>Connectez-vous pour analyser vos emails</p>
-                    </div>
-                    
-                    <div class="auth-card">
-                        <div class="auth-icon">
-                            <i class="fab fa-microsoft"></i>
-                        </div>
-                        <h3>Connexion Microsoft Graph</h3>
-                        <p>Accédez à vos emails Outlook/Exchange</p>
-                        <button class="btn btn-primary btn-large" onclick="window.pageManager.handleLogin()">
-                            <i class="fas fa-sign-in-alt"></i>
-                            Se connecter à Microsoft
-                        </button>
-                    </div>
-                    
-                    <div class="scanner-info">
-                        <div class="info-card">
-                            <i class="fas fa-shield-alt"></i>
-                            <h4>Sécurisé</h4>
-                            <p>Authentification OAuth2 Microsoft</p>
-                        </div>
-                        <div class="info-card">
-                            <i class="fas fa-robot"></i>
-                            <h4>IA Intégrée</h4>
-                            <p>Analyse intelligente avec Claude AI</p>
-                        </div>
-                        <div class="info-card">
-                            <i class="fas fa-tasks"></i>
-                            <h4>Productivité</h4>
-                            <p>Convertit automatiquement en tâches</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            return;
-        }
-        
-        if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
-            try {
-                await window.minimalScanModule.render(container);
-                return;
-            } catch (error) {
-                console.error('[PageManager] Error with minimalScanModule:', error);
-            }
-        }
-        
-        container.innerHTML = `
-            <div class="scanner-authenticated">
-                <div class="scanner-header">
-                    <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
-                    <p>Analysez vos emails et créez des tâches automatiquement</p>
-                </div>
-                
-                <div class="scanner-status">
-                    <div class="status-item">
-                        <i class="fas fa-user"></i>
-                        <span>Connecté${authStatus.user ? ' en tant que ' + authStatus.user : ''}</span>
-                    </div>
-                    <div class="status-item">
-                        <i class="fas fa-database"></i>
-                        <span>EmailScanner: ${window.emailScanner ? 'Disponible' : 'Non disponible'}</span>
-                    </div>
-                    <div class="status-item">
-                        <i class="fas fa-sync-alt"></i>
-                        <span>Synchronisation: ${this.syncState.emailScannerSynced ? 'Active' : 'Inactive'}</span>
-                    </div>
-                </div>
-                
-                <div class="scanner-fallback">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        <div>
-                            <h3>Scanner de simulation</h3>
-                            <p>Le scanner principal n'est pas disponible. Utilisation du mode simulation.</p>
-                            <button onclick="window.pageManager.startFallbackScan()" class="btn btn-primary">
-                                <i class="fas fa-play"></i> Démarrer simulation
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    async startFallbackScan() {
-        console.log('[PageManager] Starting fallback simulation scan...');
-        
-        try {
-            this.showLoading('Simulation de scan en cours...');
-            
-            if (window.emailScanner && typeof window.emailScanner.scan === 'function') {
-                const results = await window.emailScanner.scan({
-                    days: 7,
-                    simulationMode: false,
-                    onProgress: (progress) => {
-                        console.log('[PageManager] Scan progress:', progress);
-                    }
-                });
-                
-                console.log(`[PageManager] Fallback scan completed with ${results.total} emails`);
-                
-                this.hideLoading();
-                this.showToast(`${results.total} emails analysés avec succès!`, 'success');
-                
-                this.syncState.emailScannerSynced = true;
-                this.syncState.emailCount = results.total;
-                this.lastScanData = results;
-                
-                setTimeout(() => {
-                    this.loadPage('emails');
-                }, 1000);
-                
-            } else {
-                throw new Error('EmailScanner non disponible');
-            }
-            
-        } catch (error) {
-            console.error('[PageManager] Fallback scan error:', error);
-            this.hideLoading();
-            this.showError('Erreur lors de la simulation: ' + error.message);
-        }
-    }
-
-    async renderRanger(container) {
-        if (window.domainOrganizer && window.domainOrganizer.showPage) {
-            window.domainOrganizer.showPage(container);
-        } else {
-            container.innerHTML = `
-                <div class="ranger-page">
-                    <div class="page-header">
-                        <h1><i class="fas fa-folder-tree"></i> Ranger par domaine</h1>
-                    </div>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-folder-tree"></i>
-                        </div>
-                        <h3 class="empty-title">Module de rangement</h3>
-                        <p class="empty-text">Organisez vos emails par domaine</p>
-                    </div>
-                </div>
-            `;
-        }
-    }
-
-    renderEmptyEmailsState() {
-        return `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-inbox"></i>
-                </div>
-                <h3 class="empty-state-title">Aucun email trouvé</h3>
-                <p class="empty-state-text">
-                    Utilisez le scanner pour récupérer et analyser vos emails.
-                </p>
-                <div class="empty-state-actions">
-                    <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
-                        <i class="fas fa-search"></i>
-                        Aller au scanner
-                    </button>
-                    ${this.syncState.emailScannerSynced ? `
-                        <button class="btn btn-secondary" onclick="window.pageManager.refreshEmails()">
-                            <i class="fas fa-sync-alt"></i>
-                            Actualiser
-                        </button>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    }
-
-    renderEmptyState() {
-        console.log(`[PageManager] 📭 Rendu état vide - Catégorie: ${this.currentCategory}, Recherche: "${this.searchTerm}"`);
-        
-        let title, text, action = '';
-        
-        if (this.searchTerm) {
-            title = 'Aucun résultat trouvé';
-            text = `Aucun email ne correspond à votre recherche "${this.searchTerm}"`;
-            action = `
-                <button class="btn btn-primary" onclick="window.pageManager.clearSearch()">
-                    <i class="fas fa-undo"></i>
-                    <span>Effacer la recherche</span>
-                </button>
-            `;
-        } else if (this.currentCategory === 'other') {
-            title = 'Aucun email non catégorisé';
-            text = 'Tous vos emails ont été correctement catégorisés ! 🎉';
-            action = `
-                <button class="btn btn-primary" onclick="window.pageManager.filterByCategory('all')">
-                    <i class="fas fa-list"></i>
-                    <span>Voir tous les emails</span>
-                </button>
-            `;
-        } else if (this.currentCategory && this.currentCategory !== 'all') {
-            const categoryName = this.getCategoryName(this.currentCategory);
-            title = `Aucun email dans "${categoryName}"`;
-            text = 'Cette catégorie ne contient aucun email pour le moment.';
-            action = `
-                <button class="btn btn-primary" onclick="window.pageManager.filterByCategory('all')">
-                    <i class="fas fa-list"></i>
-                    <span>Voir tous les emails</span>
-                </button>
-            `;
-        } else {
-            title = 'Aucun email trouvé';
-            text = 'Utilisez le scanner pour récupérer et analyser vos emails.';
-            action = `
-                <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
-                    <i class="fas fa-search"></i>
-                    <span>Aller au scanner</span>
-                </button>
-            `;
-        }
-        
-        return `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-inbox"></i>
-                </div>
-                <h3 class="empty-state-title">${title}</h3>
-                <p class="empty-state-text">${text}</p>
-                ${action}
-            </div>
-        `;
-    }
-
-    // ================================================
-    // MÉTHODES UTILITAIRES
-    // ================================================
-    configureAI() {
-        if (window.aiTaskAnalyzer && window.aiTaskAnalyzer.showConfigurationModal) {
-            window.aiTaskAnalyzer.showConfigurationModal();
-        } else {
-            this.showToast('Configuration IA non disponible', 'warning');
-        }
-    }
-
-    getVisibleEmails() {
-        const emails = this.getAllEmails();
-        let filteredEmails = emails;
-        
-        if (this.currentCategory && this.currentCategory !== 'all') {
-            if (this.currentCategory === 'other') {
-                filteredEmails = filteredEmails.filter(email => {
-                    const cat = email.category;
-                    const isOther = !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
-                    return isOther;
-                });
-            } else {
-                filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
-            }
-        }
-        
-        if (this.searchTerm) {
-            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
-        }
-        
-        return filteredEmails;
-    }
-
-    matchesSearch(email, searchTerm) {
-        if (!searchTerm) return true;
-        
-        const search = searchTerm.toLowerCase();
-        const subject = (email.subject || '').toLowerCase();
-        const sender = (email.from?.emailAddress?.name || '').toLowerCase();
-        const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
-        const preview = (email.bodyPreview || '').toLowerCase();
-        
-        return subject.includes(search) || 
-               sender.includes(search) || 
-               senderEmail.includes(search) || 
-               preview.includes(search);
-    }
-
-    calculateCategoryCounts(emails) {
-        console.log('[PageManager] 📊 Calcul des comptages de catégories...');
-        
-        const counts = {};
-        let uncategorizedCount = 0;
-        
-        emails.forEach(email => {
-            const cat = email.category;
-            
-            if (cat && cat !== 'other' && cat !== null && cat !== undefined && cat !== '') {
-                counts[cat] = (counts[cat] || 0) + 1;
-            } else {
-                uncategorizedCount++;
-            }
-        });
-        
-        if (uncategorizedCount > 0) {
-            counts.other = uncategorizedCount;
-            console.log(`[PageManager] 📌 ${uncategorizedCount} emails dans la catégorie "Autre"`);
-        }
-        
-        console.log('[PageManager] 📊 Comptages finaux:', counts);
-        
-        return counts;
-    }
-
-    createEmailGroups(emails, groupMode) {
-        const groups = {};
-        
-        emails.forEach(email => {
-            let groupKey, groupName;
-            
-            if (groupMode === 'grouped-domain') {
-                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
-                groupKey = domain;
-                groupName = domain;
-            } else {
-                const senderEmail = email.from?.emailAddress?.address || 'unknown';
-                const senderName = email.from?.emailAddress?.name || senderEmail;
-                groupKey = senderEmail;
-                groupName = senderName;
-            }
-            
-            if (!groups[groupKey]) {
-                groups[groupKey] = {
-                    key: groupKey,
-                    name: groupName,
-                    emails: [],
-                    count: 0,
-                    latestDate: null
-                };
-            }
-            
-            groups[groupKey].emails.push(email);
-            groups[groupKey].count++;
-            
-            const emailDate = new Date(email.receivedDateTime);
-            if (!groups[groupKey].latestDate || emailDate > groups[groupKey].latestDate) {
-                groups[groupKey].latestDate = emailDate;
-            }
-        });
-        
-        return Object.values(groups).sort((a, b) => {
-            if (!a.latestDate && !b.latestDate) return 0;
-            if (!a.latestDate) return 1;
-            if (!b.latestDate) return -1;
-            return b.latestDate - a.latestDate;
-        });
-    }
-
-    generateAvatarColor(text) {
-        let hash = 0;
-        for (let i = 0; i < text.length; i++) {
-            hash = text.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        
-        const hue = Math.abs(hash) % 360;
-        const saturation = 65 + (Math.abs(hash) % 20);
-        const lightness = 45 + (Math.abs(hash) % 15);
-        
-        return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
-    }
-
-    getEmailPriorityColor(email) {
-        if (email.importance === 'high') return '#ef4444';
-        if (email.hasAttachments) return '#f97316';
-        if (email.categoryScore >= 80) return '#10b981';
-        return '#3b82f6';
-    }
-
-    formatEmailDate(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = now - date;
-        
-        if (diff < 3600000) {
-            return `${Math.floor(diff / 60000)}m`;
-        } else if (diff < 86400000) {
-            return `${Math.floor(diff / 3600000)}h`;
-        } else if (diff < 604800000) {
-            return `${Math.floor(diff / 86400000)}j`;
-        } else {
-            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        }
-    }
-
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    getEmailContent(email) {
-        if (email.body?.content) {
-            return email.body.content;
-        }
-        return `<p>${email.bodyPreview || 'Aucun contenu disponible'}</p>`;
-    }
-
-    getCategoryColor(categoryId) {
-        if (window.categoryManager && window.categoryManager.getCategory) {
-            const category = window.categoryManager.getCategory(categoryId);
-            if (category && category.color) return category.color;
-        }
-        
-        const category = this.getCategories()[categoryId];
-        if (category && category.color) return category.color;
-        
-        return '#64748b';
-    }
-
-    getCategoryIcon(categoryId) {
-        if (window.categoryManager && window.categoryManager.getCategory) {
-            const category = window.categoryManager.getCategory(categoryId);
-            if (category && category.icon) return category.icon;
-        }
-        
-        const category = this.getCategories()[categoryId];
-        if (category && category.icon) return category.icon;
-        
-        return '📌';
-    }
-
-    getCategoryName(categoryId) {
-        if (window.categoryManager && window.categoryManager.getCategory) {
-            const category = window.categoryManager.getCategory(categoryId);
-            if (category && category.name) return category.name;
-        }
-        
-        const category = this.getCategories()[categoryId];
-        if (category && category.name) return category.name;
-        
-        return categoryId || 'Autre';
-    }
-
-    async analyzeFirstEmails(emails) {
-        if (!window.aiTaskAnalyzer) return;
-        
-        for (const email of emails) {
-            if (!this.aiAnalysisResults.has(email.id)) {
-                try {
-                    const analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
-                    this.aiAnalysisResults.set(email.id, analysis);
-                } catch (error) {
-                    console.error('[PageManager] Erreur analyse email:', error);
-                }
-            }
-        }
-    }
-
-    // ================================================
-    // MÉTHODES SYSTÈME
-    // ================================================
-    safeCall(fn) {
-        try {
-            return fn();
-        } catch (error) {
-            console.warn('[PageManager] Safe call failed:', error);
-            return null;
-        }
-    }
-
-    getPageContainer() {
-        return document.getElementById('pageContent') || document.querySelector('.page-content') || document.querySelector('#content');
-    }
-
-    showPageContent() {
-        const pageContent = this.getPageContainer();
-        if (pageContent) {
-            pageContent.style.display = 'block';
-            pageContent.style.opacity = '1';
-        }
-    }
-
-    updateNavigation(activePage) {
-        document.querySelectorAll('.nav-item').forEach(item => {
-            if (item.dataset.page === activePage) {
-                item.classList.add('active');
-            } else {
-                item.classList.remove('active');
-            }
-        });
-    }
-
-    showLoading(message = 'Chargement...') {
-        if (window.uiManager && window.uiManager.showLoading) {
-            window.uiManager.showLoading(message);
-        } else {
-            console.log(`[PageManager] Loading: ${message}`);
-        }
-    }
-
-    hideLoading() {
-        if (window.uiManager && window.uiManager.hideLoading) {
-            window.uiManager.hideLoading();
-        }
-    }
-
-    showError(message) {
-        if (window.uiManager && window.uiManager.showToast) {
-            window.uiManager.showToast(message, 'error');
-        } else {
-            console.error(`[PageManager] Error: ${message}`);
-        }
-    }
-
-    showToast(message, type = 'info') {
-        if (window.uiManager && window.uiManager.showToast) {
-            window.uiManager.showToast(message, type);
-        } else {
-            console.log(`[PageManager] ${type.toUpperCase()}: ${message}`);
-        }
-    }
-
-    renderErrorPage(error) {
-        return `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-exclamation-triangle"></i>
-                </div>
-                <h3 class="empty-state-title">Erreur de chargement</h3>
-                <p class="empty-state-text">${error.message}</p>
-                <button class="btn btn-primary" onclick="window.location.reload()">
-                    <i class="fas fa-refresh"></i>
-                    Recharger la page
-                </button>
-            </div>
-        `;
-    }// PageManager.js - Version 15.2 - Interface condensée avec 6 catégories par ligne
+// PageManager.js - Version 15.1 - Détection newsletters améliorée
 
 class PageManager {
     constructor() {
@@ -1492,7 +65,7 @@ class PageManager {
             this.setupSyncListeners();
             this.setupCategoryManagerIntegration();
             this.isInitialized = true;
-            console.log('[PageManager] ✅ Version 15.2 - Interface condensée avec 6 catégories par ligne');
+            console.log('[PageManager] ✅ Version 15.1 - Détection newsletters améliorée');
         } catch (error) {
             console.error('[PageManager] Erreur initialisation:', error);
         }
@@ -2393,32 +966,26 @@ class PageManager {
             });
         }
         
-        return `
-            <div class="category-grid">
-                ${tabs.map(tab => {
-                    const isCurrentCategory = this.currentCategory === tab.id;
-                    const baseClasses = `category-tab ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected' : ''}`;
-                    
-                    return `
-                        <button class="${baseClasses}" 
-                                onclick="window.pageManager.filterByCategory('${tab.id}')"
-                                data-category-id="${tab.id}"
-                                title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
-                            <div class="tab-content">
-                                <div class="tab-line-1">
-                                    <span class="tab-icon">${tab.icon}</span>
-                                    <span class="tab-count">${tab.count}</span>
-                                    ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
-                                </div>
-                                <div class="tab-line-2">
-                                    <span class="tab-name">${tab.name}</span>
-                                </div>
-                            </div>
-                        </button>
-                    `;
-                }).join('')}
-            </div>
-        `;
+        return tabs.map(tab => {
+            const isCurrentCategory = this.currentCategory === tab.id;
+            const baseClasses = `category-tab ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected' : ''}`;
+            
+            return `
+                <button class="${baseClasses}" 
+                        onclick="window.pageManager.filterByCategory('${tab.id}')"
+                        data-category-id="${tab.id}"
+                        title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
+                    <div class="tab-content">
+                        <div class="tab-header">
+                            <span class="tab-icon">${tab.icon}</span>
+                            <span class="tab-count">${tab.count}</span>
+                        </div>
+                        <div class="tab-name">${tab.name}</div>
+                    </div>
+                    ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
+                </button>
+            `;
+        }).join('');
     }
 
     // ================================================
@@ -2517,30 +1084,51 @@ class PageManager {
                      style="background-color: ${isPreselectedForTasks ? '#8b5cf6' : this.getEmailPriorityColor(email)}"></div>
                 
                 <div class="email-content" onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
-                    <div class="email-line-1">
-                        <div class="email-title">${this.escapeHtml(email.subject || 'Sans sujet')}</div>
-                        <div class="email-meta-compact">
-                            ${this.formatEmailDate(email.receivedDateTime)}
-                            ${isPreselectedForTasks ? '⭐' : ''}
-                            ${email.hasAttachments ? '📎' : ''}
-                            ${this.syncState.startScanSynced && email.webSimulated ? '🔄' : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="email-line-2">
-                        <div class="email-sender-info">
-                            <span class="sender-name">${this.escapeHtml(senderName)}</span>
-                            ${email.category && email.category !== 'other' ? `
-                                <span class="category-badge-compact" 
-                                      style="background: ${this.getCategoryColor(email.category)}; color: white;">
-                                    ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                    <div class="email-header">
+                        <h3 class="email-title">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
+                        <div class="email-meta">
+                            <span class="email-type">
+                                ${email.webSimulated ? '🤖 Simulé' : '📧 Email'}
+                            </span>
+                            <span class="email-date">
+                                📅 ${this.formatEmailDate(email.receivedDateTime)}
+                            </span>
+                            ${isPreselectedForTasks ? `
+                                <span class="preselected-badge">
+                                    ⭐ Pré-sélectionné
+                                </span>
+                            ` : ''}
+                            ${this.syncState.startScanSynced && email.webSimulated ? `
+                                <span class="sync-badge">
+                                    🔄 Synchronisé
+                                </span>
+                            ` : ''}
+                            ${email.categoryConfidence ? `
+                                <span class="confidence-badge">
+                                    🎯 ${Math.round(email.categoryConfidence * 100)}%
                                 </span>
                             ` : ''}
                         </div>
-                        <div class="email-actions">
-                            ${this.renderEmailActions(email)}
-                        </div>
                     </div>
+                    
+                    <div class="email-sender">
+                        <i class="fas fa-envelope"></i>
+                        <span class="sender-name">${this.escapeHtml(senderName)}</span>
+                        ${email.hasAttachments ? '<span class="attachment-indicator">📎 Pièce jointe</span>' : ''}
+                        ${email.category && email.category !== 'other' ? `
+                            <span class="category-badge" 
+                                  style="background: ${this.getCategoryColor(email.category)}20; 
+                                         color: ${this.getCategoryColor(email.category)};
+                                         ${isPreselectedForTasks ? 'font-weight: 700;' : ''}">
+                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                                ${isPreselectedForTasks ? ' ⭐' : ''}
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="email-actions">
+                    ${this.renderEmailActions(email)}
                 </div>
             </div>
         `;
@@ -3436,3 +2024,1668 @@ class PageManager {
             }, 100);
         });
     }
+
+    // ================================================
+    // AUTRES PAGES
+    // ================================================
+    async renderTasks(container) {
+        if (window.tasksView && window.tasksView.render) {
+            window.tasksView.render(container);
+        } else {
+            container.innerHTML = `
+                <div class="tasks-page">
+                    <div class="page-header">
+                        <h1><i class="fas fa-tasks"></i> Tâches</h1>
+                    </div>
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <h3 class="empty-title">Aucune tâche</h3>
+                        <p class="empty-text">Créez des tâches à partir de vos emails</p>
+                        <button class="btn btn-primary" onclick="window.pageManager.loadPage('emails')">
+                            <i class="fas fa-envelope"></i>
+                            Voir les emails
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    async renderCategories(container) {
+        if (window.categoriesPage && window.categoriesPage.renderSettings) {
+            window.categoriesPage.renderSettings(container);
+        } else {
+            const categories = this.getCategories();
+            
+            container.innerHTML = `
+                <div class="categories-page">
+                    <div class="page-header">
+                        <h1><i class="fas fa-tags"></i> Catégories</h1>
+                    </div>
+                    
+                    <div class="categories-grid">
+                        ${Object.entries(categories).map(([id, cat]) => `
+                            <div class="category-card">
+                                <div class="category-icon" style="background: ${cat.color}20; color: ${cat.color}">
+                                    ${cat.icon}
+                                </div>
+                                <h3>${cat.name}</h3>
+                                <p>${cat.description || 'Pas de description'}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    async renderSettings(container) {
+        if (window.categoriesPage && window.categoriesPage.renderSettings) {
+            window.categoriesPage.renderSettings(container);
+        } else {
+            container.innerHTML = `
+                <div class="settings-page">
+                    <div class="page-header">
+                        <h1><i class="fas fa-cog"></i> Paramètres</h1>
+                    </div>
+                    
+                    <div class="settings-grid">
+                        <div class="settings-card">
+                            <h3><i class="fas fa-robot"></i> Configuration IA</h3>
+                            <p>Configurez l'analyseur IA Claude</p>
+                            <button class="btn btn-primary" onclick="window.pageManager.configureAI()">
+                                <i class="fas fa-cog"></i> Configurer
+                            </button>
+                        </div>
+                        
+                        <div class="settings-card">
+                            <h3><i class="fas fa-tags"></i> Catégories</h3>
+                            <p>Gérez vos catégories d'emails</p>
+                            <button class="btn btn-secondary" onclick="window.pageManager.loadPage('categories')">
+                                <i class="fas fa-tags"></i> Gérer
+                            </button>
+                        </div>
+                        
+                        <div class="settings-card">
+                            <h3><i class="fas fa-sync-alt"></i> Synchronisation</h3>
+                            <p>État: ${this.syncState.emailScannerSynced ? 'Synchronisé' : 'Non synchronisé'}</p>
+                            <div class="sync-status">
+                                ${this.syncState.startScanSynced ? '✅ StartScan' : '❌ StartScan'}
+                                ${this.syncState.emailScannerSynced ? '✅ EmailScanner' : '❌ EmailScanner'}
+                                ${this.syncState.categoryManagerSynced ? '✅ CategoryManager' : '❌ CategoryManager'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    async renderScanner(container) {
+        console.log('[PageManager] Rendering scanner page...');
+        
+        const authStatus = await this.checkAuthenticationStatus();
+        
+        if (!authStatus.isAuthenticated) {
+            container.innerHTML = `
+                <div class="scanner-auth-required">
+                    <div class="scanner-header">
+                        <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
+                        <p>Connectez-vous pour analyser vos emails</p>
+                    </div>
+                    
+                    <div class="auth-card">
+                        <div class="auth-icon">
+                            <i class="fab fa-microsoft"></i>
+                        </div>
+                        <h3>Connexion Microsoft Graph</h3>
+                        <p>Accédez à vos emails Outlook/Exchange</p>
+                        <button class="btn btn-primary btn-large" onclick="window.pageManager.handleLogin()">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Se connecter à Microsoft
+                        </button>
+                    </div>
+                    
+                    <div class="scanner-info">
+                        <div class="info-card">
+                            <i class="fas fa-shield-alt"></i>
+                            <h4>Sécurisé</h4>
+                            <p>Authentification OAuth2 Microsoft</p>
+                        </div>
+                        <div class="info-card">
+                            <i class="fas fa-robot"></i>
+                            <h4>IA Intégrée</h4>
+                            <p>Analyse intelligente avec Claude AI</p>
+                        </div>
+                        <div class="info-card">
+                            <i class="fas fa-tasks"></i>
+                            <h4>Productivité</h4>
+                            <p>Convertit automatiquement en tâches</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
+            try {
+                await window.minimalScanModule.render(container);
+                return;
+            } catch (error) {
+                console.error('[PageManager] Error with minimalScanModule:', error);
+            }
+        }
+        
+        container.innerHTML = `
+            <div class="scanner-authenticated">
+                <div class="scanner-header">
+                    <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
+                    <p>Analysez vos emails et créez des tâches automatiquement</p>
+                </div>
+                
+                <div class="scanner-status">
+                    <div class="status-item">
+                        <i class="fas fa-user"></i>
+                        <span>Connecté${authStatus.user ? ' en tant que ' + authStatus.user : ''}</span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-database"></i>
+                        <span>EmailScanner: ${window.emailScanner ? 'Disponible' : 'Non disponible'}</span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Synchronisation: ${this.syncState.emailScannerSynced ? 'Active' : 'Inactive'}</span>
+                    </div>
+                </div>
+                
+                <div class="scanner-fallback">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <h3>Scanner de simulation</h3>
+                            <p>Le scanner principal n'est pas disponible. Utilisation du mode simulation.</p>
+                            <button onclick="window.pageManager.startFallbackScan()" class="btn btn-primary">
+                                <i class="fas fa-play"></i> Démarrer simulation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async startFallbackScan() {
+        console.log('[PageManager] Starting fallback simulation scan...');
+        
+        try {
+            this.showLoading('Simulation de scan en cours...');
+            
+            if (window.emailScanner && typeof window.emailScanner.scan === 'function') {
+                const results = await window.emailScanner.scan({
+                    days: 7,
+                    simulationMode: false,
+                    onProgress: (progress) => {
+                        console.log('[PageManager] Scan progress:', progress);
+                    }
+                });
+                
+                console.log(`[PageManager] Fallback scan completed with ${results.total} emails`);
+                
+                this.hideLoading();
+                this.showToast(`${results.total} emails analysés avec succès!`, 'success');
+                
+                this.syncState.emailScannerSynced = true;
+                this.syncState.emailCount = results.total;
+                this.lastScanData = results;
+                
+                setTimeout(() => {
+                    this.loadPage('emails');
+                }, 1000);
+                
+            } else {
+                throw new Error('EmailScanner non disponible');
+            }
+            
+        } catch (error) {
+            console.error('[PageManager] Fallback scan error:', error);
+            this.hideLoading();
+            this.showError('Erreur lors de la simulation: ' + error.message);
+        }
+    }
+
+    async renderRanger(container) {
+        if (window.domainOrganizer && window.domainOrganizer.showPage) {
+            window.domainOrganizer.showPage(container);
+        } else {
+            container.innerHTML = `
+                <div class="ranger-page">
+                    <div class="page-header">
+                        <h1><i class="fas fa-folder-tree"></i> Ranger par domaine</h1>
+                    </div>
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-folder-tree"></i>
+                        </div>
+                        <h3 class="empty-title">Module de rangement</h3>
+                        <p class="empty-text">Organisez vos emails par domaine</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    renderEmptyEmailsState() {
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3 class="empty-state-title">Aucun email trouvé</h3>
+                <p class="empty-state-text">
+                    Utilisez le scanner pour récupérer et analyser vos emails.
+                </p>
+                <div class="empty-state-actions">
+                    <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                        <i class="fas fa-search"></i>
+                        Aller au scanner
+                    </button>
+                    ${this.syncState.emailScannerSynced ? `
+                        <button class="btn btn-secondary" onclick="window.pageManager.refreshEmails()">
+                            <i class="fas fa-sync-alt"></i>
+                            Actualiser
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    renderEmptyState() {
+        console.log(`[PageManager] 📭 Rendu état vide - Catégorie: ${this.currentCategory}, Recherche: "${this.searchTerm}"`);
+        
+        let title, text, action = '';
+        
+        if (this.searchTerm) {
+            title = 'Aucun résultat trouvé';
+            text = `Aucun email ne correspond à votre recherche "${this.searchTerm}"`;
+            action = `
+                <button class="btn btn-primary" onclick="window.pageManager.clearSearch()">
+                    <i class="fas fa-undo"></i>
+                    <span>Effacer la recherche</span>
+                </button>
+            `;
+        } else if (this.currentCategory === 'other') {
+            title = 'Aucun email non catégorisé';
+            text = 'Tous vos emails ont été correctement catégorisés ! 🎉';
+            action = `
+                <button class="btn btn-primary" onclick="window.pageManager.filterByCategory('all')">
+                    <i class="fas fa-list"></i>
+                    <span>Voir tous les emails</span>
+                </button>
+            `;
+        } else if (this.currentCategory && this.currentCategory !== 'all') {
+            const categoryName = this.getCategoryName(this.currentCategory);
+            title = `Aucun email dans "${categoryName}"`;
+            text = 'Cette catégorie ne contient aucun email pour le moment.';
+            action = `
+                <button class="btn btn-primary" onclick="window.pageManager.filterByCategory('all')">
+                    <i class="fas fa-list"></i>
+                    <span>Voir tous les emails</span>
+                </button>
+            `;
+        } else {
+            title = 'Aucun email trouvé';
+            text = 'Utilisez le scanner pour récupérer et analyser vos emails.';
+            action = `
+                <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                    <i class="fas fa-search"></i>
+                    <span>Aller au scanner</span>
+                </button>
+            `;
+        }
+        
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3 class="empty-state-title">${title}</h3>
+                <p class="empty-state-text">${text}</p>
+                ${action}
+            </div>
+        `;
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================
+    configureAI() {
+        if (window.aiTaskAnalyzer && window.aiTaskAnalyzer.showConfigurationModal) {
+            window.aiTaskAnalyzer.showConfigurationModal();
+        } else {
+            this.showToast('Configuration IA non disponible', 'warning');
+        }
+    }
+
+    getVisibleEmails() {
+        const emails = this.getAllEmails();
+        let filteredEmails = emails;
+        
+        if (this.currentCategory && this.currentCategory !== 'all') {
+            if (this.currentCategory === 'other') {
+                filteredEmails = filteredEmails.filter(email => {
+                    const cat = email.category;
+                    const isOther = !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
+                    return isOther;
+                });
+            } else {
+                filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
+            }
+        }
+        
+        if (this.searchTerm) {
+            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        }
+        
+        return filteredEmails;
+    }
+
+    matchesSearch(email, searchTerm) {
+        if (!searchTerm) return true;
+        
+        const search = searchTerm.toLowerCase();
+        const subject = (email.subject || '').toLowerCase();
+        const sender = (email.from?.emailAddress?.name || '').toLowerCase();
+        const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
+        const preview = (email.bodyPreview || '').toLowerCase();
+        
+        return subject.includes(search) || 
+               sender.includes(search) || 
+               senderEmail.includes(search) || 
+               preview.includes(search);
+    }
+
+    calculateCategoryCounts(emails) {
+        console.log('[PageManager] 📊 Calcul des comptages de catégories...');
+        
+        const counts = {};
+        let uncategorizedCount = 0;
+        
+        emails.forEach(email => {
+            const cat = email.category;
+            
+            if (cat && cat !== 'other' && cat !== null && cat !== undefined && cat !== '') {
+                counts[cat] = (counts[cat] || 0) + 1;
+            } else {
+                uncategorizedCount++;
+            }
+        });
+        
+        if (uncategorizedCount > 0) {
+            counts.other = uncategorizedCount;
+            console.log(`[PageManager] 📌 ${uncategorizedCount} emails dans la catégorie "Autre"`);
+        }
+        
+        console.log('[PageManager] 📊 Comptages finaux:', counts);
+        
+        return counts;
+    }
+
+    createEmailGroups(emails, groupMode) {
+        const groups = {};
+        
+        emails.forEach(email => {
+            let groupKey, groupName;
+            
+            if (groupMode === 'grouped-domain') {
+                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
+                groupKey = domain;
+                groupName = domain;
+            } else {
+                const senderEmail = email.from?.emailAddress?.address || 'unknown';
+                const senderName = email.from?.emailAddress?.name || senderEmail;
+                groupKey = senderEmail;
+                groupName = senderName;
+            }
+            
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    key: groupKey,
+                    name: groupName,
+                    emails: [],
+                    count: 0,
+                    latestDate: null
+                };
+            }
+            
+            groups[groupKey].emails.push(email);
+            groups[groupKey].count++;
+            
+            const emailDate = new Date(email.receivedDateTime);
+            if (!groups[groupKey].latestDate || emailDate > groups[groupKey].latestDate) {
+                groups[groupKey].latestDate = emailDate;
+            }
+        });
+        
+        return Object.values(groups).sort((a, b) => {
+            if (!a.latestDate && !b.latestDate) return 0;
+            if (!a.latestDate) return 1;
+            if (!b.latestDate) return -1;
+            return b.latestDate - a.latestDate;
+        });
+    }
+
+    generateAvatarColor(text) {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        const hue = Math.abs(hash) % 360;
+        const saturation = 65 + (Math.abs(hash) % 20);
+        const lightness = 45 + (Math.abs(hash) % 15);
+        
+        return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
+    }
+
+    getEmailPriorityColor(email) {
+        if (email.importance === 'high') return '#ef4444';
+        if (email.hasAttachments) return '#f97316';
+        if (email.categoryScore >= 80) return '#10b981';
+        return '#3b82f6';
+    }
+
+    formatEmailDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 3600000) {
+            return `${Math.floor(diff / 60000)}m`;
+        } else if (diff < 86400000) {
+            return `${Math.floor(diff / 3600000)}h`;
+        } else if (diff < 604800000) {
+            return `${Math.floor(diff / 86400000)}j`;
+        } else {
+            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        }
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    getEmailContent(email) {
+        if (email.body?.content) {
+            return email.body.content;
+        }
+        return `<p>${email.bodyPreview || 'Aucun contenu disponible'}</p>`;
+    }
+
+    getCategoryColor(categoryId) {
+        if (window.categoryManager && window.categoryManager.getCategory) {
+            const category = window.categoryManager.getCategory(categoryId);
+            if (category && category.color) return category.color;
+        }
+        
+        const category = this.getCategories()[categoryId];
+        if (category && category.color) return category.color;
+        
+        return '#64748b';
+    }
+
+    getCategoryIcon(categoryId) {
+        if (window.categoryManager && window.categoryManager.getCategory) {
+            const category = window.categoryManager.getCategory(categoryId);
+            if (category && category.icon) return category.icon;
+        }
+        
+        const category = this.getCategories()[categoryId];
+        if (category && category.icon) return category.icon;
+        
+        return '📌';
+    }
+
+    getCategoryName(categoryId) {
+        if (window.categoryManager && window.categoryManager.getCategory) {
+            const category = window.categoryManager.getCategory(categoryId);
+            if (category && category.name) return category.name;
+        }
+        
+        const category = this.getCategories()[categoryId];
+        if (category && category.name) return category.name;
+        
+        return categoryId || 'Autre';
+    }
+
+    async analyzeFirstEmails(emails) {
+        if (!window.aiTaskAnalyzer) return;
+        
+        for (const email of emails) {
+            if (!this.aiAnalysisResults.has(email.id)) {
+                try {
+                    const analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
+                    this.aiAnalysisResults.set(email.id, analysis);
+                } catch (error) {
+                    console.error('[PageManager] Erreur analyse email:', error);
+                }
+            }
+        }
+    }
+
+    // ================================================
+    // MÉTHODES SYSTÈME
+    // ================================================
+    safeCall(fn) {
+        try {
+            return fn();
+        } catch (error) {
+            console.warn('[PageManager] Safe call failed:', error);
+            return null;
+        }
+    }
+
+    getPageContainer() {
+        return document.getElementById('pageContent') || document.querySelector('.page-content') || document.querySelector('#content');
+    }
+
+    showPageContent() {
+        const pageContent = this.getPageContainer();
+        if (pageContent) {
+            pageContent.style.display = 'block';
+            pageContent.style.opacity = '1';
+        }
+    }
+
+    updateNavigation(activePage) {
+        document.querySelectorAll('.nav-item').forEach(item => {
+            if (item.dataset.page === activePage) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    showLoading(message = 'Chargement...') {
+        if (window.uiManager && window.uiManager.showLoading) {
+            window.uiManager.showLoading(message);
+        } else {
+            console.log(`[PageManager] Loading: ${message}`);
+        }
+    }
+
+    hideLoading() {
+        if (window.uiManager && window.uiManager.hideLoading) {
+            window.uiManager.hideLoading();
+        }
+    }
+
+    showError(message) {
+        if (window.uiManager && window.uiManager.showToast) {
+            window.uiManager.showToast(message, 'error');
+        } else {
+            console.error(`[PageManager] Error: ${message}`);
+        }
+    }
+
+    showToast(message, type = 'info') {
+        if (window.uiManager && window.uiManager.showToast) {
+            window.uiManager.showToast(message, type);
+        } else {
+            console.log(`[PageManager] ${type.toUpperCase()}: ${message}`);
+        }
+    }
+
+    renderErrorPage(error) {
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 class="empty-state-title">Erreur de chargement</h3>
+                <p class="empty-state-text">${error.message}</p>
+                <button class="btn btn-primary" onclick="window.location.reload()">
+                    <i class="fas fa-refresh"></i>
+                    Recharger la page
+                </button>
+            </div>
+        `;
+    }
+
+    // ================================================
+    // STYLES CSS
+    // ================================================
+    addEmailsStyles() {
+        if (document.getElementById('emailsPageStyles')) return;
+        
+        const styles = document.createElement('style');
+        styles.id = 'emailsPageStyles';
+        styles.textContent = `
+            .emails-page-modern {
+                padding: 20px;
+                background: #f8fafc;
+                min-height: 100vh;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            }
+
+            .sync-indicator {
+                margin-bottom: 16px;
+                padding: 12px 16px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 14px;
+                font-weight: 500;
+            }
+            
+            .sync-indicator.success {
+                background: rgba(16, 185, 129, 0.1);
+                border: 1px solid rgba(16, 185, 129, 0.3);
+                color: #059669;
+            }
+            
+            .sync-indicator.info {
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid rgba(59, 130, 246, 0.3);
+                color: #2563eb;
+            }
+            
+            .sync-indicator.warning {
+                background: rgba(245, 158, 11, 0.1);
+                border: 1px solid rgba(245, 158, 11, 0.3);
+                color: #d97706;
+            }
+            
+            .sync-badges {
+                display: flex;
+                gap: 6px;
+                margin-left: auto;
+            }
+            
+            .sync-badge {
+                background: rgba(255, 255, 255, 0.8);
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 600;
+                border: 1px solid rgba(0, 0, 0, 0.1);
+            }
+
+            .explanation-notice {
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                border-radius: 8px;
+                padding: 12px 16px;
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                color: #1e40af;
+                font-size: 14px;
+                font-weight: 500;
+            }
+            
+            .explanation-close {
+                margin-left: auto;
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                color: #3b82f6;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+            }
+
+            .controls-bar {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 16px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .search-section {
+                width: 100%;
+            }
+
+            .search-box {
+                position: relative;
+                max-width: 600px;
+                margin: 0 auto;
+            }
+
+            .search-input {
+                width: 100%;
+                height: 44px;
+                padding: 0 16px 0 48px;
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
+                font-size: 14px;
+                background: #f9fafb;
+                transition: all 0.2s ease;
+            }
+
+            .search-input:focus {
+                border-color: #3b82f6;
+                background: white;
+                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            }
+
+            .search-icon {
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #6b7280;
+                font-size: 16px;
+            }
+
+            .search-clear {
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: #ef4444;
+                color: white;
+                border: none;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+            }
+
+            .actions-section {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+
+            .view-modes {
+                display: flex;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 4px;
+                gap: 2px;
+            }
+
+            .view-mode {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 12px;
+                border: none;
+                background: transparent;
+                color: #6b7280;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                font-size: 13px;
+                font-weight: 600;
+            }
+
+            .view-mode:hover {
+                background: rgba(255, 255, 255, 0.8);
+                color: #374151;
+            }
+
+            .view-mode.active {
+                background: white;
+                color: #1f2937;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .action-buttons {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+            .btn {
+                height: 44px;
+                background: white;
+                color: #374151;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 0 16px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                position: relative;
+            }
+
+            .btn:hover {
+                background: #f9fafb;
+                border-color: #6366f1;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            .btn.disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
+
+            .btn-primary {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                border-color: transparent;
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+            }
+
+            .btn-primary:hover {
+                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+            }
+
+            .btn-secondary {
+                background: #f8fafc;
+                color: #475569;
+                border-color: #e2e8f0;
+            }
+
+            .btn-clear {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+
+            .count-badge {
+                position: absolute;
+                top: -6px;
+                right: -6px;
+                background: #ef4444;
+                color: white;
+                font-size: 10px;
+                font-weight: 700;
+                padding: 2px 6px;
+                border-radius: 10px;
+                min-width: 16px;
+                text-align: center;
+                border: 2px solid white;
+            }
+
+            .dropdown-wrapper {
+                position: relative;
+            }
+
+            .dropdown-menu {
+                position: absolute;
+                top: calc(100% + 8px);
+                right: 0;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+                min-width: 200px;
+                z-index: 9999;
+                padding: 8px 0;
+                opacity: 0;
+                visibility: hidden;
+                transform: translateY(-10px);
+                transition: all 0.2s ease;
+            }
+
+            .dropdown-menu.show {
+                opacity: 1;
+                visibility: visible;
+                transform: translateY(0);
+            }
+
+            .dropdown-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 16px;
+                background: none;
+                border: none;
+                width: 100%;
+                text-align: left;
+                color: #374151;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .dropdown-item:hover {
+                background: #f8fafc;
+                color: #1f2937;
+            }
+
+            .dropdown-item.danger {
+                color: #dc2626;
+            }
+
+            .dropdown-item.danger:hover {
+                background: #fef2f2;
+                color: #b91c1c;
+            }
+
+            .dropdown-divider {
+                height: 1px;
+                background: #e5e7eb;
+                margin: 8px 0;
+            }
+
+            .category-filters {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 16px;
+                flex-wrap: wrap;
+            }
+
+            .category-tab {
+                height: 60px;
+                padding: 8px;
+                font-size: 12px;
+                font-weight: 700;
+                flex: 0 1 calc(16.666% - 8px);
+                min-width: 120px;
+                max-width: 180px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                background: white;
+                color: #374151;
+                border: 1px solid #e5e7eb;
+                cursor: pointer;
+                position: relative;
+            }
+
+            .category-tab.preselected {
+                border-color: #8b5cf6;
+                background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
+            }
+
+            .category-tab:hover {
+                border-color: #3b82f6;
+                background: #f0f9ff;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+            }
+
+            .category-tab.active {
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                color: white;
+                border-color: #3b82f6;
+                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+                transform: translateY(-2px);
+            }
+
+            .tab-content {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+                width: 100%;
+                height: 100%;
+                justify-content: center;
+            }
+
+            .tab-header {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .tab-icon {
+                font-size: 16px;
+            }
+
+            .tab-count {
+                background: rgba(0, 0, 0, 0.1);
+                padding: 2px 6px;
+                border-radius: 6px;
+                font-size: 10px;
+                font-weight: 800;
+                min-width: 18px;
+                text-align: center;
+            }
+
+            .preselected-star {
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                width: 20px;
+                height: 20px;
+                background: #8b5cf6;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 11px;
+                border: 2px solid white;
+                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+            }
+
+            .tab-name {
+                font-weight: 700;
+                font-size: 12px;
+                line-height: 1.2;
+                text-align: center;
+            }
+
+            .emails-container {
+                background: transparent;
+            }
+
+            .emails-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .email-card {
+                display: flex;
+                align-items: center;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 0;
+                padding: 16px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                min-height: 80px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .email-card:first-child {
+                border-top-left-radius: 12px;
+                border-top-right-radius: 12px;
+                border-top: 1px solid #e5e7eb;
+            }
+
+            .email-card:last-child {
+                border-bottom-left-radius: 12px;
+                border-bottom-right-radius: 12px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .email-card:hover {
+                background: #f8fafc;
+                transform: translateY(-1px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+                border-color: rgba(99, 102, 241, 0.2);
+                border-left: 3px solid #6366f1;
+                z-index: 2;
+            }
+
+            .email-card.selected {
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border-left: 4px solid #3b82f6;
+                border-color: #3b82f6;
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+                z-index: 3;
+            }
+
+            .email-card.has-task {
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                border-left: 3px solid #22c55e;
+            }
+
+            .email-card.preselected {
+                background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
+                border-left: 3px solid #8b5cf6;
+                border-color: rgba(139, 92, 246, 0.3);
+            }
+
+            .email-card.preselected:hover {
+                border-left: 4px solid #8b5cf6;
+                box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+                border-color: rgba(139, 92, 246, 0.4);
+            }
+
+            .email-card.preselected.selected {
+                background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
+                border-left: 4px solid #8b5cf6;
+                border-color: #8b5cf6;
+                box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+            }
+
+            .email-checkbox {
+                margin-right: 12px;
+                cursor: pointer;
+                width: 20px;
+                height: 20px;
+                border-radius: 6px;
+                border: 2px solid #d1d5db;
+                background: white;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
+                appearance: none;
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .email-checkbox:checked {
+                background: #6366f1;
+                border-color: #6366f1;
+            }
+
+            .email-checkbox:checked::after {
+                content: '✓';
+                color: white;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .email-card.preselected .email-checkbox:checked {
+                background: #8b5cf6;
+                border-color: #8b5cf6;
+            }
+
+            .priority-bar {
+                width: 4px;
+                height: 60px;
+                border-radius: 2px;
+                margin-right: 12px;
+                transition: all 0.3s ease;
+                flex-shrink: 0;
+            }
+
+            .email-content {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: 4px;
+                height: 100%;
+            }
+
+            .email-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 12px;
+                margin-bottom: 4px;
+            }
+
+            .email-title {
+                font-weight: 700;
+                color: #1f2937;
+                font-size: 15px;
+                margin: 0;
+                line-height: 1.3;
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .email-meta {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-shrink: 0;
+                flex-wrap: wrap;
+            }
+
+            .email-type,
+            .email-date {
+                display: flex;
+                align-items: center;
+                gap: 3px;
+                background: #f8fafc;
+                color: #64748b;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                border: 1px solid #e2e8f0;
+                white-space: nowrap;
+            }
+
+            .preselected-badge {
+                display: flex;
+                align-items: center;
+                gap: 3px;
+                background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 700;
+                border: none;
+                white-space: nowrap;
+                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+            }
+
+            .sync-badge {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                border: none;
+                font-weight: 700;
+                box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
+                display: flex;
+                align-items: center;
+                gap: 3px;
+                white-space: nowrap;
+            }
+
+            .confidence-badge {
+                background: rgba(16, 185, 129, 0.1);
+                color: #059669;
+                border-color: #bbf7d0;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                border: 1px solid #bbf7d0;
+                white-space: nowrap;
+            }
+
+            .email-sender {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                color: #6b7280;
+                font-size: 12px;
+                font-weight: 500;
+                line-height: 1.2;
+            }
+
+            .sender-name {
+                font-weight: 600;
+                color: #374151;
+            }
+
+            .attachment-indicator {
+                color: #dc2626;
+                font-weight: 600;
+                font-size: 10px;
+            }
+
+            .category-badge {
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 3px;
+                transition: all 0.2s ease;
+            }
+
+            .email-actions {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                margin-left: 12px;
+                flex-shrink: 0;
+                z-index: 10;
+                position: relative;
+            }
+
+            .action-btn {
+                width: 36px;
+                height: 36px;
+                border: 2px solid transparent;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.9);
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                font-size: 13px;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            }
+
+            .action-btn:hover {
+                background: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+
+            .action-btn.create-task {
+                color: #3b82f6;
+            }
+
+            .action-btn.create-task:hover {
+                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                border-color: #3b82f6;
+                color: #2563eb;
+            }
+
+            .action-btn.view-task {
+                color: #16a34a;
+                background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            }
+
+            .action-btn.view-task:hover {
+                background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
+                border-color: #16a34a;
+                color: #15803d;
+            }
+
+            .action-btn.details {
+                color: #8b5cf6;
+            }
+
+            .action-btn.details:hover {
+                background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+                border-color: #8b5cf6;
+                color: #7c3aed;
+            }
+
+            .emails-grouped {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .email-group {
+                background: transparent;
+                border: none;
+                border-radius: 0;
+                overflow: visible;
+                margin: 0;
+                padding: 0;
+            }
+
+            .group-header {
+                display: flex;
+                align-items: center;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 0;
+                padding: 16px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                min-height: 80px;
+                border-bottom: 1px solid #e5e7eb;
+                gap: 12px;
+            }
+
+            .group-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+                font-size: 16px;
+                flex-shrink: 0;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            .group-info {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: 4px;
+                height: 100%;
+            }
+
+            .group-name {
+                font-weight: 700;
+                color: #1f2937;
+                font-size: 15px;
+                margin: 0;
+                line-height: 1.3;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .group-meta {
+                color: #6b7280;
+                font-size: 12px;
+                font-weight: 500;
+                line-height: 1.2;
+            }
+
+            .group-expand {
+                width: 36px;
+                height: 36px;
+                border: 2px solid transparent;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.9);
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s ease;
+                font-size: 13px;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+                flex-shrink: 0;
+            }
+
+            .group-expand:hover {
+                background: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                color: #374151;
+            }
+
+            .email-group.expanded .group-expand {
+                transform: rotate(180deg) translateY(-1px);
+                color: #3b82f6;
+                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                border-color: #3b82f6;
+            }
+
+            .group-content {
+                background: transparent;
+                margin: 0;
+                padding: 0;
+                display: none;
+            }
+
+            .email-group.expanded .group-content {
+                display: block;
+            }
+
+            .group-content .email-card {
+                border-radius: 0;
+                margin: 0;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .group-content .email-card:last-child {
+                border-bottom-left-radius: 12px;
+                border-bottom-right-radius: 12px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .empty-state {
+                text-align: center;
+                padding: 60px 30px;
+                background: white;
+                border-radius: 12px;
+                border: 1px solid #e5e7eb;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .empty-state-icon {
+                font-size: 48px;
+                margin-bottom: 20px;
+                color: #d1d5db;
+            }
+
+            .empty-state-title {
+                font-size: 22px;
+                font-weight: 700;
+                color: #374151;
+                margin-bottom: 12px;
+            }
+
+            .empty-state-text {
+                font-size: 15px;
+                margin-bottom: 24px;
+                max-width: 400px;
+                line-height: 1.6;
+                color: #6b7280;
+                font-weight: 500;
+            }
+
+            @media (max-width: 768px) {
+                .actions-section {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 12px;
+                }
+
+                .view-modes {
+                    width: 100%;
+                    justify-content: space-around;
+                }
+
+                .action-buttons {
+                    width: 100%;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+
+                .category-filters {
+                    justify-content: center;
+                }
+
+                .category-tab {
+                    flex: 0 1 calc(50% - 8px);
+                    min-width: 140px;
+                }
+
+                .email-meta {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 4px;
+                }
+
+                .email-actions {
+                    flex-direction: column;
+                    gap: 2px;
+                }
+            }
+        `;
+        
+        document.head.appendChild(styles);
+    }
+
+    // ================================================
+    // DEBUG ET NETTOYAGE
+    // ================================================
+    getSyncStatus() {
+        return {
+            ...this.syncState,
+            emailScanner: {
+                available: !!window.emailScanner,
+                emails: window.emailScanner?.emails?.length || 0,
+                startScanSynced: window.emailScanner?.startScanSynced || false
+            },
+            categoryManager: {
+                available: !!window.categoryManager,
+                preselectedCategories: this.getTaskPreselectedCategories(),
+                categories: Object.keys(this.getCategories()).length
+            },
+            startScan: {
+                available: !!window.minimalScanModule,
+                settings: window.minimalScanModule?.settings || {}
+            },
+            lastScanData: this.lastScanData
+        };
+    }
+
+    cleanup() {
+        if (this.categoryManagerChangeListener) {
+            window.categoryManager?.removeChangeListener?.(this.categoryManagerChangeListener);
+        }
+        
+        this.invalidateTaskCategoriesCache();
+        this.selectedEmails.clear();
+        this.aiAnalysisResults.clear();
+        this.createdTasks.clear();
+        
+        console.log('[PageManager] 🧹 Nettoyage effectué');
+    }
+}
+
+// ================================================
+// INITIALISATION GLOBALE
+// ================================================
+if (window.pageManager) {
+    console.log('[PageManager] 🔄 Nettoyage ancienne instance...');
+    window.pageManager.cleanup?.();
+}
+
+console.log('[PageManager] 🚀 Création nouvelle instance v15.1...');
+window.pageManager = new PageManager();
+
+Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
+    if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
+        window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
+    }
+});
+
+// Fonctions de debug globales
+window.debugPageManagerSync = function() {
+    return window.pageManager?.getSyncStatus() || { error: 'PageManager non disponible' };
+};
+
+window.refreshPageManagerEmails = function() {
+    if (window.pageManager && window.pageManager.currentPage === 'emails') {
+        window.pageManager.refreshEmailsView();
+        return { success: true, message: 'Vue emails rafraîchie' };
+    }
+    return { success: false, message: 'Pas sur la page emails ou PageManager non disponible' };
+};
+
+console.log('✅ PageManager v15.1 loaded - Détection newsletters améliorée');
