@@ -675,6 +675,8 @@ class App {
         const adminContact = licenseStatus.adminContact || {};
         const daysExpired = licenseStatus.daysExpired || 0;
         const accountType = licenseStatus.user?.account_type || 'professional';
+        const userRole = licenseStatus.user?.role || 'user';
+        const isAdmin = userRole === 'company_admin' || userRole === 'super_admin';
         
         document.body.classList.add('login-mode', 'license-blocked');
         document.body.classList.remove('app-active');
@@ -702,11 +704,11 @@ class App {
                             </p>
                         </div>
                         
-                        ${accountType === 'individual' ? `
+                        ${accountType === 'individual' || isAdmin ? `
                             <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); 
                                         padding: 25px; border-radius: 15px; margin: 30px 0;">
                                 <h3 style="color: #3b82f6; margin-bottom: 15px;">
-                                    <i class="fas fa-info-circle"></i> Compte Personnel
+                                    <i class="fas fa-info-circle"></i> ${isAdmin ? 'Vous êtes administrateur' : 'Compte Personnel'}
                                 </h3>
                                 <p style="font-size: 1.1rem; color: #1f2937; line-height: 1.6; margin-bottom: 20px;">
                                     Pour régulariser votre compte et continuer à utiliser EmailSortPro, 
@@ -718,7 +720,7 @@ class App {
                                           color: white; display: inline-flex; align-items: center; gap: 10px;
                                           padding: 15px 30px; font-size: 1.1rem;">
                                     <i class="fas fa-chart-line"></i>
-                                    Accéder à mon espace
+                                    Accéder à l'espace de gestion
                                 </a>
                             </div>
                         ` : `
@@ -731,29 +733,11 @@ class App {
                                     Contactez votre administrateur pour renouveler la licence :
                                 </p>
                                 <div style="background: white; padding: 20px; border-radius: 10px; margin-top: 15px;">
-                                    ${adminContact.name ? `
-                                        <p style="margin: 8px 0;">
-                                            <strong>Contact :</strong> ${adminContact.name}
-                                        </p>
-                                    ` : ''}
                                     ${adminContact.email ? `
                                         <p style="margin: 8px 0;">
-                                            <strong>Email :</strong> 
-                                            <a href="mailto:${adminContact.email}" style="color: #3b82f6;">
+                                            <strong>Email administrateur :</strong> 
+                                            <a href="mailto:${adminContact.email}" style="color: #3b82f6; font-size: 1.1rem;">
                                                 ${adminContact.email}
-                                            </a>
-                                        </p>
-                                    ` : ''}
-                                    ${adminContact.phone ? `
-                                        <p style="margin: 8px 0;">
-                                            <strong>Téléphone :</strong> ${adminContact.phone}
-                                        </p>
-                                    ` : ''}
-                                    ${adminContact.fallbackEmail ? `
-                                        <p style="margin: 15px 0 0 0; font-size: 0.9rem; color: #6b7280;">
-                                            Support : 
-                                            <a href="mailto:${adminContact.fallbackEmail}" style="color: #3b82f6;">
-                                                ${adminContact.fallbackEmail}
                                             </a>
                                         </p>
                                     ` : ''}
@@ -793,6 +777,8 @@ class App {
         console.log('[App] Showing blocked license screen');
         
         const adminContact = licenseStatus.adminContact || {};
+        const userRole = licenseStatus.user?.role || 'user';
+        const isAdmin = userRole === 'company_admin' || userRole === 'super_admin';
         
         document.body.classList.add('login-mode', 'license-blocked');
         document.body.classList.remove('app-active');
@@ -817,27 +803,38 @@ class App {
                             </p>
                         </div>
                         
-                        <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); 
-                                    padding: 25px; border-radius: 15px; margin: 30px 0;">
-                            <h3 style="color: #f59e0b; margin-bottom: 15px;">Contact administrateur</h3>
-                            <div style="background: white; padding: 20px; border-radius: 10px;">
-                                ${adminContact.email ? `
-                                    <p><strong>Email :</strong> 
-                                        <a href="mailto:${adminContact.email}" style="color: #3b82f6;">
+                        ${isAdmin ? `
+                            <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); 
+                                        padding: 25px; border-radius: 15px; margin: 30px 0;">
+                                <h3 style="color: #3b82f6; margin-bottom: 15px;">
+                                    <i class="fas fa-info-circle"></i> Vous êtes administrateur
+                                </h3>
+                                <p style="font-size: 1.1rem; color: #1f2937; line-height: 1.6; margin-bottom: 20px;">
+                                    Pour débloquer votre compte, accédez à votre espace de gestion :
+                                </p>
+                                <a href="https://emailsortpro.netlify.app/analytics.html" 
+                                   class="login-button" 
+                                   style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+                                          color: white; display: inline-flex; align-items: center; gap: 10px;
+                                          padding: 15px 30px; font-size: 1.1rem;">
+                                    <i class="fas fa-chart-line"></i>
+                                    Accéder à l'espace de gestion
+                                </a>
+                            </div>
+                        ` : adminContact.email ? `
+                            <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); 
+                                        padding: 25px; border-radius: 15px; margin: 30px 0;">
+                                <h3 style="color: #f59e0b; margin-bottom: 15px;">Contact administrateur</h3>
+                                <div style="background: white; padding: 20px; border-radius: 10px;">
+                                    <p>
+                                        <strong>Email administrateur :</strong> 
+                                        <a href="mailto:${adminContact.email}" style="color: #3b82f6; font-size: 1.1rem;">
                                             ${adminContact.email}
                                         </a>
                                     </p>
-                                ` : ''}
-                                ${adminContact.fallbackEmail ? `
-                                    <p style="margin-top: 10px; font-size: 0.9rem; color: #6b7280;">
-                                        Support : 
-                                        <a href="mailto:${adminContact.fallbackEmail}" style="color: #3b82f6;">
-                                            ${adminContact.fallbackEmail}
-                                        </a>
-                                    </p>
-                                ` : ''}
+                                </div>
                             </div>
-                        </div>
+                        ` : ''}
                         
                         <button onclick="window.app.logout()" class="login-button" 
                                 style="background: rgba(107, 114, 128, 0.2); color: #374151;">
