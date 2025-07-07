@@ -1,1178 +1,687 @@
-// analytics.js - Module Analytics pour EmailSortPro avec synchronisation Supabase
-// Version 4.0 - Synchronisation temps réel avec Supabase
+// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ pour emailsortpro.netlify.app v4.0
 
-class AnalyticsManager {
+class AuthService {
     constructor() {
-        this.storageKey = 'emailsortpro_analytics';
-        this.sessionKey = 'emailsortpro_session';
-        this.initialized = false;
-        this.currentSession = null;
-        this.supabase = null;
-        this.syncEnabled = true;
+        this.msalInstance = null;
+        this.account = null;
+        this.isInitialized = false;
+        this.initializationPromise = null;
+        this.configWaitAttempts = 0;
+        this.maxConfigWaitAttempts = 50; // 5 secondes max
+        this.expectedDomain = 'emailsortpro.netlify.app';
+        this.provider = 'microsoft';
         
-        // Configuration des coûts (en centimes d'euros)
-        this.costs = {
-            emailScan: 0.5,        // 0.5 centime par email scanné
-            aiAnalysis: 2,         // 2 centimes par analyse IA
-            taskGeneration: 1,     // 1 centime par tâche générée
-            domainOrganization: 3  // 3 centimes par organisation de domaine
-        };
+        console.log('[AuthService] Constructor called - Enhanced support for emailsortpro.netlify.app');
         
-        console.log('[Analytics] Manager initialized v4.0 with Supabase sync');
-        this.initializeSession();
+        // Vérifier le domaine immédiatement
+        this.verifyDomain();
+        
+        // Attendre que la configuration soit disponible avec timeout
+        this.waitForConfig();
     }
 
-    // === GESTION DES SESSIONS ===
-    initializeSession() {
-        const sessionId = this.generateSessionId();
-        const timestamp = new Date().toISOString();
-        const userAgent = navigator.userAgent;
-        const domain = window.location.hostname;
+    verifyDomain() {
+        const currentDomain = window.location.hostname;
+        const isCorrectDomain = currentDomain === this.expectedDomain;
         
-        this.currentSession = {
-            sessionId: sessionId,
-            startTime: timestamp,
-            domain: domain,
-            userAgent: userAgent,
-            actions: [],
-            errors: [],
-            emailStats: null,
-            authProvider: null,
-            userInfo: null,
-            costs: {
-                total: 0,
-                breakdown: {}
-            }
-        };
-
-        sessionStorage.setItem(this.sessionKey, JSON.stringify(this.currentSession));
-        
-        this.trackEvent('session_start', {
-            domain: domain,
-            userAgent: userAgent.substring(0, 100),
-            timestamp: timestamp
+        console.log('[AuthService] Domain verification:', {
+            current: currentDomain,
+            expected: this.expectedDomain,
+            isCorrect: isCorrectDomain
         });
-
-        console.log('[Analytics] Session initialized:', sessionId);
-    }
-
-    generateSessionId() {
-        return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    }
-
-    // === INITIALISATION SUPABASE ===
-    async initializeSupabase() {
-        if (this.supabase) return true;
         
-        try {
-            // Utiliser le service de licence qui a déjà Supabase initialisé
-            if (window.licenseService && window.licenseService.supabase) {
-                this.supabase = window.licenseService.supabase;
-                console.log('[Analytics] Using Supabase from LicenseService');
-                return true;
+        if (!isCorrectDomain && !currentDomain.includes('localhost') && !currentDomain.includes('127.0.0.1')) {
+            console.warn('[AuthService] ⚠️ Domain mismatch! Authentication may fail.');
+            console.warn('[AuthService] Azure App Registration must be configured for:', this.expectedDomain);
+        }
+    }
+
+    waitForConfig() {
+        console.log('[AuthService] Waiting for configuration...');
+        
+        if (!window.AppConfig) {
+            this.configWaitAttempts++;
+            
+            if (this.configWaitAttempts >= this.maxConfigWaitAttempts) {
+                console.error('[AuthService] ❌ Configuration timeout - AppConfig not available after 5 seconds');
+                return;
             }
             
-            console.warn('[Analytics] Supabase not available');
-            return false;
-        } catch (error) {
-            console.error('[Analytics] Error initializing Supabase:', error);
-            return false;
+            console.log(`[AuthService] AppConfig not yet available, waiting... (${this.configWaitAttempts}/${this.maxConfigWaitAttempts})`);
+            setTimeout(() => this.waitForConfig(), 100);
+            return;
+        }
+        
+        // Vérifier immédiatement la configuration
+        const validation = window.AppConfig.validate();
+        console.log('[AuthService] Configuration validation:', validation);
+        
+        // Vérification spécifique pour le nouveau domaine
+        if (window.AppConfig.msal?.redirectUri && 
+            !window.AppConfig.msal.redirectUri.includes(this.expectedDomain)) {
+            console.error('[AuthService] ❌ Redirect URI does not match expected domain!');
+            console.error('[AuthService] Expected domain:', this.expectedDomain);
+            console.error('[AuthService] Configured URI:', window.AppConfig.msal.redirectUri);
+        }
+        
+        if (!validation.valid) {
+            console.error('[AuthService] Configuration invalid for emailsortpro.netlify.app:', validation.issues);
+            // Continuer quand même pour permettre l'affichage des erreurs
+        } else {
+            console.log('[AuthService] ✅ Configuration valid for emailsortpro.netlify.app');
         }
     }
 
-    // === TRACKING DES ÉVÉNEMENTS ===
-    async trackEvent(eventType, eventData = {}) {
-        if (!this.currentSession) {
-            this.initializeSession();
-        }
-
-        const event = {
-            type: eventType,
-            timestamp: new Date().toISOString(),
-            data: eventData,
-            sessionId: this.currentSession.sessionId,
-            userEmail: this.currentSession.userInfo?.email || 'anonymous'
-        };
-
-        // Ajouter à la session courante
-        this.currentSession.actions.push(event);
-        sessionStorage.setItem(this.sessionKey, JSON.stringify(this.currentSession));
-
-        // Envoyer à Supabase immédiatement si disponible
-        if (this.syncEnabled) {
-            await this.sendToSupabase(event);
+    async initialize() {
+        console.log('[AuthService] Initialize called for emailsortpro.netlify.app');
+        
+        // Éviter l'initialisation multiple
+        if (this.initializationPromise) {
+            console.log('[AuthService] Already initializing, waiting for existing promise...');
+            return this.initializationPromise;
         }
         
-        console.log('[Analytics] Event tracked:', eventType, eventData);
+        if (this.isInitialized) {
+            console.log('[AuthService] Already initialized');
+            return Promise.resolve();
+        }
+
+        this.initializationPromise = this._doInitialize();
+        return this.initializationPromise;
     }
 
-    // === ENVOI À SUPABASE ===
-    async sendToSupabase(event) {
-        if (!this.supabase) {
-            await this.initializeSupabase();
-        }
-        
-        if (!this.supabase) return;
-        
+    async _doInitialize() {
         try {
-            const { error } = await this.supabase
-                .from('email_analytics')
-                .insert({
-                    user_email: event.userEmail,
-                    user_domain: event.userEmail.split('@')[1] || 'unknown',
-                    event_type: event.type,
-                    event_data: event.data,
-                    email_count: event.data.emailCount || 0,
-                    session_id: event.sessionId,
-                    ip_address: null, // Pas d'IP côté client
-                    user_agent: navigator.userAgent.substring(0, 255)
-                });
+            console.log('[AuthService] Starting initialization for emailsortpro.netlify.app...');
+            
+            // Vérifier que MSAL est chargé
+            if (typeof msal === 'undefined') {
+                throw new Error('MSAL library not loaded - check if script is included');
+            }
+            console.log('[AuthService] ✅ MSAL library available');
+
+            // Vérifier que la configuration est disponible ET valide
+            if (!window.AppConfig) {
+                throw new Error('AppConfig not loaded - check if config.js is included before AuthService.js');
+            }
+
+            const validation = window.AppConfig.forceValidate();
+            console.log('[AuthService] Configuration validation result for new domain:', validation);
+            
+            if (!validation.valid) {
+                // Vérification spéciale pour les erreurs de domaine
+                const domainIssues = validation.issues.filter(issue => 
+                    issue.includes('emailsortpro.netlify.app') || 
+                    issue.includes('redirect') || 
+                    issue.includes('URI')
+                );
                 
-            if (error) {
-                console.warn('[Analytics] Error sending to Supabase:', error);
+                if (domainIssues.length > 0) {
+                    const errorMsg = `Configuration invalide pour emailsortpro.netlify.app: ${domainIssues.join(', ')}`;
+                    console.error('[AuthService]', errorMsg);
+                    throw new Error(errorMsg);
+                } else {
+                    console.warn('[AuthService] Configuration issues detected, but proceeding...');
+                }
             }
-        } catch (error) {
-            console.warn('[Analytics] Failed to send analytics:', error);
-        }
-    }
 
-    // === TRACKING SPÉCIFIQUE ===
-    trackAuthentication(provider, userInfo) {
-        this.currentSession.authProvider = provider;
-        this.currentSession.userInfo = {
-            name: userInfo.name || userInfo.displayName,
-            email: userInfo.email || userInfo.mail || userInfo.userPrincipalName,
-            domain: userInfo.email ? userInfo.email.split('@')[1] : 'unknown',
-            id: userInfo.id || null
-        };
-
-        this.trackEvent('auth_success', {
-            provider: provider,
-            userEmail: this.currentSession.userInfo.email,
-            userDomain: this.currentSession.userInfo.domain,
-            userName: this.currentSession.userInfo.name
-        });
-
-        this.updateUserStatsByEmail();
-    }
-
-    trackPageVisit(pageName) {
-        this.trackEvent('page_visit', {
-            page: pageName,
-            userEmail: this.currentSession.userInfo?.email || 'anonymous',
-            timestamp: new Date().toISOString()
-        });
-    }
-
-    async trackEmailScan(emailCount, errors = []) {
-        const userEmail = this.currentSession.userInfo?.email || 'anonymous';
-        const scanCost = emailCount * this.costs.emailScan;
-        
-        const scanData = {
-            emailCount: emailCount,
-            errorCount: errors.length,
-            domain: window.location.hostname,
-            userEmail: userEmail,
-            cost: scanCost,
-            timestamp: new Date().toISOString()
-        };
-
-        if (errors.length > 0) {
-            scanData.errors = errors;
-            errors.forEach(error => this.trackError('scan_error', error));
-        }
-
-        await this.trackEvent('email_scan', scanData);
-        
-        // Mettre à jour les coûts
-        this.updateSessionCost('emailScan', scanCost);
-        
-        // Mettre à jour les stats dans Supabase
-        await this.updateSupabaseUserStats(userEmail, emailCount);
-    }
-
-    trackError(errorType, errorData) {
-        const error = {
-            type: errorType,
-            message: errorData.message || errorData,
-            stack: errorData.stack,
-            timestamp: new Date().toISOString(),
-            page: window.location.pathname,
-            userAgent: navigator.userAgent.substring(0, 100),
-            userEmail: this.currentSession.userInfo?.email || 'anonymous'
-        };
-
-        if (this.currentSession) {
-            this.currentSession.errors.push(error);
-            sessionStorage.setItem(this.sessionKey, JSON.stringify(this.currentSession));
-        }
-
-        this.trackEvent('error', error);
-    }
-
-    // === MISE À JOUR DES STATISTIQUES SUPABASE ===
-    async updateSupabaseUserStats(email, emailCount = 0) {
-        if (!this.supabase || !email || email === 'anonymous') return;
-        
-        try {
-            // Récupérer les stats actuelles
-            const { data: existingStats } = await this.supabase
-                .from('user_email_stats')
-                .select('*')
-                .eq('email', email)
-                .single();
+            console.log('[AuthService] ✅ Configuration validated for emailsortpro.netlify.app');
             
-            if (existingStats) {
-                // Mettre à jour les stats existantes
-                const { error } = await this.supabase
-                    .from('user_email_stats')
-                    .update({
-                        total_sessions: existingStats.total_sessions + 1,
-                        total_emails_scanned: existingStats.total_emails_scanned + emailCount,
-                        last_activity: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('email', email);
-                    
-                if (error) {
-                    console.warn('[Analytics] Error updating stats:', error);
-                }
-            } else {
-                // Créer de nouvelles stats
-                const { error } = await this.supabase
-                    .from('user_email_stats')
-                    .insert({
-                        email: email,
-                        name: this.currentSession.userInfo?.name || email.split('@')[0],
-                        domain: email.split('@')[1] || 'unknown',
-                        total_sessions: 1,
-                        total_emails_scanned: emailCount,
-                        last_activity: new Date().toISOString()
-                    });
-                    
-                if (error) {
-                    console.warn('[Analytics] Error creating stats:', error);
-                }
+            // Log de la configuration utilisée (sans exposer de secrets)
+            console.log('[AuthService] Using configuration for emailsortpro.netlify.app:', {
+                clientId: window.AppConfig.msal.clientId ? window.AppConfig.msal.clientId.substring(0, 8) + '...' : 'MISSING',
+                authority: window.AppConfig.msal.authority,
+                redirectUri: window.AppConfig.msal.redirectUri,
+                postLogoutRedirectUri: window.AppConfig.msal.postLogoutRedirectUri,
+                cacheLocation: window.AppConfig.msal.cache.cacheLocation,
+                environment: window.AppConfig.app?.environment || 'unknown',
+                domain: window.AppConfig.app?.domain
+            });
+
+            // Vérification critique des URIs pour le nouveau domaine
+            const expectedRedirectUri = `https://${this.expectedDomain}/auth-callback.html`;
+            const expectedLogoutUri = `https://${this.expectedDomain}/`;
+            
+            if (window.AppConfig.msal.redirectUri !== expectedRedirectUri) {
+                console.error('[AuthService] ❌ CRITICAL: Redirect URI mismatch!');
+                console.error('[AuthService] Expected:', expectedRedirectUri);
+                console.error('[AuthService] Configured:', window.AppConfig.msal.redirectUri);
+                throw new Error(`Redirect URI must be configured as: ${expectedRedirectUri}`);
             }
-        } catch (error) {
-            console.warn('[Analytics] Failed to update user stats:', error);
-        }
-    }
+            
+            if (window.AppConfig.msal.postLogoutRedirectUri !== expectedLogoutUri) {
+                console.warn('[AuthService] ⚠️ Logout URI mismatch (non-critical)');
+                console.warn('[AuthService] Expected:', expectedLogoutUri);
+                console.warn('[AuthService] Configured:', window.AppConfig.msal.postLogoutRedirectUri);
+            }
 
-    updateSessionCost(costType, amount) {
-        if (!this.currentSession.costs.breakdown[costType]) {
-            this.currentSession.costs.breakdown[costType] = 0;
-        }
-        
-        this.currentSession.costs.breakdown[costType] += amount;
-        this.currentSession.costs.total += amount;
-        
-        sessionStorage.setItem(this.sessionKey, JSON.stringify(this.currentSession));
-    }
-
-    // === MÉTHODES D'INTÉGRATION ===
-    onPageLoad(pageName) {
-        this.trackPageVisit(pageName);
-    }
-
-    onAuthSuccess(provider, userInfo) {
-        this.trackAuthentication(provider, userInfo);
-    }
-
-    onEmailScanComplete(emailCount, errors = []) {
-        this.trackEmailScan(emailCount, errors);
-    }
-
-    onError(errorType, errorData) {
-        this.trackError(errorType, errorData);
-    }
-
-    // === EXPORT ===
-    async exportAnalytics() {
-        if (!this.supabase) {
-            await this.initializeSupabase();
-        }
-        
-        const exportData = {
-            exportedAt: new Date().toISOString(),
-            version: '4.0',
-            currentSession: this.currentSession
-        };
-        
-        // Récupérer les données depuis Supabase si disponible
-        if (this.supabase) {
+            // Créer l'instance MSAL avec validation renforcée
+            console.log('[AuthService] Creating MSAL instance for emailsortpro.netlify.app...');
+            
+            const msalConfig = {
+                auth: {
+                    clientId: window.AppConfig.msal.clientId,
+                    authority: window.AppConfig.msal.authority,
+                    redirectUri: window.AppConfig.msal.redirectUri,
+                    postLogoutRedirectUri: window.AppConfig.msal.postLogoutRedirectUri
+                },
+                cache: window.AppConfig.msal.cache,
+                system: window.AppConfig.msal.system
+            };
+            
+            // Validation finale avant création MSAL
+            if (!msalConfig.auth.clientId || msalConfig.auth.clientId === 'CONFIGURATION_REQUIRED') {
+                throw new Error('CRITICAL: clientId is missing or invalid in MSAL config');
+            }
+            
+            // Validation du format du Client ID
+            if (!/^[a-f0-9-]{36}$/i.test(msalConfig.auth.clientId)) {
+                throw new Error(`CRITICAL: clientId format is invalid: ${msalConfig.auth.clientId}. Must be a valid GUID.`);
+            }
+            
+            console.log('[AuthService] MSAL config prepared for emailsortpro.netlify.app:', {
+                clientId: msalConfig.auth.clientId ? '✅ Present (valid GUID)' : '❌ Missing',
+                authority: msalConfig.auth.authority ? '✅ Present' : '❌ Missing',
+                redirectUri: msalConfig.auth.redirectUri ? '✅ Present' : '❌ Missing',
+                postLogoutRedirectUri: msalConfig.auth.postLogoutRedirectUri ? '✅ Present' : '❌ Missing',
+                cacheLocation: msalConfig.cache?.cacheLocation || 'default',
+                domainMatch: msalConfig.auth.redirectUri?.includes(this.expectedDomain) ? '✅ Correct' : '❌ Wrong domain'
+            });
+            
+            this.msalInstance = new msal.PublicClientApplication(msalConfig);
+            console.log('[AuthService] ✅ MSAL instance created successfully for emailsortpro.netlify.app');
+            
+            // Initialiser MSAL
+            await this.msalInstance.initialize();
+            console.log('[AuthService] ✅ MSAL instance initialized for emailsortpro.netlify.app');
+            
+            // Gérer la redirection si elle existe
             try {
-                const { data: analytics } = await this.supabase
-                    .from('email_analytics')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(1000);
+                console.log('[AuthService] Checking for redirect response...');
+                const response = await this.msalInstance.handleRedirectPromise();
                 
-                const { data: userStats } = await this.supabase
-                    .from('user_email_stats')
-                    .select('*')
-                    .order('total_emails_scanned', { ascending: false });
+                if (response) {
+                    console.log('[AuthService] ✅ Redirect response received for emailsortpro.netlify.app:', {
+                        username: response.account?.username,
+                        name: response.account?.name
+                    });
+                    this.account = response.account;
+                    this.msalInstance.setActiveAccount(this.account);
+                } else {
+                    console.log('[AuthService] No redirect response');
+                    
+                    // Pas de redirection, vérifier s'il y a un compte dans le cache
+                    const accounts = this.msalInstance.getAllAccounts();
+                    console.log('[AuthService] Accounts in cache:', accounts.length);
+                    
+                    if (accounts.length > 0) {
+                        this.account = accounts[0];
+                        this.msalInstance.setActiveAccount(this.account);
+                        console.log('[AuthService] ✅ Account restored from cache:', this.account.username);
+                    } else {
+                        console.log('[AuthService] No account in cache');
+                    }
+                }
+            } catch (redirectError) {
+                console.warn('[AuthService] Redirect handling error (non-critical):', redirectError);
                 
-                exportData.analytics = analytics || [];
-                exportData.userStats = userStats || [];
-            } catch (error) {
-                console.error('Export error:', error);
+                // Gestion spéciale des erreurs de redirection pour le nouveau domaine
+                if (redirectError.message && redirectError.message.includes('redirect_uri')) {
+                    console.error('[AuthService] ❌ REDIRECT URI ERROR for emailsortpro.netlify.app!');
+                    throw new Error(`Redirect URI error: Configure https://${this.expectedDomain}/auth-callback.html in Azure Portal`);
+                }
+                
+                // Continuer même en cas d'erreur de redirection non critique
             }
+
+            this.isInitialized = true;
+            console.log('[AuthService] ✅ Initialization completed successfully for emailsortpro.netlify.app');
+            
+            return true;
+
+        } catch (error) {
+            console.error('[AuthService] ❌ Initialization failed for emailsortpro.netlify.app:', error);
+            this.isInitialized = false;
+            this.initializationPromise = null;
+            
+            // Gestion d'erreurs spécifiques avec messages détaillés pour le nouveau domaine
+            if (error.message.includes('unauthorized_client')) {
+                console.error('[AuthService] AZURE CONFIG ERROR: Client ID incorrect or app not configured for emailsortpro.netlify.app');
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        'Erreur de configuration Azure pour emailsortpro.netlify.app. Client ID incorrect.',
+                        'error',
+                        15000
+                    );
+                }
+            } else if (error.message.includes('redirect_uri') || error.message.includes('Redirect URI')) {
+                console.error('[AuthService] REDIRECT URI ERROR:', error.message);
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        `URI de redirection invalide. Configurez: https://${this.expectedDomain}/auth-callback.html`,
+                        'error',
+                        20000
+                    );
+                }
+            } else if (error.message.includes('clientId')) {
+                console.error('[AuthService] CLIENT ID ERROR:', error.message);
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        'Erreur critique: Client ID manquant ou invalide',
+                        'error',
+                        15000
+                    );
+                }
+            }
+            
+            throw error;
         }
-        
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-            type: 'application/json'
+    }
+
+    isAuthenticated() {
+        const authenticated = this.account !== null && this.isInitialized;
+        console.log('[AuthService] Authentication check for emailsortpro.netlify.app:', {
+            hasAccount: !!this.account,
+            isInitialized: this.isInitialized,
+            result: authenticated,
+            domain: window.location.hostname,
+            provider: this.provider
         });
-        
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `emailsortpro-analytics-${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        
-        URL.revokeObjectURL(url);
-    }
-}
-
-// === MODULE ANALYTICS POUR LA PAGE ===
-class AnalyticsModule {
-    constructor() {
-        this.container = null;
-        this.refreshInterval = null;
-        this.analytics = window.analyticsManager || new AnalyticsManager();
-        this.supabaseClient = null;
-        this.currentUser = null;
-        this.lastUpdate = null;
+        return authenticated;
     }
 
-    async render() {
-        console.log('[AnalyticsModule] Rendering analytics page...');
+    getAccount() {
+        return this.account;
+    }
+
+    async login() {
+        console.log('[AuthService] Microsoft login attempt started for emailsortpro.netlify.app...');
         
-        const pageContent = document.getElementById('pageContent');
-        if (!pageContent) {
-            console.error('[AnalyticsModule] Page content container not found');
-            return;
+        if (!this.isInitialized) {
+            console.log('[AuthService] Not initialized, initializing first...');
+            await this.initialize();
         }
 
-        this.container = document.createElement('div');
-        this.container.className = 'analytics-container';
-        this.container.innerHTML = this.getAnalyticsHTML();
-        
-        pageContent.innerHTML = '';
-        pageContent.appendChild(this.container);
-        
-        // Initialiser Supabase si nécessaire
-        await this.analytics.initializeSupabase();
-        
-        // Initialiser les événements
-        this.initializeEvents();
-        
-        // Charger les données
-        await this.loadAnalyticsData();
-        
-        // Auto-refresh toutes les 30 secondes
-        this.startAutoRefresh();
-        
-        console.log('[AnalyticsModule] Analytics page rendered');
-    }
-
-    getAnalyticsHTML() {
-        return `
-            <div class="analytics-page">
-                <div class="analytics-header">
-                    <h1><i class="fas fa-chart-line"></i> Analytics EmailSortPro</h1>
-                    <div class="analytics-actions">
-                        <button id="refreshAnalytics" class="btn-secondary">
-                            <i class="fas fa-sync"></i> Actualiser
-                        </button>
-                        <button id="exportAnalytics" class="btn-secondary">
-                            <i class="fas fa-download"></i> Exporter
-                        </button>
-                        <span class="sync-indicator" id="analyticsSync">
-                            <i class="fas fa-circle"></i> En ligne
-                        </span>
-                    </div>
-                </div>
-
-                <div class="analytics-grid">
-                    <!-- Statistiques générales -->
-                    <div class="analytics-card overview-card">
-                        <h3><i class="fas fa-tachometer-alt"></i> Vue d'ensemble</h3>
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <div class="stat-number" id="totalUsers">-</div>
-                                <div class="stat-label">Utilisateurs</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number" id="totalScans">-</div>
-                                <div class="stat-label">Scans effectués</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number" id="totalEmails">-</div>
-                                <div class="stat-label">Emails analysés</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number" id="activeToday">-</div>
-                                <div class="stat-label">Actifs aujourd'hui</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Top utilisateurs -->
-                    <div class="analytics-card users-card">
-                        <h3><i class="fas fa-users"></i> Top Utilisateurs</h3>
-                        <div id="topUsersChart" class="chart-container">
-                            <div class="loading">Chargement...</div>
-                        </div>
-                    </div>
-
-                    <!-- Activité par jour -->
-                    <div class="analytics-card activity-card">
-                        <h3><i class="fas fa-calendar-alt"></i> Activité par jour</h3>
-                        <div id="activityChart" class="chart-container">
-                            <div class="loading">Chargement...</div>
-                        </div>
-                    </div>
-
-                    <!-- Événements récents -->
-                    <div class="analytics-card events-card">
-                        <h3><i class="fas fa-stream"></i> Événements récents</h3>
-                        <div id="recentEvents" class="events-list">
-                            <div class="loading">Chargement...</div>
-                        </div>
-                    </div>
-
-                    <!-- Détail par utilisateur -->
-                    <div class="analytics-card user-details-card">
-                        <h3><i class="fas fa-user-chart"></i> Détail par Utilisateur</h3>
-                        <div id="userDetailsTable" class="table-container">
-                            <div class="loading">Chargement...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <style>
-                .analytics-page {
-                    padding: 20px;
-                    max-width: 1400px;
-                    margin: 0 auto;
-                }
-
-                .analytics-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 30px;
-                    padding-bottom: 20px;
-                    border-bottom: 2px solid #e2e8f0;
-                }
-
-                .analytics-header h1 {
-                    color: #1f2937;
-                    font-size: 2rem;
-                    font-weight: 600;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-
-                .analytics-actions {
-                    display: flex;
-                    gap: 12px;
-                    align-items: center;
-                }
-
-                .sync-indicator {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    padding: 6px 12px;
-                    background: #dcfce7;
-                    color: #16a34a;
-                    border-radius: 6px;
-                    font-size: 0.875rem;
-                    font-weight: 500;
-                }
-
-                .sync-indicator.offline {
-                    background: #fef2f2;
-                    color: #dc2626;
-                }
-
-                .sync-indicator i {
-                    font-size: 0.5rem;
-                }
-
-                .btn-secondary {
-                    padding: 10px 16px;
-                    border: none;
-                    border-radius: 8px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    transition: all 0.2s ease;
-                    background: #f1f5f9;
-                    color: #475569;
-                    border: 1px solid #e2e8f0;
-                }
-
-                .btn-secondary:hover {
-                    background: #e2e8f0;
-                    border-color: #cbd5e1;
-                }
-
-                .analytics-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-                    gap: 24px;
-                }
-
-                .analytics-card {
-                    background: white;
-                    border-radius: 12px;
-                    padding: 24px;
-                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                    border: 1px solid #e2e8f0;
-                }
-
-                .analytics-card h3 {
-                    color: #1f2937;
-                    font-size: 1.25rem;
-                    font-weight: 600;
-                    margin-bottom: 20px;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                }
-
-                .overview-card {
-                    grid-column: 1 / -1;
-                }
-
-                .user-details-card {
-                    grid-column: 1 / -1;
-                }
-
-                .stats-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                    gap: 20px;
-                }
-
-                .stat-item {
-                    text-align: center;
-                    padding: 20px;
-                    background: #f8fafc;
-                    border-radius: 8px;
-                }
-
-                .stat-number {
-                    font-size: 2rem;
-                    font-weight: 700;
-                    color: #4F46E5;
-                    margin-bottom: 8px;
-                }
-
-                .stat-label {
-                    font-size: 0.875rem;
-                    color: #64748b;
-                    font-weight: 500;
-                }
-
-                .chart-container {
-                    min-height: 300px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .table-container {
-                    overflow-x: auto;
-                }
-
-                .user-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    font-size: 0.875rem;
-                }
-
-                .user-table th {
-                    background: #f8fafc;
-                    padding: 12px;
-                    text-align: left;
-                    font-weight: 600;
-                    color: #475569;
-                    border-bottom: 2px solid #e2e8f0;
-                }
-
-                .user-table td {
-                    padding: 12px;
-                    border-bottom: 1px solid #f1f5f9;
-                }
-
-                .user-table tr:hover {
-                    background: #f8fafc;
-                }
-
-                .loading {
-                    color: #64748b;
-                    font-style: italic;
-                }
-
-                .events-list {
-                    max-height: 400px;
-                    overflow-y: auto;
-                }
-
-                .event-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    padding: 12px;
-                    border-bottom: 1px solid #f1f5f9;
-                    transition: background 0.2s;
-                }
-
-                .event-item:hover {
-                    background: #f8fafc;
-                }
-
-                .event-item:last-child {
-                    border-bottom: none;
-                }
-
-                .event-icon {
-                    width: 36px;
-                    height: 36px;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 14px;
-                    flex-shrink: 0;
-                }
-
-                .event-icon.session { background: #dbeafe; color: #1d4ed8; }
-                .event-icon.scan { background: #dcfce7; color: #16a34a; }
-                .event-icon.error { background: #fef2f2; color: #dc2626; }
-                .event-icon.page { background: #fef3c7; color: #d97706; }
-
-                .event-content {
-                    flex: 1;
-                }
-
-                .event-title {
-                    font-weight: 500;
-                    color: #1f2937;
-                    margin-bottom: 2px;
-                }
-
-                .event-details {
-                    font-size: 0.8rem;
-                    color: #64748b;
-                }
-
-                .event-time {
-                    font-size: 0.75rem;
-                    color: #94a3b8;
-                    white-space: nowrap;
-                }
-
-                .chart-simple {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px;
-                }
-
-                .chart-bar-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-
-                .chart-label {
-                    min-width: 150px;
-                    font-size: 0.875rem;
-                    color: #1f2937;
-                    font-weight: 500;
-                }
-
-                .chart-bar {
-                    flex: 1;
-                    height: 24px;
-                    background: #f1f5f9;
-                    border-radius: 4px;
-                    overflow: hidden;
-                    position: relative;
-                }
-
-                .chart-fill {
-                    height: 100%;
-                    background: linear-gradient(90deg, #4F46E5, #6366F1);
-                    border-radius: 4px;
-                    transition: width 0.5s ease;
-                }
-
-                .chart-value {
-                    min-width: 80px;
-                    text-align: right;
-                    font-size: 0.875rem;
-                    color: #64748b;
-                    font-weight: 600;
-                }
-
-                .activity-bar {
-                    height: 32px;
-                    background: #f1f5f9;
-                    border-radius: 4px;
-                    overflow: hidden;
-                    margin-bottom: 4px;
-                }
-
-                .activity-fill {
-                    height: 100%;
-                    background: #4F46E5;
-                    transition: width 0.3s ease;
-                }
-
-                @media (max-width: 768px) {
-                    .analytics-grid {
-                        grid-template-columns: 1fr;
-                    }
-                    
-                    .analytics-header {
-                        flex-direction: column;
-                        gap: 16px;
-                        align-items: stretch;
-                    }
-                    
-                    .analytics-actions {
-                        justify-content: center;
-                    }
-                    
-                    .stats-grid {
-                        grid-template-columns: repeat(2, 1fr);
-                    }
-                    
-                    .chart-label {
-                        min-width: 100px;
-                        font-size: 0.75rem;
-                    }
-                    
-                    .user-table {
-                        font-size: 0.75rem;
-                    }
-                    
-                    .user-table th,
-                    .user-table td {
-                        padding: 8px;
-                    }
-                }
-            </style>
-        `;
-    }
-
-    initializeEvents() {
-        // Bouton refresh
-        const refreshBtn = document.getElementById('refreshAnalytics');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => {
-                this.loadAnalyticsData();
-            });
-        }
-
-        // Bouton export
-        const exportBtn = document.getElementById('exportAnalytics');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                this.analytics.exportAnalytics();
-            });
-        }
-    }
-
-    async loadAnalyticsData() {
-        console.log('[AnalyticsModule] Loading analytics data from Supabase...');
-        
-        // Indiquer le chargement
-        this.setSyncStatus('loading');
-        
         try {
-            // Vérifier la connexion Supabase
-            if (!this.supabaseClient && !this.analytics.supabase) {
-                await this.analytics.initializeSupabase();
-                this.supabaseClient = this.analytics.supabase;
+            // Vérifier encore une fois la configuration avant le login
+            const validation = window.AppConfig.validate();
+            if (!validation.valid) {
+                throw new Error(`Configuration invalid before login for emailsortpro.netlify.app: ${validation.issues.join(', ')}`);
+            }
+
+            // Vérification spéciale de l'URI de redirection
+            const currentUrl = window.location.origin;
+            const expectedOrigin = `https://${this.expectedDomain}`;
+            
+            if (currentUrl !== expectedOrigin) {
+                console.warn('[AuthService] ⚠️ Origin mismatch detected');
+                console.warn('[AuthService] Current:', currentUrl);
+                console.warn('[AuthService] Expected:', expectedOrigin);
+            }
+
+            // Préparer la requête de login avec validation
+            const loginRequest = {
+                scopes: window.AppConfig.scopes.login,
+                prompt: 'select_account'
+            };
+
+            console.log('[AuthService] Microsoft login request prepared for emailsortpro.netlify.app:', {
+                scopes: loginRequest.scopes,
+                prompt: loginRequest.prompt,
+                clientId: this.msalInstance?.getConfiguration()?.auth?.clientId ? '✅ Present in MSAL' : '❌ Missing in MSAL',
+                redirectUri: this.msalInstance?.getConfiguration()?.auth?.redirectUri,
+                domain: window.location.hostname
+            });
+            
+            // Vérification finale avant login
+            if (!this.msalInstance) {
+                throw new Error('MSAL instance not available');
             }
             
-            if (!this.supabaseClient && !this.analytics.supabase) {
-                console.error('[AnalyticsModule] Supabase not available');
-                this.setSyncStatus('offline');
-                this.showOfflineMessage();
-                return;
+            const msalConfig = this.msalInstance.getConfiguration();
+            if (!msalConfig?.auth?.clientId) {
+                throw new Error('CRITICAL: clientId missing in MSAL instance');
             }
             
-            // Utiliser Supabase depuis analytics ou depuis la référence passée
-            const supabase = this.supabaseClient || this.analytics.supabase;
-            
-            // Charger toutes les données depuis Supabase
-            const [statsResult, analyticsResult, recentResult] = await Promise.all([
-                // Stats des utilisateurs
-                supabase
-                    .from('user_email_stats')
-                    .select('*')
-                    .order('total_emails_scanned', { ascending: false }),
-                
-                // Analytics globales
-                supabase
-                    .from('email_analytics')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(1000),
-                
-                // Événements récents (dernières 24h)
-                supabase
-                    .from('email_analytics')
-                    .select('*')
-                    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-                    .order('created_at', { ascending: false })
-                    .limit(50)
-            ]);
-            
-            // Vérifier les erreurs
-            if (statsResult.error || analyticsResult.error || recentResult.error) {
-                console.error('[AnalyticsModule] Error loading data:', {
-                    stats: statsResult.error,
-                    analytics: analyticsResult.error,
-                    recent: recentResult.error
-                });
-                this.setSyncStatus('error');
-                return;
+            if (!msalConfig?.auth?.redirectUri?.includes(this.expectedDomain)) {
+                throw new Error(`CRITICAL: redirectUri does not match expected domain ${this.expectedDomain}`);
             }
+
+            console.log('[AuthService] Initiating Microsoft login redirect for emailsortpro.netlify.app...');
+            console.log('[AuthService] MSAL instance config verified:', {
+                clientId: msalConfig.auth.clientId.substring(0, 8) + '...',
+                authority: msalConfig.auth.authority,
+                redirectUri: msalConfig.auth.redirectUri,
+                domainMatch: msalConfig.auth.redirectUri.includes(this.expectedDomain) ? '✅' : '❌'
+            });
             
-            // Traiter les données
-            const userStats = statsResult.data || [];
-            const analyticsData = analyticsResult.data || [];
-            const recentEvents = recentResult.data || [];
-            
-            // Mettre à jour l'interface
-            this.updateOverviewStats(userStats, analyticsData);
-            this.updateTopUsersChart(userStats);
-            this.updateActivityChart(analyticsData);
-            this.updateRecentEvents(recentEvents);
-            this.updateUserDetailsTable(userStats);
-            
-            // Marquer comme synchronisé
-            this.setSyncStatus('online');
-            this.lastUpdate = new Date();
-            
-            console.log('[AnalyticsModule] Data loaded successfully');
+            // Utiliser loginRedirect pour éviter les problèmes de popup
+            await this.msalInstance.loginRedirect(loginRequest);
+            // Note: La redirection va se produire, pas de code après cette ligne
             
         } catch (error) {
-            console.error('[AnalyticsModule] Error loading analytics:', error);
-            this.setSyncStatus('error');
-        }
-    }
-
-    setSyncStatus(status) {
-        const indicator = document.getElementById('analyticsSync');
-        if (!indicator) return;
-        
-        indicator.classList.remove('offline');
-        
-        switch (status) {
-            case 'loading':
-                indicator.innerHTML = '<i class="fas fa-sync fa-spin"></i> Chargement...';
-                break;
-            case 'online':
-                indicator.innerHTML = '<i class="fas fa-circle"></i> En ligne';
-                break;
-            case 'offline':
-                indicator.classList.add('offline');
-                indicator.innerHTML = '<i class="fas fa-circle"></i> Hors ligne';
-                break;
-            case 'error':
-                indicator.classList.add('offline');
-                indicator.innerHTML = '<i class="fas fa-exclamation-circle"></i> Erreur';
-                break;
-        }
-    }
-
-    showOfflineMessage() {
-        const containers = ['topUsersChart', 'activityChart', 'recentEvents', 'userDetailsTable'];
-        containers.forEach(id => {
-            const container = document.getElementById(id);
-            if (container) {
-                container.innerHTML = '<div class="loading">Mode hors ligne - Données locales uniquement</div>';
+            console.error('[AuthService] ❌ Microsoft login error for emailsortpro.netlify.app:', error);
+            
+            // Gestion d'erreurs spécifiques avec logging détaillé
+            let userMessage = 'Erreur de connexion Microsoft';
+            
+            if (error.errorCode) {
+                const errorCode = error.errorCode;
+                console.log('[AuthService] MSAL Error code:', errorCode);
+                console.log('[AuthService] MSAL Error details:', {
+                    errorCode: error.errorCode,
+                    errorMessage: error.errorMessage,
+                    subError: error.subError,
+                    correlationId: error.correlationId
+                });
+                
+                if (window.AppConfig.errors[errorCode]) {
+                    userMessage = window.AppConfig.errors[errorCode];
+                } else {
+                    switch (errorCode) {
+                        case 'popup_window_error':
+                            userMessage = 'Popup bloqué. Autorisez les popups et réessayez.';
+                            break;
+                        case 'user_cancelled':
+                            userMessage = 'Connexion annulée par l\'utilisateur.';
+                            break;
+                        case 'network_error':
+                            userMessage = 'Erreur réseau. Vérifiez votre connexion.';
+                            break;
+                        case 'unauthorized_client':
+                            userMessage = `Configuration Azure incorrecte pour ${this.expectedDomain}. Vérifiez votre Client ID.`;
+                            break;
+                        case 'invalid_client':
+                            userMessage = `Client ID invalide pour ${this.expectedDomain}. Vérifiez votre configuration Azure.`;
+                            break;
+                        case 'invalid_request':
+                            userMessage = `URI de redirection invalide. Configurez: https://${this.expectedDomain}/auth-callback.html`;
+                            break;
+                        default:
+                            userMessage = `Erreur MSAL: ${errorCode}`;
+                    }
+                }
+            } else if (error.message.includes('clientId')) {
+                userMessage = 'Erreur de configuration: Client ID manquant ou invalide';
+                console.error('[AuthService] Client ID error details:', {
+                    configClientId: window.AppConfig?.msal?.clientId,
+                    msalClientId: this.msalInstance?.getConfiguration()?.auth?.clientId,
+                    environment: window.AppConfig?.app?.environment,
+                    domain: window.AppConfig?.app?.domain
+                });
+            } else if (error.message.includes('redirectUri') || error.message.includes('redirect_uri')) {
+                userMessage = `URI de redirection incorrecte. Configurez: https://${this.expectedDomain}/auth-callback.html dans Azure Portal`;
             }
-        });
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(userMessage, 'error', 12000);
+            }
+            
+            throw error;
+        }
     }
 
-    updateOverviewStats(userStats, analyticsData) {
-        // Calculer les statistiques
-        const totalUsers = userStats.length;
-        const totalScans = analyticsData.filter(e => e.event_type === 'email_scan').length;
-        const totalEmails = userStats.reduce((sum, user) => sum + (user.total_emails_scanned || 0), 0);
+    async logout() {
+        console.log('[AuthService] Microsoft logout initiated for emailsortpro.netlify.app...');
         
-        // Utilisateurs actifs aujourd'hui
-        const today = new Date().toISOString().split('T')[0];
-        const activeToday = new Set(
-            analyticsData
-                .filter(e => e.created_at && e.created_at.startsWith(today))
-                .map(e => e.user_email)
-        ).size;
-        
-        // Mettre à jour l'interface
-        document.getElementById('totalUsers').textContent = totalUsers.toLocaleString();
-        document.getElementById('totalScans').textContent = totalScans.toLocaleString();
-        document.getElementById('totalEmails').textContent = totalEmails.toLocaleString();
-        document.getElementById('activeToday').textContent = activeToday.toLocaleString();
-    }
-
-    updateTopUsersChart(userStats) {
-        const container = document.getElementById('topUsersChart');
-        if (!container) return;
-        
-        const topUsers = userStats.slice(0, 10);
-        
-        if (topUsers.length === 0) {
-            container.innerHTML = '<div class="loading">Aucune donnée utilisateur</div>';
+        if (!this.isInitialized) {
+            console.warn('[AuthService] Not initialized for logout, force cleanup');
+            this.forceCleanup();
             return;
         }
-        
-        const maxEmails = Math.max(...topUsers.map(user => user.total_emails_scanned || 0));
-        
-        container.innerHTML = `
-            <div class="chart-simple">
-                ${topUsers.map(user => {
-                    const emails = user.total_emails_scanned || 0;
-                    const percentage = maxEmails > 0 ? (emails / maxEmails) * 100 : 0;
-                    
-                    return `
-                        <div class="chart-bar-item">
-                            <div class="chart-label" title="${user.email}">${user.email}</div>
-                            <div class="chart-bar">
-                                <div class="chart-fill" style="width: ${percentage}%"></div>
-                            </div>
-                            <div class="chart-value">${emails.toLocaleString()}</div>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-        `;
+
+        try {
+            const logoutRequest = {
+                account: this.account,
+                postLogoutRedirectUri: `https://${this.expectedDomain}/`
+            };
+
+            console.log('[AuthService] Microsoft logout request for emailsortpro.netlify.app:', logoutRequest);
+            await this.msalInstance.logoutRedirect(logoutRequest);
+            // La redirection va se produire
+            
+        } catch (error) {
+            console.error('[AuthService] Microsoft logout error for emailsortpro.netlify.app:', error);
+            // Force cleanup même en cas d'erreur
+            this.forceCleanup();
+        }
     }
 
-    updateActivityChart(analyticsData) {
-        const container = document.getElementById('activityChart');
-        if (!container) return;
-        
-        // Grouper par jour
-        const scansByDay = {};
-        const last7Days = [];
-        
-        // Générer les 7 derniers jours
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            const dateStr = date.toISOString().split('T')[0];
-            last7Days.push(dateStr);
-            scansByDay[dateStr] = 0;
+    async getAccessToken() {
+        if (!this.isAuthenticated()) {
+            console.warn('[AuthService] Not authenticated for token request');
+            return null;
         }
-        
-        // Compter les scans par jour
-        analyticsData
-            .filter(e => e.event_type === 'email_scan' && e.created_at)
-            .forEach(event => {
-                const date = event.created_at.split('T')[0];
-                if (scansByDay.hasOwnProperty(date)) {
-                    scansByDay[date]++;
+
+        try {
+            const tokenRequest = {
+                scopes: window.AppConfig.scopes.silent,
+                account: this.account,
+                forceRefresh: false
+            };
+
+            console.log('[AuthService] Requesting Microsoft access token for scopes:', tokenRequest.scopes);
+            const response = await this.msalInstance.acquireTokenSilent(tokenRequest);
+            
+            if (response && response.accessToken) {
+                console.log('[AuthService] ✅ Microsoft token acquired successfully for emailsortpro.netlify.app');
+                return response.accessToken;
+            } else {
+                throw new Error('No access token in response');
+            }
+            
+        } catch (error) {
+            console.warn('[AuthService] Silent token acquisition failed:', error);
+            
+            if (error instanceof msal.InteractionRequiredAuthError) {
+                console.log('[AuthService] Interaction required, redirecting to login...');
+                await this.login();
+                return null;
+            } else {
+                console.error('[AuthService] Token acquisition error:', error);
+                return null;
+            }
+        }
+    }
+
+    async getUserInfo() {
+        const token = await this.getAccessToken();
+        if (!token) {
+            throw new Error('No access token available');
+        }
+
+        try {
+            console.log('[AuthService] Fetching user info from Microsoft Graph API for emailsortpro.netlify.app...');
+            const response = await fetch('https://graph.microsoft.com/v1.0/me', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
             });
-        
-        const maxScans = Math.max(...Object.values(scansByDay));
-        
-        container.innerHTML = `
-            <div class="chart-simple">
-                ${last7Days.map(date => {
-                    const scans = scansByDay[date];
-                    const percentage = maxScans > 0 ? (scans / maxScans) * 100 : 0;
-                    const dateObj = new Date(date);
-                    const dayName = dateObj.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
-                    
-                    return `
-                        <div class="chart-bar-item">
-                            <div class="chart-label">${dayName}</div>
-                            <div class="activity-bar">
-                                <div class="activity-fill" style="width: ${percentage}%"></div>
-                            </div>
-                            <div class="chart-value">${scans} scans</div>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-        `;
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('[AuthService] Graph API error:', response.status, errorText);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const userInfo = await response.json();
+            console.log('[AuthService] ✅ Microsoft user info retrieved for emailsortpro.netlify.app:', userInfo.displayName);
+            return { ...userInfo, provider: 'microsoft' };
+
+        } catch (error) {
+            console.error('[AuthService] Error getting user info:', error);
+            throw error;
+        }
     }
 
-    updateRecentEvents(events) {
-        const container = document.getElementById('recentEvents');
-        if (!container) return;
+    async reset() {
+        console.log('[AuthService] Resetting Microsoft authentication for emailsortpro.netlify.app...');
         
-        if (events.length === 0) {
-            container.innerHTML = '<div class="loading">Aucun événement récent</div>';
-            return;
+        try {
+            if (this.msalInstance && this.account) {
+                await this.msalInstance.logoutSilent({
+                    account: this.account
+                });
+            }
+        } catch (error) {
+            console.warn('[AuthService] Silent logout failed during reset:', error);
         }
+
+        this.forceCleanup();
+    }
+
+    forceCleanup() {
+        console.log('[AuthService] Force cleanup initiated for emailsortpro.netlify.app...');
         
-        const getEventIcon = (eventType) => {
-            switch (eventType) {
-                case 'session_start': return { class: 'session', icon: 'fa-sign-in-alt' };
-                case 'email_scan': return { class: 'scan', icon: 'fa-search' };
-                case 'error': return { class: 'error', icon: 'fa-exclamation-triangle' };
-                case 'page_visit': return { class: 'page', icon: 'fa-file-alt' };
-                case 'auth_success': return { class: 'session', icon: 'fa-user-check' };
-                default: return { class: 'session', icon: 'fa-circle' };
+        // Reset internal state
+        this.account = null;
+        this.isInitialized = false;
+        this.msalInstance = null;
+        this.initializationPromise = null;
+        this.configWaitAttempts = 0;
+        
+        // Clear MSAL cache plus agressivement
+        if (window.localStorage) {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('msal') || key.includes('auth') || key.includes('login'))) {
+                    keysToRemove.push(key);
+                }
             }
-        };
-        
-        const getEventTitle = (event) => {
-            switch (event.event_type) {
-                case 'session_start': return 'Nouvelle session';
-                case 'email_scan': 
-                    const count = event.event_data?.emailCount || event.email_count || 0;
-                    return `Scan de ${count} emails`;
-                case 'error': return `Erreur: ${event.event_data?.type || 'Inconnue'}`;
-                case 'page_visit': return `Visite: ${event.event_data?.page || 'Page'}`;
-                case 'auth_success': return `Connexion ${event.event_data?.provider || ''}`;
-                default: return event.event_type;
-            }
-        };
-        
-        const formatTime = (timestamp) => {
-            const date = new Date(timestamp);
-            const now = new Date();
-            const diff = now - date;
-            
-            if (diff < 60000) return 'À l\'instant';
-            if (diff < 3600000) return `Il y a ${Math.floor(diff / 60000)}m`;
-            if (diff < 86400000) return `Il y a ${Math.floor(diff / 3600000)}h`;
-            
-            return date.toLocaleString('fr-FR', { 
-                day: 'numeric', 
-                month: 'short', 
-                hour: '2-digit', 
-                minute: '2-digit' 
+            keysToRemove.forEach(key => {
+                try {
+                    localStorage.removeItem(key);
+                    console.log('[AuthService] Removed cache key:', key);
+                } catch (e) {
+                    console.warn('[AuthService] Error removing key:', key, e);
+                }
             });
+        }
+        
+        console.log('[AuthService] ✅ Microsoft cleanup complete for emailsortpro.netlify.app');
+    }
+
+    // Méthode de diagnostic améliorée pour le nouveau domaine
+    getDiagnosticInfo() {
+        return {
+            isInitialized: this.isInitialized,
+            hasAccount: !!this.account,
+            accountUsername: this.account?.username,
+            msalInstanceExists: !!this.msalInstance,
+            configWaitAttempts: this.configWaitAttempts,
+            expectedDomain: this.expectedDomain,
+            currentDomain: window.location.hostname,
+            domainMatch: window.location.hostname === this.expectedDomain,
+            provider: this.provider,
+            msalConfig: this.msalInstance ? {
+                clientId: this.msalInstance.getConfiguration()?.auth?.clientId?.substring(0, 8) + '...',
+                authority: this.msalInstance.getConfiguration()?.auth?.authority,
+                redirectUri: this.msalInstance.getConfiguration()?.auth?.redirectUri,
+                postLogoutRedirectUri: this.msalInstance.getConfiguration()?.auth?.postLogoutRedirectUri,
+                domainInRedirectUri: this.msalInstance.getConfiguration()?.auth?.redirectUri?.includes(this.expectedDomain)
+            } : null,
+            appConfig: window.AppConfig ? {
+                exists: true,
+                environment: window.AppConfig.app?.environment,
+                domain: window.AppConfig.app?.domain,
+                validation: window.AppConfig.validate(),
+                debug: window.AppConfig.getDebugInfo()
+            } : { exists: false },
+            uriValidation: {
+                expectedRedirectUri: `https://${this.expectedDomain}/auth-callback.html`,
+                configuredRedirectUri: window.AppConfig?.msal?.redirectUri,
+                match: window.AppConfig?.msal?.redirectUri === `https://${this.expectedDomain}/auth-callback.html`
+            }
         };
-        
-        container.innerHTML = events.map(event => {
-            const icon = getEventIcon(event.event_type);
-            const title = getEventTitle(event);
-            const time = formatTime(event.created_at);
-            
-            return `
-                <div class="event-item">
-                    <div class="event-icon ${icon.class}">
-                        <i class="fas ${icon.icon}"></i>
-                    </div>
-                    <div class="event-content">
-                        <div class="event-title">${title}</div>
-                        <div class="event-details">${event.user_email || 'Anonyme'}</div>
-                    </div>
-                    <div class="event-time">${time}</div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    updateUserDetailsTable(userStats) {
-        const container = document.getElementById('userDetailsTable');
-        if (!container) return;
-        
-        if (userStats.length === 0) {
-            container.innerHTML = '<div class="loading">Aucune donnée utilisateur</div>';
-            return;
-        }
-        
-        container.innerHTML = `
-            <table class="user-table">
-                <thead>
-                    <tr>
-                        <th>Email</th>
-                        <th>Nom</th>
-                        <th>Domaine</th>
-                        <th>Sessions</th>
-                        <th>Emails scannés</th>
-                        <th>Dernière activité</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${userStats.map(user => {
-                        const lastActivity = user.last_activity ? 
-                            new Date(user.last_activity).toLocaleDateString('fr-FR') : 
-                            'Jamais';
-                        
-                        return `
-                            <tr>
-                                <td>${user.email}</td>
-                                <td>${user.name || '-'}</td>
-                                <td>${user.domain || '-'}</td>
-                                <td>${user.total_sessions || 0}</td>
-                                <td>${user.total_emails_scanned || 0}</td>
-                                <td>${lastActivity}</td>
-                            </tr>
-                        `;
-                    }).join('')}
-                </tbody>
-            </table>
-        `;
-    }
-
-    startAutoRefresh() {
-        // Arrêter l'ancien interval s'il existe
-        if (this.refreshInterval) {
-            clearInterval(this.refreshInterval);
-        }
-        
-        // Actualiser toutes les 30 secondes
-        this.refreshInterval = setInterval(() => {
-            console.log('[AnalyticsModule] Auto-refresh triggered');
-            this.loadAnalyticsData();
-        }, 30000);
-    }
-
-    stopAutoRefresh() {
-        if (this.refreshInterval) {
-            clearInterval(this.refreshInterval);
-            this.refreshInterval = null;
-        }
-    }
-
-    hide() {
-        this.stopAutoRefresh();
-        
-        if (this.container) {
-            this.container.style.display = 'none';
-        }
-    }
-
-    destroy() {
-        this.hide();
-        
-        if (this.container && this.container.parentNode) {
-            this.container.parentNode.removeChild(this.container);
-        }
-        
-        this.container = null;
     }
 }
 
-// Créer l'instance globale de l'analytics manager
-if (!window.analyticsManager) {
-    window.analyticsManager = new AnalyticsManager();
-    console.log('[Analytics] Global AnalyticsManager created v4.0');
+// Créer l'instance globale avec gestion d'erreur renforcée
+try {
+    window.authService = new AuthService();
+    console.log('[AuthService] ✅ Global Microsoft instance created successfully for emailsortpro.netlify.app');
+} catch (error) {
+    console.error('[AuthService] ❌ Failed to create global instance:', error);
+    
+    // Créer une instance de fallback plus informative
+    window.authService = {
+        isInitialized: false,
+        provider: 'microsoft',
+        initialize: () => Promise.reject(new Error('AuthService failed to initialize: ' + error.message)),
+        login: () => Promise.reject(new Error('AuthService not available: ' + error.message)),
+        isAuthenticated: () => false,
+        getDiagnosticInfo: () => ({ 
+            error: 'AuthService failed to create: ' + error.message,
+            environment: window.AppConfig?.app?.environment || 'unknown',
+            configExists: !!window.AppConfig,
+            expectedDomain: 'emailsortpro.netlify.app',
+            currentDomain: window.location.hostname,
+            provider: 'microsoft'
+        })
+    };
 }
 
-// Créer le module analytics global
-window.analyticsModule = new AnalyticsModule();
+// Fonction de diagnostic globale améliorée pour le nouveau domaine
+window.diagnoseMSAL = function() {
+    console.group('🔍 DIAGNOSTIC MSAL DÉTAILLÉ - emailsortpro.netlify.app');
+    
+    try {
+        const authDiag = window.authService.getDiagnosticInfo();
+        const configDiag = window.AppConfig ? window.AppConfig.getDebugInfo() : null;
+        
+        console.log('🔐 AuthService:', authDiag);
+        console.log('⚙️ Configuration:', configDiag);
+        console.log('📚 MSAL Library:', typeof msal !== 'undefined' ? 'Available' : 'Missing');
+        console.log('🌐 Current URL:', window.location.href);
+        console.log('🎯 Expected domain:', authDiag.expectedDomain);
+        console.log('✅ Domain match:', authDiag.domainMatch);
+        console.log('🔌 Provider:', authDiag.provider);
+        console.log('💾 LocalStorage keys:', Object.keys(localStorage).filter(k => k.includes('msal') || k.includes('auth')));
+        
+        // Validation spécifique des URIs
+        console.log('🔗 URI Validation:');
+        console.log('  Expected Redirect URI:', authDiag.uriValidation.expectedRedirectUri);
+        console.log('  Configured Redirect URI:', authDiag.uriValidation.configuredRedirectUri);
+        console.log('  URI Match:', authDiag.uriValidation.match ? '✅' : '❌');
+        
+        if (!authDiag.uriValidation.match) {
+            console.log('🚨 ACTION REQUIRED:');
+            console.log(`  Configure redirect URI in Azure Portal: ${authDiag.uriValidation.expectedRedirectUri}`);
+        }
+        
+        return { authDiag, configDiag };
+        
+    } catch (error) {
+        console.error('❌ Diagnostic failed:', error);
+        return { error: error.message };
+    } finally {
+        console.groupEnd();
+    }
+};
 
-console.log('[Analytics] ✅ Analytics module loaded successfully v4.0');
+// Test de disponibilité de la configuration au chargement
+setTimeout(() => {
+    if (window.AppConfig) {
+        const validation = window.AppConfig.validate();
+        const expectedDomain = 'emailsortpro.netlify.app';
+        
+        if (!validation.valid) {
+            console.warn('🚨 WARNING: Microsoft configuration invalid for emailsortpro.netlify.app');
+            console.log('Issues:', validation.issues);
+        }
+        
+        // Vérification spécifique du domaine
+        if (window.AppConfig.msal?.redirectUri && 
+            !window.AppConfig.msal.redirectUri.includes(expectedDomain)) {
+            console.error('🚨 CRITICAL: Microsoft Redirect URI does not match expected domain!');
+            console.error('Expected:', `https://${expectedDomain}/auth-callback.html`);
+            console.error('Configured:', window.AppConfig.msal.redirectUri);
+        }
+        
+        console.log('Use diagnoseMSAL() for detailed Microsoft diagnostic');
+    }
+}, 2000);
+
+console.log('✅ AuthService loaded with enhanced Microsoft support for emailsortpro.netlify.app v4.0');
