@@ -1,4 +1,4 @@
-// PageManager.js - Version 15.2 - Interface optimisée avec catégories fixes
+// PageManager.js - Version 16.0 - Interface optimisée avec catégories fixes améliorées
 
 class PageManager {
     constructor() {
@@ -65,7 +65,7 @@ class PageManager {
             this.setupSyncListeners();
             this.setupCategoryManagerIntegration();
             this.isInitialized = true;
-            console.log('[PageManager] ✅ Version 15.2 - Interface optimisée');
+            console.log('[PageManager] ✅ Version 16.0 - Interface optimisée');
         } catch (error) {
             console.error('[PageManager] Erreur initialisation:', error);
         }
@@ -724,12 +724,10 @@ class PageManager {
         const selectedCount = this.selectedEmails.size;
         const visibleEmails = this.getVisibleEmails();
         
-        const syncIndicator = this.renderSyncIndicator();
+        // Plus d'indicateur de synchronisation bleu
         
         container.innerHTML = `
             <div class="emails-page-modern">
-                ${syncIndicator}
-                
                 ${!this.hideExplanation ? `
                     <div class="explanation-notice">
                         <i class="fas fa-info-circle"></i>
@@ -834,9 +832,11 @@ class PageManager {
                     </div>
                 </div>
 
-                <div class="category-filters-container">
-                    <div class="category-filters" id="categoryFilters">
-                        ${this.buildCategoryTabs(categoryCounts, totalEmails, categories)}
+                <div class="category-filters-wrapper">
+                    <div class="category-filters-container">
+                        <div class="category-filters" id="categoryFilters">
+                            ${this.buildCategoryTabs(categoryCounts, totalEmails, categories)}
+                        </div>
                     </div>
                 </div>
 
@@ -873,77 +873,27 @@ class PageManager {
     setupCategoryFiltersSticky() {
         console.log('[PageManager] 🔧 Configuration des catégories fixes...');
         
-        const categoryFiltersContainer = document.querySelector('.category-filters-container');
-        if (!categoryFiltersContainer) return;
+        const categoryFiltersWrapper = document.querySelector('.category-filters-wrapper');
+        if (!categoryFiltersWrapper) return;
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    categoryFiltersContainer.classList.remove('sticky-active');
-                } else {
-                    categoryFiltersContainer.classList.add('sticky-active');
-                }
+        // Le wrapper reste toujours fixe, on ne fait que changer son style
+        const controlsBar = document.querySelector('.controls-bar');
+        if (controlsBar) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting) {
+                        categoryFiltersWrapper.classList.add('sticky-active');
+                    } else {
+                        categoryFiltersWrapper.classList.remove('sticky-active');
+                    }
+                });
+            }, {
+                rootMargin: '-1px 0px 0px 0px',
+                threshold: [1]
             });
-        }, {
-            rootMargin: '-1px 0px 0px 0px'
-        });
 
-        observer.observe(categoryFiltersContainer);
-    }
-
-    renderSyncIndicator() {
-        const { emailScannerSynced, startScanSynced, categoryManagerSynced, emailCount, lastSyncTimestamp } = this.syncState;
-        
-        if (!emailScannerSynced && emailCount === 0) {
-            return `
-                <div class="sync-indicator warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span>Aucun email trouvé. Utilisez le scanner pour importer des emails.</span>
-                    <button class="btn btn-primary btn-sm" onclick="window.pageManager.loadPage('scanner')">
-                        <i class="fas fa-search"></i> Aller au scanner
-                    </button>
-                </div>
-            `;
+            observer.observe(controlsBar);
         }
-        
-        if (startScanSynced && emailCount > 0) {
-            const timeAgo = lastSyncTimestamp ? this.formatTimeAgo(lastSyncTimestamp) : 'récemment';
-            return `
-                <div class="sync-indicator success">
-                    <i class="fas fa-check-circle"></i>
-                    <span>✅ ${emailCount} emails synchronisés (${timeAgo})</span>
-                    <div class="sync-badges">
-                        <span class="sync-badge startscan">StartScan</span>
-                        <span class="sync-badge emailscanner">EmailScanner</span>
-                        ${categoryManagerSynced ? '<span class="sync-badge categorymanager">CategoryManager</span>' : ''}
-                    </div>
-                </div>
-            `;
-        }
-        
-        if (emailScannerSynced && emailCount > 0) {
-            return `
-                <div class="sync-indicator info">
-                    <i class="fas fa-info-circle"></i>
-                    <span>📧 ${emailCount} emails disponibles</span>
-                </div>
-            `;
-        }
-        
-        return '';
-    }
-
-    formatTimeAgo(timestamp) {
-        const now = Date.now();
-        const diff = now - timestamp;
-        const minutes = Math.floor(diff / 60000);
-        
-        if (minutes < 1) return 'à l\'instant';
-        if (minutes < 60) return `${minutes}min`;
-        const hours = Math.floor(minutes / 60);
-        if (hours < 24) return `${hours}h`;
-        const days = Math.floor(hours / 24);
-        return `${days}j`;
     }
 
     buildCategoryTabs(categoryCounts, totalEmails, categories) {
@@ -1005,11 +955,9 @@ class PageManager {
                             data-category-id="${tab.id}"
                             title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
                         <div class="tab-content">
-                            <div class="tab-header">
-                                <span class="tab-icon">${tab.icon}</span>
-                                <span class="tab-count">${tab.count}</span>
-                            </div>
+                            <div class="tab-icon">${tab.icon}</div>
                             <div class="tab-name">${tab.name}</div>
+                            <div class="tab-count">${tab.count}</div>
                         </div>
                         ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
                     </button>
@@ -2709,50 +2657,6 @@ class PageManager {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             }
 
-            .sync-indicator {
-                margin-bottom: 16px;
-                padding: 12px 16px;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                font-size: 14px;
-                font-weight: 500;
-            }
-            
-            .sync-indicator.success {
-                background: rgba(16, 185, 129, 0.1);
-                border: 1px solid rgba(16, 185, 129, 0.3);
-                color: #059669;
-            }
-            
-            .sync-indicator.info {
-                background: rgba(59, 130, 246, 0.1);
-                border: 1px solid rgba(59, 130, 246, 0.3);
-                color: #2563eb;
-            }
-            
-            .sync-indicator.warning {
-                background: rgba(245, 158, 11, 0.1);
-                border: 1px solid rgba(245, 158, 11, 0.3);
-                color: #d97706;
-            }
-            
-            .sync-badges {
-                display: flex;
-                gap: 6px;
-                margin-left: auto;
-            }
-            
-            .sync-badge {
-                background: rgba(255, 255, 255, 0.8);
-                padding: 2px 8px;
-                border-radius: 12px;
-                font-size: 11px;
-                font-weight: 600;
-                border: 1px solid rgba(0, 0, 0, 0.1);
-            }
-
             .explanation-notice {
                 background: rgba(59, 130, 246, 0.1);
                 border: 1px solid rgba(59, 130, 246, 0.2);
@@ -3032,24 +2936,27 @@ class PageManager {
                 margin: 8px 0;
             }
 
-            .category-filters-container {
+            /* Wrapper pour les catégories fixes */
+            .category-filters-wrapper {
                 position: sticky;
                 top: 0;
-                z-index: 1000;
-                background: rgba(248, 250, 252, 0.98);
-                backdrop-filter: blur(12px);
-                border-bottom: 1px solid rgba(229, 231, 235, 0.5);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-                padding: 16px 20px;
-                margin: 0 -20px 16px -20px;
+                z-index: 100;
+                margin: -20px -20px 0 -20px;
+                padding: 0;
                 transition: all 0.3s ease;
             }
 
-            .category-filters-container.sticky-active {
+            .category-filters-container {
+                background: #f8fafc;
+                padding: 16px 20px;
+                transition: all 0.3s ease;
+            }
+
+            .category-filters-wrapper.sticky-active .category-filters-container {
                 background: rgba(248, 250, 252, 0.95);
                 backdrop-filter: blur(16px);
                 border-bottom: 1px solid rgba(229, 231, 235, 0.8);
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
             }
 
             .category-filters {
@@ -3063,20 +2970,19 @@ class PageManager {
             .category-row {
                 display: grid;
                 grid-template-columns: repeat(6, 1fr);
-                gap: 12px;
+                gap: 8px;
                 width: 100%;
             }
 
             .category-tab {
-                height: 70px;
-                padding: 8px 12px;
-                font-size: 12px;
+                height: 60px;
+                padding: 0;
+                font-size: 11px;
                 font-weight: 700;
-                border-radius: 12px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
                 transition: all 0.2s ease;
                 display: flex;
-                flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 text-align: center;
@@ -3086,6 +2992,7 @@ class PageManager {
                 cursor: pointer;
                 position: relative;
                 min-width: 0;
+                overflow: hidden;
             }
 
             .category-tab.preselected {
@@ -3096,46 +3003,60 @@ class PageManager {
             .category-tab:hover {
                 border-color: #3b82f6;
                 background: #f0f9ff;
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(59, 130, 246, 0.15);
             }
 
             .category-tab.active {
                 background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
                 color: white;
                 border-color: #3b82f6;
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+                transform: translateY(-1px);
             }
 
             .tab-content {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                gap: 4px;
+                justify-content: center;
+                gap: 2px;
+                padding: 8px;
                 width: 100%;
                 height: 100%;
-                justify-content: center;
-            }
-
-            .tab-header {
-                display: flex;
-                align-items: center;
-                gap: 4px;
             }
 
             .tab-icon {
                 font-size: 16px;
+                line-height: 1;
+                margin-bottom: 2px;
+            }
+
+            .tab-name {
+                font-weight: 700;
+                font-size: 11px;
+                line-height: 1.2;
+                text-align: center;
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                padding: 0 4px;
             }
 
             .tab-count {
                 background: rgba(0, 0, 0, 0.1);
                 padding: 2px 6px;
-                border-radius: 6px;
+                border-radius: 10px;
                 font-size: 10px;
                 font-weight: 800;
-                min-width: 18px;
+                min-width: 20px;
                 text-align: center;
+                line-height: 1;
+            }
+
+            .category-tab.active .tab-count {
+                background: rgba(255, 255, 255, 0.2);
             }
 
             .preselected-star {
@@ -3155,15 +3076,9 @@ class PageManager {
                 box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
             }
 
-            .tab-name {
-                font-weight: 700;
-                font-size: 12px;
-                line-height: 1.2;
-                text-align: center;
-            }
-
             .emails-container {
                 background: transparent;
+                margin-top: 16px;
             }
 
             .emails-list {
@@ -3699,6 +3614,14 @@ class PageManager {
                 .category-row {
                     grid-template-columns: repeat(2, 1fr);
                 }
+                
+                .category-tab {
+                    height: 70px;
+                }
+                
+                .tab-content {
+                    padding: 4px;
+                }
             }
         `;
         
@@ -3751,7 +3674,7 @@ if (window.pageManager) {
     window.pageManager.cleanup?.();
 }
 
-console.log('[PageManager] 🚀 Création nouvelle instance v15.2...');
+console.log('[PageManager] 🚀 Création nouvelle instance v16.0...');
 window.pageManager = new PageManager();
 
 Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
@@ -3773,4 +3696,4 @@ window.refreshPageManagerEmails = function() {
     return { success: false, message: 'Pas sur la page emails ou PageManager non disponible' };
 };
 
-console.log('✅ PageManager v15.2 loaded - Interface optimisée avec catégories fixes et 6 boutons par ligne');
+console.log('✅ PageManager v16.0 loaded - Interface optimisée avec catégories fixes améliorées');
