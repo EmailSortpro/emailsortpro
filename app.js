@@ -1,5 +1,5 @@
-// app.js - Application EmailSortPro avec intégration de licence et blocage v5.0
-// Intégration complète du système de licence avec blocage pour les licences expirées
+// app.js - Application EmailSortPro avec intégration de licence v5.0
+// Blocage des licences expirées après connexion
 
 class App {
     constructor() {
@@ -85,7 +85,7 @@ class App {
                 return;
             }
 
-            // Initialiser le service de licence en premier
+            // Initialiser le service de licence
             await this.initializeLicenseService();
 
             console.log('[App] Initializing auth services...');
@@ -173,7 +173,7 @@ class App {
         try {
             if (!window.licenseService) {
                 console.error('[App] License service not available');
-                return { valid: false, status: 'error', message: 'Service de licence indisponible' };
+                return { valid: true, status: 'error', message: 'Service de licence indisponible' };
             }
             
             const licenseResult = await window.licenseService.authenticateWithEmail(email);
@@ -184,7 +184,7 @@ class App {
             
             // Si la licence est expirée et ce n'est pas un admin
             if (!licenseResult.valid && licenseResult.status === 'expired' && licenseResult.blockAccess) {
-                console.warn('[App] ❌ License expired - blocking access');
+                console.warn('[App] ❌ License expired - checking admin status');
                 
                 // Vérifier si c'est un admin
                 const user = licenseResult.user;
@@ -201,7 +201,7 @@ class App {
         } catch (error) {
             console.error('[App] Error checking license:', error);
             return {
-                valid: false,
+                valid: true,
                 status: 'error',
                 message: 'Erreur lors de la vérification de la licence',
                 error: error.message
@@ -602,7 +602,7 @@ class App {
     }
 
     // =====================================
-    // INITIALISATION DES MODULES CRITIQUES AVEC VERIFICATION ROBUSTE
+    // INITIALISATION DES MODULES CRITIQUES
     // =====================================
     async initializeCriticalModules() {
         console.log('[App] Initializing critical modules...');
@@ -729,7 +729,7 @@ class App {
         }
     }
 
-    // [Les méthodes de vérification des modules restent identiques...]
+    // [Les méthodes de vérification des modules restent identiques à l'original...]
     async ensureMailServiceReady() {
         console.log('[App] Ensuring MailService is ready...');
         
@@ -815,7 +815,7 @@ class App {
         console.log('[App] ✅ MailService fallback created');
     }
 
-    // [Méthodes de vérification des modules identiques...]
+    // [Les autres méthodes de vérification restent identiques...]
     async ensureTaskManagerReady() {
         console.log('[App] Ensuring TaskManager is ready...');
         
@@ -1022,7 +1022,7 @@ class App {
     }
 
     // =====================================
-    // GESTION INTELLIGENTE DU SCROLL AMELIOREE
+    // GESTION INTELLIGENTE DU SCROLL
     // =====================================
     initializeScrollManager() {
         console.log('[App] Initializing scroll manager...');
@@ -2843,7 +2843,9 @@ window.diagnoseApp = function() {
             
             // Diagnostic licence spécifique
             if (window.licenseService) {
-                console.log('🔐 License Service Debug:', await window.licenseService.debug());
+                window.licenseService.debug().then(debug => {
+                    console.log('🔐 License Service Debug:', debug);
+                });
             }
             
             return appDiag;
