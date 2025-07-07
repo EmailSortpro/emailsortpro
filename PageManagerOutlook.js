@@ -736,108 +736,111 @@ class PageManager {
                     </div>
                 ` : ''}
 
-                <div class="controls-bar">
-                    <div class="search-section">
-                        <div class="search-box">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" 
-                                   class="search-input" 
-                                   id="emailSearchInput"
-                                   placeholder="Rechercher dans vos emails..." 
-                                   value="${this.searchTerm}">
-                            ${this.searchTerm ? `
-                                <button class="search-clear" onclick="window.pageManager.clearSearch()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="actions-section">
-                        <div class="view-modes">
-                            <button class="view-mode ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
-                                    onclick="window.pageManager.changeViewMode('grouped-domain')"
-                                    title="Par domaine">
-                                <i class="fas fa-globe"></i>
-                                <span>Domaine</span>
-                            </button>
-                            <button class="view-mode ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
-                                    onclick="window.pageManager.changeViewMode('grouped-sender')"
-                                    title="Par expéditeur">
-                                <i class="fas fa-user"></i>
-                                <span>Expéditeur</span>
-                            </button>
-                            <button class="view-mode ${this.currentViewMode === 'flat' ? 'active' : ''}" 
-                                    onclick="window.pageManager.changeViewMode('flat')"
-                                    title="Liste complète">
-                                <i class="fas fa-list"></i>
-                                <span>Liste</span>
-                            </button>
+                <div class="fixed-header-wrapper">
+                    <div class="controls-bar">
+                        <div class="search-section">
+                            <div class="search-box">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" 
+                                       class="search-input" 
+                                       id="emailSearchInput"
+                                       placeholder="Rechercher dans vos emails..." 
+                                       value="${this.searchTerm}">
+                                ${this.searchTerm ? `
+                                    <button class="search-clear" onclick="window.pageManager.clearSearch()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
                         </div>
                         
-                        <div class="action-buttons">
-                            <button class="btn btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
-                                    onclick="window.pageManager.createTasksFromSelection()"
-                                    ${selectedCount === 0 ? 'disabled' : ''}
-                                    title="Créer des tâches à partir des emails sélectionnés">
-                                <i class="fas fa-tasks"></i>
-                                <span>Créer tâche${selectedCount > 1 ? 's' : ''}</span>
-                                ${selectedCount > 0 ? `<span class="count-badge">${selectedCount}</span>` : ''}
-                            </button>
-                            
-                            <div class="dropdown-wrapper">
-                                <button class="btn btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
-                                        onclick="window.pageManager.toggleBulkActions(event)"
-                                        ${selectedCount === 0 ? 'disabled' : ''}>
-                                    <i class="fas fa-ellipsis-v"></i>
-                                    <span>Actions</span>
+                        <div class="actions-section">
+                            <div class="view-modes">
+                                <button class="view-mode ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                        onclick="window.pageManager.changeViewMode('grouped-domain')"
+                                        title="Par domaine">
+                                    <i class="fas fa-globe"></i>
+                                    <span>Domaine</span>
                                 </button>
-                                <div class="dropdown-menu" id="bulkActionsMenu">
-                                    <button class="dropdown-item" onclick="window.pageManager.bulkMarkAsRead()">
-                                        <i class="fas fa-eye"></i>
-                                        <span>Marquer comme lu</span>
-                                    </button>
-                                    <button class="dropdown-item" onclick="window.pageManager.bulkArchive()">
-                                        <i class="fas fa-archive"></i>
-                                        <span>Archiver</span>
-                                    </button>
-                                    <button class="dropdown-item danger" onclick="window.pageManager.bulkDelete()">
-                                        <i class="fas fa-trash"></i>
-                                        <span>Supprimer</span>
-                                    </button>
-                                    <div class="dropdown-divider"></div>
-                                    <button class="dropdown-item" onclick="window.pageManager.bulkExport()">
-                                        <i class="fas fa-download"></i>
-                                        <span>Exporter</span>
-                                    </button>
-                                </div>
+                                <button class="view-mode ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                                        onclick="window.pageManager.changeViewMode('grouped-sender')"
+                                        title="Par expéditeur">
+                                    <i class="fas fa-user"></i>
+                                    <span>Expéditeur</span>
+                                </button>
+                                <button class="view-mode ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                        onclick="window.pageManager.changeViewMode('flat')"
+                                        title="Liste complète">
+                                    <i class="fas fa-list"></i>
+                                    <span>Liste</span>
+                                </button>
                             </div>
                             
-                            <button class="btn btn-secondary" onclick="window.pageManager.refreshEmails()">
-                                <i class="fas fa-sync-alt"></i>
-                                <span>Actualiser</span>
-                            </button>
-                            
-                            ${selectedCount > 0 ? `
-                                <button class="btn btn-clear" 
-                                        onclick="window.pageManager.clearSelection()"
-                                        title="Effacer la sélection">
-                                    <i class="fas fa-times"></i>
-                                    <span>Effacer (${selectedCount})</span>
+                            <div class="action-buttons">
+                                <button class="btn btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
+                                        onclick="window.pageManager.createTasksFromSelection()"
+                                        ${selectedCount === 0 ? 'disabled' : ''}
+                                        title="Créer des tâches à partir des emails sélectionnés">
+                                    <i class="fas fa-tasks"></i>
+                                    <span>Créer tâche${selectedCount > 1 ? 's' : ''}</span>
+                                    ${selectedCount > 0 ? `<span class="count-badge">${selectedCount}</span>` : ''}
                                 </button>
-                            ` : ''}
+                                
+                                <div class="dropdown-wrapper">
+                                    <button class="btn btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
+                                            onclick="window.pageManager.toggleBulkActions(event)"
+                                            ${selectedCount === 0 ? 'disabled' : ''}>
+                                        <i class="fas fa-ellipsis-v"></i>
+                                        <span>Actions</span>
+                                    </button>
+                                    <div class="dropdown-menu" id="bulkActionsMenu">
+                                        <button class="dropdown-item" onclick="window.pageManager.bulkMarkAsRead()">
+                                            <i class="fas fa-eye"></i>
+                                            <span>Marquer comme lu</span>
+                                        </button>
+                                        <button class="dropdown-item" onclick="window.pageManager.bulkArchive()">
+                                            <i class="fas fa-archive"></i>
+                                            <span>Archiver</span>
+                                        </button>
+                                        <button class="dropdown-item danger" onclick="window.pageManager.bulkDelete()">
+                                            <i class="fas fa-trash"></i>
+                                            <span>Supprimer</span>
+                                        </button>
+                                        <div class="dropdown-divider"></div>
+                                        <button class="dropdown-item" onclick="window.pageManager.bulkExport()">
+                                            <i class="fas fa-download"></i>
+                                            <span>Exporter</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-secondary" onclick="window.pageManager.refreshEmails()">
+                                    <i class="fas fa-sync-alt"></i>
+                                    <span>Actualiser</span>
+                                </button>
+                                
+                                ${selectedCount > 0 ? `
+                                    <button class="btn btn-clear" 
+                                            onclick="window.pageManager.clearSelection()"
+                                            title="Effacer la sélection">
+                                        <i class="fas fa-times"></i>
+                                        <span>Effacer (${selectedCount})</span>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="category-filters-wrapper">
+                        <div class="category-filters" id="categoryFilters">
+                            ${this.buildCategoryTabs(categoryCounts, totalEmails, categories)}
                         </div>
                     </div>
                 </div>
 
-                <div class="category-filters-wrapper">
-                    <div class="category-filters" id="categoryFilters">
-                        ${this.buildCategoryTabs(categoryCounts, totalEmails, categories)}
+                    <div class="emails-container">
+                        ${this.renderEmailsList()}
                     </div>
-                </div>
-
-                <div class="emails-container">
-                    ${this.renderEmailsList()}
                 </div>
             </div>
         `;
@@ -2662,7 +2665,6 @@ class PageManager {
                 border: 1px solid #e5e7eb;
                 border-radius: 12px;
                 padding: 12px;
-                margin-bottom: 12px;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
                 display: flex;
                 flex-direction: column;
@@ -2907,17 +2909,61 @@ class PageManager {
                 margin: 8px 0;
             }
 
-            /* Catégories fixes et centrées */
-            .category-filters-wrapper {
+            /* Wrapper pour tout le header fixe */
+            .fixed-header-wrapper {
                 position: sticky;
-                top: 0;
-                z-index: 100;
+                top: 60px; /* Juste sous la navbar */
+                z-index: 1000;
                 background: rgba(248, 250, 252, 0.98);
                 backdrop-filter: blur(20px);
-                margin: -8px -20px 16px -20px;
-                padding: 12px 20px;
+                -webkit-backdrop-filter: blur(20px);
+                margin: -8px -20px 0 -20px;
+                padding: 12px 20px 8px 20px;
                 border-bottom: 2px solid #e5e7eb;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            }
+
+            /* Controls bar dans le header fixe */
+            .fixed-header-wrapper .controls-bar {
+                margin-bottom: 8px;
+                box-shadow: none;
+                border: 1px solid #e5e7eb;
+            }
+
+            /* Catégories dans le header fixe */
+            .fixed-header-wrapper .category-filters-wrapper {
+                position: relative;
+                top: auto;
+                z-index: auto;
+                margin: 0;
+                padding: 0;
+                background: transparent;
+                border: none;
+                box-shadow: none;
+            }
+
+            /* Wrapper pour tout le contenu scrollable */
+            .emails-page-content {
+                position: relative;
+                overflow: visible;
+            }
+
+            /* S'assurer que le wrapper sticky fonctionne */
+            .emails-page-modern {
+                padding: 16px;
+                background: #f8fafc;
+                min-height: 100vh;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                position: relative;
+            }
+
+            /* Container pour le scroll */
+            .page-content,
+            #pageContent,
+            #content {
+                position: relative;
+                overflow-y: auto;
+                height: calc(100vh - 60px); /* Hauteur totale moins la navbar */
             }
 
             .category-filters {
@@ -3036,7 +3082,8 @@ class PageManager {
 
             .emails-container {
                 background: transparent;
-                margin-top: 8px;
+                margin-top: 16px;
+                padding-top: 8px;
             }
 
             .emails-list {
