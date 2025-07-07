@@ -1344,4 +1344,4 @@ window.diagnoseApp = function() {
     }
 };
 
-console.log('✅ App v4.0 loaded - DUAL PROVIDER (Microsoft + Google) with direct OAuth2 - NO IFRAME ERRORS')
+console.log('✅ App v4.0 loaded - DUAL PROVIDER (Microsoft + Google) with direct OAuth2 - NO IFRAME ERRORS');
