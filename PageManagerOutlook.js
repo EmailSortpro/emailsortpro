@@ -873,27 +873,8 @@ class PageManager {
     setupCategoryFiltersSticky() {
         console.log('[PageManager] 🔧 Configuration des catégories fixes...');
         
-        const categoryFiltersWrapper = document.querySelector('.category-filters-wrapper');
-        if (!categoryFiltersWrapper) return;
-
-        // Le wrapper reste toujours fixe, on ne fait que changer son style
-        const controlsBar = document.querySelector('.controls-bar');
-        if (controlsBar) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (!entry.isIntersecting) {
-                        categoryFiltersWrapper.classList.add('sticky-active');
-                    } else {
-                        categoryFiltersWrapper.classList.remove('sticky-active');
-                    }
-                });
-            }, {
-                rootMargin: '-1px 0px 0px 0px',
-                threshold: [1]
-            });
-
-            observer.observe(controlsBar);
-        }
+        // Les catégories sont maintenant toujours fixes grâce au CSS position: sticky
+        // Pas besoin d'observer ou d'ajouter des classes
     }
 
     buildCategoryTabs(categoryCounts, totalEmails, categories) {
@@ -3094,7 +3075,8 @@ class PageManager {
 
             .emails-container {
                 background: transparent;
-                margin-top: 16px;
+                margin-top: 24px;
+                padding-bottom: 40px;
             }
 
             .emails-list {
@@ -3590,6 +3572,10 @@ class PageManager {
                 .category-row {
                     grid-template-columns: repeat(4, 1fr);
                 }
+                
+                .category-tab {
+                    height: 75px;
+                }
             }
 
             @media (max-width: 768px) {
@@ -3613,6 +3599,25 @@ class PageManager {
                 .category-row {
                     grid-template-columns: repeat(3, 1fr);
                 }
+                
+                .category-tab {
+                    height: 70px;
+                }
+                
+                .tab-icon {
+                    font-size: 20px;
+                }
+                
+                .tab-count {
+                    font-size: 12px;
+                    padding: 2px 8px;
+                    min-width: 24px;
+                    height: 24px;
+                }
+                
+                .tab-name {
+                    font-size: 12px;
+                }
 
                 .email-meta {
                     flex-direction: column;
@@ -3632,11 +3637,20 @@ class PageManager {
                 }
                 
                 .category-tab {
-                    height: 70px;
+                    height: 80px;
+                    padding: 6px;
                 }
                 
                 .tab-content {
-                    padding: 4px;
+                    gap: 4px;
+                }
+                
+                .tab-icon {
+                    font-size: 22px;
+                }
+                
+                .tab-name {
+                    font-size: 13px;
                 }
             }
         `;
