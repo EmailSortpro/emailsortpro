@@ -71,16 +71,19 @@
             align-items: center;
             gap: 6px;
             text-decoration: none;
+            position: relative;
         }
 
         .btn-primary {
             background: var(--primary);
             color: white;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
         }
 
         .btn-primary:hover {
             background: var(--primary-dark);
             transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
         }
 
         .btn-secondary {
@@ -91,31 +94,84 @@
 
         .btn-secondary:hover {
             background: var(--gray-200);
+            border-color: var(--gray-300);
+        }
+
+        .btn-edit {
+            background: var(--info);
+            color: white;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+
+        .btn-edit:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
         }
 
         .btn-danger {
-            background: var(--danger-light);
-            color: var(--danger);
-            border: 1px solid #fecaca;
+            background: var(--danger);
+            color: white;
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
         }
 
         .btn-danger:hover {
-            background: #fee2e2;
+            background: #b91c1c;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
         }
 
         .btn-success {
             background: var(--success);
             color: white;
+            box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
         }
 
         .btn-success:hover {
             background: #059669;
             transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(22, 163, 74, 0.3);
         }
 
         .btn-sm {
             padding: 6px 12px;
             font-size: 0.8rem;
+        }
+
+        /* Tooltip pour les boutons */
+        .btn[data-tooltip] {
+            position: relative;
+        }
+
+        .btn[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .btn[data-tooltip]:hover::before {
+            content: "";
+            position: absolute;
+            bottom: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            pointer-events: none;
         }
 
         .badge {
@@ -678,6 +734,28 @@
         .table-actions {
             display: flex;
             gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        /* Responsive pour les boutons de table */
+        @media (min-width: 1024px) {
+            .btn-text {
+                display: inline;
+            }
+        }
+
+        @media (max-width: 1023px) {
+            .btn-text {
+                display: none;
+            }
+            
+            .table-actions {
+                gap: 2px;
+            }
+            
+            .btn-sm {
+                padding: 6px 8px;
+            }
         }
 
         /* Empty State */
@@ -763,6 +841,33 @@
             font-size: 1.25rem;
         }
 
+        /* Sync Status */
+        .sync-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--gray-100);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        .sync-status.syncing {
+            background: var(--info-light);
+            color: var(--info);
+        }
+
+        .sync-status.success {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        .sync-status.error {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .container {
@@ -801,7 +906,8 @@
             }
 
             .table-actions {
-                flex-direction: column;
+                flex-direction: row;
+                gap: 4px;
             }
 
             .modal-content {
@@ -1054,6 +1160,10 @@
                         </nav>
                     </div>
                     <div class="header-right">
+                        <div class="sync-status" id="syncStatus">
+                            <i class="fas fa-sync"></i>
+                            <span>Synchronisé</span>
+                        </div>
                         <div class="user-menu">
                             <div class="user-avatar" id="userAvatar">-</div>
                             <div class="user-info">
@@ -1438,7 +1548,7 @@
     <script src="./analytics.js"></script>
     
     <script>
-        // Application Analytics
+        // Application Analytics avec synchronisation temps réel
         class AnalyticsApp {
             constructor() {
                 this.supabaseClient = null;
@@ -1447,6 +1557,8 @@
                 this.currentTab = 'overview';
                 this.licenseService = window.licenseService;
                 this.analyticsModule = null;
+                this.dataSubscriptions = [];
+                this.syncInterval = null;
                 
                 this.init();
             }
@@ -1657,8 +1769,152 @@
                 }
                 
                 this.supabaseClient = this.licenseService.supabase;
+                
+                // Configurer la synchronisation temps réel
+                this.setupRealtimeSync();
+                
+                // Charger les données initiales
                 this.loadOverview();
                 this.updateLastUpdate();
+                
+                // Synchronisation automatique toutes les 30 secondes
+                this.syncInterval = setInterval(() => {
+                    this.syncAllData();
+                }, 30000);
+            }
+
+            setupRealtimeSync() {
+                // Écouter les changements sur la table users
+                const usersSubscription = this.supabaseClient
+                    .channel('users-changes')
+                    .on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'users' }, 
+                        (payload) => {
+                            console.log('User change detected:', payload);
+                            this.handleUserChange(payload);
+                        }
+                    )
+                    .subscribe();
+                
+                // Écouter les changements sur la table user_email_stats
+                const statsSubscription = this.supabaseClient
+                    .channel('stats-changes')
+                    .on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'user_email_stats' }, 
+                        (payload) => {
+                            console.log('Stats change detected:', payload);
+                            this.handleStatsChange(payload);
+                        }
+                    )
+                    .subscribe();
+                
+                // Écouter les changements sur la table email_analytics
+                const analyticsSubscription = this.supabaseClient
+                    .channel('analytics-changes')
+                    .on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'email_analytics' }, 
+                        (payload) => {
+                            console.log('Analytics change detected:', payload);
+                            this.handleAnalyticsChange(payload);
+                        }
+                    )
+                    .subscribe();
+                
+                this.dataSubscriptions = [usersSubscription, statsSubscription, analyticsSubscription];
+            }
+
+            async handleUserChange(payload) {
+                this.updateSyncStatus('syncing');
+                
+                switch (payload.eventType) {
+                    case 'INSERT':
+                    case 'UPDATE':
+                    case 'DELETE':
+                        await this.loadUsers();
+                        this.updateStats();
+                        this.renderCurrentTab();
+                        break;
+                }
+                
+                this.updateSyncStatus('success');
+            }
+
+            async handleStatsChange(payload) {
+                this.updateSyncStatus('syncing');
+                
+                await this.loadUserStats();
+                this.updateStats();
+                
+                if (this.currentTab === 'overview' && this.analyticsModule) {
+                    this.analyticsModule.loadAnalyticsData();
+                }
+                
+                this.updateSyncStatus('success');
+            }
+
+            async handleAnalyticsChange(payload) {
+                this.updateSyncStatus('syncing');
+                
+                if (this.currentTab === 'overview' && this.analyticsModule) {
+                    this.analyticsModule.loadAnalyticsData();
+                }
+                
+                this.updateSyncStatus('success');
+            }
+
+            updateSyncStatus(status) {
+                const syncStatus = document.getElementById('syncStatus');
+                
+                syncStatus.classList.remove('syncing', 'success', 'error');
+                syncStatus.classList.add(status);
+                
+                switch (status) {
+                    case 'syncing':
+                        syncStatus.innerHTML = '<i class="fas fa-sync fa-spin"></i> <span>Synchronisation...</span>';
+                        break;
+                    case 'success':
+                        syncStatus.innerHTML = '<i class="fas fa-check-circle"></i> <span>Synchronisé</span>';
+                        break;
+                    case 'error':
+                        syncStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span>Erreur de sync</span>';
+                        break;
+                }
+                
+                this.updateLastUpdate();
+            }
+
+            async syncAllData() {
+                console.log('Starting full data sync...');
+                this.updateSyncStatus('syncing');
+                
+                try {
+                    await this.loadUsers();
+                    this.updateStats();
+                    this.renderCurrentTab();
+                    
+                    if (this.currentTab === 'overview' && this.analyticsModule) {
+                        this.analyticsModule.loadAnalyticsData();
+                    }
+                    
+                    this.updateSyncStatus('success');
+                } catch (error) {
+                    console.error('Sync error:', error);
+                    this.updateSyncStatus('error');
+                }
+            }
+
+            renderCurrentTab() {
+                switch (this.currentTab) {
+                    case 'users':
+                        this.renderUsers();
+                        break;
+                    case 'licenses':
+                        this.renderLicenses();
+                        break;
+                    case 'billing':
+                        this.loadBilling();
+                        break;
+                }
             }
 
             async loadOverview() {
@@ -1672,6 +1928,9 @@
                     // Initialiser le module analytics s'il existe
                     if (window.analyticsModule) {
                         this.analyticsModule = window.analyticsModule;
+                        // Passer la référence Supabase au module
+                        this.analyticsModule.supabaseClient = this.supabaseClient;
+                        this.analyticsModule.currentUser = this.currentUser;
                         this.analyticsModule.render();
                     }
                     
@@ -1881,17 +2140,20 @@
                             <td>${expiration}</td>
                             <td>
                                 <div class="table-actions">
-                                    <button class="btn btn-secondary btn-sm" onclick="app.viewUser('${user.id}')">
+                                    <button class="btn btn-secondary btn-sm" onclick="app.viewUser('${user.id}')" data-tooltip="Voir les détails">
                                         <i class="fas fa-eye"></i>
+                                        <span class="btn-text">Voir</span>
                                     </button>
                                     ${this.canManageUser(user) ? `
-                                        <button class="btn btn-primary btn-sm" onclick="app.editLicense('${user.id}')">
+                                        <button class="btn btn-edit btn-sm" onclick="app.editLicense('${user.id}')" data-tooltip="Modifier la licence">
                                             <i class="fas fa-edit"></i>
+                                            <span class="btn-text">Modifier</span>
                                         </button>
                                     ` : ''}
                                     ${this.canDeleteUser(user) ? `
-                                        <button class="btn btn-danger btn-sm" onclick="app.deleteUser('${user.id}')">
+                                        <button class="btn btn-danger btn-sm" onclick="app.deleteUser('${user.id}')" data-tooltip="Supprimer l'utilisateur">
                                             <i class="fas fa-trash"></i>
+                                            <span class="btn-text">Supprimer</span>
                                         </button>
                                     ` : ''}
                                 </div>
@@ -1949,12 +2211,14 @@
                             <td>${daysRemaining}</td>
                             <td>
                                 <div class="table-actions">
-                                    <button class="btn btn-secondary btn-sm" onclick="app.viewUser('${user.id}')">
+                                    <button class="btn btn-secondary btn-sm" onclick="app.viewUser('${user.id}')" data-tooltip="Voir les détails">
                                         <i class="fas fa-eye"></i>
+                                        <span class="btn-text">Détails</span>
                                     </button>
                                     ${this.canManageUser(user) ? `
-                                        <button class="btn btn-primary btn-sm" onclick="app.editLicense('${user.id}')">
+                                        <button class="btn btn-edit btn-sm" onclick="app.editLicense('${user.id}')" data-tooltip="Modifier la licence">
                                             <i class="fas fa-calendar-edit"></i>
+                                            <span class="btn-text">Modifier licence</span>
                                         </button>
                                     ` : ''}
                                 </div>
@@ -2260,7 +2524,7 @@
                     
                     if (!error) {
                         this.closeModal('licenseEditModal');
-                        await this.refreshUsers();
+                        // Les changements seront automatiquement synchronisés via realtime
                         this.showMessage('success', 'Licence mise à jour avec succès');
                     } else {
                         alert('Erreur: ' + error.message);
@@ -2306,7 +2570,6 @@
                         }
                         
                         this.closeModal('addUserModal');
-                        await this.refreshUsers();
                         this.showMessage('success', `Utilisateur ajouté avec ${trialDays} jours d'essai`);
                     } else {
                         alert('Erreur: ' + result.error);
@@ -2333,7 +2596,6 @@
                         .eq('id', userId);
                     
                     if (!error) {
-                        await this.refreshUsers();
                         this.showMessage('success', 'Utilisateur supprimé');
                     } else {
                         alert('Erreur: ' + error.message);
@@ -2363,21 +2625,11 @@
             }
 
             async refreshUsers() {
-                await this.loadUsers();
-                this.updateStats();
-                this.renderUsers();
-                this.updateLastUpdate();
-                
-                // Recharger analytics si sur l'onglet overview
-                if (this.currentTab === 'overview' && this.analyticsModule) {
-                    this.analyticsModule.render();
-                }
+                await this.syncAllData();
             }
 
             async refreshLicenses() {
-                await this.loadUsers();
-                this.renderLicenses();
-                this.updateLastUpdate();
+                await this.syncAllData();
             }
 
             // Méthodes utilitaires
@@ -2503,6 +2755,16 @@
 
             async logout() {
                 if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                    // Nettoyer les subscriptions
+                    this.dataSubscriptions.forEach(sub => {
+                        sub.unsubscribe();
+                    });
+                    
+                    // Nettoyer l'intervalle
+                    if (this.syncInterval) {
+                        clearInterval(this.syncInterval);
+                    }
+                    
                     sessionStorage.removeItem('analyticsAuth');
                     window.location.reload();
                 }
