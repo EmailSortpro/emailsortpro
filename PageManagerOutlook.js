@@ -1,3 +1,4 @@
+
 // PageManager.js - Version 15.2 - Interface optimisée avec catégories fixes
 
 class PageManager {
