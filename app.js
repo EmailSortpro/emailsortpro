@@ -1,5 +1,4 @@
-// app.js - Application EmailSortPro avec authentification dual provider (Microsoft + Google) v5.0
-// AVEC BLOCAGE STRICT DES LICENCES EXPIRÉES
+// app.js - Application EmailSortPro avec authentification dual provider (Microsoft + Google) v4.0
 
 class App {
     constructor() {
@@ -11,9 +10,8 @@ class App {
         this.isInitializing = false;
         this.initializationPromise = null;
         this.currentPage = 'dashboard';
-        this.licenseBlocked = false; // Flag pour bloquer l'accès
         
-        console.log('[App] Constructor - EmailSortPro starting with dual provider support and license enforcement...');
+        console.log('[App] Constructor - EmailSortPro starting with dual provider support...');
     }
 
     async init() {
@@ -83,9 +81,6 @@ class App {
             
             console.log('[App] Auth services initialization results:', initResults);
             
-            // IMPORTANT: Initialiser le service de licence AVANT les modules
-            await this.initializeLicenseService();
-            
             // INITIALISER LES MODULES CRITIQUES
             await this.initializeCriticalModules();
             
@@ -96,29 +91,6 @@ class App {
         } finally {
             this.isInitializing = false;
             this.setupEventListeners();
-        }
-    }
-
-    // =====================================
-    // INITIALISATION DU SERVICE DE LICENCE
-    // =====================================
-    async initializeLicenseService() {
-        console.log('[App] Initializing license service...');
-        
-        if (!window.licenseService) {
-            console.error('[App] License service not available!');
-            this.showError('Service de licence non disponible. Veuillez recharger la page.');
-            return false;
-        }
-        
-        try {
-            await window.licenseService.initialize();
-            console.log('[App] ✅ License service initialized');
-            return true;
-        } catch (error) {
-            console.error('[App] Failed to initialize license service:', error);
-            this.showError('Erreur d\'initialisation du service de licence.');
-            return false;
         }
     }
 
@@ -526,8 +498,7 @@ class App {
         // Vérifier d'abord s'il y a un callback Google à traiter
         const googleCallbackHandled = await this.handleGoogleCallback();
         if (googleCallbackHandled) {
-            // IMPORTANT: Vérifier la licence même après le callback Google
-            await this.verifyLicenseAfterAuth();
+            this.showAppWithTransition();
             return;
         }
         
@@ -542,9 +513,7 @@ class App {
                     this.isAuthenticated = true;
                     this.activeProvider = 'microsoft';
                     console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
-                    
-                    // IMPORTANT: Vérifier la licence
-                    await this.verifyLicenseAfterAuth();
+                    this.showAppWithTransition();
                     return;
                 } catch (userInfoError) {
                     console.error('[App] Error getting Microsoft user info:', userInfoError);
@@ -567,9 +536,7 @@ class App {
                     this.isAuthenticated = true;
                     this.activeProvider = 'google';
                     console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
-                    
-                    // IMPORTANT: Vérifier la licence
-                    await this.verifyLicenseAfterAuth();
+                    this.showAppWithTransition();
                     return;
                 } catch (userInfoError) {
                     console.error('[App] Error getting Google user info:', userInfoError);
@@ -581,594 +548,6 @@ class App {
         // Aucune authentification trouvée
         console.log('[App] No valid authentication found');
         this.showLogin();
-    }
-
-    // =====================================
-    // VÉRIFICATION DE LICENCE APRÈS AUTH
-    // =====================================
-    async verifyLicenseAfterAuth() {
-        console.log('[App] Verifying license after authentication...');
-        
-        if (!this.user || !window.licenseService) {
-            console.error('[App] Cannot verify license - missing user or license service');
-            this.showLogin();
-            return;
-        }
-        
-        try {
-            const userEmail = this.user.mail || this.user.email;
-            console.log('[App] Checking license for:', userEmail);
-            
-            // Appeler le service de licence pour vérifier
-            const licenseStatus = await window.licenseService.authenticateWithEmail(userEmail);
-            
-            console.log('[App] License status received:', licenseStatus);
-            
-            // BLOCAGE STRICT SI LICENCE EXPIRÉE
-            if (!licenseStatus.valid && licenseStatus.status === 'expired') {
-                console.error('[App] ❌ LICENSE EXPIRED - BLOCKING ACCESS');
-                this.licenseBlocked = true;
-                this.showExpiredLicenseScreen(licenseStatus);
-                return;
-            }
-            
-            // Si licence non trouvée, proposer de créer un compte d'essai
-            if (licenseStatus.status === 'not_found') {
-                console.log('[App] User not found in database, showing trial creation');
-                this.showTrialCreationScreen(userEmail);
-                return;
-            }
-            
-            // Si licence bloquée
-            if (licenseStatus.status === 'blocked') {
-                console.error('[App] ❌ LICENSE BLOCKED');
-                this.licenseBlocked = true;
-                this.showBlockedLicenseScreen(licenseStatus);
-                return;
-            }
-            
-            // Si licence pas encore commencée
-            if (licenseStatus.status === 'not_started') {
-                console.log('[App] License not started yet');
-                this.showNotStartedLicenseScreen(licenseStatus);
-                return;
-            }
-            
-            // Si erreur de vérification
-            if (licenseStatus.status === 'error') {
-                console.error('[App] License verification error');
-                this.showLicenseErrorScreen(licenseStatus);
-                return;
-            }
-            
-            // LICENCE VALIDE - Continuer
-            console.log('[App] ✅ License is valid, showing app');
-            
-            // Stocker les infos de licence dans l'utilisateur
-            this.user.licenseInfo = licenseStatus;
-            
-            // Afficher l'avertissement si proche de l'expiration
-            if (licenseStatus.warningLevel) {
-                this.showLicenseWarning(licenseStatus);
-            }
-            
-            // Afficher l'application
-            this.showAppWithTransition();
-            
-        } catch (error) {
-            console.error('[App] License verification error:', error);
-            this.showLicenseErrorScreen({
-                status: 'error',
-                message: 'Erreur de vérification de licence',
-                error: error.message
-            });
-        }
-    }
-
-    // =====================================
-    // ÉCRANS DE BLOCAGE DE LICENCE
-    // =====================================
-    
-    showExpiredLicenseScreen(licenseStatus) {
-        console.log('[App] Showing expired license screen');
-        
-        const adminContact = licenseStatus.adminContact || {};
-        const daysExpired = licenseStatus.daysExpired || 0;
-        const accountType = licenseStatus.user?.account_type || 'professional';
-        
-        document.body.classList.add('login-mode', 'license-blocked');
-        document.body.classList.remove('app-active');
-        
-        const loginPage = document.getElementById('loginPage');
-        if (loginPage) {
-            loginPage.style.display = 'flex';
-            loginPage.innerHTML = `
-                <div class="login-container license-expired-container">
-                    <div style="max-width: 700px; margin: 0 auto; text-align: center;">
-                        <div style="font-size: 5rem; margin-bottom: 30px; color: #ef4444;">
-                            <i class="fas fa-lock"></i>
-                        </div>
-                        <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: #1f2937;">
-                            Licence Expirée
-                        </h1>
-                        
-                        <div style="background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); 
-                                    padding: 30px; border-radius: 20px; margin: 30px 0;">
-                            <p style="font-size: 1.3rem; line-height: 1.8; color: #1f2937; margin-bottom: 20px;">
-                                Votre licence EmailSortPro a expiré depuis <strong>${daysExpired} jour${daysExpired > 1 ? 's' : ''}</strong>.
-                            </p>
-                            <p style="font-size: 1.1rem; line-height: 1.6; color: #4b5563;">
-                                ${licenseStatus.detailedMessage || 'Pour continuer à utiliser EmailSortPro, veuillez renouveler votre licence.'}
-                            </p>
-                        </div>
-                        
-                        ${accountType === 'individual' ? `
-                            <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); 
-                                        padding: 25px; border-radius: 15px; margin: 30px 0;">
-                                <h3 style="color: #3b82f6; margin-bottom: 15px;">
-                                    <i class="fas fa-info-circle"></i> Compte Personnel
-                                </h3>
-                                <p style="font-size: 1.1rem; color: #1f2937; line-height: 1.6; margin-bottom: 20px;">
-                                    Pour régulariser votre compte et continuer à utiliser EmailSortPro, 
-                                    accédez à votre espace de gestion :
-                                </p>
-                                <a href="https://emailsortpro.netlify.app/analytics.html" 
-                                   class="login-button" 
-                                   style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
-                                          color: white; display: inline-flex; align-items: center; gap: 10px;
-                                          padding: 15px 30px; font-size: 1.1rem;">
-                                    <i class="fas fa-chart-line"></i>
-                                    Accéder à mon espace
-                                </a>
-                            </div>
-                        ` : `
-                            <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); 
-                                        padding: 25px; border-radius: 15px; margin: 30px 0;">
-                                <h3 style="color: #f59e0b; margin-bottom: 15px;">
-                                    <i class="fas fa-building"></i> Compte Professionnel
-                                </h3>
-                                <p style="font-size: 1.1rem; color: #1f2937; line-height: 1.6; margin-bottom: 15px;">
-                                    Contactez votre administrateur pour renouveler la licence :
-                                </p>
-                                <div style="background: white; padding: 20px; border-radius: 10px; margin-top: 15px;">
-                                    ${adminContact.name ? `
-                                        <p style="margin: 8px 0;">
-                                            <strong>Contact :</strong> ${adminContact.name}
-                                        </p>
-                                    ` : ''}
-                                    ${adminContact.email ? `
-                                        <p style="margin: 8px 0;">
-                                            <strong>Email :</strong> 
-                                            <a href="mailto:${adminContact.email}" style="color: #3b82f6;">
-                                                ${adminContact.email}
-                                            </a>
-                                        </p>
-                                    ` : ''}
-                                    ${adminContact.phone ? `
-                                        <p style="margin: 8px 0;">
-                                            <strong>Téléphone :</strong> ${adminContact.phone}
-                                        </p>
-                                    ` : ''}
-                                    ${adminContact.fallbackEmail ? `
-                                        <p style="margin: 15px 0 0 0; font-size: 0.9rem; color: #6b7280;">
-                                            Support : 
-                                            <a href="mailto:${adminContact.fallbackEmail}" style="color: #3b82f6;">
-                                                ${adminContact.fallbackEmail}
-                                            </a>
-                                        </p>
-                                    ` : ''}
-                                </div>
-                            </div>
-                        `}
-                        
-                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 30px;">
-                            <button onclick="window.app.logout()" 
-                                    class="login-button" 
-                                    style="background: rgba(107, 114, 128, 0.2); color: #374151; 
-                                           border: 1px solid rgba(107, 114, 128, 0.3);">
-                                <i class="fas fa-sign-out-alt"></i>
-                                Se déconnecter
-                            </button>
-                            <button onclick="location.reload()" 
-                                    class="login-button" 
-                                    style="background: rgba(107, 114, 128, 0.2); color: #374151; 
-                                           border: 1px solid rgba(107, 114, 128, 0.3);">
-                                <i class="fas fa-refresh"></i>
-                                Actualiser
-                            </button>
-                        </div>
-                        
-                        <p style="margin-top: 30px; font-size: 0.9rem; color: #6b7280;">
-                            Utilisateur : ${licenseStatus.user?.email || this.user?.email || 'Non identifié'}
-                        </p>
-                    </div>
-                </div>
-            `;
-        }
-        
-        this.hideModernLoading();
-    }
-
-    showBlockedLicenseScreen(licenseStatus) {
-        console.log('[App] Showing blocked license screen');
-        
-        const adminContact = licenseStatus.adminContact || {};
-        
-        document.body.classList.add('login-mode', 'license-blocked');
-        document.body.classList.remove('app-active');
-        
-        const loginPage = document.getElementById('loginPage');
-        if (loginPage) {
-            loginPage.style.display = 'flex';
-            loginPage.innerHTML = `
-                <div class="login-container">
-                    <div style="max-width: 600px; margin: 0 auto; text-align: center;">
-                        <div style="font-size: 5rem; margin-bottom: 30px; color: #dc2626;">
-                            <i class="fas fa-ban"></i>
-                        </div>
-                        <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: #1f2937;">
-                            Compte Bloqué
-                        </h1>
-                        
-                        <div style="background: rgba(220, 38, 38, 0.1); border: 2px solid rgba(220, 38, 38, 0.3); 
-                                    padding: 30px; border-radius: 20px; margin: 30px 0;">
-                            <p style="font-size: 1.2rem; line-height: 1.6; color: #1f2937;">
-                                ${licenseStatus.message}
-                            </p>
-                        </div>
-                        
-                        <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); 
-                                    padding: 25px; border-radius: 15px; margin: 30px 0;">
-                            <h3 style="color: #f59e0b; margin-bottom: 15px;">Contact administrateur</h3>
-                            <div style="background: white; padding: 20px; border-radius: 10px;">
-                                ${adminContact.email ? `
-                                    <p><strong>Email :</strong> 
-                                        <a href="mailto:${adminContact.email}" style="color: #3b82f6;">
-                                            ${adminContact.email}
-                                        </a>
-                                    </p>
-                                ` : ''}
-                                ${adminContact.fallbackEmail ? `
-                                    <p style="margin-top: 10px; font-size: 0.9rem; color: #6b7280;">
-                                        Support : 
-                                        <a href="mailto:${adminContact.fallbackEmail}" style="color: #3b82f6;">
-                                            ${adminContact.fallbackEmail}
-                                        </a>
-                                    </p>
-                                ` : ''}
-                            </div>
-                        </div>
-                        
-                        <button onclick="window.app.logout()" class="login-button" 
-                                style="background: rgba(107, 114, 128, 0.2); color: #374151;">
-                            <i class="fas fa-sign-out-alt"></i>
-                            Se déconnecter
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-        
-        this.hideModernLoading();
-    }
-
-    showNotStartedLicenseScreen(licenseStatus) {
-        console.log('[App] Showing not started license screen');
-        
-        const startDate = new Date(licenseStatus.startsAt).toLocaleDateString('fr-FR', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-        
-        document.body.classList.add('login-mode');
-        document.body.classList.remove('app-active');
-        
-        const loginPage = document.getElementById('loginPage');
-        if (loginPage) {
-            loginPage.style.display = 'flex';
-            loginPage.innerHTML = `
-                <div class="login-container">
-                    <div style="max-width: 600px; margin: 0 auto; text-align: center;">
-                        <div style="font-size: 5rem; margin-bottom: 30px; color: #fbbf24;">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: #1f2937;">
-                            Licence Non Active
-                        </h1>
-                        
-                        <div style="background: rgba(251, 191, 36, 0.1); border: 2px solid rgba(251, 191, 36, 0.3); 
-                                    padding: 30px; border-radius: 20px; margin: 30px 0;">
-                            <p style="font-size: 1.2rem; line-height: 1.6; color: #1f2937;">
-                                ${licenseStatus.message}
-                            </p>
-                            <p style="font-size: 1.1rem; margin-top: 15px; color: #f59e0b; font-weight: 600;">
-                                Date d'activation : ${startDate}
-                            </p>
-                        </div>
-                        
-                        <button onclick="window.app.logout()" class="login-button" 
-                                style="background: rgba(107, 114, 128, 0.2); color: #374151;">
-                            <i class="fas fa-sign-out-alt"></i>
-                            Se déconnecter
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-        
-        this.hideModernLoading();
-    }
-
-    showLicenseErrorScreen(licenseStatus) {
-        console.log('[App] Showing license error screen');
-        
-        document.body.classList.add('login-mode');
-        document.body.classList.remove('app-active');
-        
-        const loginPage = document.getElementById('loginPage');
-        if (loginPage) {
-            loginPage.style.display = 'flex';
-            loginPage.innerHTML = `
-                <div class="login-container">
-                    <div style="max-width: 600px; margin: 0 auto; text-align: center;">
-                        <div style="font-size: 5rem; margin-bottom: 30px; color: #ef4444;">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: #1f2937;">
-                            Erreur de Licence
-                        </h1>
-                        
-                        <div style="background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); 
-                                    padding: 30px; border-radius: 20px; margin: 30px 0;">
-                            <p style="font-size: 1.2rem; line-height: 1.6; color: #1f2937;">
-                                ${licenseStatus.message || 'Une erreur s\'est produite lors de la vérification de votre licence.'}
-                            </p>
-                            ${licenseStatus.error ? `
-                                <p style="font-size: 0.9rem; margin-top: 15px; color: #6b7280;">
-                                    Détails : ${licenseStatus.error}
-                                </p>
-                            ` : ''}
-                        </div>
-                        
-                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                            <button onclick="location.reload()" class="login-button">
-                                <i class="fas fa-refresh"></i>
-                                Réessayer
-                            </button>
-                            <button onclick="window.app.logout()" class="login-button" 
-                                    style="background: rgba(107, 114, 128, 0.2); color: #374151;">
-                                <i class="fas fa-sign-out-alt"></i>
-                                Se déconnecter
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        this.hideModernLoading();
-    }
-
-    showTrialCreationScreen(email) {
-        console.log('[App] Showing trial creation screen for:', email);
-        
-        document.body.classList.add('login-mode');
-        document.body.classList.remove('app-active');
-        
-        const loginPage = document.getElementById('loginPage');
-        if (loginPage) {
-            loginPage.style.display = 'flex';
-            loginPage.innerHTML = `
-                <div class="login-container">
-                    <div style="max-width: 700px; margin: 0 auto; text-align: center;">
-                        <div style="font-size: 5rem; margin-bottom: 30px; color: #10b981;">
-                            <i class="fas fa-gift"></i>
-                        </div>
-                        <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: #1f2937;">
-                            Bienvenue sur EmailSortPro !
-                        </h1>
-                        
-                        <div style="background: rgba(16, 185, 129, 0.1); border: 2px solid rgba(16, 185, 129, 0.3); 
-                                    padding: 30px; border-radius: 20px; margin: 30px 0;">
-                            <p style="font-size: 1.2rem; line-height: 1.6; color: #1f2937; margin-bottom: 20px;">
-                                Vous n'avez pas encore de compte EmailSortPro.
-                            </p>
-                            <p style="font-size: 1.1rem; color: #10b981; font-weight: 600;">
-                                Créez votre compte et profitez de 15 jours d'essai gratuit !
-                            </p>
-                        </div>
-                        
-                        <div id="accountTypeSelection" style="margin: 30px 0;">
-                            <h3 style="margin-bottom: 20px; color: #1f2937;">
-                                Choisissez votre type de compte :
-                            </h3>
-                            
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 500px; margin: 0 auto;">
-                                <button onclick="window.app.createTrialAccount('individual')" 
-                                        class="account-type-button">
-                                    <i class="fas fa-user" style="font-size: 3rem; margin-bottom: 15px; color: #3b82f6;"></i>
-                                    <h4 style="margin-bottom: 8px;">Personnel</h4>
-                                    <p style="font-size: 0.9rem; color: #6b7280;">Pour un usage individuel</p>
-                                </button>
-                                
-                                <button onclick="window.app.createTrialAccount('professional')" 
-                                        class="account-type-button">
-                                    <i class="fas fa-building" style="font-size: 3rem; margin-bottom: 15px; color: #8b5cf6;"></i>
-                                    <h4 style="margin-bottom: 8px;">Professionnel</h4>
-                                    <p style="font-size: 0.9rem; color: #6b7280;">Pour votre entreprise</p>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div id="companyNameSection" style="display: none; margin: 30px auto; max-width: 400px;">
-                            <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #1f2937;">
-                                Nom de votre entreprise :
-                            </label>
-                            <input type="text" 
-                                   id="companyNameInput" 
-                                   class="login-input" 
-                                   style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; 
-                                          border-radius: 10px; font-size: 1rem;"
-                                   placeholder="Entrez le nom de votre entreprise">
-                            <button onclick="window.app.confirmTrialCreation()" 
-                                    class="login-button" 
-                                    style="margin-top: 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                                <i class="fas fa-check"></i>
-                                Créer mon compte d'essai
-                            </button>
-                        </div>
-                        
-                        <div style="margin-top: 40px;">
-                            <button onclick="window.app.logout()" 
-                                    class="login-button" 
-                                    style="background: rgba(107, 114, 128, 0.2); color: #374151;">
-                                <i class="fas fa-arrow-left"></i>
-                                Retour
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <style>
-                    .account-type-button {
-                        background: white;
-                        border: 2px solid #e5e7eb;
-                        border-radius: 15px;
-                        padding: 30px 20px;
-                        cursor: pointer;
-                        transition: all 0.3s ease;
-                        text-align: center;
-                    }
-                    
-                    .account-type-button:hover {
-                        border-color: #3b82f6;
-                        transform: translateY(-5px);
-                        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-                    }
-                    
-                    .account-type-button h4 {
-                        font-size: 1.2rem;
-                        color: #1f2937;
-                    }
-                </style>
-            `;
-        }
-        
-        this.hideModernLoading();
-        
-        // Stocker l'email pour la création
-        this.pendingTrialEmail = email;
-    }
-
-    showLicenseWarning(licenseStatus) {
-        if (!window.uiManager) return;
-        
-        const daysRemaining = licenseStatus.daysRemaining;
-        let message = '';
-        let type = 'info';
-        
-        if (licenseStatus.warningLevel === 'critical') {
-            message = `⚠️ Attention : Votre licence expire dans ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''} !`;
-            type = 'error';
-        } else if (licenseStatus.warningLevel === 'warning') {
-            message = `⏰ Votre licence expire dans ${daysRemaining} jours.`;
-            type = 'warning';
-        } else if (licenseStatus.warningLevel === 'info') {
-            message = `ℹ️ Votre licence expire dans ${daysRemaining} jours.`;
-            type = 'info';
-        }
-        
-        if (message) {
-            window.uiManager.showToast(message, type, 10000);
-        }
-    }
-
-    // =====================================
-    // CRÉATION DE COMPTE D'ESSAI
-    // =====================================
-    
-    async createTrialAccount(accountType) {
-        console.log('[App] Creating trial account:', accountType);
-        
-        this.pendingAccountType = accountType;
-        
-        if (accountType === 'professional') {
-            // Afficher le champ nom d'entreprise
-            document.getElementById('accountTypeSelection').style.display = 'none';
-            document.getElementById('companyNameSection').style.display = 'block';
-        } else {
-            // Créer directement le compte personnel
-            await this.confirmTrialCreation();
-        }
-    }
-
-    async confirmTrialCreation() {
-        console.log('[App] Confirming trial creation');
-        
-        const accountType = this.pendingAccountType;
-        const email = this.pendingTrialEmail;
-        let companyName = null;
-        
-        if (accountType === 'professional') {
-            companyName = document.getElementById('companyNameInput')?.value.trim();
-            if (!companyName) {
-                alert('Veuillez entrer le nom de votre entreprise');
-                return;
-            }
-        }
-        
-        this.showModernLoading('Création de votre compte d\'essai...');
-        
-        try {
-            const result = await window.licenseService.createUserWithTrial(
-                email,
-                accountType,
-                companyName
-            );
-            
-            if (result.success) {
-                console.log('[App] Trial account created successfully');
-                
-                // Réauthentifier pour obtenir les nouvelles infos
-                const licenseStatus = await window.licenseService.authenticateWithEmail(email);
-                
-                if (licenseStatus.valid) {
-                    this.user.licenseInfo = licenseStatus;
-                    
-                    if (window.uiManager) {
-                        window.uiManager.showToast(
-                            '🎉 Compte créé avec succès ! Profitez de vos 15 jours d\'essai gratuit.',
-                            'success',
-                            8000
-                        );
-                    }
-                    
-                    setTimeout(() => {
-                        this.showAppWithTransition();
-                    }, 1000);
-                } else {
-                    throw new Error('Erreur lors de la validation du compte créé');
-                }
-            } else {
-                throw new Error(result.error || 'Erreur lors de la création du compte');
-            }
-            
-        } catch (error) {
-            console.error('[App] Trial creation error:', error);
-            this.hideModernLoading();
-            
-            if (window.uiManager) {
-                window.uiManager.showToast(
-                    'Erreur : ' + error.message,
-                    'error',
-                    8000
-                );
-            } else {
-                alert('Erreur : ' + error.message);
-            }
-        }
     }
 
     // =====================================
@@ -1266,18 +645,6 @@ class App {
             item.parentNode.replaceChild(newItem, item);
             
             newItem.addEventListener('click', (e) => {
-                // Vérifier si l'accès est bloqué
-                if (this.licenseBlocked) {
-                    console.warn('[App] Navigation blocked - license expired');
-                    if (window.uiManager) {
-                        window.uiManager.showToast(
-                            '❌ Accès bloqué - Licence expirée',
-                            'error'
-                        );
-                    }
-                    return;
-                }
-                
                 const page = e.currentTarget.dataset.page;
                 if (page && window.pageManager) {
                     this.currentPage = page;
@@ -1486,7 +853,6 @@ class App {
         this.isInitializing = false;
         this.initializationPromise = null;
         this.currentPage = 'dashboard';
-        this.licenseBlocked = false;
         
         // Nettoyer les deux services d'authentification
         if (window.authService) {
@@ -1495,11 +861,6 @@ class App {
         
         if (window.googleAuthService) {
             window.googleAuthService.forceCleanup();
-        }
-        
-        // Nettoyer le service de licence
-        if (window.licenseService) {
-            window.licenseService.reset();
         }
         
         // Nettoyer le localStorage sélectivement
@@ -1534,7 +895,7 @@ class App {
         console.log('[App] Showing login page');
         
         document.body.classList.add('login-mode');
-        document.body.classList.remove('app-active', 'license-blocked');
+        document.body.classList.remove('app-active');
         
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
@@ -1551,16 +912,10 @@ class App {
     showAppWithTransition() {
         console.log('[App] Showing application with transition - Provider:', this.activeProvider);
         
-        // Vérifier une dernière fois si la licence est bloquée
-        if (this.licenseBlocked) {
-            console.error('[App] Cannot show app - license is blocked!');
-            return;
-        }
-        
         this.hideModernLoading();
         
         // Retirer le mode login et activer le mode app
-        document.body.classList.remove('login-mode', 'license-blocked');
+        document.body.classList.remove('login-mode');
         document.body.classList.add('app-active');
         console.log('[App] App mode activated');
         
@@ -1601,13 +956,9 @@ class App {
             window.uiManager.updateAuthStatus(this.user);
         }
         
-        // Mettre à jour l'affichage utilisateur avec badge provider ET info licence
+        // Mettre à jour l'affichage utilisateur avec badge provider
         if (window.updateUserDisplay) {
-            const userWithLicense = {
-                ...this.user,
-                licenseInfo: this.user.licenseInfo
-            };
-            window.updateUserDisplay(userWithLicense);
+            window.updateUserDisplay(this.user);
         }
         
         // INITIALISATION DASHBOARD VIA MODULE
@@ -1664,11 +1015,6 @@ class App {
                 display: block !important;
                 opacity: 1 !important;
                 visibility: visible !important;
-            }
-            body.license-blocked .app-header,
-            body.license-blocked .app-nav,
-            body.license-blocked #pageContent {
-                display: none !important;
             }
         `;
         
@@ -1788,12 +1134,10 @@ class App {
         return {
             isAuthenticated: this.isAuthenticated,
             activeProvider: this.activeProvider,
-            licenseBlocked: this.licenseBlocked,
             user: this.user ? {
                 name: this.user.displayName || this.user.name,
                 email: this.user.mail || this.user.email,
-                provider: this.user.provider,
-                licenseInfo: this.user.licenseInfo
+                provider: this.user.provider
             } : null,
             currentPage: this.currentPage,
             isInitialized: !this.isInitializing,
@@ -1806,10 +1150,6 @@ class App {
                 isAuthenticated: window.googleAuthService.isAuthenticated(),
                 method: 'Direct OAuth2 (sans iframe)',
                 avoidsiFrameError: true
-            } : null,
-            licenseService: window.licenseService ? {
-                initialized: window.licenseService.initialized,
-                hasCurrentUser: !!window.licenseService.currentUser
             } : null,
             services: window.checkServices ? window.checkServices() : null,
             googleCallbackData: sessionStorage.getItem('google_callback_data'),
@@ -1855,15 +1195,10 @@ window.emergencyReset = function() {
 window.forceShowApp = function() {
     console.log('[Global] Force show app triggered');
     if (window.app && typeof window.app.showAppWithTransition === 'function') {
-        // Vérifier si la licence est bloquée
-        if (window.app.licenseBlocked) {
-            console.error('[Global] Cannot force show app - license is blocked');
-            return;
-        }
         window.app.showAppWithTransition();
     } else {
         document.body.classList.add('app-active');
-        document.body.classList.remove('login-mode', 'license-blocked');
+        document.body.classList.remove('login-mode');
         const loginPage = document.getElementById('loginPage');
         if (loginPage) loginPage.style.display = 'none';
         
@@ -1881,7 +1216,7 @@ window.forceShowApp = function() {
 // VÉRIFICATION DES SERVICES DUAL PROVIDER
 // =====================================
 function checkServicesReady() {
-    const requiredServices = ['uiManager', 'licenseService'];
+    const requiredServices = ['uiManager'];
     const authServices = ['authService', 'googleAuthService'];
     const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule'];
     
@@ -1917,7 +1252,7 @@ function checkServicesReady() {
 // =====================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating dual provider app instance with license enforcement...');
+    console.log('[App] DOM loaded, creating dual provider app instance...');
     
     document.body.classList.add('login-mode');
     
@@ -1981,11 +1316,6 @@ window.diagnoseApp = function() {
                 console.log('🛠️ Services:', appDiag.services);
             }
             
-            // License Service
-            if (appDiag.licenseService) {
-                console.log('🔐 License Service:', appDiag.licenseService);
-            }
-            
             // Microsoft
             if (appDiag.microsoftAuthService) {
                 console.log('🔵 Microsoft Auth:', appDiag.microsoftAuthService);
@@ -2001,11 +1331,6 @@ window.diagnoseApp = function() {
                 console.log('💾 Session Data:', appDiag.sessionData);
             }
             
-            // License Status
-            if (appDiag.user && appDiag.user.licenseInfo) {
-                console.log('📋 License Info:', appDiag.user.licenseInfo);
-            }
-            
             return appDiag;
         } else {
             console.log('❌ App instance not available');
@@ -2019,4 +1344,4 @@ window.diagnoseApp = function() {
     }
 };
 
-console.log('✅ App v5.0 loaded - DUAL PROVIDER with STRICT LICENSE ENFORCEMENT');
+console.log('✅ App v4.0 loaded - DUAL PROVIDER (Microsoft + Google) with direct OAuth2 - NO IFRAME ERRORS')
