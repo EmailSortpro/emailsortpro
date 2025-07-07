@@ -1,9 +1,9 @@
-// StartScan.js - Version 12.0 - Gestionnaire unifié Outlook/Gmail
-console.log('[StartScan] 🚀 Loading StartScan.js v12.0 - Unified Email Scanner...');
+// StartScan.js - Version 11.2 - EMAILS RÉELS FORCÉS - Suppression mode simulation
 
-class UnifiedScanModule {
+console.log('[StartScan] 🚀 Loading StartScan.js v11.2 - EMAILS RÉELS FORCÉS...');
+
+class MinimalScanModule {
     constructor() {
-        this.version = '12.0';
         this.isInitialized = false;
         this.scanInProgress = false;
         this.selectedDays = 7;
@@ -11,139 +11,47 @@ class UnifiedScanModule {
         this.scanStartTime = null;
         this.scanResults = null;
         
-        // Détection du provider email
-        this.emailProvider = null; // 'outlook' ou 'gmail'
-        this.currentPageManager = null;
-        
-        // Configuration unifiée
+        // Intégration avec les paramètres
         this.settings = {};
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        // Configuration scan
+        // Configuration EMAILS RÉELS UNIQUEMENT
         this.scanConfig = {
-            forceRealEmails: true,
-            allowSimulation: false,
-            requireAuthentication: true,
+            forceRealEmails: true,          // FORCÉ
+            allowSimulation: false,         // INTERDIT
+            requireAuthentication: true,    // OBLIGATOIRE
             maxRealEmails: 200,
-            minRealEmails: 1,
-            providers: {
-                outlook: {
-                    enabled: true,
-                    authService: 'authService',
-                    pageManager: 'pageManager'
-                },
-                gmail: {
-                    enabled: true,
-                    authService: 'googleAuthService',
-                    pageManager: 'pageManagerGmail'
-                }
-            }
+            minRealEmails: 1               // Au moins 1 email réel requis
         };
         
-        console.log('[UnifiedScan] ✅ Scanner v12.0 - Outlook & Gmail unified');
-        this.detectEmailProvider();
+        console.log('[MinimalScan] ✅ Scanner v11.2 - EMAILS RÉELS FORCÉS, simulation INTERDITE');
         this.loadSettingsFromStorage();
-        this.addUnifiedStyles();
+        this.addMinimalStyles();
     }
 
     // ================================================
-    // DÉTECTION DU PROVIDER EMAIL
-    // ================================================
-    detectEmailProvider() {
-        console.log('[UnifiedScan] 🔍 Détection du provider email...');
-        
-        // Vérifier Outlook/Microsoft
-        if (window.authService && window.authService.isAuthenticated?.()) {
-            this.emailProvider = 'outlook';
-            this.currentPageManager = window.pageManager;
-            console.log('[UnifiedScan] 📧 Provider détecté: Microsoft Outlook');
-            return;
-        }
-        
-        // Vérifier Gmail/Google
-        if (window.googleAuthService && window.googleAuthService.isAuthenticated?.()) {
-            this.emailProvider = 'gmail';
-            // Créer ou utiliser PageManagerGmail
-            if (!window.pageManagerGmail) {
-                console.log('[UnifiedScan] 🔄 Création PageManagerGmail...');
-                this.createPageManagerGmail();
-            }
-            this.currentPageManager = window.pageManagerGmail;
-            console.log('[UnifiedScan] 📧 Provider détecté: Google Gmail');
-            return;
-        }
-        
-        // Vérifier MailService générique
-        if (window.mailService) {
-            const provider = window.mailService.getProvider?.();
-            if (provider) {
-                this.emailProvider = provider.toLowerCase();
-                console.log(`[UnifiedScan] 📧 Provider détecté via MailService: ${provider}`);
-                
-                // Assigner le bon PageManager
-                if (this.emailProvider === 'gmail' && !window.pageManagerGmail) {
-                    this.createPageManagerGmail();
-                    this.currentPageManager = window.pageManagerGmail;
-                } else {
-                    this.currentPageManager = window.pageManager;
-                }
-                return;
-            }
-        }
-        
-        console.log('[UnifiedScan] ⚠️ Aucun provider email détecté');
-        this.emailProvider = null;
-        this.currentPageManager = null;
-    }
-
-    createPageManagerGmail() {
-        console.log('[UnifiedScan] 🏗️ Création PageManagerGmail...');
-        
-        // Charger dynamiquement PageManagerGmail si pas déjà chargé
-        if (typeof PageManagerGmail === 'undefined') {
-            console.warn('[UnifiedScan] PageManagerGmail non défini, chargement du script...');
-            
-            // Essayer de charger le script
-            const script = document.createElement('script');
-            script.src = 'pageManagerGmail.js';
-            script.onload = () => {
-                console.log('[UnifiedScan] ✅ PageManagerGmail.js chargé');
-                if (typeof PageManagerGmail !== 'undefined') {
-                    window.pageManagerGmail = new PageManagerGmail();
-                }
-            };
-            script.onerror = () => {
-                console.error('[UnifiedScan] ❌ Impossible de charger PageManagerGmail.js');
-                // Utiliser PageManager standard comme fallback
-                window.pageManagerGmail = window.pageManager;
-            };
-            document.head.appendChild(script);
-        } else {
-            window.pageManagerGmail = new PageManagerGmail();
-        }
-    }
-
-    // ================================================
-    // INTÉGRATION AVEC STOCKAGE
+    // INTÉGRATION AVEC STOCKAGE WEB
     // ================================================
     loadSettingsFromStorage() {
         try {
+            // Priorité 1: CategoryManager si disponible
             if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
                 this.settings = window.categoryManager.getSettings();
                 this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
-                console.log('[UnifiedScan] ✅ Paramètres chargés depuis CategoryManager');
+                console.log('[MinimalScan] ✅ Paramètres chargés depuis CategoryManager');
+                
+                if (this.settings.scanSettings?.defaultPeriod) {
+                    this.selectedDays = this.settings.scanSettings.defaultPeriod;
+                }
             } else {
+                // Priorité 2: localStorage pour environnement web
                 this.loadFromLocalStorage();
-            }
-            
-            if (this.settings.scanSettings?.defaultPeriod) {
-                this.selectedDays = this.settings.scanSettings.defaultPeriod;
             }
             
             this.lastSettingsSync = Date.now();
         } catch (error) {
-            console.error('[UnifiedScan] ❌ Erreur chargement paramètres:', error);
+            console.error('[MinimalScan] ❌ Erreur chargement paramètres:', error);
             this.settings = this.getDefaultSettings();
             this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
         }
@@ -155,13 +63,17 @@ class UnifiedScanModule {
             if (saved) {
                 this.settings = JSON.parse(saved);
                 this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
-                console.log('[UnifiedScan] 📦 Paramètres chargés depuis localStorage');
+                console.log('[MinimalScan] 📦 Paramètres chargés depuis localStorage');
+                
+                if (this.settings.scanSettings?.defaultPeriod) {
+                    this.selectedDays = this.settings.scanSettings.defaultPeriod;
+                }
             } else {
                 this.settings = this.getDefaultSettings();
                 this.taskPreselectedCategories = [];
             }
         } catch (error) {
-            console.warn('[UnifiedScan] ⚠️ Erreur localStorage:', error);
+            console.warn('[MinimalScan] ⚠️ Erreur localStorage:', error);
             this.settings = this.getDefaultSettings();
             this.taskPreselectedCategories = [];
         }
@@ -174,86 +86,181 @@ class UnifiedScanModule {
                 defaultFolder: 'inbox',
                 autoAnalyze: true,
                 autoCategrize: true,
-                forceRealEmails: true,
-                allowSimulation: false
+                forceRealEmails: true,        // FORCÉ
+                allowSimulation: false        // INTERDIT
             },
             taskPreselectedCategories: ['tasks', 'commercial', 'meetings'],
             preferences: {
                 excludeSpam: true,
                 detectCC: true,
                 showNotifications: true,
-                realEmailsOnly: true
+                realEmailsOnly: true          // FORCÉ
             }
         };
     }
 
-    // ================================================
-    // VÉRIFICATION D'AUTHENTIFICATION UNIFIÉE
-    // ================================================
-    checkRealEmailAuthentication() {
-        console.log('[UnifiedScan] 🔍 Vérification authentification emails réels...');
+    checkSettingsUpdate() {
+        const now = Date.now();
+        if (now - this.lastSettingsSync < 5000) return;
         
-        // Re-détecter le provider au cas où
-        this.detectEmailProvider();
-        
-        // Vérifier selon le provider détecté
-        if (this.emailProvider === 'outlook') {
-            if (window.authService && window.authService.isAuthenticated?.()) {
-                return { 
-                    valid: true, 
-                    source: 'Microsoft', 
-                    provider: 'outlook',
-                    email: window.authService.getUser?.()?.email 
-                };
+        try {
+            const oldTaskCategories = [...this.taskPreselectedCategories];
+            const oldSelectedDays = this.selectedDays;
+            
+            this.loadSettingsFromStorage();
+            
+            const categoriesChanged = JSON.stringify(oldTaskCategories.sort()) !== 
+                                     JSON.stringify([...this.taskPreselectedCategories].sort());
+            const daysChanged = oldSelectedDays !== this.selectedDays;
+            
+            if (categoriesChanged || daysChanged) {
+                console.log('[MinimalScan] 🔄 Paramètres mis à jour détectés');
+                this.updateUIWithNewSettings();
             }
+        } catch (error) {
+            console.error('[MinimalScan] Erreur vérification paramètres:', error);
         }
-        
-        if (this.emailProvider === 'gmail') {
-            if (window.googleAuthService && window.googleAuthService.isAuthenticated?.()) {
-                return { 
-                    valid: true, 
-                    source: 'Google', 
-                    provider: 'gmail',
-                    email: window.googleAuthService.getUser?.()?.email 
-                };
+    }
+
+    updateUIWithNewSettings() {
+        // Mettre à jour la sélection de durée
+        const durationOptions = document.querySelectorAll('.duration-option');
+        durationOptions.forEach(option => {
+            option.classList.remove('selected');
+            if (parseInt(option.dataset.days) === this.selectedDays) {
+                option.classList.add('selected');
             }
-        }
+        });
         
-        // Vérifier MailService générique
-        if (window.mailService && window.mailService.isAuthenticationValid?.()) {
-            return { 
-                valid: true, 
-                source: 'MailService', 
-                provider: window.mailService.getProvider?.() || 'unknown',
-                email: window.mailService.getUserEmail?.()
+        // Mettre à jour l'affichage des catégories
+        this.updatePreselectedCategoriesDisplay();
+    }
+
+    updatePreselectedCategoriesDisplay() {
+        const display = document.getElementById('preselected-categories-display');
+        if (!display) return;
+        
+        // Vérifier disponibilité emails réels - OBLIGATOIRE
+        const authStatus = this.checkRealEmailAuthentication();
+        
+        if (this.taskPreselectedCategories.length === 0) {
+            display.innerHTML = `
+                <div class="preselected-info ${authStatus.valid ? 'real-emails' : 'auth-required'}">
+                    <i class="fas ${authStatus.valid ? 'fa-envelope' : 'fa-exclamation-triangle'}"></i>
+                    <span>${authStatus.valid ? 'Scan emails réels - Analyse intelligente' : 'AUTHENTIFICATION REQUISE pour emails réels'}</span>
+                </div>
+            `;
+        } else {
+            const categoryDetails = this.getCompatibleCategories();
+            
+            display.innerHTML = `
+                <div class="preselected-info ${authStatus.valid ? 'real-emails' : 'auth-required'}">
+                    <i class="fas ${authStatus.valid ? 'fa-star' : 'fa-exclamation-triangle'}"></i>
+                    <span>Catégories pré-sélectionnées ${authStatus.valid ? '(emails réels)' : '(AUTHENTIFICATION REQUISE)'}:</span>
+                </div>
+                <div class="preselected-categories-grid">
+                    ${categoryDetails.map(cat => `
+                        <div class="preselected-category-badge" style="background: ${cat.color}20; border-color: ${cat.color};">
+                            <span class="category-icon">${cat.icon}</span>
+                            <span class="category-name">${cat.name}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+    }
+
+    getCompatibleCategories() {
+        // Catégories par défaut
+        const defaultCategories = {
+            'tasks': { icon: '✅', name: 'Tâches', color: '#10b981' },
+            'commercial': { icon: '💼', name: 'Commercial', color: '#3b82f6' },
+            'meetings': { icon: '🤝', name: 'Réunions', color: '#8b5cf6' },
+            'finance': { icon: '💰', name: 'Finance', color: '#f59e0b' },
+            'personal': { icon: '👤', name: 'Personnel', color: '#06b6d4' }
+        };
+
+        return this.taskPreselectedCategories.map(catId => {
+            // Priorité au CategoryManager si disponible
+            if (window.categoryManager?.getCategory) {
+                const category = window.categoryManager.getCategory(catId);
+                if (category) return category;
+            }
+            
+            // Sinon utiliser les catégories par défaut
+            return defaultCategories[catId] || { 
+                icon: '📂', 
+                name: catId, 
+                color: '#6b7280' 
             };
+        }).filter(Boolean);
+    }
+
+    checkRealEmailAuthentication() {
+        console.log('[MinimalScan] 🔍 Vérification authentification emails réels...');
+        
+        // Vérifier MailService en priorité
+        if (window.mailService) {
+            const isValid = window.mailService.isAuthenticationValid?.() || false;
+            const hasReal = window.mailService.hasRealEmails?.() || false;
+            
+            console.log('[MinimalScan] MailService auth:', isValid, 'real emails:', hasReal);
+            
+            if (isValid && hasReal) {
+                return { valid: true, source: 'MailService', provider: window.mailService.getProvider?.() };
+            }
         }
         
-        console.log('[UnifiedScan] ❌ Aucune authentification valide trouvée');
+        // Vérifier AuthService Microsoft
+        if (window.authService) {
+            try {
+                const isAuth = window.authService.isAuthenticated?.() || false;
+                console.log('[MinimalScan] Microsoft auth:', isAuth);
+                
+                if (isAuth) {
+                    return { valid: true, source: 'Microsoft', provider: 'microsoft' };
+                }
+            } catch (error) {
+                console.warn('[MinimalScan] Erreur test Microsoft:', error);
+            }
+        }
+        
+        // Vérifier Google Auth
+        if (window.googleAuthService) {
+            try {
+                const isAuth = window.googleAuthService.isAuthenticated?.() || false;
+                console.log('[MinimalScan] Google auth:', isAuth);
+                
+                if (isAuth) {
+                    return { valid: true, source: 'Google', provider: 'google' };
+                }
+            } catch (error) {
+                console.warn('[MinimalScan] Erreur test Google:', error);
+            }
+        }
+        
+        console.log('[MinimalScan] ❌ Aucune authentification valide trouvée');
         return { 
             valid: false, 
             reason: 'Aucune authentification détectée',
             available: {
-                outlook: !!window.authService,
-                gmail: !!window.googleAuthService,
-                mailService: !!window.mailService
+                mailService: !!window.mailService,
+                microsoft: !!window.authService,
+                google: !!window.googleAuthService
             }
         };
     }
 
-    // ================================================
-    // STYLES UNIFIÉS
-    // ================================================
-    addUnifiedStyles() {
-        if (this.stylesAdded || document.getElementById('unified-scan-styles')) {
+    addMinimalStyles() {
+        if (this.stylesAdded || document.getElementById('minimal-scan-styles')) {
             return;
         }
         
         const styles = document.createElement('style');
-        styles.id = 'unified-scan-styles';
+        styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner v12.0 - Unified Outlook/Gmail */
-            .unified-scanner {
+            /* Scanner v11.2 - EMAILS RÉELS FORCÉS */
+            .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
                 align-items: center;
@@ -265,7 +272,7 @@ class UnifiedScanModule {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             }
             
-            .scanner-card-unified {
+            .scanner-card-minimal {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border-radius: 20px;
@@ -283,43 +290,10 @@ class UnifiedScanModule {
                 to { opacity: 1; transform: translateY(0); }
             }
             
-            /* Provider badges */
-            .provider-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                padding: 8px 20px;
-                border-radius: 25px;
-                font-size: 14px;
-                font-weight: 700;
-                margin-bottom: 25px;
-                border: 2px solid;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
-            
-            .provider-badge.outlook {
-                background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
-                color: white;
-                border-color: transparent;
-            }
-            
-            .provider-badge.gmail {
-                background: linear-gradient(135deg, #ea4335 0%, #fbbc04 50%, #34a853 100%);
-                color: white;
-                border-color: transparent;
-            }
-            
-            .provider-badge.unknown {
-                background: rgba(107, 114, 128, 0.1);
-                color: #6b7280;
-                border-color: rgba(107, 114, 128, 0.3);
-            }
-            
-            /* Scanner icon selon provider */
             .scanner-icon {
                 width: 80px;
                 height: 80px;
+                background: linear-gradient(135deg, #059669 0%, #10b981 100%);
                 border-radius: 20px;
                 display: flex;
                 align-items: center;
@@ -329,80 +303,20 @@ class UnifiedScanModule {
                 font-size: 32px;
             }
             
-            .scanner-icon.outlook {
-                background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
-            }
-            
-            .scanner-icon.gmail {
-                background: linear-gradient(135deg, #ea4335 0%, #fbbc04 100%);
-            }
-            
-            .scanner-icon.generic {
-                background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-            }
-            
-            /* Boutons provider */
-            .provider-selection {
-                display: flex;
-                gap: 16px;
-                justify-content: center;
-                margin: 30px 0;
-                flex-wrap: wrap;
-            }
-            
-            .provider-button {
-                flex: 1;
-                min-width: 200px;
-                padding: 20px;
-                border: 2px solid #e5e7eb;
-                border-radius: 12px;
-                background: white;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                text-align: center;
-            }
-            
-            .provider-button:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            }
-            
-            .provider-button.outlook:hover {
-                border-color: #0078d4;
-                background: rgba(0, 120, 212, 0.05);
-            }
-            
-            .provider-button.gmail:hover {
-                border-color: #ea4335;
-                background: rgba(234, 67, 53, 0.05);
-            }
-            
-            .provider-button .provider-icon {
-                font-size: 48px;
+            .scanner-title {
+                font-size: 32px;
+                font-weight: 600;
+                color: #1a1a2e;
                 margin-bottom: 12px;
             }
             
-            .provider-button.outlook .provider-icon {
-                color: #0078d4;
-            }
-            
-            .provider-button.gmail .provider-icon {
-                color: #ea4335;
-            }
-            
-            .provider-button .provider-name {
+            .scanner-subtitle {
                 font-size: 18px;
-                font-weight: 600;
-                color: #1f2937;
-                margin-bottom: 8px;
-            }
-            
-            .provider-button .provider-status {
-                font-size: 14px;
                 color: #6b7280;
+                margin-bottom: 35px;
             }
             
-            /* Email mode badge */
+            /* Mode badge pour emails réels */
             .email-mode-badge {
                 display: inline-flex;
                 align-items: center;
@@ -530,14 +444,6 @@ class UnifiedScanModule {
                 color: white;
             }
             
-            .step.active.outlook .step-number {
-                background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
-            }
-            
-            .step.active.gmail .step-number {
-                background: linear-gradient(135deg, #ea4335 0%, #34a853 100%);
-            }
-            
             .step-label {
                 font-size: 14px;
                 color: #6b7280;
@@ -549,14 +455,6 @@ class UnifiedScanModule {
             .step.active .step-label {
                 color: #059669;
                 font-weight: 600;
-            }
-            
-            .step.active.outlook .step-label {
-                color: #0078d4;
-            }
-            
-            .step.active.gmail .step-label {
-                color: #ea4335;
             }
             
             /* Sélecteur de durée */
@@ -600,25 +498,13 @@ class UnifiedScanModule {
                 box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
             }
             
-            .duration-option.selected.outlook {
-                border-color: #0078d4;
-                background: #0078d4;
-                box-shadow: 0 4px 12px rgba(0, 120, 212, 0.3);
-            }
-            
-            .duration-option.selected.gmail {
-                border-color: #ea4335;
-                background: #ea4335;
-                box-shadow: 0 4px 12px rgba(234, 67, 53, 0.3);
-            }
-            
             .duration-option:hover:not(.selected) {
                 border-color: #9ca3af;
                 transform: translateY(-1px);
             }
             
-            /* Bouton de scan unifié */
-            .scan-button-unified {
+            /* Bouton de scan */
+            .scan-button-minimal {
                 width: 100%;
                 height: 60px;
                 background: linear-gradient(135deg, #059669 0%, #10b981 100%);
@@ -638,39 +524,23 @@ class UnifiedScanModule {
                 overflow: hidden;
             }
             
-            .scan-button-unified.outlook {
-                background: linear-gradient(135deg, #0078d4 0%, #106ebe 100%);
-            }
-            
-            .scan-button-unified.gmail {
-                background: linear-gradient(135deg, #ea4335 0%, #fbbc04 100%);
-            }
-            
-            .scan-button-unified:hover:not(:disabled) {
+            .scan-button-minimal:hover:not(:disabled) {
                 transform: translateY(-2px);
                 box-shadow: 0 8px 25px rgba(5, 150, 105, 0.4);
             }
             
-            .scan-button-unified.outlook:hover:not(:disabled) {
-                box-shadow: 0 8px 25px rgba(0, 120, 212, 0.4);
-            }
-            
-            .scan-button-unified.gmail:hover:not(:disabled) {
-                box-shadow: 0 8px 25px rgba(234, 67, 53, 0.4);
-            }
-            
-            .scan-button-unified:disabled {
+            .scan-button-minimal:disabled {
                 opacity: 0.6;
                 cursor: not-allowed;
                 transform: none;
                 background: #9ca3af;
             }
             
-            .scan-button-unified.auth-required {
+            .scan-button-minimal.auth-required {
                 background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
             }
             
-            .scan-button-unified.auth-required:hover:not(:disabled) {
+            .scan-button-minimal.auth-required:hover:not(:disabled) {
                 box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
             }
             
@@ -690,17 +560,17 @@ class UnifiedScanModule {
             }
             
             /* Section de progression */
-            .progress-section-unified {
+            .progress-section-minimal {
                 opacity: 0;
                 transition: opacity 0.3s ease;
                 margin-top: 20px;
             }
             
-            .progress-section-unified.visible {
+            .progress-section-minimal.visible {
                 opacity: 1;
             }
             
-            .progress-bar-unified {
+            .progress-bar-minimal {
                 width: 100%;
                 height: 4px;
                 background: #e5e7eb;
@@ -714,14 +584,6 @@ class UnifiedScanModule {
                 background: linear-gradient(90deg, #059669 0%, #10b981 100%);
                 width: 0%;
                 transition: width 0.5s ease;
-            }
-            
-            .progress-fill.outlook {
-                background: linear-gradient(90deg, #0078d4 0%, #106ebe 100%);
-            }
-            
-            .progress-fill.gmail {
-                background: linear-gradient(90deg, #ea4335 0%, #fbbc04 100%);
             }
             
             .progress-text {
@@ -752,18 +614,6 @@ class UnifiedScanModule {
                 border: 2px solid rgba(5, 150, 105, 0.2);
             }
             
-            .scan-info.outlook {
-                background: rgba(0, 120, 212, 0.1);
-                color: #0078d4;
-                border-color: rgba(0, 120, 212, 0.2);
-            }
-            
-            .scan-info.gmail {
-                background: rgba(234, 67, 53, 0.1);
-                color: #ea4335;
-                border-color: rgba(234, 67, 53, 0.2);
-            }
-            
             .scan-info.auth-required {
                 background: rgba(239, 68, 68, 0.1);
                 color: #dc2626;
@@ -785,16 +635,16 @@ class UnifiedScanModule {
             
             /* Responsive */
             @media (max-width: 768px) {
-                .scanner-card-unified {
+                .scanner-card-minimal {
                     padding: 35px 25px;
                 }
                 
-                .provider-selection {
-                    flex-direction: column;
+                .scanner-title {
+                    font-size: 28px;
                 }
                 
-                .provider-button {
-                    min-width: 100%;
+                .scanner-subtitle {
+                    font-size: 16px;
                 }
                 
                 .duration-option {
@@ -822,27 +672,24 @@ class UnifiedScanModule {
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[UnifiedScan] ✅ Styles v12.0 ajoutés - Unified Outlook/Gmail');
+        console.log('[MinimalScan] ✅ Styles v11.2 ajoutés - EMAILS RÉELS');
     }
 
-    // ================================================
-    // RENDU PRINCIPAL
-    // ================================================
     async render(container) {
-        console.log('[UnifiedScan] 🎯 Rendu du scanner v12.0 - Unified Email Scanner...');
+        console.log('[MinimalScan] 🎯 Rendu du scanner v11.2 - EMAILS RÉELS FORCÉS...');
         
         try {
-            this.addUnifiedStyles();
+            this.addMinimalStyles();
             this.checkSettingsUpdate();
             
             container.innerHTML = this.renderScanner();
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[UnifiedScan] ✅ Scanner v12.0 rendu - Provider:', this.emailProvider);
+            console.log('[MinimalScan] ✅ Scanner v11.2 rendu - EMAILS RÉELS UNIQUEMENT');
             
         } catch (error) {
-            console.error('[UnifiedScan] ❌ Erreur lors du rendu:', error);
+            console.error('[MinimalScan] ❌ Erreur lors du rendu:', error);
             container.innerHTML = this.renderError(error);
         }
     }
@@ -850,99 +697,35 @@ class UnifiedScanModule {
     renderScanner() {
         const authStatus = this.checkRealEmailAuthentication();
         
-        // Si aucun provider détecté, afficher la sélection
-        if (!this.emailProvider) {
-            return this.renderProviderSelection();
-        }
-        
-        // Sinon afficher l'interface du provider
-        return this.renderProviderInterface(authStatus);
-    }
-
-    renderProviderSelection() {
         return `
-            <div class="unified-scanner">
-                <div class="scanner-card-unified">
-                    <div class="scanner-icon generic">
-                        <i class="fas fa-envelope"></i>
-                    </div>
-                    
-                    <h1 class="scanner-title">Sélectionnez votre service email</h1>
-                    <p class="scanner-subtitle">Connectez-vous pour scanner vos emails réels</p>
-                    
-                    <div class="provider-selection">
-                        <div class="provider-button outlook" onclick="window.unifiedScanModule.selectProvider('outlook')">
-                            <div class="provider-icon">
-                                <i class="fab fa-microsoft"></i>
-                            </div>
-                            <div class="provider-name">Microsoft Outlook</div>
-                            <div class="provider-status">
-                                ${window.authService ? 'Disponible' : 'Non configuré'}
-                            </div>
-                        </div>
-                        
-                        <div class="provider-button gmail" onclick="window.unifiedScanModule.selectProvider('gmail')">
-                            <div class="provider-icon">
-                                <i class="fab fa-google"></i>
-                            </div>
-                            <div class="provider-name">Google Gmail</div>
-                            <div class="provider-status">
-                                ${window.googleAuthService ? 'Disponible' : 'Non configuré'}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="scan-info">
-                        <div class="scan-info-main">
-                            <i class="fas fa-shield-check"></i>
-                            <span>Scan sécurisé avec IA Claude</span>
-                        </div>
-                        <div class="scan-info-details">Support Outlook & Gmail • Détection automatique des newsletters</div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    renderProviderInterface(authStatus) {
-        const providerClass = this.emailProvider || 'generic';
-        const providerName = this.getProviderDisplayName();
-        const providerIcon = this.getProviderIcon();
-        
-        return `
-            <div class="unified-scanner">
-                <div class="scanner-card-unified">
-                    <div class="provider-badge ${providerClass}">
-                        <i class="${providerIcon}"></i>
-                        <span>${providerName}</span>
-                    </div>
-                    
+            <div class="minimal-scanner">
+                <div class="scanner-card-minimal">
                     <div class="email-mode-badge ${authStatus.valid ? 'real' : 'auth-required'}">
                         <i class="fas ${authStatus.valid ? 'fa-envelope' : 'fa-exclamation-triangle'}"></i>
                         <span>${authStatus.valid ? 'Emails réels authentifiés' : 'AUTHENTIFICATION REQUISE'}</span>
                     </div>
                     
-                    <div class="scanner-icon ${providerClass}">
+                    <div class="scanner-icon">
                         <i class="fas ${authStatus.valid ? 'fa-envelope' : 'fa-lock'}"></i>
                     </div>
                     
-                    <h1 class="scanner-title">Scanner ${providerName}</h1>
-                    <p class="scanner-subtitle">${authStatus.valid ? 'Analysez vos emails avec IA' : 'Authentification requise pour accéder aux emails'}</p>
+                    <h1 class="scanner-title">Scanner Emails Réels</h1>
+                    <p class="scanner-subtitle">${authStatus.valid ? 'Analysez vos emails authentifiés avec IA' : 'Authentification requise pour accéder aux emails'}</p>
                     
                     <div id="preselected-categories-display">
                         ${this.renderPreselectedCategories()}
                     </div>
                     
                     <div class="steps-container">
-                        <div class="step active ${providerClass}" id="step1">
+                        <div class="step active" id="step1">
                             <div class="step-number">1</div>
                             <div class="step-label">${authStatus.valid ? 'Configuration' : 'Authentification'}</div>
                         </div>
-                        <div class="step ${providerClass}" id="step2">
+                        <div class="step" id="step2">
                             <div class="step-number">2</div>
                             <div class="step-label">Récupération</div>
                         </div>
-                        <div class="step ${providerClass}" id="step3">
+                        <div class="step" id="step3">
                             <div class="step-number">3</div>
                             <div class="step-label">Analyse IA</div>
                         </div>
@@ -956,29 +739,7 @@ class UnifiedScanModule {
         `;
     }
 
-    getProviderDisplayName() {
-        const names = {
-            'outlook': 'Microsoft Outlook',
-            'gmail': 'Google Gmail',
-            'microsoft': 'Microsoft Outlook',
-            'google': 'Google Gmail'
-        };
-        return names[this.emailProvider] || 'Emails';
-    }
-
-    getProviderIcon() {
-        const icons = {
-            'outlook': 'fab fa-microsoft',
-            'gmail': 'fab fa-google',
-            'microsoft': 'fab fa-microsoft',
-            'google': 'fab fa-google'
-        };
-        return icons[this.emailProvider] || 'fas fa-envelope';
-    }
-
     renderAuthenticatedInterface() {
-        const providerClass = this.emailProvider || 'generic';
-        
         return `
             <div class="duration-section">
                 <div class="duration-label">Période d'analyse</div>
@@ -987,14 +748,14 @@ class UnifiedScanModule {
                 </div>
             </div>
             
-            <button class="scan-button-unified ${providerClass}" id="unifiedScanBtn" onclick="window.unifiedScanModule.startUnifiedScan()">
+            <button class="scan-button-minimal" id="minimalScanBtn" onclick="window.minimalScanModule.startRealEmailsScan()">
                 <i class="fas fa-envelope"></i>
-                <span>Scanner mes emails ${this.getProviderDisplayName()}</span>
+                <span>Scanner mes emails réels</span>
             </button>
             
-            <div class="progress-section-unified" id="progressSection">
-                <div class="progress-bar-unified">
-                    <div class="progress-fill ${providerClass}" id="progressFill"></div>
+            <div class="progress-section-minimal" id="progressSection">
+                <div class="progress-bar-minimal">
+                    <div class="progress-fill" id="progressFill"></div>
                 </div>
                 <div class="progress-text" id="progressText">Initialisation...</div>
                 <div class="progress-status" id="progressStatus">Préparation</div>
@@ -1005,45 +766,22 @@ class UnifiedScanModule {
     renderAuthenticationRequired(authStatus) {
         return `
             <div class="auth-required-section">
-                <button class="scan-button-unified auth-required" onclick="window.unifiedScanModule.handleAuthentication()">
+                <button class="scan-button-minimal auth-required" onclick="window.minimalScanModule.handleAuthentication()">
                     <i class="fas fa-sign-in-alt"></i>
-                    <span>Se connecter à ${this.getProviderDisplayName()}</span>
+                    <span>Se connecter pour accéder aux emails</span>
                 </button>
                 
                 <div class="auth-details">
                     <p><strong>Services disponibles:</strong></p>
                     <ul>
-                        ${authStatus.available.outlook ? '✅ Microsoft Outlook/Exchange' : '❌ Microsoft Outlook/Exchange'}
-                        ${authStatus.available.gmail ? '✅ Google Gmail' : '❌ Google Gmail'}
+                        ${authStatus.available.microsoft ? '✅ Microsoft Outlook/Exchange' : '❌ Microsoft Outlook/Exchange'}
+                        ${authStatus.available.google ? '✅ Google Gmail' : '❌ Google Gmail'}
                         ${authStatus.available.mailService ? '✅ MailService' : '❌ MailService'}
                     </ul>
                     <p><em>Raison: ${authStatus.reason}</em></p>
                 </div>
             </div>
         `;
-    }
-
-    renderDurationOptions() {
-        const options = [
-            { value: 1, label: '1 jour' },
-            { value: 3, label: '3 jours' },
-            { value: 7, label: '7 jours' },
-            { value: 15, label: '15 jours' },
-            { value: 30, label: '30 jours' }
-        ];
-        
-        const providerClass = this.emailProvider || 'generic';
-        
-        return options.map(option => {
-            const isSelected = option.value === this.selectedDays;
-            return `
-                <button class="duration-option ${isSelected ? 'selected ' + providerClass : ''}" 
-                        onclick="window.unifiedScanModule.selectDuration(${option.value})" 
-                        data-days="${option.value}">
-                    ${option.label}
-                </button>
-            `;
-        }).join('');
     }
 
     renderPreselectedCategories() {
@@ -1063,7 +801,7 @@ class UnifiedScanModule {
         return `
             <div class="preselected-info ${authStatus.valid ? 'real-emails' : 'auth-required'}">
                 <i class="fas ${authStatus.valid ? 'fa-star' : 'fa-exclamation-triangle'}"></i>
-                <span>Catégories d'analyse ${authStatus.valid ? `(${this.getProviderDisplayName()})` : '(AUTHENTIFICATION REQUISE)'}:</span>
+                <span>Catégories d'analyse ${authStatus.valid ? '(emails réels)' : '(AUTHENTIFICATION REQUISE)'}:</span>
             </div>
             <div class="preselected-categories-grid">
                 ${categoryDetails.map(cat => `
@@ -1076,9 +814,28 @@ class UnifiedScanModule {
         `;
     }
 
-    renderScanInfo(authStatus) {
-        const providerClass = this.emailProvider || 'generic';
+    renderDurationOptions() {
+        const options = [
+            { value: 1, label: '1 jour' },
+            { value: 3, label: '3 jours' },
+            { value: 7, label: '7 jours' },
+            { value: 15, label: '15 jours' },
+            { value: 30, label: '30 jours' }
+        ];
         
+        return options.map(option => {
+            const isSelected = option.value === this.selectedDays;
+            return `
+                <button class="duration-option ${isSelected ? 'selected' : ''}" 
+                        onclick="window.minimalScanModule.selectDuration(${option.value})" 
+                        data-days="${option.value}">
+                    ${option.label}
+                </button>
+            `;
+        }).join('');
+    }
+
+    renderScanInfo(authStatus) {
         if (!authStatus.valid) {
             return `
                 <div class="scan-info auth-required">
@@ -1092,21 +849,16 @@ class UnifiedScanModule {
         }
 
         let details = [];
-        details.push(`Emails ${this.getProviderDisplayName()} authentifiés`);
+        details.push(`Emails ${authStatus.provider} authentifiés`);
         
         if (this.taskPreselectedCategories.length > 0) {
             details.push(`${this.taskPreselectedCategories.length} catégorie(s) IA`);
         }
         
-        // Spécificités Gmail
-        if (this.emailProvider === 'gmail') {
-            details.push('Détection bouton S\'abonner');
-        }
-        
-        details.push('Synchronisation PageManager');
+        details.push('Synchronisation EmailScanner');
         
         return `
-            <div class="scan-info ${providerClass}">
+            <div class="scan-info">
                 <div class="scan-info-main">
                     <i class="fas fa-shield-check"></i>
                     <span>Scan sécurisé avec IA Claude - EMAILS RÉELS UNIQUEMENT</span>
@@ -1116,11 +868,27 @@ class UnifiedScanModule {
         `;
     }
 
-    // ================================================
-    // GESTION DES ÉVÉNEMENTS
-    // ================================================
+    renderError(error) {
+        return `
+            <div class="minimal-scanner">
+                <div class="scanner-card-minimal">
+                    <div class="scanner-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h1 class="scanner-title">Erreur</h1>
+                    <p class="scanner-subtitle">${error.message}</p>
+                    
+                    <button class="scan-button-minimal" onclick="window.location.reload()">
+                        <i class="fas fa-redo"></i>
+                        <span>Réessayer</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
     initializeEvents() {
-        console.log('[UnifiedScan] ✅ Événements v12.0 initialisés - Provider:', this.emailProvider);
+        console.log('[MinimalScan] ✅ Événements v11.2 initialisés - EMAILS RÉELS');
         
         if (this.settingsCheckInterval) {
             clearInterval(this.settingsCheckInterval);
@@ -1132,102 +900,83 @@ class UnifiedScanModule {
         }, 10000);
     }
 
-    selectProvider(provider) {
-        console.log(`[UnifiedScan] 🔄 Sélection du provider: ${provider}`);
-        this.emailProvider = provider;
-        
-        // Créer le PageManager approprié si nécessaire
-        if (provider === 'gmail' && !window.pageManagerGmail) {
-            this.createPageManagerGmail();
-        }
-        
-        this.currentPageManager = provider === 'gmail' ? window.pageManagerGmail : window.pageManager;
-        
-        // Re-render avec le provider sélectionné
-        const container = document.querySelector('.unified-scanner');
-        if (container) {
-            this.render(container.parentElement);
-        }
-    }
-
     selectDuration(days) {
         this.selectedDays = days;
         
         document.querySelectorAll('.duration-option').forEach(btn => {
-            btn.classList.remove('selected', 'outlook', 'gmail');
+            btn.classList.remove('selected');
         });
         
         const selectedBtn = document.querySelector(`[data-days="${days}"]`);
         if (selectedBtn) {
-            selectedBtn.classList.add('selected', this.emailProvider || 'generic');
+            selectedBtn.classList.add('selected');
         }
         
-        console.log(`[UnifiedScan] ✅ Durée sélectionnée: ${days} jours`);
+        console.log(`[MinimalScan] ✅ Durée sélectionnée: ${days} jours`);
     }
 
-    // ================================================
-    // AUTHENTIFICATION
-    // ================================================
     async handleAuthentication() {
-        console.log(`[UnifiedScan] 🔐 Gestion authentification ${this.emailProvider}...`);
+        console.log('[MinimalScan] 🔐 Gestion authentification...');
         
         try {
-            if (this.emailProvider === 'outlook' || this.emailProvider === 'microsoft') {
-                if (window.authService && typeof window.authService.login === 'function') {
-                    console.log('[UnifiedScan] Tentative connexion Microsoft...');
-                    await window.authService.login();
-                    return;
-                }
+            // Essayer Microsoft en premier
+            if (window.authService && typeof window.authService.login === 'function') {
+                console.log('[MinimalScan] Tentative connexion Microsoft...');
+                await window.authService.login();
+                return;
             }
             
-            if (this.emailProvider === 'gmail' || this.emailProvider === 'google') {
-                if (window.googleAuthService && typeof window.googleAuthService.signIn === 'function') {
-                    console.log('[UnifiedScan] Tentative connexion Google...');
-                    await window.googleAuthService.signIn();
-                    return;
-                }
+            // Essayer Google ensuite
+            if (window.googleAuthService && typeof window.googleAuthService.signIn === 'function') {
+                console.log('[MinimalScan] Tentative connexion Google...');
+                await window.googleAuthService.signIn();
+                return;
             }
             
-            // Si aucun service spécifique, essayer de détecter
-            if (!this.emailProvider) {
-                if (window.authService && typeof window.authService.login === 'function') {
-                    console.log('[UnifiedScan] Tentative connexion Microsoft (par défaut)...');
-                    await window.authService.login();
-                    return;
-                }
-                
-                if (window.googleAuthService && typeof window.googleAuthService.signIn === 'function') {
-                    console.log('[UnifiedScan] Tentative connexion Google (par défaut)...');
-                    await window.googleAuthService.signIn();
-                    return;
-                }
-            }
-            
-            console.error('[UnifiedScan] Aucun service d\'authentification disponible');
+            // Si aucun service disponible
+            console.error('[MinimalScan] Aucun service d\'authentification disponible');
             this.showAuthError('Aucun service d\'authentification configuré');
             
         } catch (error) {
-            console.error('[UnifiedScan] Erreur authentification:', error);
+            console.error('[MinimalScan] Erreur authentification:', error);
             this.showAuthError('Erreur lors de la connexion: ' + error.message);
         }
     }
 
-    // ================================================
-    // SCAN UNIFIÉ
-    // ================================================
-    async startUnifiedScan() {
+    showAuthError(message) {
+        const container = document.querySelector('.scanner-card-minimal');
+        if (container) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'auth-error';
+            errorDiv.style.cssText = `
+                background: rgba(239, 68, 68, 0.1);
+                border: 2px solid rgba(239, 68, 68, 0.3);
+                color: #dc2626;
+                padding: 12px;
+                border-radius: 8px;
+                margin-top: 20px;
+                font-weight: 500;
+            `;
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+            container.appendChild(errorDiv);
+            
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+    }
+
+    async startRealEmailsScan() {
         if (this.scanInProgress) {
-            console.log('[UnifiedScan] Scan déjà en cours');
+            console.log('[MinimalScan] Scan déjà en cours');
             return;
         }
         
-        console.log(`[UnifiedScan] 🚀 === DÉMARRAGE SCAN ${this.emailProvider?.toUpperCase()} v12.0 ===`);
-        console.log('[UnifiedScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+        console.log('[MinimalScan] 🚀 === DÉMARRAGE SCAN EMAILS RÉELS v11.2 ===');
+        console.log('[MinimalScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
         
         // VÉRIFICATION STRICTE - AUTHENTIFICATION OBLIGATOIRE
         const authStatus = this.checkRealEmailAuthentication();
         if (!authStatus.valid) {
-            console.error('[UnifiedScan] ❌ AUTHENTIFICATION NON VALIDE - ARRÊT SCAN');
+            console.error('[MinimalScan] ❌ AUTHENTIFICATION NON VALIDE - ARRÊT SCAN');
             this.showAuthError('Authentification requise pour scanner les emails réels');
             return;
         }
@@ -1243,35 +992,35 @@ class UnifiedScanModule {
                 progressSection.classList.add('visible');
             }
             
-            const scanBtn = document.getElementById('unifiedScanBtn');
+            const scanBtn = document.getElementById('minimalScanBtn');
             if (scanBtn) {
                 scanBtn.disabled = true;
-                scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Scan ${this.getProviderDisplayName()} en cours...</span>`;
+                scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Scan emails réels en cours...</span>`;
             }
             
-            // Exécuter le scan selon le provider
-            await this.executeProviderScan();
+            // SCAN EMAILS RÉELS UNIQUEMENT
+            await this.executeRealEmailsScan();
             
             this.setActiveStep(3);
             this.completeScan();
             
         } catch (error) {
-            console.error('[UnifiedScan] ❌ Erreur scan emails:', error);
+            console.error('[MinimalScan] ❌ Erreur scan emails réels:', error);
             this.showScanError(error);
         }
     }
 
-    async executeProviderScan() {
-        console.log(`[UnifiedScan] 📧 === EXÉCUTION SCAN ${this.emailProvider?.toUpperCase()} ===`);
+    async executeRealEmailsScan() {
+        console.log('[MinimalScan] 📧 === EXÉCUTION SCAN EMAILS RÉELS ===');
         
         const phases = [
             { progress: 10, message: 'Vérification authentification...', status: 'Authentification' },
-            { progress: 25, message: `Connexion ${this.getProviderDisplayName()}...`, status: 'Connexion' },
+            { progress: 25, message: 'Connexion service email...', status: 'Connexion' },
             { progress: 40, message: 'Récupération emails réels...', status: 'Téléchargement' },
-            { progress: 60, message: 'Synchronisation PageManager...', status: 'Synchronisation' },
+            { progress: 60, message: 'Synchronisation EmailScanner...', status: 'Synchronisation' },
             { progress: 80, message: 'Classification par IA...', status: 'Analyse IA' },
             { progress: 95, message: 'Finalisation...', status: 'Compilation' },
-            { progress: 100, message: 'Scan terminé !', status: 'Terminé' }
+            { progress: 100, message: 'Scan emails réels terminé !', status: 'Terminé' }
         ];
         
         for (const phase of phases) {
@@ -1282,7 +1031,7 @@ class UnifiedScanModule {
             } else if (phase.progress === 40) {
                 await this.fetchRealEmails();
             } else if (phase.progress === 60) {
-                await this.syncWithPageManager();
+                await this.syncWithEmailScanner();
             } else if (phase.progress === 80) {
                 await this.categorizeRealEmails();
             }
@@ -1292,7 +1041,7 @@ class UnifiedScanModule {
     }
 
     async initializeMailService() {
-        console.log(`[UnifiedScan] 🔧 Initialisation service ${this.emailProvider}...`);
+        console.log('[MinimalScan] 🔧 Initialisation MailService...');
         
         if (!window.mailService) {
             throw new Error('MailService non disponible');
@@ -1300,7 +1049,7 @@ class UnifiedScanModule {
         
         // Forcer l'initialisation avec vérification d'authentification
         if (!window.mailService.isInitialized) {
-            console.log('[UnifiedScan] 🔄 Initialisation MailService...');
+            console.log('[MinimalScan] 🔄 Initialisation MailService...');
             await window.mailService.initialize();
         }
         
@@ -1309,11 +1058,11 @@ class UnifiedScanModule {
             throw new Error('Authentification MailService invalide');
         }
         
-        console.log('[UnifiedScan] ✅ MailService initialisé et authentifié');
+        console.log('[MinimalScan] ✅ MailService initialisé et authentifié');
     }
 
     async fetchRealEmails() {
-        console.log(`[UnifiedScan] 📧 Récupération emails ${this.emailProvider} RÉELS...`);
+        console.log('[MinimalScan] 📧 Récupération emails RÉELS...');
         
         try {
             if (!window.mailService || !window.mailService.isAuthenticationValid()) {
@@ -1325,7 +1074,7 @@ class UnifiedScanModule {
             const startDate = new Date();
             startDate.setDate(endDate.getDate() - this.selectedDays);
             
-            console.log(`[UnifiedScan] 📅 Période: ${startDate.toISOString().split('T')[0]} à ${endDate.toISOString().split('T')[0]}`);
+            console.log(`[MinimalScan] 📅 Période: ${startDate.toISOString().split('T')[0]} à ${endDate.toISOString().split('T')[0]}`);
             
             // Récupérer les emails RÉELS
             const emails = await window.mailService.getEmailsFromFolder('inbox', {
@@ -1338,129 +1087,80 @@ class UnifiedScanModule {
                 throw new Error('Aucun email réel trouvé dans la période spécifiée');
             }
             
-            // Marquer les emails avec le provider
-            emails.forEach(email => {
-                email.provider = this.emailProvider;
-                email.realEmail = true;
-                email.webSimulated = false;
-            });
+            // VÉRIFICATION STRICTE - TOUS LES EMAILS DOIVENT ÊTRE RÉELS
+            const realEmails = emails.filter(email => email.realEmail === true && email.webSimulated !== true);
             
-            // Pour Gmail, détecter les boutons S'abonner
-            if (this.emailProvider === 'gmail') {
-                await this.detectGmailSubscribeButtons(emails);
+            if (realEmails.length === 0) {
+                throw new Error('Aucun email réel authentifié trouvé');
             }
             
-            this.realEmails = emails;
-            console.log(`[UnifiedScan] ✅ ${this.realEmails.length} emails ${this.emailProvider} récupérés`);
+            if (realEmails.length < this.scanConfig.minRealEmails) {
+                throw new Error(`Nombre insuffisant d'emails réels (${realEmails.length} trouvé(s), minimum ${this.scanConfig.minRealEmails})`);
+            }
+            
+            this.realEmails = realEmails;
+            console.log(`[MinimalScan] ✅ ${this.realEmails.length} emails RÉELS authentifiés récupérés`);
+            
+            // Log détaillé pour vérification
+            console.log('[MinimalScan] 📊 Échantillon emails récupérés:');
+            this.realEmails.slice(0, 3).forEach((email, i) => {
+                console.log(`[MinimalScan]   ${i+1}. ${email.subject} - Real: ${email.realEmail}, Simulated: ${email.webSimulated}`);
+            });
             
             return this.realEmails;
             
         } catch (error) {
-            console.error('[UnifiedScan] ❌ Erreur récupération emails:', error);
+            console.error('[MinimalScan] ❌ Erreur récupération emails réels:', error);
             throw error;
         }
     }
 
-    async detectGmailSubscribeButtons(emails) {
-        console.log('[UnifiedScan] 🔍 Détection boutons S\'abonner Gmail...');
+    async syncWithEmailScanner() {
+        console.log('[MinimalScan] 🔄 Synchronisation avec EmailScanner...');
         
-        let subscribeCount = 0;
-        
-        for (const email of emails) {
-            // Simuler la détection du bouton S'abonner (dans la vraie implémentation, 
-            // cela nécessiterait l'API Gmail pour récupérer les métadonnées)
-            if (email.body?.content) {
-                const hasSubscribeButton = 
-                    email.body.content.includes('List-Unsubscribe') ||
-                    email.body.content.includes('unsubscribe') ||
-                    email.body.content.includes('se désabonner') ||
-                    email.from?.emailAddress?.address?.includes('newsletter') ||
-                    email.from?.emailAddress?.address?.includes('noreply');
-                
-                if (hasSubscribeButton) {
-                    email.hasSubscribeButton = true;
-                    email.isNewsletter = true;
-                    subscribeCount++;
-                }
-            }
-        }
-        
-        console.log(`[UnifiedScan] ✅ ${subscribeCount} emails avec bouton S'abonner détectés`);
-    }
-
-    async syncWithPageManager() {
-        console.log(`[UnifiedScan] 🔄 Synchronisation avec PageManager${this.emailProvider === 'gmail' ? 'Gmail' : ''}...`);
-        
-        const pageManager = this.currentPageManager || window.pageManager;
-        
-        if (!pageManager || !this.realEmails) {
-            throw new Error('PageManager ou emails non disponibles pour synchronisation');
+        if (!window.emailScanner || !this.realEmails) {
+            throw new Error('EmailScanner ou emails non disponibles pour synchronisation');
         }
         
         try {
-            // S'assurer que EmailScanner existe
-            if (!window.emailScanner) {
-                console.warn('[UnifiedScan] EmailScanner non trouvé, création...');
-                window.emailScanner = {
-                    emails: [],
-                    getAllEmails: function() { return this.emails; },
-                    reset: function() { this.emails = []; },
-                    categorizeEmails: async function() { console.log('Categorization...'); },
-                    updateTaskPreselectedCategories: function(cats) { this.taskPreselectedCategories = cats; }
-                };
-            }
-            
             // Réinitialiser EmailScanner
             if (typeof window.emailScanner.reset === 'function') {
                 window.emailScanner.reset();
             }
             
-            // Injecter les emails
+            // Injecter les emails RÉELS
             window.emailScanner.emails = [...this.realEmails];
-            console.log(`[UnifiedScan] ✅ ${this.realEmails.length} emails ${this.emailProvider} injectés`);
+            console.log(`[MinimalScan] ✅ ${this.realEmails.length} emails RÉELS injectés dans EmailScanner`);
             
             // Synchroniser les paramètres
             if (typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
                 window.emailScanner.updateTaskPreselectedCategories(this.taskPreselectedCategories);
             }
             
-            // Marquer la source
+            // Marquer la source et la nature des emails
             if (window.emailScanner.scanMetrics) {
                 window.emailScanner.scanMetrics.startTime = this.scanStartTime;
                 window.emailScanner.scanMetrics.taskPreselectedCategories = [...this.taskPreselectedCategories];
                 window.emailScanner.scanMetrics.hasRealEmails = true;
-                window.emailScanner.scanMetrics.source = `UnifiedScan-${this.emailProvider}`;
-                window.emailScanner.scanMetrics.provider = this.emailProvider;
+                window.emailScanner.scanMetrics.source = 'StartScan-RealEmails';
                 window.emailScanner.scanMetrics.simulationMode = false;
             }
             
             // Marquer l'état de synchronisation
             window.emailScanner.startScanSynced = true;
             window.emailScanner.lastSyncTimestamp = Date.now();
-            window.emailScanner.provider = this.emailProvider;
             
-            // Notifier le PageManager approprié
-            if (pageManager.handleScanCompleted) {
-                pageManager.handleScanCompleted({
-                    results: {
-                        total: this.realEmails.length,
-                        provider: this.emailProvider
-                    },
-                    timestamp: Date.now()
-                });
-            }
-            
-            console.log(`[UnifiedScan] ✅ Synchronisation PageManager${this.emailProvider === 'gmail' ? 'Gmail' : ''} complète`);
+            console.log('[MinimalScan] ✅ Synchronisation EmailScanner complète - EMAILS RÉELS');
             return true;
             
         } catch (error) {
-            console.error('[UnifiedScan] ❌ Erreur synchronisation PageManager:', error);
+            console.error('[MinimalScan] ❌ Erreur synchronisation EmailScanner:', error);
             throw error;
         }
     }
 
     async categorizeRealEmails() {
-        console.log('[UnifiedScan] 🏷️ Catégorisation des emails...');
+        console.log('[MinimalScan] 🏷️ Catégorisation des emails RÉELS...');
         
         if (!window.emailScanner || !this.realEmails) {
             throw new Error('Données non disponibles pour catégorisation');
@@ -1470,17 +1170,10 @@ class UnifiedScanModule {
             // Catégoriser via EmailScanner
             if (typeof window.emailScanner.categorizeEmails === 'function') {
                 await window.emailScanner.categorizeEmails(this.taskPreselectedCategories);
-                console.log('[UnifiedScan] ✅ Catégorisation effectuée');
+                console.log('[MinimalScan] ✅ Catégorisation emails RÉELS effectuée');
             }
-            
-            // Pour Gmail, marquer spécifiquement les newsletters
-            if (this.emailProvider === 'gmail') {
-                const newsletters = this.realEmails.filter(e => e.hasSubscribeButton).length;
-                console.log(`[UnifiedScan] 📰 ${newsletters} newsletters Gmail identifiées`);
-            }
-            
         } catch (error) {
-            console.error('[UnifiedScan] ❌ Erreur catégorisation:', error);
+            console.error('[MinimalScan] ❌ Erreur catégorisation emails réels:', error);
             throw error;
         }
     }
@@ -1491,14 +1184,10 @@ class UnifiedScanModule {
             this.taskPreselectedCategories.includes(e.category)
         ).length || 0;
         
-        const newsletterCount = this.emailProvider === 'gmail' ? 
-            this.realEmails?.filter(e => e.hasSubscribeButton).length || 0 : 0;
-        
         this.scanResults = {
             success: true,
             total: emailCount,
             categorized: emailCount,
-            newsletters: newsletterCount,
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             stats: { 
                 preselectedForTasks: preselectedCount,
@@ -1506,16 +1195,14 @@ class UnifiedScanModule {
                 highConfidence: Math.floor(emailCount * 0.7),
                 hasRealEmails: true,
                 emailType: 'real',
-                simulationMode: false,
-                provider: this.emailProvider
+                simulationMode: false
             },
             breakdown: this.calculateBreakdown(),
-            source: `UnifiedScan-${this.emailProvider}`,
-            scanMode: 'realEmailsOnly',
-            provider: this.emailProvider
+            source: 'StartScan-RealEmails',
+            scanMode: 'realEmailsOnly'
         };
         
-        console.log('[UnifiedScan] 📊 Résultats générés:', this.scanResults);
+        console.log('[MinimalScan] 📊 Résultats emails RÉELS générés:', this.scanResults);
     }
 
     calculateBreakdown() {
@@ -1535,26 +1222,19 @@ class UnifiedScanModule {
         this.generateResults();
         
         setTimeout(() => {
-            const scanBtn = document.getElementById('unifiedScanBtn');
+            const scanBtn = document.getElementById('minimalScanBtn');
             if (scanBtn) {
                 const emailCount = this.scanResults?.total || 0;
                 const preselectedCount = this.scanResults?.stats?.preselectedForTasks || 0;
-                const newsletterCount = this.scanResults?.newsletters || 0;
                 
-                scanBtn.innerHTML = `<i class="fas fa-check"></i> <span>Emails ${this.getProviderDisplayName()} analysés !</span>`;
-                scanBtn.style.background = this.emailProvider === 'gmail' ? 
-                    'linear-gradient(135deg, #ea4335 0%, #fbbc04 100%)' : 
-                    'linear-gradient(135deg, #0078d4 0%, #106ebe 100%)';
+                scanBtn.innerHTML = `<i class="fas fa-check"></i> <span>Emails réels analysés !</span>`;
+                scanBtn.style.background = 'linear-gradient(135deg, #059669 0%, #10b981 100%)';
                 
                 if (emailCount > 0) {
                     scanBtn.style.position = 'relative';
-                    const badgeText = newsletterCount > 0 ? 
-                        `📧 ${emailCount} (📰 ${newsletterCount})` : 
-                        `📧 ${emailCount} ${preselectedCount > 0 ? `(${preselectedCount} ⭐)` : ''}`;
-                    
                     scanBtn.insertAdjacentHTML('beforeend', `
                         <span class="success-badge">
-                            ${badgeText}
+                            📧 ${emailCount} ${preselectedCount > 0 ? `(${preselectedCount} ⭐)` : ''}
                         </span>
                     `);
                 }
@@ -1573,7 +1253,6 @@ class UnifiedScanModule {
             success: true,
             total: this.scanResults?.total || 0,
             categorized: this.scanResults?.categorized || 0,
-            newsletters: this.scanResults?.newsletters || 0,
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             preselectedForTasks: this.scanResults?.stats?.preselectedForTasks || 0,
             scanDuration: Math.floor((Date.now() - this.scanStartTime) / 1000),
@@ -1581,15 +1260,14 @@ class UnifiedScanModule {
             hasRealEmails: true,
             emailType: 'real',
             simulationMode: false,
-            source: `UnifiedScan-${this.emailProvider}`,
-            provider: this.emailProvider
+            source: 'StartScan-RealEmails'
         };
         
         try {
             localStorage.setItem('scanResults', JSON.stringify(essentialResults));
-            console.log('[UnifiedScan] 💾 Résultats sauvegardés');
+            console.log('[MinimalScan] 💾 Résultats emails RÉELS sauvegardés');
         } catch (error) {
-            console.warn('[UnifiedScan] Erreur stockage résultats:', error);
+            console.warn('[MinimalScan] Erreur stockage résultats:', error);
         }
         
         // Notification de succès
@@ -1600,12 +1278,10 @@ class UnifiedScanModule {
             this.dispatchEvents(essentialResults);
         }, 100);
         
-        // Rediriger vers les emails via le bon PageManager
+        // Rediriger vers les emails
         setTimeout(() => {
-            const pageManager = this.currentPageManager || window.pageManager;
-            
-            if (pageManager && typeof pageManager.loadPage === 'function') {
-                pageManager.loadPage('emails');
+            if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                window.pageManager.loadPage('emails');
             } else {
                 this.showResultsInPlace(essentialResults);
             }
@@ -1614,36 +1290,27 @@ class UnifiedScanModule {
 
     showNotification(results) {
         const notification = document.createElement('div');
-        const bgColor = this.emailProvider === 'gmail' ? 
-            'linear-gradient(135deg, #ea4335 0%, #fbbc04 100%)' : 
-            this.emailProvider === 'outlook' ?
-            'linear-gradient(135deg, #0078d4 0%, #106ebe 100%)' :
-            'linear-gradient(135deg, #059669 0%, #10b981 100%)';
-            
         notification.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: ${bgColor};
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
             color: white;
             padding: 16px 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 20px rgba(5, 150, 105, 0.3);
             z-index: 10000;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             font-weight: 600;
-            max-width: 350px;
+            max-width: 300px;
             animation: slideIn 0.3s ease;
         `;
         
         const preselectedText = results.preselectedForTasks > 0 ? 
             `<br>⭐ ${results.preselectedForTasks} pré-sélectionnés` : '';
-            
-        const newsletterText = results.newsletters > 0 ? 
-            `<br>📰 ${results.newsletters} newsletters détectées` : '';
         
         notification.innerHTML = `
-            📧 ${results.total} emails ${this.getProviderDisplayName()} analysés${preselectedText}${newsletterText}
+            📧 ${results.total} emails RÉELS analysés${preselectedText}
         `;
         
         document.body.appendChild(notification);
@@ -1672,11 +1339,10 @@ class UnifiedScanModule {
                     results: results,
                     emails: this.realEmails || [],
                     taskPreselectedCategories: this.taskPreselectedCategories,
-                    source: `UnifiedScan-${this.emailProvider}`,
+                    source: 'StartScan-RealEmails',
                     timestamp: Date.now(),
                     hasRealEmails: true,
-                    simulationMode: false,
-                    provider: this.emailProvider
+                    simulationMode: false
                 }
             }));
             
@@ -1685,52 +1351,36 @@ class UnifiedScanModule {
                 detail: {
                     emailCount: results.total,
                     taskPreselectedCategories: this.taskPreselectedCategories,
-                    source: `UnifiedScan-${this.emailProvider}`,
+                    source: 'StartScan-RealEmails',
                     timestamp: Date.now(),
                     hasRealEmails: true,
-                    simulationMode: false,
-                    provider: this.emailProvider
+                    simulationMode: false
                 }
             }));
             
-            // Événement spécifique au provider
-            window.dispatchEvent(new CustomEvent(`${this.emailProvider}ScanCompleted`, {
-                detail: {
-                    results: results,
-                    timestamp: Date.now()
-                }
-            }));
-            
-            console.log('[UnifiedScan] ✅ Événements dispatchés');
+            console.log('[MinimalScan] ✅ Événements emails RÉELS dispatchés');
             
         } catch (error) {
-            console.error('[UnifiedScan] ❌ Erreur dispatch événements:', error);
+            console.error('[MinimalScan] ❌ Erreur dispatch événements:', error);
         }
     }
 
     showResultsInPlace(results) {
-        const container = document.querySelector('.scanner-card-unified');
+        const container = document.querySelector('.scanner-card-minimal');
         if (!container) return;
         
-        const providerClass = this.emailProvider || 'generic';
-        const iconColor = this.emailProvider === 'gmail' ? 
-            'linear-gradient(135deg, #ea4335 0%, #fbbc04 100%)' : 
-            this.emailProvider === 'outlook' ?
-            'linear-gradient(135deg, #0078d4 0%, #106ebe 100%)' :
-            'linear-gradient(135deg, #059669 0%, #10b981 100%)';
-        
         container.innerHTML = `
-            <div class="scanner-icon ${providerClass}" style="background: ${iconColor};">
+            <div class="scanner-icon" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
                 <i class="fas fa-envelope"></i>
             </div>
             
-            <h1 class="scanner-title">Emails ${this.getProviderDisplayName()} Analysés !</h1>
+            <h1 class="scanner-title">Emails Réels Analysés !</h1>
             <p class="scanner-subtitle">Analyse IA complète de vos emails authentifiés</p>
             
-            <div style="background: rgba(0, 0, 0, 0.05); border-radius: 15px; padding: 25px; margin: 25px 0;">
+            <div style="background: rgba(5, 150, 105, 0.1); border-radius: 15px; padding: 25px; margin: 25px 0; border: 2px solid rgba(5, 150, 105, 0.2);">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 20px; text-align: center;">
                     <div>
-                        <div style="font-size: 28px; font-weight: 700; color: #1f2937;">${results.total}</div>
+                        <div style="font-size: 28px; font-weight: 700; color: #059669;">${results.total}</div>
                         <div style="font-size: 14px; color: #6b7280;">Emails réels</div>
                     </div>
                     <div>
@@ -1743,48 +1393,31 @@ class UnifiedScanModule {
                             <div style="font-size: 14px; color: #6b7280;">Pré-sélectionnés</div>
                         </div>
                     ` : ''}
-                    ${results.newsletters > 0 ? `
-                        <div>
-                            <div style="font-size: 28px; font-weight: 700; color: #ea4335;">📰 ${results.newsletters}</div>
-                            <div style="font-size: 14px; color: #6b7280;">Newsletters</div>
-                        </div>
-                    ` : ''}
                 </div>
             </div>
             
             <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <button class="scan-button-unified ${providerClass}" onclick="window.unifiedScanModule.resetScanner()" 
+                <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
                         style="width: auto; padding: 0 24px; height: 50px;">
                     <i class="fas fa-redo"></i>
                     <span>Nouveau scan</span>
                 </button>
                 
-                <button class="scan-button-unified ${providerClass}" onclick="window.unifiedScanModule.viewEmails()" 
-                        style="width: auto; padding: 0 24px; height: 50px;">
+                <button class="scan-button-minimal" onclick="window.pageManager?.loadPage('emails')" 
+                        style="width: auto; padding: 0 24px; height: 50px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
                     <i class="fas fa-envelope"></i>
                     <span>Voir les emails</span>
                 </button>
             </div>
             
-            <div class="scan-info ${providerClass}" style="margin-top: 20px;">
+            <div class="scan-info" style="margin-top: 20px;">
                 <div class="scan-info-main">
                     <i class="fas fa-envelope"></i>
-                    <span>Analyse ${this.getProviderDisplayName()} avec IA Claude</span>
+                    <span>Analyse emails RÉELS avec IA Claude - AUCUNE simulation</span>
                 </div>
-                <div class="scan-info-details">Durée: ${results.scanDuration}s • Mode: Emails authentifiés • Provider: ${this.emailProvider}</div>
+                <div class="scan-info-details">Durée: ${results.scanDuration}s • Mode: Emails authentifiés • Synchronisé</div>
             </div>
         `;
-    }
-
-    viewEmails() {
-        const pageManager = this.currentPageManager || window.pageManager;
-        
-        if (pageManager && typeof pageManager.loadPage === 'function') {
-            pageManager.loadPage('emails');
-        } else {
-            console.warn('[UnifiedScan] PageManager non disponible');
-            window.location.href = '#emails';
-        }
     }
 
     showScanError(error) {
@@ -1796,13 +1429,13 @@ class UnifiedScanModule {
                     <div style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">${error.message}</div>
                     
                     <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                        <button class="scan-button-unified" onclick="window.unifiedScanModule.resetScanner()" 
+                        <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
                                 style="width: auto; padding: 0 20px; height: 40px; font-size: 14px;">
                             <i class="fas fa-redo"></i>
                             <span>Réessayer</span>
                         </button>
                         
-                        <button class="scan-button-unified auth-required" onclick="window.unifiedScanModule.handleAuthentication()" 
+                        <button class="scan-button-minimal auth-required" onclick="window.minimalScanModule.handleAuthentication()" 
                                 style="width: auto; padding: 0 20px; height: 40px; font-size: 14px;">
                             <i class="fas fa-sign-in-alt"></i>
                             <span>Se connecter</span>
@@ -1813,27 +1446,6 @@ class UnifiedScanModule {
         }
         
         this.scanInProgress = false;
-    }
-
-    showAuthError(message) {
-        const container = document.querySelector('.scanner-card-unified');
-        if (container) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'auth-error';
-            errorDiv.style.cssText = `
-                background: rgba(239, 68, 68, 0.1);
-                border: 2px solid rgba(239, 68, 68, 0.3);
-                color: #dc2626;
-                padding: 12px;
-                border-radius: 8px;
-                margin-top: 20px;
-                font-weight: 500;
-            `;
-            errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
-            container.appendChild(errorDiv);
-            
-            setTimeout(() => errorDiv.remove(), 5000);
-        }
     }
 
     resetScanner() {
@@ -1847,7 +1459,7 @@ class UnifiedScanModule {
         if (progressSection) {
             progressSection.classList.remove('visible');
             progressSection.innerHTML = `
-                <div class="progress-bar-unified">
+                <div class="progress-bar-minimal">
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
                 <div class="progress-text" id="progressText">Initialisation...</div>
@@ -1855,11 +1467,8 @@ class UnifiedScanModule {
             `;
         }
         
-        // Re-détecter le provider
-        this.detectEmailProvider();
-        
         // Recharger l'interface complète
-        const container = document.querySelector('.scanner-card-unified');
+        const container = document.querySelector('.scanner-card-minimal');
         if (container) {
             container.outerHTML = this.renderScanner();
         }
@@ -1867,7 +1476,7 @@ class UnifiedScanModule {
         this.loadSettingsFromStorage();
         this.updatePreselectedCategoriesDisplay();
         
-        console.log('[UnifiedScan] 🔄 Scanner v12.0 réinitialisé - Provider:', this.emailProvider);
+        console.log('[MinimalScan] 🔄 Scanner v11.2 réinitialisé - EMAILS RÉELS');
     }
 
     updateProgress(percent, text, status) {
@@ -1888,89 +1497,11 @@ class UnifiedScanModule {
         const activeStep = document.getElementById(`step${stepNumber}`);
         if (activeStep) {
             activeStep.classList.add('active');
-            
-            // Ajouter la classe du provider
-            if (this.emailProvider) {
-                activeStep.classList.add(this.emailProvider);
-            }
         }
-    }
-
-    // ================================================
-    // MÉTHODES UTILITAIRES
-    // ================================================
-    checkSettingsUpdate() {
-        const now = Date.now();
-        if (now - this.lastSettingsSync < 5000) return;
-        
-        try {
-            const oldTaskCategories = [...this.taskPreselectedCategories];
-            const oldSelectedDays = this.selectedDays;
-            
-            this.loadSettingsFromStorage();
-            
-            const categoriesChanged = JSON.stringify(oldTaskCategories.sort()) !== 
-                                     JSON.stringify([...this.taskPreselectedCategories].sort());
-            const daysChanged = oldSelectedDays !== this.selectedDays;
-            
-            if (categoriesChanged || daysChanged) {
-                console.log('[UnifiedScan] 🔄 Paramètres mis à jour détectés');
-                this.updateUIWithNewSettings();
-            }
-        } catch (error) {
-            console.error('[UnifiedScan] Erreur vérification paramètres:', error);
-        }
-    }
-
-    updateUIWithNewSettings() {
-        // Mettre à jour la sélection de durée
-        const durationOptions = document.querySelectorAll('.duration-option');
-        durationOptions.forEach(option => {
-            option.classList.remove('selected', 'outlook', 'gmail');
-            if (parseInt(option.dataset.days) === this.selectedDays) {
-                option.classList.add('selected', this.emailProvider || 'generic');
-            }
-        });
-        
-        // Mettre à jour l'affichage des catégories
-        this.updatePreselectedCategoriesDisplay();
-    }
-
-    updatePreselectedCategoriesDisplay() {
-        const display = document.getElementById('preselected-categories-display');
-        if (!display) return;
-        
-        display.innerHTML = this.renderPreselectedCategories();
-    }
-
-    getCompatibleCategories() {
-        // Catégories par défaut
-        const defaultCategories = {
-            'tasks': { icon: '✅', name: 'Tâches', color: '#10b981' },
-            'commercial': { icon: '💼', name: 'Commercial', color: '#3b82f6' },
-            'meetings': { icon: '🤝', name: 'Réunions', color: '#8b5cf6' },
-            'finance': { icon: '💰', name: 'Finance', color: '#f59e0b' },
-            'personal': { icon: '👤', name: 'Personnel', color: '#06b6d4' }
-        };
-
-        return this.taskPreselectedCategories.map(catId => {
-            // Priorité au CategoryManager si disponible
-            if (window.categoryManager?.getCategory) {
-                const category = window.categoryManager.getCategory(catId);
-                if (category) return category;
-            }
-            
-            // Sinon utiliser les catégories par défaut
-            return defaultCategories[catId] || { 
-                icon: '📂', 
-                name: catId, 
-                color: '#6b7280' 
-            };
-        }).filter(Boolean);
     }
 
     updateSettings(newSettings) {
-        console.log('[UnifiedScan] 📝 Mise à jour paramètres v12.0:', newSettings);
+        console.log('[MinimalScan] 📝 Mise à jour paramètres v11.2:', newSettings);
         this.settings = { ...this.settings, ...newSettings };
         
         if (newSettings.taskPreselectedCategories) {
@@ -1985,7 +1516,7 @@ class UnifiedScanModule {
         try {
             localStorage.setItem('categorySettings', JSON.stringify(this.settings));
         } catch (error) {
-            console.warn('[UnifiedScan] Erreur sauvegarde localStorage:', error);
+            console.warn('[MinimalScan] Erreur sauvegarde localStorage:', error);
         }
         
         this.updateUIWithNewSettings();
@@ -1995,7 +1526,7 @@ class UnifiedScanModule {
         const authStatus = this.checkRealEmailAuthentication();
         
         return {
-            version: '12.0',
+            version: '11.2',
             isInitialized: this.isInitialized,
             scanInProgress: this.scanInProgress,
             selectedDays: this.selectedDays,
@@ -2005,27 +1536,14 @@ class UnifiedScanModule {
             scanResults: this.scanResults,
             scanConfig: this.scanConfig,
             authStatus: authStatus,
-            emailProvider: this.emailProvider,
-            currentPageManager: this.currentPageManager ? this.currentPageManager.constructor.name : null,
             emailScanner: {
                 available: !!window.emailScanner,
-                emailCount: window.emailScanner?.emails?.length || 0,
-                provider: window.emailScanner?.provider || null
+                emailCount: window.emailScanner?.emails?.length || 0
             },
-            providers: {
-                outlook: {
-                    authService: !!window.authService,
-                    pageManager: !!window.pageManager
-                },
-                gmail: {
-                    authService: !!window.googleAuthService,
-                    pageManager: !!window.pageManagerGmail
-                },
-                mailService: {
-                    available: !!window.mailService,
-                    authenticated: window.mailService?.isAuthenticationValid?.() || false,
-                    provider: window.mailService?.getProvider?.() || null
-                }
+            mailService: {
+                available: !!window.mailService,
+                authenticated: window.mailService?.isAuthenticationValid?.() || false,
+                provider: window.mailService?.getProvider?.() || null
             }
         };
     }
@@ -2041,16 +1559,14 @@ class UnifiedScanModule {
         this.scanResults = null;
         this.realEmails = null;
         
-        console.log('[UnifiedScan] 🧹 Nettoyage v12.0 terminé');
+        console.log('[MinimalScan] 🧹 Nettoyage v11.2 terminé');
     }
 
     destroy() {
         this.cleanup();
         this.settings = {};
         this.taskPreselectedCategories = [];
-        this.emailProvider = null;
-        this.currentPageManager = null;
-        console.log('[UnifiedScan] Instance v12.0 détruite');
+        console.log('[MinimalScan] Instance v11.2 détruite');
     }
 }
 
@@ -2059,64 +1575,65 @@ class UnifiedScanModule {
 // ================================================
 
 // Nettoyer ancienne instance
-if (window.unifiedScanModule || window.minimalScanModule) {
-    window.unifiedScanModule?.destroy?.();
-    window.minimalScanModule?.destroy?.();
+if (window.minimalScanModule) {
+    window.minimalScanModule.destroy?.();
 }
 
 // Créer nouvelle instance
-window.UnifiedScanModule = UnifiedScanModule;
-window.unifiedScanModule = new UnifiedScanModule();
-window.minimalScanModule = window.unifiedScanModule; // Compatibilité
-window.scanStartModule = window.unifiedScanModule;
+window.MinimalScanModule = MinimalScanModule;
+window.minimalScanModule = new MinimalScanModule();
+window.scanStartModule = window.minimalScanModule;
 
 // Fonctions utilitaires de debug
-window.testUnifiedScanner = function() {
-    console.group('🧪 TEST Scanner Unifié v12.0');
-    const scanner = window.unifiedScanModule;
+window.testScannerRealEmails = function() {
+    console.group('🧪 TEST Scanner Emails RÉELS v11.2');
+    const scanner = window.minimalScanModule;
     
     console.log('Configuration:', scanner.scanConfig);
-    console.log('Provider détecté:', scanner.emailProvider);
     console.log('Auth Status:', scanner.checkRealEmailAuthentication());
-    console.log('Debug Info:', scanner.getDebugInfo());
+    console.log('MailService disponible:', !!window.mailService);
     
+    if (window.mailService) {
+        console.log('MailService authentifié:', window.mailService.isAuthenticationValid?.());
+        console.log('MailService provider:', window.mailService.getProvider?.());
+    }
+    
+    console.log('Debug Info:', scanner.getDebugInfo());
     console.groupEnd();
     
     return { 
         success: true, 
-        version: scanner.version,
-        provider: scanner.emailProvider,
+        realEmailsForced: scanner.scanConfig.forceRealEmails,
+        simulationAllowed: scanner.scanConfig.allowSimulation,
         authValid: scanner.checkRealEmailAuthentication().valid
     };
 };
 
-window.forceProviderScan = function(provider) {
-    if (!['outlook', 'gmail'].includes(provider)) {
-        console.error('Provider invalide. Utilisez "outlook" ou "gmail"');
-        return { success: false, reason: 'Provider invalide' };
+window.forceRealEmailScan = function() {
+    if (window.minimalScanModule.scanInProgress) {
+        console.log('Scan déjà en cours');
+        return;
     }
     
-    window.unifiedScanModule.selectProvider(provider);
-    
-    const authStatus = window.unifiedScanModule.checkRealEmailAuthentication();
-    console.log(`🚀 Scan forcé ${provider} - Auth valide: ${authStatus.valid}`);
+    const authStatus = window.minimalScanModule.checkRealEmailAuthentication();
+    console.log(`🚀 Démarrage scan forcé - Auth valide: ${authStatus.valid}`);
     
     if (!authStatus.valid) {
-        console.error(`❌ Authentification ${provider} requise`);
+        console.error('❌ Authentification requise pour scan emails réels');
         return { success: false, reason: 'Authentification requise' };
     }
     
-    window.unifiedScanModule.startUnifiedScan();
-    return { success: true, provider: provider };
+    window.minimalScanModule.startRealEmailsScan();
+    return { success: true, mode: 'realEmailsOnly' };
 };
 
 // Auto-initialisation DOM
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('[UnifiedScan] 📱 DOM prêt - Scanner v12.0 unifié Outlook/Gmail');
+        console.log('[MinimalScan] 📱 DOM prêt - Scanner v11.2 emails RÉELS forcés');
     });
 } else {
-    console.log('[UnifiedScan] 📱 Scanner v12.0 unifié Outlook/Gmail prêt');
+    console.log('[MinimalScan] 📱 Scanner v11.2 emails RÉELS forcés prêt');
 }
 
-console.log('✅ StartScan v12.0 loaded - Unified Outlook/Gmail Scanner');
+console.log('✅ StartScan v11.2 loaded - EMAILS RÉELS FORCÉS, simulation INTERDITE');
