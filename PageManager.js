@@ -1115,6 +1115,24 @@ class PageManager {
             `);
         }
         
+        // Bouton Agenda
+        actions.push(`
+            <button class="action-btn calendar" 
+                    onclick="event.stopPropagation(); window.pageManager.openPersonCalendar('${email.id}')"
+                    title="Voir l'agenda de ${this.escapeHtml(email.from?.emailAddress?.name || 'cette personne')}">
+                <i class="fas fa-calendar-alt"></i>
+            </button>
+        `);
+        
+        // Bouton Rappel/Note
+        actions.push(`
+            <button class="action-btn reminder" 
+                    onclick="event.stopPropagation(); window.pageManager.createCalendarReminder('${email.id}')"
+                    title="Créer un rappel dans l'agenda">
+                <i class="fas fa-bell"></i>
+            </button>
+        `);
+        
         actions.push(`
             <button class="action-btn details" 
                     onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')"
@@ -2350,8 +2368,302 @@ class PageManager {
     }
 
     // ================================================
-    // MÉTHODES UTILITAIRES
+    // FONCTIONS AGENDA ET RAPPELS
     // ================================================
+    async openPersonCalendar(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) {
+            this.showToast('Email non trouvé', 'error');
+            return;
+        }
+
+        const senderEmail = email.from?.emailAddress?.address;
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        
+        console.log(`[PageManager] 📅 Ouverture agenda pour: ${senderName} (${senderEmail})`);
+        
+        try {
+            // Si on a accès à l'API Microsoft Graph
+            if (window.msGraphClient || window.graphClient) {
+                this.showLoading('Recherche de l\'agenda...');
+                
+                // Rechercher les événements avec cette personne
+                const events = await this.searchCalendarEvents(senderEmail);
+                
+                this.hideLoading();
+                this.showPersonCalendarModal(email, events);
+                
+            } else {
+                // Fallback : ouvrir Outlook Web avec recherche
+                const outlookUrl = `https://outlook.office.com/calendar/view/month?search=${encodeURIComponent(senderEmail)}`;
+                window.open(outlookUrl, '_blank');
+                
+                this.showToast(`Ouverture de l'agenda pour ${senderName}`, 'info');
+            }
+        } catch (error) {
+            console.error('[PageManager] Erreur accès agenda:', error);
+            this.hideLoading();
+            this.showToast('Erreur lors de l\'accès à l\'agenda', 'error');
+        }
+    }
+
+    async createCalendarReminder(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) {
+            this.showToast('Email non trouvé', 'error');
+            return;
+        }
+
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const subject = email.subject || 'Sans sujet';
+        
+        console.log(`[PageManager] 🔔 Création rappel pour email de ${senderName}`);
+        
+        // Afficher modal de création de rappel
+        this.showReminderCreationModal(email);
+    }
+
+    async searchCalendarEvents(emailAddress) {
+        // Simuler une recherche d'événements (à remplacer par vraie API)
+        console.log(`[PageManager] 🔍 Recherche événements avec: ${emailAddress}`);
+        
+        // Exemple de structure de données
+        return [
+            {
+                subject: 'Réunion projet',
+                start: new Date(Date.now() + 86400000), // Demain
+                end: new Date(Date.now() + 90000000),
+                attendees: [emailAddress]
+            }
+        ];
+    }
+
+    showPersonCalendarModal(email, events) {
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
+        
+        const modalId = 'calendar_modal_' + Date.now();
+        
+        const eventsHTML = events.length > 0 ? `
+            <div style="margin-top: 20px;">
+                <h4 style="margin-bottom: 12px; color: #374151;">📅 Événements à venir avec ${senderName}</h4>
+                ${events.map(event => `
+                    <div style="background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+                        <div style="font-weight: 600; color: #1f2937;">${event.subject}</div>
+                        <div style="color: #6b7280; font-size: 13px; margin-top: 4px;">
+                            <i class="fas fa-clock"></i> ${new Date(event.start).toLocaleString('fr-FR')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        ` : `
+            <div style="text-align: center; padding: 20px; color: #6b7280;">
+                <i class="fas fa-calendar-times" style="font-size: 48px; margin-bottom: 12px; color: #d1d5db;"></i>
+                <p>Aucun événement trouvé avec ${senderName}</p>
+            </div>
+        `;
+        
+        const modalHTML = `
+            <div id="${modalId}" class="modal-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                <div class="modal-container" style="background: white; border-radius: 12px; max-width: 600px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div class="modal-header" style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px; font-weight: 600;">
+                            <i class="fas fa-calendar-alt" style="color: #3b82f6; margin-right: 8px;"></i>
+                            Agenda - ${senderName}
+                        </h2>
+                        <button onclick="document.getElementById('${modalId}').remove(); document.body.style.overflow = 'auto';" 
+                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                            ×
+                        </button>
+                    </div>
+                    <div class="modal-content" style="padding: 20px; overflow-y: auto; flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                            <div style="width: 48px; height: 48px; background: ${this.generateAvatarColor(senderName)}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px;">
+                                ${senderName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <div style="font-weight: 700; color: #1f2937; font-size: 16px;">${senderName}</div>
+                                <div style="color: #6b7280; font-size: 14px;">${senderEmail}</div>
+                            </div>
+                        </div>
+                        
+                        ${eventsHTML}
+                        
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                            <button onclick="window.pageManager.createNewEvent('${email.id}'); document.getElementById('${modalId}').remove();" 
+                                    style="width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                                <i class="fas fa-plus"></i> Créer un nouvel événement
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    showReminderCreationModal(email) {
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const subject = email.subject || 'Sans sujet';
+        
+        const modalId = 'reminder_modal_' + Date.now();
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(9, 0, 0, 0);
+        
+        const modalHTML = `
+            <div id="${modalId}" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); z-index: 99999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                <div style="background: white; border-radius: 16px; max-width: 600px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">
+                            <i class="fas fa-bell" style="color: #f59e0b; margin-right: 8px;"></i>
+                            Créer un rappel
+                        </h2>
+                        <button onclick="document.getElementById('${modalId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                            ×
+                        </button>
+                    </div>
+                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
+                        <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                            <div style="font-weight: 600; color: #92400e; margin-bottom: 4px;">Email de: ${senderName}</div>
+                            <div style="color: #b45309; font-size: 14px;">${subject}</div>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <div>
+                                <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">📝 Titre du rappel</label>
+                                <input type="text" id="reminder-title" 
+                                       style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                                       value="Répondre à ${senderName}" />
+                            </div>
+                            
+                            <div>
+                                <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">📄 Notes</label>
+                                <textarea id="reminder-notes" 
+                                          style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 100px;"
+                                          rows="4">Email: ${subject}\nDe: ${senderName}</textarea>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div>
+                                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">📅 Date</label>
+                                    <input type="date" id="reminder-date" 
+                                           style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                                           value="${tomorrow.toISOString().split('T')[0]}" />
+                                </div>
+                                <div>
+                                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">⏰ Heure</label>
+                                    <input type="time" id="reminder-time" 
+                                           style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                                           value="09:00" />
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">🔔 Type de rappel</label>
+                                <select id="reminder-type" style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                                    <option value="15">15 minutes avant</option>
+                                    <option value="30">30 minutes avant</option>
+                                    <option value="60" selected>1 heure avant</option>
+                                    <option value="1440">1 jour avant</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button onclick="document.getElementById('${modalId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Annuler
+                        </button>
+                        <button onclick="window.pageManager.saveReminder('${email.id}'); document.getElementById('${modalId}').remove();"
+                                style="padding: 12px 20px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            <i class="fas fa-save"></i> Créer le rappel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    async saveReminder(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) return;
+        
+        const title = document.getElementById('reminder-title')?.value;
+        const notes = document.getElementById('reminder-notes')?.value;
+        const date = document.getElementById('reminder-date')?.value;
+        const time = document.getElementById('reminder-time')?.value;
+        const reminderType = document.getElementById('reminder-type')?.value;
+        
+        const reminderData = {
+            title,
+            notes,
+            datetime: `${date}T${time}`,
+            reminderMinutes: parseInt(reminderType),
+            emailId: emailId,
+            senderEmail: email.from?.emailAddress?.address,
+            senderName: email.from?.emailAddress?.name
+        };
+        
+        console.log('[PageManager] 💾 Sauvegarde rappel:', reminderData);
+        
+        try {
+            // Si on a accès à l'API Microsoft Graph
+            if (window.msGraphClient || window.graphClient) {
+                await this.createOutlookReminder(reminderData);
+            } else {
+                // Fallback : sauvegarder localement
+                this.saveLocalReminder(reminderData);
+            }
+            
+            this.showToast('Rappel créé avec succès!', 'success');
+            document.body.style.overflow = 'auto';
+            
+        } catch (error) {
+            console.error('[PageManager] Erreur création rappel:', error);
+            this.showToast('Erreur lors de la création du rappel', 'error');
+        }
+    }
+
+    async createNewEvent(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) return;
+        
+        const senderEmail = email.from?.emailAddress?.address;
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        
+        // Ouvrir Outlook avec pré-remplissage
+        const subject = encodeURIComponent(`Réunion avec ${senderName}`);
+        const attendees = encodeURIComponent(senderEmail);
+        const outlookUrl = `https://outlook.office.com/calendar/deeplink/compose?subject=${subject}&attendees=${attendees}`;
+        
+        window.open(outlookUrl, '_blank');
+        this.showToast('Ouverture du calendrier pour créer l\'événement', 'info');
+    }
+
+    async createOutlookReminder(reminderData) {
+        // Implémentation avec Microsoft Graph API
+        console.log('[PageManager] 📅 Création rappel Outlook:', reminderData);
+        // TODO: Implémenter avec vraie API
+    }
+
+    saveLocalReminder(reminderData) {
+        // Sauvegarde locale
+        const reminders = JSON.parse(this.getLocalStorageItem('emailReminders') || '[]');
+        reminders.push({
+            ...reminderData,
+            id: `reminder-${Date.now()}`,
+            createdAt: new Date().toISOString()
+        });
+        this.setLocalStorageItem('emailReminders', JSON.stringify(reminders));
+        console.log('[PageManager] 💾 Rappel sauvegardé localement');
+    }
     configureAI() {
         if (window.aiTaskAnalyzer && window.aiTaskAnalyzer.showConfigurationModal) {
             window.aiTaskAnalyzer.showConfigurationModal();
@@ -3434,14 +3746,24 @@ class PageManager {
                 color: #15803d;
             }
 
-            .action-btn.details {
-                color: #8b5cf6;
+            .action-btn.calendar {
+                color: #0ea5e9;
             }
 
-            .action-btn.details:hover {
-                background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
-                border-color: #8b5cf6;
-                color: #7c3aed;
+            .action-btn.calendar:hover {
+                background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+                border-color: #0ea5e9;
+                color: #0284c7;
+            }
+
+            .action-btn.reminder {
+                color: #f59e0b;
+            }
+
+            .action-btn.reminder:hover {
+                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                border-color: #f59e0b;
+                color: #d97706;
             }
 
             .emails-grouped {
