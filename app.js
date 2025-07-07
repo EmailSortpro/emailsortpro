@@ -150,7 +150,7 @@ class App {
         
         try {
             if (!window.licenseService) {
-                console.error('[App] License service not available');
+                console.warn('[App] License service not available - skipping initialization');
                 return false;
             }
             
@@ -172,8 +172,8 @@ class App {
         
         try {
             if (!window.licenseService) {
-                console.error('[App] License service not available');
-                return { valid: true, status: 'error', message: 'Service de licence indisponible' };
+                console.warn('[App] License service not available - allowing access');
+                return { valid: true, status: 'no_service', message: 'Service de licence non disponible' };
             }
             
             const licenseResult = await window.licenseService.authenticateWithEmail(email);
@@ -200,6 +200,7 @@ class App {
             
         } catch (error) {
             console.error('[App] Error checking license:', error);
+            // En cas d'erreur, permettre l'accès mais logger l'erreur
             return {
                 valid: true,
                 status: 'error',
@@ -1306,11 +1307,10 @@ class App {
             return false;
         }
 
-        // Vérifier le service de licence
+        // Vérifier le service de licence - mais ne pas bloquer s'il n'est pas disponible
         if (!window.licenseService) {
-            console.error('[App] License service not available');
-            this.showError('License service not available. Please refresh the page.');
-            return false;
+            console.warn('[App] License service not available - continuing without license check');
+            // Ne pas bloquer l'application si le service de licence n'est pas disponible
         }
 
         return true;
