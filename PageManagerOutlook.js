@@ -2635,6 +2635,7 @@ class PageManager {
         styles.textContent = `
             .emails-page-modern {
                 padding: 20px;
+                padding-top: 200px;
                 background: #f8fafc;
                 min-height: 100vh;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
