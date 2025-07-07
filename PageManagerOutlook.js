@@ -2636,7 +2636,7 @@ class PageManager {
                 border: 1px solid rgba(59, 130, 246, 0.2);
                 border-radius: 8px;
                 padding: 10px 14px;
-                margin-bottom: 12px;
+                margin: 0 16px 12px 16px;
                 display: flex;
                 align-items: center;
                 gap: 10px;
@@ -2912,12 +2912,12 @@ class PageManager {
             /* Wrapper pour tout le header fixe */
             .fixed-header-wrapper {
                 position: sticky;
-                top: 60px; /* Juste sous la navbar */
+                top: 0; /* Directement en haut, pas d'espace */
                 z-index: 1000;
                 background: rgba(248, 250, 252, 0.98);
                 backdrop-filter: blur(20px);
                 -webkit-backdrop-filter: blur(20px);
-                margin: -8px -20px 0 -20px;
+                margin: 0;
                 padding: 12px 20px 8px 20px;
                 border-bottom: 2px solid #e5e7eb;
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
@@ -2950,7 +2950,7 @@ class PageManager {
 
             /* S'assurer que le wrapper sticky fonctionne */
             .emails-page-modern {
-                padding: 16px;
+                padding: 0;
                 background: #f8fafc;
                 min-height: 100vh;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -2963,7 +2963,7 @@ class PageManager {
             #content {
                 position: relative;
                 overflow-y: auto;
-                height: calc(100vh - 60px); /* Hauteur totale moins la navbar */
+                height: 100vh;
             }
 
             .category-filters {
@@ -3082,8 +3082,8 @@ class PageManager {
 
             .emails-container {
                 background: transparent;
-                margin-top: 16px;
-                padding-top: 8px;
+                margin: 0 16px;
+                padding-top: 16px;
             }
 
             .emails-list {
