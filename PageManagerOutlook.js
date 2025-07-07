@@ -955,9 +955,11 @@ class PageManager {
                             data-category-id="${tab.id}"
                             title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
                         <div class="tab-content">
-                            <div class="tab-icon">${tab.icon}</div>
+                            <div class="tab-header">
+                                <span class="tab-icon">${tab.icon}</span>
+                                <span class="tab-count">${tab.count}</span>
+                            </div>
                             <div class="tab-name">${tab.name}</div>
-                            <div class="tab-count">${tab.count}</div>
                         </div>
                         ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
                     </button>
@@ -2953,10 +2955,11 @@ class PageManager {
             }
 
             .category-filters-wrapper.sticky-active .category-filters-container {
-                background: rgba(248, 250, 252, 0.95);
-                backdrop-filter: blur(16px);
-                border-bottom: 1px solid rgba(229, 231, 235, 0.8);
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                background: rgba(248, 250, 252, 0.98);
+                backdrop-filter: blur(20px);
+                border-bottom: 2px solid #e5e7eb;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+                padding: 20px;
             }
 
             .category-filters {
@@ -2975,9 +2978,9 @@ class PageManager {
             }
 
             .category-tab {
-                height: 60px;
+                height: 72px;
                 padding: 0;
-                font-size: 11px;
+                font-size: 13px;
                 font-weight: 700;
                 border-radius: 8px;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -2987,7 +2990,7 @@ class PageManager {
                 justify-content: center;
                 text-align: center;
                 background: white;
-                color: #374151;
+                color: #1f2937;
                 border: 2px solid #e5e7eb;
                 cursor: pointer;
                 position: relative;
@@ -2998,6 +3001,11 @@ class PageManager {
             .category-tab.preselected {
                 border-color: #8b5cf6;
                 background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
+            }
+
+            .category-tab.preselected .tab-count {
+                background: #8b5cf6;
+                color: white;
             }
 
             .category-tab:hover {
@@ -3020,21 +3028,27 @@ class PageManager {
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 2px;
-                padding: 8px;
+                gap: 4px;
+                padding: 8px 4px;
                 width: 100%;
                 height: 100%;
             }
 
+            .tab-header {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 20px;
+            }
+
             .tab-icon {
-                font-size: 16px;
+                font-size: 20px;
                 line-height: 1;
-                margin-bottom: 2px;
             }
 
             .tab-name {
                 font-weight: 700;
-                font-size: 11px;
+                font-size: 13px;
                 line-height: 1.2;
                 text-align: center;
                 max-width: 100%;
@@ -3042,17 +3056,19 @@ class PageManager {
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 padding: 0 4px;
+                color: #1f2937;
             }
 
             .tab-count {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 2px 6px;
-                border-radius: 10px;
-                font-size: 10px;
+                background: #3b82f6;
+                color: white;
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 12px;
                 font-weight: 800;
-                min-width: 20px;
+                min-width: 24px;
                 text-align: center;
-                line-height: 1;
+                line-height: 1.2;
             }
 
             .category-tab.active .tab-count {
