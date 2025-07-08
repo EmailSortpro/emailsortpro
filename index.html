@@ -1518,85 +1518,45 @@
                         </div>
                     </div>
 
-                    <!-- COLONNE DROITE - Liens Documentation uniquement -->
+                    <!-- COLONNE DROITE - Page blanche avec liens uniquement -->
                     <div class="login-right">
-                        <div class="it-documentation">
-                            <div class="it-doc-header">
-                                <h2 class="it-doc-title">
-                                    <i class="fas fa-file-pdf"></i>
+                        <div style="background: white; border-radius: 16px; padding: 40px; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);">
+                            
+                            <div style="margin-bottom: 30px;">
+                                <h2 style="color: #1f2937; font-size: 1.5rem; font-weight: 600; margin-bottom: 10px;">
                                     Documentation technique
                                 </h2>
-                                <p class="it-doc-subtitle">
+                                <p style="color: #6b7280; font-size: 1rem;">
                                     Guides d'intégration pour les équipes IT
                                 </p>
                             </div>
 
-                            <div class="it-sections">
-                                <!-- Section Documentation uniquement -->
-                                <div class="it-section">
-                                    <h3 class="it-section-title">
-                                        <i class="fas fa-download"></i>
-                                        Guides d'intégration complets
-                                    </h3>
-                                    <div class="it-section-content">
-                                        <p>Téléchargez les guides techniques détaillés pour configurer EmailSortPro dans votre environnement :</p>
-                                        
-                                        <div style="display: flex; flex-direction: column; gap: 16px; margin: 20px 0;">
-                                            <a href="https://github.com/vianneyhastings/emailsortpro/blob/main/Guide%20d'Int%C3%A9gration%20IT%20%E2%80%93%20EmailSortPro%20Version%201.0%20-%20Juillet%202025.pdf" 
-                                               target="_blank" 
-                                               style="display: flex; align-items: center; gap: 12px; padding: 16px; background: rgba(255,255,255,0.15); border-radius: 10px; color: white; text-decoration: none; border: 1px solid rgba(255,255,255,0.3); transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                                                <div style="background: #10b981; padding: 8px; border-radius: 8px; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                                                    <i class="fas fa-file-pdf" style="color: white; font-size: 1.2rem;"></i>
-                                                </div>
-                                                <div style="flex: 1;">
-                                                    <div style="font-weight: 600; font-size: 1rem; margin-bottom: 4px;">Guide d'Intégration IT (Français)</div>
-                                                    <div style="font-size: 0.85rem; opacity: 0.9; line-height: 1.3;">Configuration Azure AD, Google Workspace, firewall, monitoring</div>
-                                                    <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 4px;">Version 1.0 - Juillet 2025</div>
-                                                </div>
-                                                <i class="fas fa-external-link-alt" style="opacity: 0.7;"></i>
-                                            </a>
-
-                                            <a href="https://github.com/vianneyhastings/emailsortpro/blob/main/IT%20Integration%20Guide%20%E2%80%93%20EmailSortPro%20Version%201.0%20-%20January%202025.pdf" 
-                                               target="_blank" 
-                                               style="display: flex; align-items: center; gap: 12px; padding: 16px; background: rgba(255,255,255,0.15); border-radius: 10px; color: white; text-decoration: none; border: 1px solid rgba(255,255,255,0.3); transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                                                <div style="background: #4F46E5; padding: 8px; border-radius: 8px; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                                                    <i class="fas fa-file-pdf" style="color: white; font-size: 1.2rem;"></i>
-                                                </div>
-                                                <div style="flex: 1;">
-                                                    <div style="font-weight: 600; font-size: 1rem; margin-bottom: 4px;">IT Integration Guide (English)</div>
-                                                    <div style="font-size: 0.85rem; opacity: 0.9; line-height: 1.3;">Azure AD setup, Google Workspace config, network requirements</div>
-                                                    <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 4px;">Version 1.0 - January 2025</div>
-                                                </div>
-                                                <i class="fas fa-external-link-alt" style="opacity: 0.7;"></i>
-                                            </a>
-                                        </div>
-
-                                        <div style="background: rgba(16, 185, 129, 0.2); padding: 16px; border-radius: 8px; border-left: 4px solid #10b981; margin-top: 20px;">
-                                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                                                <i class="fas fa-info-circle" style="color: #10b981;"></i>
-                                                <span style="font-weight: 600; font-size: 0.9rem;">Contenu des guides</span>
-                                            </div>
-                                            <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem; line-height: 1.5;">
-                                                <li style="margin: 4px 0;">• Configuration réseau et firewall</li>
-                                                <li style="margin: 4px 0;">• Setup Azure AD et Google Workspace</li>
-                                                <li style="margin: 4px 0;">• Permissions et sécurité</li>
-                                                <li style="margin: 4px 0;">• Monitoring et conformité RGPD</li>
-                                                <li style="margin: 4px 0;">• Checklist de déploiement</li>
-                                            </ul>
-                                        </div>
-
-                                        <div style="text-align: center; margin-top: 24px; padding: 16px; background: rgba(255,255,255,0.1); border-radius: 8px;">
-                                            <div style="font-size: 0.9rem; margin-bottom: 8px;">
-                                                <i class="fas fa-headset" style="margin-right: 8px; color: #10b981;"></i>
-                                                Support technique
-                                            </div>
-                                            <a href="mailto:vianneyhastings@emailsortpro.fr" style="color: white; text-decoration: none; font-weight: 500;">
-                                                vianneyhastings@emailsortpro.fr
-                                            </a>
-                                        </div>
+                            <div style="display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 300px;">
+                                <a href="https://github.com/vianneyhastings/emailsortpro/blob/main/Guide%20d'Int%C3%A9gration%20IT%20%E2%80%93%20EmailSortPro%20Version%201.0%20-%20Juillet%202025.pdf" 
+                                   target="_blank" 
+                                   style="display: flex; align-items: center; gap: 12px; padding: 16px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; color: #1f2937; text-decoration: none; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 8px; border-radius: 8px; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-file-pdf" style="color: white; font-size: 1.1rem;"></i>
                                     </div>
-                                </div>
+                                    <div style="flex: 1; text-align: left;">
+                                        <div style="font-weight: 600; font-size: 0.95rem; color: #1f2937;">Guide français</div>
+                                        <div style="font-size: 0.8rem; color: #6b7280;">Version 1.0 - Juillet 2025</div>
+                                    </div>
+                                </a>
+
+                                <a href="https://github.com/vianneyhastings/emailsortpro/blob/main/IT%20Integration%20Guide%20%E2%80%93%20EmailSortPro%20Version%201.0%20-%20January%202025.pdf" 
+                                   target="_blank" 
+                                   style="display: flex; align-items: center; gap: 12px; padding: 16px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; color: #1f2937; text-decoration: none; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                    <div style="background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%); padding: 8px; border-radius: 8px; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-file-pdf" style="color: white; font-size: 1.1rem;"></i>
+                                    </div>
+                                    <div style="flex: 1; text-align: left;">
+                                        <div style="font-weight: 600; font-size: 0.95rem; color: #1f2937;">English guide</div>
+                                        <div style="font-size: 0.8rem; color: #6b7280;">Version 1.0 - January 2025</div>
+                                    </div>
+                                </a>
                             </div>
+
                         </div>
                     </div>
                 </div>
