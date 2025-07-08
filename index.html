@@ -242,7 +242,7 @@
         })();
     </script>
 
-    <!-- Styles intégrés pour l'application sobre -->
+    <!-- Styles intégrés pour la nouvelle mise en page -->
     <style>
         /* Reset et styles de base */
         * {
@@ -264,35 +264,171 @@
             overflow: hidden !important;
         }
 
-        /* === STYLES POUR LA PAGE DE LOGIN SOBRE === */
+        /* === STYLES POUR LA PAGE DE LOGIN AVEC LAYOUT 2-COLONNES === */
         .login-page-styles {
             background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
-            height: 100vh;
+            min-height: 100vh;
             overflow: hidden;
             display: flex;
-            align-items: center;
-            justify-content: center;
+            align-items: stretch;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
             z-index: 10000;
-            padding: 20px;
+        }
+
+        .login-layout {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        /* COLONNE GAUCHE - Connexion */
+        .login-left {
+            flex: 1;
+            max-width: 50%;
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
         }
 
         .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 16px;
-            padding: 40px 32px;
-            text-align: center;
-            max-width: 440px;
             width: 100%;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            max-width: 440px;
+            text-align: center;
+        }
+
+        /* COLONNE DROITE - Documentation IT */
+        .login-right {
+            flex: 1;
+            max-width: 50%;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            overflow-y: auto;
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .it-documentation {
+            color: white;
+            height: 100%;
+        }
+
+        .it-doc-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .it-doc-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: white;
+        }
+
+        .it-doc-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .it-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .it-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
+        .it-section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .it-section-content {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .it-list {
+            list-style: none;
+            padding: 0;
+            margin: 8px 0;
+        }
+
+        .it-list li {
+            padding: 4px 0;
+            padding-left: 16px;
+            position: relative;
+        }
+
+        .it-list li:before {
+            content: "•";
+            color: #10b981;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .it-tech-specs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 12px 0;
+        }
+
+        .it-spec-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .it-spec-label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .it-spec-value {
+            opacity: 0.8;
+            font-size: 0.75rem;
+        }
+
+        .security-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin: 8px 0;
+        }
+
+        /* Styles de la section login (colonne gauche) */
         .login-header {
             margin-bottom: 32px;
         }
@@ -972,10 +1108,49 @@
         }
 
         /* Responsive sobre */
+        @media (max-width: 1024px) {
+            .login-layout {
+                flex-direction: column;
+            }
+
+            .login-left, .login-right {
+                max-width: 100%;
+                flex: none;
+            }
+
+            .login-left {
+                padding: 30px 20px;
+            }
+
+            .login-right {
+                padding: 20px;
+                max-height: 50vh;
+                border-left: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            .it-sections {
+                gap: 15px;
+            }
+
+            .it-section {
+                padding: 15px;
+            }
+
+            .it-tech-specs {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+        }
+
         @media (max-width: 768px) {
-            .login-container {
-                padding: 28px 20px;
-                margin: 16px;
+            .login-left {
+                padding: 20px 15px;
+            }
+
+            .login-right {
+                padding: 15px;
+                max-height: 40vh;
             }
 
             .login-title {
@@ -1011,6 +1186,18 @@
             .compliance-link {
                 font-size: 0.8rem;
                 padding: 6px 10px;
+            }
+
+            .it-doc-title {
+                font-size: 1.2rem;
+            }
+
+            .it-section-title {
+                font-size: 1rem;
+            }
+
+            .it-section-content {
+                font-size: 0.8rem;
             }
 
             .app-nav {
@@ -1099,6 +1286,10 @@
         }
 
         @media (max-width: 480px) {
+            .login-right {
+                max-height: 35vh;
+            }
+
             .app-nav {
                 height: 56px;
             }
@@ -1219,107 +1410,284 @@
 
         <!-- Contenu Principal -->
         <main class="app-main" style="padding-bottom: 60px;">
-            <!-- Page de Connexion sobre -->
+            <!-- Page de Connexion avec layout 2-colonnes -->
             <div id="loginPage" class="login-page-styles">
-                <div class="login-container">
-                    <div class="login-header">
-                        <div class="login-logo">
-                            <i class="fas fa-envelope-open-text"></i>
-                        </div>
-                        
-                        <h1 class="login-title">EmailSortPro</h1>
-                        
-                        <p class="login-subtitle">
-                            Assistant IA pour vos emails : analysez et organisez automatiquement Outlook et Gmail
-                        </p>
+                <div class="login-layout">
+                    <!-- COLONNE GAUCHE - Connexion -->
+                    <div class="login-left">
+                        <div class="login-container">
+                            <div class="login-header">
+                                <div class="login-logo">
+                                    <i class="fas fa-envelope-open-text"></i>
+                                </div>
+                                
+                                <h1 class="login-title">EmailSortPro</h1>
+                                
+                                <p class="login-subtitle">
+                                    Assistant IA pour vos emails : analysez et organisez automatiquement Outlook et Gmail
+                                </p>
 
-                        <button id="loginBtn" class="login-button microsoft">
-                            <i class="fab fa-microsoft"></i>
-                            Se connecter à Outlook
-                        </button>
+                                <button id="loginBtn" class="login-button microsoft">
+                                    <i class="fab fa-microsoft"></i>
+                                    Se connecter à Outlook
+                                </button>
 
-                        <button id="googleLoginBtn" class="login-button google">
-                            <i class="fab fa-google"></i>
-                            Se connecter à Gmail
-                        </button>
+                                <button id="googleLoginBtn" class="login-button google">
+                                    <i class="fab fa-google"></i>
+                                    Se connecter à Gmail
+                                </button>
 
-                        <div class="login-security">
-                            <i class="fas fa-shield-alt"></i>
-                            Connexion sécurisée Microsoft & Google
+                                <div class="login-security">
+                                    <i class="fas fa-shield-alt"></i>
+                                    Connexion sécurisée Microsoft & Google
+                                </div>
+                            </div>
+
+                            <div class="how-it-works">
+                                <h2 class="how-it-works-title">Comment ça marche</h2>
+                                
+                                <div class="steps-container">
+                                    <div class="step">
+                                        <div class="step-number">1</div>
+                                        <div class="step-content">
+                                            <div class="step-icon">
+                                                <i class="fas fa-plug"></i>
+                                            </div>
+                                            <div class="step-title">Connexion</div>
+                                            <div class="step-description">Connectez-vous à Outlook ou Gmail</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="step">
+                                        <div class="step-number">2</div>
+                                        <div class="step-content">
+                                            <div class="step-icon">
+                                                <i class="fas fa-brain"></i>
+                                            </div>
+                                            <div class="step-title">Analyse IA</div>
+                                            <div class="step-description">L'IA analyse vos emails</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="step">
+                                        <div class="step-number">3</div>
+                                        <div class="step-content">
+                                            <div class="step-icon">
+                                                <i class="fas fa-list"></i>
+                                            </div>
+                                            <div class="step-title">Organisation</div>
+                                            <div class="step-description">Création de tâches et tri</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="security-section">
+                                    <div class="security-title">
+                                        <i class="fas fa-shield-alt"></i>
+                                        100% RGPD & Sécurisé
+                                    </div>
+                                    <div class="security-description">
+                                        Vos emails ne sont jamais stockés. Traitement entièrement local.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- FOOTER CONFORMITÉ GOOGLE -->
+                            <div class="google-compliance-footer">
+                                <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 8px;">
+                                    EmailSortProAI respecte votre vie privée et se conforme aux politiques Google.
+                                </p>
+                                <div class="compliance-links">
+                                    <a href="/privacy-policy.html" class="compliance-link">
+                                        <i class="fas fa-shield-alt"></i>
+                                        Politique de Confidentialité
+                                    </a>
+                                    <a href="/terms.html" class="compliance-link">
+                                        <i class="fas fa-file-contract"></i>
+                                        Conditions d'Utilisation
+                                    </a>
+                                    <a href="mailto:vianneyhastings@emailsortpro.fr" class="compliance-link">
+                                        <i class="fas fa-envelope"></i>
+                                        Support
+                                    </a>
+                                </div>
+                                <p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
+                                    Développé par Vianney Hastings • vianneyhastings@emailsortpro.fr
+                                </p>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="how-it-works">
-                        <h2 class="how-it-works-title">Comment ça marche</h2>
-                        
-                        <div class="steps-container">
-                            <div class="step">
-                                <div class="step-number">1</div>
-                                <div class="step-content">
-                                    <div class="step-icon">
-                                        <i class="fas fa-plug"></i>
-                                    </div>
-                                    <div class="step-title">Connexion</div>
-                                    <div class="step-description">Connectez-vous à Outlook ou Gmail</div>
-                                </div>
+                    <!-- COLONNE DROITE - Documentation IT -->
+                    <div class="login-right">
+                        <div class="it-documentation">
+                            <div class="it-doc-header">
+                                <h2 class="it-doc-title">
+                                    <i class="fas fa-server"></i>
+                                    Guide d'Intégration IT
+                                </h2>
+                                <p class="it-doc-subtitle">
+                                    Version 1.0 - Janvier 2025 • Informations techniques pour les administrateurs
+                                </p>
                             </div>
-                            
-                            <div class="step">
-                                <div class="step-number">2</div>
-                                <div class="step-content">
-                                    <div class="step-icon">
-                                        <i class="fas fa-brain"></i>
-                                    </div>
-                                    <div class="step-title">Analyse IA</div>
-                                    <div class="step-description">L'IA analyse vos emails</div>
-                                </div>
-                            </div>
-                            
-                            <div class="step">
-                                <div class="step-number">3</div>
-                                <div class="step-content">
-                                    <div class="step-icon">
-                                        <i class="fas fa-list"></i>
-                                    </div>
-                                    <div class="step-title">Organisation</div>
-                                    <div class="step-description">Création de tâches et tri</div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="security-section">
-                            <div class="security-title">
-                                <i class="fas fa-shield-alt"></i>
-                                100% RGPD & Sécurisé
-                            </div>
-                            <div class="security-description">
-                                Vos emails ne sont jamais stockés. Traitement entièrement local.
-                            </div>
-                        </div>
-                    </div>
+                            <div class="it-sections">
+                                <!-- Section Vue d'ensemble -->
+                                <div class="it-section">
+                                    <h3 class="it-section-title">
+                                        <i class="fas fa-info-circle"></i>
+                                        Vue d'ensemble produit
+                                    </h3>
+                                    <div class="it-section-content">
+                                        <p>EmailSortProAI est une application web SaaS qui permet aux utilisateurs d'analyser et organiser leurs emails professionnels via un algorithme propriétaire.</p>
+                                        
+                                        <div class="security-badge">
+                                            <i class="fas fa-shield-check"></i>
+                                            Traitement local uniquement - Zéro stockage
+                                        </div>
 
-                    <!-- FOOTER CONFORMITÉ GOOGLE - NOUVEAU -->
-                    <div class="google-compliance-footer">
-                        <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 8px;">
-                            EmailSortProAI respecte votre vie privée et se conforme aux politiques Google.
-                        </p>
-                        <div class="compliance-links">
-                            <a href="/privacy-policy.html" class="compliance-link">
-                                <i class="fas fa-shield-alt"></i>
-                                Politique de Confidentialité
-                            </a>
-                            <a href="/terms.html" class="compliance-link">
-                                <i class="fas fa-file-contract"></i>
-                                Conditions d'Utilisation
-                            </a>
-                            <a href="mailto:vianneyhastings@emailsortpro.fr" class="compliance-link">
-                                <i class="fas fa-envelope"></i>
-                                Support
-                            </a>
+                                        <ul class="it-list">
+                                            <li>Connexion sécurisée : OAuth2 via Microsoft ou Google</li>
+                                            <li>Lecture emails : APIs officielles (lecture seule)</li>
+                                            <li>Traitement local : Analyse algorithme dans le navigateur</li>
+                                            <li>Zéro stockage : Aucun email ou donnée stockée</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Section Configuration réseau -->
+                                <div class="it-section">
+                                    <h3 class="it-section-title">
+                                        <i class="fas fa-network-wired"></i>
+                                        Prérequis réseau
+                                    </h3>
+                                    <div class="it-section-content">
+                                        <p><strong>Domaines à autoriser :</strong></p>
+                                        <ul class="it-list">
+                                            <li>emailsortpro.netlify.app (application)</li>
+                                            <li>login.microsoftonline.com</li>
+                                            <li>graph.microsoft.com</li>
+                                            <li>accounts.google.com</li>
+                                            <li>gmail.googleapis.com</li>
+                                        </ul>
+
+                                        <div class="it-tech-specs">
+                                            <div class="it-spec-item">
+                                                <span class="it-spec-label">Port</span>
+                                                <span class="it-spec-value">443 HTTPS</span>
+                                            </div>
+                                            <div class="it-spec-item">
+                                                <span class="it-spec-label">Protocole</span>
+                                                <span class="it-spec-value">TLS 1.3</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section Configuration Microsoft -->
+                                <div class="it-section">
+                                    <h3 class="it-section-title">
+                                        <i class="fab fa-microsoft"></i>
+                                        Microsoft 365
+                                    </h3>
+                                    <div class="it-section-content">
+                                        <p><strong>Application Azure AD :</strong></p>
+                                        <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 4px; font-family: monospace; font-size: 0.8rem; margin: 8px 0;">
+                                            ID: 8fec3ae1-78e3-4b5d-a425-00b8f20516f7
+                                        </div>
+                                        
+                                        <p><strong>Permissions requises :</strong></p>
+                                        <ul class="it-list">
+                                            <li>User.Read (Délégué) - Lecture profil utilisateur</li>
+                                            <li>Mail.Read (Délégué) - Lecture métadonnées emails</li>
+                                        </ul>
+
+                                        <div class="security-badge">
+                                            <i class="fas fa-lock"></i>
+                                            Permissions lecture seule uniquement
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section Configuration Google -->
+                                <div class="it-section">
+                                    <h3 class="it-section-title">
+                                        <i class="fab fa-google"></i>
+                                        Google Workspace
+                                    </h3>
+                                    <div class="it-section-content">
+                                        <p><strong>Application Google Cloud :</strong></p>
+                                        <div style="background: rgba(255,255,255,0.1); padding: 8px; border-radius: 4px; font-family: monospace; font-size: 0.7rem; margin: 8px 0; word-break: break-all;">
+                                            Client ID: 436941729211-2dr129lfjnc22k1k7f42ofisjbfthmr2
+                                        </div>
+                                        
+                                        <p><strong>Scopes OAuth :</strong></p>
+                                        <ul class="it-list">
+                                            <li>userinfo.email - Identification utilisateur</li>
+                                            <li>gmail.readonly - Lecture emails (LECTURE SEULE)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Section Sécurité -->
+                                <div class="it-section">
+                                    <h3 class="it-section-title">
+                                        <i class="fas fa-shield-alt"></i>
+                                        Sécurité & Conformité
+                                    </h3>
+                                    <div class="it-section-content">
+                                        <p><strong>Chiffrement :</strong></p>
+                                        <ul class="it-list">
+                                            <li>TLS 1.3 pour toutes les communications</li>
+                                            <li>HSTS activé (max-age: 31536000)</li>
+                                            <li>Certificate Pinning : Netlify + Cloudflare</li>
+                                            <li>Chiffrement asymétrique RSA-4096 pour les tokens</li>
+                                        </ul>
+
+                                        <p><strong>Conformité RGPD :</strong></p>
+                                        <ul class="it-list">
+                                            <li>Base légale : Consentement explicite utilisateur</li>
+                                            <li>Durée : Session navigateur uniquement</li>
+                                            <li>Transfert : Aucun (traitement local)</li>
+                                            <li>Export JSON disponible</li>
+                                        </ul>
+
+                                        <div class="security-badge">
+                                            <i class="fas fa-certificate"></i>
+                                            100% conforme RGPD
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section Monitoring -->
+                                <div class="it-section">
+                                    <h3 class="it-section-title">
+                                        <i class="fas fa-chart-line"></i>
+                                        Monitoring & Support
+                                    </h3>
+                                    <div class="it-section-content">
+                                        <p><strong>Volumes typiques par utilisateur/jour :</strong></p>
+                                        <div class="it-tech-specs">
+                                            <div class="it-spec-item">
+                                                <span class="it-spec-label">Microsoft Graph</span>
+                                                <span class="it-spec-value">~50-100 req</span>
+                                            </div>
+                                            <div class="it-spec-item">
+                                                <span class="it-spec-label">Gmail API</span>
+                                                <span class="it-spec-value">~30-80 req</span>
+                                            </div>
+                                        </div>
+
+                                        <p><strong>Support technique :</strong></p>
+                                        <ul class="it-list">
+                                            <li>Email : vianneyhastings@emailsortpro.fr</li>
+                                            <li>Documentation complète disponible</li>
+                                            <li>Guides d'intégration en français et anglais</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <p style="font-size: 0.75rem; color: #6b7280; margin-top: 8px;">
-                            Développé par Vianney Hastings • vianneyhastings@emailsortpro.fr
-                        </p>
                     </div>
                 </div>
             </div>
@@ -1344,8 +1712,6 @@
     </div>
 
     <!-- Scripts - Ordre CORRIGÉ pour éviter le délai de 10 secondes -->
-    
-  <!-- Scripts - Ordre CORRIGÉ pour éviter le délai de 10 secondes -->
 
 <!-- 1. Configuration Supabase EN PREMIER -->
 <script src="config-supabase.js"></script>
