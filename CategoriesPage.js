@@ -272,24 +272,11 @@ class CategoriesPageAdvanced {
                     <div class="stat-value">${this.getTotalKeywords(categories)}</div>
                     <div class="stat-label">Mots-clés</div>
                 </div>
-                <div class="search-modern">
-                    <i class="fas fa-search"></i>
-                    <input type="text" 
-                           placeholder="Rechercher..." 
-                           onkeyup="window.categoriesPage.handleSearch(this.value)">
-                </div>
-            </div>
-            
-            <!-- Bouton création catégorie -->
-            <div class="create-category-section">
-                <button class="btn-create-category" onclick="window.categoriesPage.showCreateCategoryModal()">
-                    <i class="fas fa-plus-circle"></i>
-                    Créer une nouvelle catégorie
-                </button>
             </div>
             
             <!-- Grille de catégories -->
             <div class="categories-grid" id="categories-container">
+                ${this.renderCreateCategoryCard()}
                 ${this.renderCategories(categories, settings.activeCategories)}
             </div>
         `;
@@ -447,6 +434,32 @@ class CategoriesPageAdvanced {
         if (container) {
             this.render(container);
         }
+    }
+
+    renderCreateCategoryCard() {
+        return `
+            <div class="category-card create-card" 
+                 style="--cat-color: #6366F1"
+                 onclick="window.categoriesPage.showCreateCategoryModal()">
+                
+                <div class="card-header">
+                    <div class="cat-emoji">➕</div>
+                    <div class="cat-info">
+                        <div class="cat-name">Nouvelle catégorie</div>
+                        <div class="cat-meta">
+                            <span class="meta-description">Créer une catégorie personnalisée</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-actions" onclick="event.stopPropagation()">
+                    <div class="create-hint">
+                        <i class="fas fa-plus-circle"></i>
+                        Cliquez pour créer
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     // ================================================
@@ -1874,6 +1887,7 @@ class CategoriesPageAdvanced {
                     <label for="cat-priority">Priorité</label>
                     <input type="range" id="cat-priority" min="1" max="100" value="50">
                     <span id="priority-value">50</span>
+                    <div class="priority-hint">50 = même priorité que Finance, Tâches, Réunions, etc.</div>
                 </div>
                 
                 <div class="form-info">
@@ -2310,10 +2324,10 @@ class CategoriesPageAdvanced {
                 margin-top: 24px;
             }
             
-            /* Styles pour l'onglet catégories (existants) */
+            /* Stats bar sans recherche */
             .stats-bar {
                 display: grid;
-                grid-template-columns: repeat(3, 120px) 1fr;
+                grid-template-columns: repeat(3, 120px);
                 gap: 16px;
                 margin-bottom: 24px;
                 padding: 0 8px;
@@ -3446,31 +3460,55 @@ class CategoriesPageAdvanced {
                 background: var(--primary);
             }
             
-            /* Bouton création catégorie */
-            .create-category-section {
-                margin-bottom: 24px;
-                text-align: center;
-            }
-            
-            .btn-create-category {
-                background: linear-gradient(135deg, var(--primary), var(--secondary));
-                color: white;
-                border: none;
-                border-radius: 12px;
-                padding: 16px 32px;
-                font-size: 16px;
-                font-weight: 600;
+            /* Carte de création */
+            .category-card.create-card {
+                background: linear-gradient(135deg, #f0f9ff, #e0e7ff);
+                border: 2px dashed var(--primary);
                 cursor: pointer;
-                display: inline-flex;
-                align-items: center;
-                gap: 10px;
                 transition: all 0.3s;
-                box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
             }
             
-            .btn-create-category:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+            .category-card.create-card:hover {
+                background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+                border-style: solid;
+                transform: translateY(-4px);
+                box-shadow: 0 8px 20px rgba(99, 102, 241, 0.2);
+            }
+            
+            .create-card .cat-emoji {
+                background: var(--primary);
+                color: white;
+                font-size: 20px;
+                font-weight: bold;
+            }
+            
+            .create-card .cat-name {
+                color: var(--primary);
+                font-weight: 700;
+            }
+            
+            .create-card .meta-description {
+                color: #6366F1;
+                opacity: 0.8;
+            }
+            
+            .create-hint {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--primary);
+                font-size: 12px;
+                font-weight: 600;
+                opacity: 0.8;
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .priority-hint {
+                font-size: 11px;
+                color: var(--text-secondary);
+                margin-top: 4px;
+                font-style: italic;
             }
             
             /* Formulaire création catégorie */
