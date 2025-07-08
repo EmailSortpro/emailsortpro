@@ -1,6 +1,5 @@
-
-// CategoriesPage.js - Version 23.0 - Intégration CategoryManager + Backup
-console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v23.0 - CategoryManager Integration + Backup...');
+// CategoriesPage.js - Version 24.0 - Export/Import fonctionnel + Gestion individuelle des mots-clés
+console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v24.0 - Full functional export/import...');
 
 // Nettoyer toute instance précédente
 if (window.categoriesPage) {
@@ -31,7 +30,11 @@ class CategoriesPageAdvanced {
         
         this.backupEmails = this.generateBackupEmails();
         
-        console.log('[CategoriesPage] 🎨 Interface avancée v23.0 initialisée avec CategoryManager');
+        // État temporaire pour la modal
+        this.tempKeywords = null;
+        this.tempFilters = null;
+        
+        console.log('[CategoriesPage] 🎨 Interface avancée v24.0 initialisée');
     }
 
     // ================================================
@@ -48,6 +51,13 @@ class CategoriesPageAdvanced {
     }
     
     getCategoryKeywords(categoryId) {
+        // D'abord vérifier dans le localStorage
+        const savedKeywords = this.loadCategoryKeywords(categoryId);
+        if (savedKeywords) {
+            return savedKeywords;
+        }
+        
+        // Ensuite vérifier CategoryManager
         if (window.categoryManager && typeof window.categoryManager.weightedKeywords === 'object') {
             const keywords = window.categoryManager.weightedKeywords[categoryId];
             if (keywords) {
@@ -55,23 +65,25 @@ class CategoriesPageAdvanced {
                 return keywords;
             }
         }
+        
         console.log(`[CategoriesPage] ⚠️ Mots-clés non trouvés pour ${categoryId}`);
         return { absolute: [], strong: [], weak: [], exclusions: [] };
     }
     
     getCategoryFilters(categoryId) {
+        // D'abord vérifier dans le localStorage
+        const savedFilters = this.loadCategoryFilters(categoryId);
+        if (savedFilters) {
+            return savedFilters;
+        }
+        
+        // Ensuite vérifier CategoryManager
         if (window.categoryManager && typeof window.categoryManager.getCategoryFilters === 'function') {
             const filters = window.categoryManager.getCategoryFilters(categoryId);
             if (filters) {
                 console.log(`[CategoriesPage] 🔧 Filtres récupérés pour ${categoryId}:`, filters);
                 return filters;
             }
-        }
-        
-        // Récupérer depuis localStorage si disponible
-        const savedFilters = this.loadCategoryFilters(categoryId);
-        if (savedFilters) {
-            return savedFilters;
         }
         
         console.log(`[CategoriesPage] ⚠️ Filtres non trouvés pour ${categoryId}, utilisation par défaut`);
@@ -88,6 +100,16 @@ class CategoriesPageAdvanced {
         }
         console.log('[CategoriesPage] ⚠️ EmailScanner non disponible, utilisation backup');
         return this.backupEmails;
+    }
+    
+    getAllTasks() {
+        if (window.taskManager && typeof window.taskManager.getAllTasks === 'function') {
+            const tasks = window.taskManager.getAllTasks();
+            console.log('[CategoriesPage] 📋 Tâches récupérées depuis TaskManager:', tasks.length);
+            return tasks;
+        }
+        console.log('[CategoriesPage] ⚠️ TaskManager non disponible');
+        return [];
     }
 
     // ================================================
@@ -173,6 +195,7 @@ class CategoriesPageAdvanced {
                 categoriesCount: Object.keys(categories).length,
                 hasEmailScanner: !!window.emailScanner,
                 hasCategoryManager: !!window.categoryManager,
+                hasTaskManager: !!window.taskManager,
                 activeTab: this.activeTab
             });
             
@@ -250,14 +273,14 @@ class CategoriesPageAdvanced {
                 <div class="backup-section">
                     <div class="backup-header">
                         <h2><i class="fas fa-download"></i> Export des données</h2>
-                        <p>Sauvegardez vos catégories, paramètres et données d'emails</p>
+                        <p>Sauvegardez vos catégories, paramètres, tâches et données d'emails</p>
                     </div>
                     
                     <div class="backup-grid">
                         <div class="backup-card">
                             <div class="backup-icon">📦</div>
                             <h3>Export complet</h3>
-                            <p>Toutes les données: catégories, emails, paramètres</p>
+                            <p>Toutes les données: catégories, emails, tâches, paramètres</p>
                             <button class="btn-backup primary" onclick="window.categoriesPage.exportFullBackup()">
                                 <i class="fas fa-download"></i>
                                 Export complet
@@ -267,7 +290,7 @@ class CategoriesPageAdvanced {
                         <div class="backup-card">
                             <div class="backup-icon">🏷️</div>
                             <h3>Catégories uniquement</h3>
-                            <p>Export des catégories et mots-clés</p>
+                            <p>Export des catégories, mots-clés et filtres</p>
                             <button class="btn-backup secondary" onclick="window.categoriesPage.exportCategories()">
                                 <i class="fas fa-tags"></i>
                                 Export catégories
@@ -275,12 +298,12 @@ class CategoriesPageAdvanced {
                         </div>
                         
                         <div class="backup-card">
-                            <div class="backup-icon">⚙️</div>
-                            <h3>Paramètres</h3>
-                            <p>Configuration et préférences</p>
-                            <button class="btn-backup secondary" onclick="window.categoriesPage.exportSettings()">
-                                <i class="fas fa-cog"></i>
-                                Export paramètres
+                            <div class="backup-icon">📋</div>
+                            <h3>Tâches uniquement</h3>
+                            <p>Export de toutes les tâches</p>
+                            <button class="btn-backup secondary" onclick="window.categoriesPage.exportTasks()">
+                                <i class="fas fa-tasks"></i>
+                                Export tâches
                             </button>
                         </div>
                     </div>
@@ -293,7 +316,9 @@ class CategoriesPageAdvanced {
                     </div>
                     
                     <div class="import-zone" id="import-zone">
-                        <div class="import-area" onclick="document.getElementById('fileInput').click()">
+                        <div class="import-area" onclick="document.getElementById('fileInput').click()"
+                             ondrop="window.categoriesPage.handleDrop(event)" 
+                             ondragover="window.categoriesPage.handleDragOver(event)">
                             <div class="import-icon">📁</div>
                             <h3>Glissez votre fichier ici</h3>
                             <p>ou cliquez pour sélectionner</p>
@@ -397,7 +422,7 @@ class CategoriesPageAdvanced {
     }
 
     // ================================================
-    // RENDU DES CATÉGORIES (EXISTANT)
+    // RENDU DES CATÉGORIES
     // ================================================
     renderCategories(categories, activeCategories) {
         const filtered = this.filterCategories(categories);
@@ -528,11 +553,15 @@ class CategoriesPageAdvanced {
         this.closeModal();
         this.editingCategoryId = categoryId;
         
-        // Récupérer les mots-clés depuis CategoryManager
+        // Charger les mots-clés et filtres
         const keywords = this.getCategoryKeywords(categoryId);
         const filters = this.getCategoryFilters(categoryId);
         
-        console.log('[CategoriesPage] 🔑 Mots-clés pour', categoryId, ':', keywords);
+        // Stocker temporairement pour la modal
+        this.tempKeywords = JSON.parse(JSON.stringify(keywords));
+        this.tempFilters = JSON.parse(JSON.stringify(filters));
+        
+        console.log('[CategoriesPage] 🔑 Modal ouverte pour', categoryId, ':', { keywords, filters });
         
         const modalHTML = `
             <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPage.closeModal()">
@@ -563,11 +592,11 @@ class CategoriesPageAdvanced {
                     
                     <div class="modal-content">
                         <div class="tab-panel active" id="tab-keywords">
-                            ${this.renderKeywordsTab(keywords, categoryId)}
+                            ${this.renderKeywordsTab(this.tempKeywords, categoryId)}
                         </div>
                         
                         <div class="tab-panel" id="tab-filters">
-                            ${this.renderFiltersTab(filters)}
+                            ${this.renderFiltersTab(this.tempFilters)}
                         </div>
                         
                         ${category.isCustom ? `
@@ -589,7 +618,7 @@ class CategoriesPageAdvanced {
                         <button class="btn-modern secondary" onclick="window.categoriesPage.closeModal()">
                             Fermer
                         </button>
-                        <button class="btn-modern primary" onclick="window.categoriesPage.save()">
+                        <button class="btn-modern primary" onclick="window.categoriesPage.saveModal()">
                             <i class="fas fa-check"></i> Enregistrer
                         </button>
                     </div>
@@ -636,8 +665,8 @@ class CategoriesPageAdvanced {
                 ${!isReadOnly ? `
                     <div class="input-modern">
                         <input type="text" id="${type}-input" placeholder="Ajouter un mot-clé..." 
-                               onkeypress="if(event.key === 'Enter') window.categoriesPage.addKeyword('${type}', '${color}')">
-                        <button style="background: ${color}" onclick="window.categoriesPage.addKeyword('${type}', '${color}')">
+                               onkeypress="if(event.key === 'Enter') window.categoriesPage.addKeyword('${type}')">
+                        <button style="background: ${color}" onclick="window.categoriesPage.addKeyword('${type}')">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
@@ -648,7 +677,7 @@ class CategoriesPageAdvanced {
                         <span class="tag" style="background: ${color}15; color: ${color}">
                             ${k}
                             ${!isReadOnly ? `
-                                <button onclick="window.categoriesPage.removeItem('${type}', '${k}')">
+                                <button onclick="window.categoriesPage.removeKeyword('${type}', '${k}')">
                                     <i class="fas fa-times"></i>
                                 </button>
                             ` : ''}
@@ -659,79 +688,237 @@ class CategoriesPageAdvanced {
         `;
     }
 
-    renderTestTab(categoryId) {
+    renderFiltersTab(filters) {
         return `
-            <div class="test-tab">
-                <div class="test-header">
-                    <h3><i class="fas fa-flask"></i> Testeur de catégorie</h3>
-                    <p>Testez la détection de cette catégorie avec des exemples d'emails</p>
-                </div>
-                
-                <div class="test-form">
-                    <div class="input-group">
-                        <label for="test-subject">Sujet de l'email :</label>
-                        <input type="text" id="test-subject" placeholder="Entrez le sujet de l'email à tester">
-                    </div>
+            <div class="filters-layout">
+                <div class="filter-section">
+                    <h3><i class="fas fa-check-circle"></i> Filtres d'inclusion</h3>
+                    <p class="section-description">Ces filtres permettent d'inclure spécifiquement certains emails dans cette catégorie</p>
                     
-                    <div class="input-group">
-                        <label for="test-body">Contenu de l'email :</label>
-                        <textarea id="test-body" rows="4" placeholder="Entrez le contenu de l'email (optionnel)"></textarea>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="test-from">Expéditeur :</label>
-                        <input type="email" id="test-from" placeholder="expediteur@example.com" value="test@example.com">
-                    </div>
-                    
-                    <button class="btn-test" onclick="window.categoriesPage.testEmailCategory('${categoryId}')">
-                        <i class="fas fa-play"></i>
-                        Tester la détection
-                    </button>
-                </div>
-                
-                <div class="test-results" id="test-results" style="display: none;">
-                    <h4>Résultats du test :</h4>
-                    <div id="test-output"></div>
-                </div>
-                
-                <div class="test-examples">
-                    <h4>Exemples de test rapides :</h4>
-                    <div class="test-examples-grid">
-                        ${this.getTestExamples(categoryId).map(example => `
-                            <button class="test-example" onclick="window.categoriesPage.loadTestExample('${example.subject}', '${example.body}', '${example.from}')">
-                                <strong>${example.name}</strong>
-                                <span>${example.subject}</span>
+                    <div class="filter-box">
+                        <h4><i class="fas fa-globe"></i> Domaines autorisés</h4>
+                        <p class="filter-hint">Emails provenant uniquement de ces domaines seront inclus dans cette catégorie</p>
+                        <div class="input-modern">
+                            <input type="text" id="include-domain" placeholder="exemple.com" 
+                                   onkeypress="if(event.key === 'Enter') window.categoriesPage.addFilter('includeDomains')">
+                            <button onclick="window.categoriesPage.addFilter('includeDomains')" style="background: #10B981;">
+                                <i class="fas fa-plus"></i>
                             </button>
-                        `).join('')}
+                        </div>
+                        <div class="tags" id="includeDomains-items">
+                            ${(filters.includeDomains || []).map(d => `
+                                <span class="tag filter-tag">
+                                    <i class="fas fa-globe"></i>
+                                    ${d}
+                                    <button onclick="window.categoriesPage.removeFilter('includeDomains', '${d}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h3><i class="fas fa-ban"></i> Filtres d'exclusion</h3>
+                    <p class="section-description">Ces filtres empêchent certains emails d'être classés dans cette catégorie</p>
+                    
+                    <div class="filter-box">
+                        <h4><i class="fas fa-shield-alt"></i> Domaines exclus</h4>
+                        <p class="filter-hint">Emails de ces domaines ne seront jamais classés dans cette catégorie</p>
+                        <div class="input-modern">
+                            <input type="text" id="exclude-domain" placeholder="spam.com" 
+                                   onkeypress="if(event.key === 'Enter') window.categoriesPage.addFilter('excludeDomains')">
+                            <button onclick="window.categoriesPage.addFilter('excludeDomains')" style="background: #EF4444;">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="tags" id="excludeDomains-items">
+                            ${(filters.excludeDomains || []).map(d => `
+                                <span class="tag exclude-tag">
+                                    <i class="fas fa-shield-alt"></i>
+                                    ${d}
+                                    <button onclick="window.categoriesPage.removeFilter('excludeDomains', '${d}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="filter-box">
+                        <h4><i class="fas fa-user-slash"></i> Emails exclus</h4>
+                        <p class="filter-hint">Ces adresses email spécifiques seront toujours exclues</p>
+                        <div class="input-modern">
+                            <input type="text" id="exclude-email" placeholder="noreply@exemple.com" 
+                                   onkeypress="if(event.key === 'Enter') window.categoriesPage.addFilter('excludeEmails')">
+                            <button onclick="window.categoriesPage.addFilter('excludeEmails')" style="background: #EF4444;">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="tags" id="excludeEmails-items">
+                            ${(filters.excludeEmails || []).map(e => `
+                                <span class="tag exclude-tag">
+                                    <i class="fas fa-user-slash"></i>
+                                    ${e}
+                                    <button onclick="window.categoriesPage.removeFilter('excludeEmails', '${e}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                        </div>
                     </div>
                 </div>
             </div>
         `;
     }
 
-    getTestExamples(categoryId) {
-        const examples = {
-            newsletters: [
-                { name: 'Newsletter classique', subject: 'Newsletter hebdomadaire - Nouvelles tendances', body: 'Se désinscrire en cliquant ici', from: 'newsletter@shop.com' },
-                { name: 'Promotion', subject: 'Offre spéciale -50% - Limitée', body: 'Découvrir la vente', from: 'promo@boutique.fr' }
-            ],
-            security: [
-                { name: 'Code vérification', subject: 'Code de vérification', body: 'Votre code: 123456', from: 'security@microsoft.com' },
-                { name: 'Alerte connexion', subject: 'Nouvelle connexion détectée', body: 'Connexion depuis Paris', from: 'alerts@security.com' }
-            ],
-            tasks: [
-                { name: 'Action requise', subject: 'Action requise: Compléter votre profil', body: 'Veuillez compléter', from: 'system@company.com' },
-                { name: 'Tâche urgente', subject: 'Urgent: Deadline dans 2h', body: 'Task assigned', from: 'project@work.com' }
-            ],
-            finance: [
-                { name: 'Facture', subject: 'Facture #12345', body: 'Montant: 150€', from: 'billing@company.com' },
-                { name: 'Commande', subject: 'Confirmation commande #ABC', body: 'Commande confirmée', from: 'orders@shop.fr' }
-            ]
+    // ================================================
+    // GESTION DES MOTS-CLÉS
+    // ================================================
+    addKeyword(type) {
+        const input = document.getElementById(`${type}-input`);
+        if (!input || !input.value.trim()) {
+            this.showToast('⚠️ Veuillez saisir un mot-clé', 'warning');
+            return;
+        }
+        
+        const keyword = input.value.trim().toLowerCase();
+        
+        // Vérifier si déjà présent
+        if (this.tempKeywords[type].includes(keyword)) {
+            this.showToast('⚠️ Mot-clé déjà présent', 'warning');
+            return;
+        }
+        
+        // Ajouter le mot-clé
+        this.tempKeywords[type].push(keyword);
+        
+        // Rafraîchir l'affichage
+        this.refreshKeywordsDisplay();
+        
+        // Vider l'input
+        input.value = '';
+        input.focus();
+        
+        this.showToast(`✅ Mot-clé "${keyword}" ajouté`);
+    }
+    
+    removeKeyword(type, keyword) {
+        const index = this.tempKeywords[type].indexOf(keyword);
+        if (index > -1) {
+            this.tempKeywords[type].splice(index, 1);
+            this.refreshKeywordsDisplay();
+            this.showToast(`🗑️ Mot-clé "${keyword}" supprimé`);
+        }
+    }
+    
+    refreshKeywordsDisplay() {
+        const keywordsTab = document.getElementById('tab-keywords');
+        if (keywordsTab && this.editingCategoryId) {
+            keywordsTab.innerHTML = this.renderKeywordsTab(this.tempKeywords, this.editingCategoryId);
+        }
+    }
+
+    // ================================================
+    // GESTION DES FILTRES
+    // ================================================
+    addFilter(type) {
+        const inputMap = {
+            'includeDomains': 'include-domain',
+            'excludeDomains': 'exclude-domain',
+            'excludeEmails': 'exclude-email'
         };
         
-        return examples[categoryId] || [
-            { name: 'Test générique', subject: 'Email de test', body: 'Contenu de test', from: 'test@example.com' }
-        ];
+        const input = document.getElementById(inputMap[type]);
+        if (!input?.value.trim()) {
+            this.showToast('⚠️ Veuillez saisir une valeur', 'warning');
+            return;
+        }
+        
+        const value = input.value.trim().toLowerCase();
+        
+        // Validation selon le type
+        if (type.includes('Domain') && !this.isValidDomain(value)) {
+            this.showToast('⚠️ Format de domaine invalide', 'warning');
+            return;
+        }
+        
+        if (type.includes('Email') && !this.isValidEmail(value)) {
+            this.showToast('⚠️ Format d\'email invalide', 'warning');
+            return;
+        }
+        
+        // Vérifier si déjà ajouté
+        if (this.tempFilters[type].includes(value)) {
+            this.showToast('⚠️ Filtre déjà ajouté', 'warning');
+            return;
+        }
+        
+        // Ajouter le filtre
+        this.tempFilters[type].push(value);
+        
+        // Rafraîchir l'affichage
+        this.refreshFiltersDisplay();
+        
+        // Vider l'input
+        input.value = '';
+        input.focus();
+        
+        this.showToast(`✅ Filtre "${value}" ajouté`);
+    }
+    
+    removeFilter(type, value) {
+        const index = this.tempFilters[type].indexOf(value);
+        if (index > -1) {
+            this.tempFilters[type].splice(index, 1);
+            this.refreshFiltersDisplay();
+            this.showToast(`🗑️ Filtre "${value}" supprimé`);
+        }
+    }
+    
+    refreshFiltersDisplay() {
+        const filtersTab = document.getElementById('tab-filters');
+        if (filtersTab) {
+            filtersTab.innerHTML = this.renderFiltersTab(this.tempFilters);
+        }
+    }
+    
+    isValidDomain(domain) {
+        const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+        return domainRegex.test(domain) && domain.length <= 253;
+    }
+    
+    isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    // ================================================
+    // SAUVEGARDE MODAL
+    // ================================================
+    saveModal() {
+        if (!this.editingCategoryId) return;
+        
+        // Sauvegarder les mots-clés
+        this.saveCategoryKeywords(this.editingCategoryId, this.tempKeywords);
+        
+        // Sauvegarder les filtres
+        this.saveCategoryFilters(this.editingCategoryId, this.tempFilters);
+        
+        // Notifier CategoryManager si disponible
+        if (window.categoryManager) {
+            if (typeof window.categoryManager.updateCategoryKeywords === 'function') {
+                window.categoryManager.updateCategoryKeywords(this.editingCategoryId, this.tempKeywords);
+            }
+            if (typeof window.categoryManager.updateCategoryFilters === 'function') {
+                window.categoryManager.updateCategoryFilters(this.editingCategoryId, this.tempFilters);
+            }
+        }
+        
+        this.showToast('✅ Modifications enregistrées');
+        this.closeModal();
+        this.updateCategoriesDisplay();
     }
 
     // ================================================
@@ -741,16 +928,18 @@ class CategoriesPageAdvanced {
         console.log('[CategoriesPage] 📦 Export complet...');
         
         const data = {
-            version: '1.0',
+            version: '2.0',
             timestamp: new Date().toISOString(),
             type: 'full_backup',
-            categories: this.getCategories(),
+            categories: this.exportAllCategories(),
             emails: this.getAllEmails(),
+            tasks: this.getAllTasks(),
             settings: this.loadSettings(),
-            categoryKeywords: this.exportCategoryKeywords(),
+            categoryKeywords: this.exportAllCategoryKeywords(),
+            categoryFilters: this.exportAllCategoryFilters(),
             userInfo: {
                 exportDate: new Date().toISOString(),
-                source: 'CategoriesPage v23.0'
+                source: 'CategoriesPage v24.0'
             }
         };
         
@@ -763,14 +952,16 @@ class CategoriesPageAdvanced {
         console.log('[CategoriesPage] 🏷️ Export catégories...');
         
         const data = {
-            version: '1.0',
+            version: '2.0',
             timestamp: new Date().toISOString(),
             type: 'categories_only',
-            categories: this.getCategories(),
-            categoryKeywords: this.exportCategoryKeywords(),
+            categories: this.exportAllCategories(),
+            categoryKeywords: this.exportAllCategoryKeywords(),
+            categoryFilters: this.exportAllCategoryFilters(),
+            settings: this.loadSettings(),
             userInfo: {
                 exportDate: new Date().toISOString(),
-                source: 'CategoriesPage v23.0'
+                source: 'CategoriesPage v24.0'
             }
         };
         
@@ -779,26 +970,44 @@ class CategoriesPageAdvanced {
         this.showToast('✅ Export catégories terminé!');
     }
 
-    exportSettings() {
-        console.log('[CategoriesPage] ⚙️ Export paramètres...');
+    exportTasks() {
+        console.log('[CategoriesPage] 📋 Export tâches...');
+        
+        const tasks = this.getAllTasks();
         
         const data = {
-            version: '1.0',
+            version: '2.0',
             timestamp: new Date().toISOString(),
-            type: 'settings_only',
-            settings: this.loadSettings(),
+            type: 'tasks_only',
+            tasks: tasks,
+            taskCount: tasks.length,
             userInfo: {
                 exportDate: new Date().toISOString(),
-                source: 'CategoriesPage v23.0'
+                source: 'CategoriesPage v24.0'
             }
         };
         
-        this.downloadAsFile(data, `settings-backup-${this.formatDateForFilename()}.json`);
-        this.addToBackupHistory('Export paramètres', 'settings', data);
-        this.showToast('✅ Export paramètres terminé!');
+        this.downloadAsFile(data, `tasks-backup-${this.formatDateForFilename()}.json`);
+        this.addToBackupHistory('Export tâches', 'tasks', data);
+        this.showToast(`✅ ${tasks.length} tâches exportées!`);
     }
 
-    exportCategoryKeywords() {
+    exportAllCategories() {
+        const categories = this.getCategories();
+        const exported = {};
+        
+        Object.entries(categories).forEach(([id, category]) => {
+            exported[id] = {
+                ...category,
+                keywords: this.getCategoryKeywords(id),
+                filters: this.getCategoryFilters(id)
+            };
+        });
+        
+        return exported;
+    }
+
+    exportAllCategoryKeywords() {
         const categories = this.getCategories();
         const keywords = {};
         
@@ -806,13 +1015,61 @@ class CategoriesPageAdvanced {
             keywords[categoryId] = this.getCategoryKeywords(categoryId);
         });
         
+        // Ajouter aussi ceux du localStorage non présents dans categories
+        const allSaved = this.loadAllCategoryKeywords();
+        Object.entries(allSaved).forEach(([id, kw]) => {
+            if (!keywords[id]) {
+                keywords[id] = kw;
+            }
+        });
+        
         return keywords;
+    }
+
+    exportAllCategoryFilters() {
+        const categories = this.getCategories();
+        const filters = {};
+        
+        Object.keys(categories).forEach(categoryId => {
+            filters[categoryId] = this.getCategoryFilters(categoryId);
+        });
+        
+        // Ajouter aussi ceux du localStorage non présents dans categories
+        const allSaved = this.loadAllCategoryFilters();
+        Object.entries(allSaved).forEach(([id, filter]) => {
+            if (!filters[id]) {
+                filters[id] = filter;
+            }
+        });
+        
+        return filters;
+    }
+
+    // ================================================
+    // IMPORT DE DONNÉES
+    // ================================================
+    handleDrop(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const files = event.dataTransfer.files;
+        if (files.length > 0) {
+            this.processFile(files[0]);
+        }
+    }
+    
+    handleDragOver(event) {
+        event.preventDefault();
+        event.stopPropagation();
     }
 
     handleFileImport(input) {
         const file = input.files[0];
         if (!file) return;
-        
+        this.processFile(file);
+    }
+    
+    processFile(file) {
         console.log('[CategoriesPage] 📁 Import fichier:', file.name);
         
         const reader = new FileReader();
@@ -842,23 +1099,47 @@ class CategoriesPageAdvanced {
         const overwriteSettings = document.getElementById('overwriteSettings')?.checked;
         
         try {
+            let importResult = { categories: 0, keywords: 0, filters: 0, tasks: 0, settings: 0 };
+            
             // Import selon le type
             switch (data.type) {
                 case 'full_backup':
-                    this.importFullBackup(data, mergeData, overwriteSettings);
+                    importResult = this.importFullBackup(data, mergeData, overwriteSettings);
                     break;
                 case 'categories_only':
-                    this.importCategories(data, mergeData);
+                    importResult = this.importCategories(data, mergeData);
+                    break;
+                case 'tasks_only':
+                    importResult = this.importTasks(data, mergeData);
                     break;
                 case 'settings_only':
-                    this.importSettings(data, overwriteSettings);
+                    importResult = this.importSettings(data, overwriteSettings);
                     break;
                 default:
-                    this.showToast('⚠️ Type de sauvegarde non reconnu', 'warning');
-                    return;
+                    // Tenter de détecter le type automatiquement
+                    if (data.categories || data.categoryKeywords) {
+                        importResult = this.importCategories(data, mergeData);
+                    } else if (data.tasks) {
+                        importResult = this.importTasks(data, mergeData);
+                    } else {
+                        this.showToast('⚠️ Type de sauvegarde non reconnu', 'warning');
+                        return;
+                    }
             }
             
-            this.showToast('✅ Import réussi!');
+            // Message de succès avec détails
+            const messages = [];
+            if (importResult.categories > 0) messages.push(`${importResult.categories} catégories`);
+            if (importResult.keywords > 0) messages.push(`${importResult.keywords} mots-clés`);
+            if (importResult.filters > 0) messages.push(`${importResult.filters} filtres`);
+            if (importResult.tasks > 0) messages.push(`${importResult.tasks} tâches`);
+            if (importResult.settings > 0) messages.push('paramètres');
+            
+            const message = messages.length > 0 ? 
+                `✅ Import réussi: ${messages.join(', ')}` : 
+                '✅ Import terminé';
+                
+            this.showToast(message);
             this.refreshPage();
             
         } catch (error) {
@@ -868,14 +1149,15 @@ class CategoriesPageAdvanced {
     }
 
     validateImportData(data) {
-        if (!data.version || !data.timestamp || !data.type) {
+        if (!data.version || !data.timestamp) {
             console.error('[CategoriesPage] Données manquantes');
             return false;
         }
         
-        if (data.type === 'full_backup' && (!data.categories || !data.settings)) {
-            console.error('[CategoriesPage] Backup complet invalide');
-            return false;
+        // Version check
+        const majorVersion = parseInt(data.version.split('.')[0]);
+        if (majorVersion > 2) {
+            console.warn('[CategoriesPage] Version plus récente détectée');
         }
         
         return true;
@@ -884,29 +1166,144 @@ class CategoriesPageAdvanced {
     importFullBackup(data, merge, overwriteSettings) {
         console.log('[CategoriesPage] 📦 Import backup complet');
         
+        let result = { categories: 0, keywords: 0, filters: 0, tasks: 0, settings: 0 };
+        
+        // Import des paramètres
         if (overwriteSettings && data.settings) {
             this.saveSettings(data.settings);
+            result.settings = 1;
         }
         
-        // Note: Pour un vrai import, il faudrait interfacer avec CategoryManager
+        // Import des catégories et mots-clés
+        if (data.categories || data.categoryKeywords || data.categoryFilters) {
+            const catResult = this.importCategories(data, merge);
+            result.categories = catResult.categories;
+            result.keywords = catResult.keywords;
+            result.filters = catResult.filters;
+        }
+        
+        // Import des tâches
+        if (data.tasks) {
+            const taskResult = this.importTasks(data, merge);
+            result.tasks = taskResult.tasks;
+        }
+        
         this.addToBackupHistory('Import complet', 'import', data);
+        return result;
     }
 
     importCategories(data, merge) {
         console.log('[CategoriesPage] 🏷️ Import catégories');
         
-        // Note: Pour un vrai import, il faudrait interfacer avec CategoryManager
+        let result = { categories: 0, keywords: 0, filters: 0 };
+        
+        // Import des mots-clés
+        if (data.categoryKeywords) {
+            if (!merge) {
+                // Effacer toutes les données existantes
+                localStorage.removeItem('categoryKeywords');
+            }
+            
+            Object.entries(data.categoryKeywords).forEach(([categoryId, keywords]) => {
+                this.saveCategoryKeywords(categoryId, keywords);
+                result.keywords += Object.values(keywords).flat().length;
+            });
+            
+            console.log(`[CategoriesPage] ${result.keywords} mots-clés importés`);
+        }
+        
+        // Import des filtres
+        if (data.categoryFilters) {
+            if (!merge) {
+                // Effacer toutes les données existantes
+                localStorage.removeItem('categoryFilters');
+            }
+            
+            Object.entries(data.categoryFilters).forEach(([categoryId, filters]) => {
+                this.saveCategoryFilters(categoryId, filters);
+                result.filters += Object.values(filters).flat().length;
+            });
+            
+            console.log(`[CategoriesPage] ${result.filters} filtres importés`);
+        }
+        
+        // Import des catégories (si format ancien avec keywords/filters intégrés)
+        if (data.categories) {
+            Object.entries(data.categories).forEach(([categoryId, category]) => {
+                if (category.keywords) {
+                    this.saveCategoryKeywords(categoryId, category.keywords);
+                    result.keywords += Object.values(category.keywords).flat().length;
+                }
+                if (category.filters) {
+                    this.saveCategoryFilters(categoryId, category.filters);
+                    result.filters += Object.values(category.filters).flat().length;
+                }
+                result.categories++;
+            });
+        }
+        
         this.addToBackupHistory('Import catégories', 'import', data);
+        return result;
+    }
+
+    importTasks(data, merge) {
+        console.log('[CategoriesPage] 📋 Import tâches');
+        
+        let result = { tasks: 0 };
+        
+        if (!data.tasks || !Array.isArray(data.tasks)) {
+            console.error('[CategoriesPage] Aucune tâche trouvée dans l\'import');
+            return result;
+        }
+        
+        if (window.taskManager) {
+            if (!merge) {
+                // Supprimer toutes les tâches existantes
+                const existingTasks = window.taskManager.getAllTasks();
+                existingTasks.forEach(task => {
+                    window.taskManager.deleteTask(task.id);
+                });
+            }
+            
+            // Importer les nouvelles tâches
+            data.tasks.forEach(task => {
+                try {
+                    // Générer un nouvel ID pour éviter les conflits
+                    const newTask = { ...task };
+                    delete newTask.id;
+                    
+                    if (task.hasEmail && task.emailContent) {
+                        window.taskManager.createTaskFromEmail(newTask);
+                    } else {
+                        window.taskManager.createTask(newTask);
+                    }
+                    result.tasks++;
+                } catch (error) {
+                    console.error('[CategoriesPage] Erreur import tâche:', error);
+                }
+            });
+            
+            console.log(`[CategoriesPage] ${result.tasks} tâches importées`);
+        } else {
+            console.warn('[CategoriesPage] TaskManager non disponible pour l\'import des tâches');
+        }
+        
+        this.addToBackupHistory('Import tâches', 'import', data);
+        return result;
     }
 
     importSettings(data, overwrite) {
         console.log('[CategoriesPage] ⚙️ Import paramètres');
         
+        let result = { settings: 0 };
+        
         if (overwrite && data.settings) {
             this.saveSettings(data.settings);
+            result.settings = 1;
         }
         
         this.addToBackupHistory('Import paramètres', 'import', data);
+        return result;
     }
 
     // ================================================
@@ -1011,134 +1408,43 @@ class CategoriesPageAdvanced {
     }
 
     // ================================================
-    // GESTION DES FILTRES FONCTIONNELS
+    // SAUVEGARDE/CHARGEMENT LOCAL
     // ================================================
-    addFilter(type) {
-        const inputMap = {
-            'includeDomains': 'include-domain',
-            'excludeDomains': 'exclude-domain',
-            'excludeEmails': 'exclude-email'
-        };
-        
-        const input = document.getElementById(inputMap[type]);
-        if (!input?.value.trim()) {
-            this.showToast('⚠️ Veuillez saisir une valeur', 'warning');
-            return;
-        }
-        
-        const value = input.value.trim().toLowerCase();
-        
-        // Validation selon le type
-        if (type.includes('Domain') && !this.isValidDomain(value)) {
-            this.showToast('⚠️ Format de domaine invalide', 'warning');
-            return;
-        }
-        
-        if (type.includes('Email') && !this.isValidEmail(value)) {
-            this.showToast('⚠️ Format d\'email invalide', 'warning');
-            return;
-        }
-        
-        // Vérifier si déjà ajouté
-        if (this.isFilterAlreadyAdded(type, value)) {
-            this.showToast('⚠️ Filtre déjà ajouté', 'warning');
-            return;
-        }
-        
-        const container = document.getElementById(`${type}-items`);
-        if (!container) return;
-        
-        const isExclude = type.includes('exclude');
-        const icon = type.includes('Domain') ? 
-            (isExclude ? 'shield-alt' : 'globe') : 
-            'user-slash';
-        
-        container.insertAdjacentHTML('beforeend', `
-            <span class="tag ${isExclude ? 'exclude-tag' : 'filter-tag'}" data-value="${value}">
-                <i class="fas fa-${icon}"></i>
-                ${value}
-                <button onclick="window.categoriesPage.removeFilter('${type}', '${value}')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </span>
-        `);
-        
-        input.value = '';
-        input.focus();
-        
-        // Sauvegarder automatiquement
-        this.saveCurrentFilters();
-        
-        this.showToast(`✅ Filtre "${value}" ajouté`);
-    }
-    
-    removeFilter(type, value) {
-        const container = document.getElementById(`${type}-items`);
-        if (!container) return;
-        
-        const tags = container.querySelectorAll('.tag');
-        tags.forEach(tag => {
-            if (tag.getAttribute('data-value') === value || 
-                tag.textContent.trim().replace(/×$/, '').includes(value)) {
-                tag.remove();
+    saveCategoryKeywords(categoryId, keywords) {
+        try {
+            const allKeywords = this.loadAllCategoryKeywords();
+            allKeywords[categoryId] = keywords;
+            localStorage.setItem('categoryKeywords', JSON.stringify(allKeywords));
+            
+            // Notifier CategoryManager si disponible
+            if (window.categoryManager && typeof window.categoryManager.updateCategoryKeywords === 'function') {
+                window.categoryManager.updateCategoryKeywords(categoryId, keywords);
             }
-        });
-        
-        // Sauvegarder automatiquement
-        this.saveCurrentFilters();
-        
-        this.showToast(`🗑️ Filtre "${value}" supprimé`);
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur sauvegarde mots-clés:', error);
+        }
     }
     
-    isValidDomain(domain) {
-        const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-        return domainRegex.test(domain) && domain.length <= 253;
+    loadCategoryKeywords(categoryId) {
+        try {
+            const allKeywords = this.loadAllCategoryKeywords();
+            return allKeywords[categoryId] || null;
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur chargement mots-clés:', error);
+            return null;
+        }
     }
     
-    isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
+    loadAllCategoryKeywords() {
+        try {
+            const saved = localStorage.getItem('categoryKeywords');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            return {};
+        }
     }
     
-    isFilterAlreadyAdded(type, value) {
-        const container = document.getElementById(`${type}-items`);
-        if (!container) return false;
-        
-        const existingTags = container.querySelectorAll('.tag');
-        return Array.from(existingTags).some(tag => 
-            tag.getAttribute('data-value') === value
-        );
-    }
-    
-    saveCurrentFilters() {
-        if (!this.editingCategoryId) return;
-        
-        const filters = this.getCurrentFiltersFromModal();
-        this.saveCategoryFilters(this.editingCategoryId, filters);
-        
-        console.log('[CategoriesPage] 💾 Filtres sauvegardés pour', this.editingCategoryId, ':', filters);
-    }
-    
-    getCurrentFiltersFromModal() {
-        const getItems = (containerId) => {
-            const container = document.getElementById(containerId);
-            if (!container) return [];
-            return Array.from(container.querySelectorAll('.tag')).map(tag => {
-                return tag.getAttribute('data-value') || 
-                       tag.textContent.trim().replace(/×$/, '').replace(/^[^\s]+\s/, '').trim();
-            });
-        };
-        
-        return {
-            includeDomains: getItems('includeDomains-items'),
-            excludeDomains: getItems('excludeDomains-items'),
-            excludeEmails: getItems('excludeEmails-items')
-        };
-    }
-    
-    // ================================================
-    // SAUVEGARDE/CHARGEMENT DES FILTRES
-    // ================================================
     saveCategoryFilters(categoryId, filters) {
         try {
             const allFilters = this.loadAllCategoryFilters();
@@ -1274,7 +1580,7 @@ class CategoriesPageAdvanced {
     }
 
     // ================================================
-    // ACTIONS UTILISATEUR (EXISTANTES)
+    // ACTIONS UTILISATEUR
     // ================================================
     handleSearch(term) {
         this.searchTerm = term.toLowerCase();
@@ -1324,8 +1630,8 @@ class CategoriesPageAdvanced {
         this.saveSettings(settings);
         
         // Notifier CategoryManager si disponible
-        if (window.categoryManager && typeof window.categoryManager.updateTaskPreselectedCategories === 'function') {
-            window.categoryManager.updateTaskPreselectedCategories(activeCategories);
+        if (window.categoryManager && typeof window.categoryManager.updateActiveCategories === 'function') {
+            window.categoryManager.updateActiveCategories(activeCategories);
         }
         
         this.updateCategoriesDisplay();
@@ -1377,6 +1683,8 @@ class CategoriesPageAdvanced {
         document.body.style.overflow = 'auto';
         this.currentModal = null;
         this.editingCategoryId = null;
+        this.tempKeywords = null;
+        this.tempFilters = null;
     }
 
     refreshPage() {
@@ -1442,128 +1750,89 @@ class CategoriesPageAdvanced {
     }
 
     // ================================================
-    // MÉTHODES NON IMPLÉMENTÉES (PLACEHOLDERS)
+    // MÉTHODES POUR LA CATÉGORIE "AUTRE"
     // ================================================
     showOtherCategoryInfo() {
-        this.showToast('ℹ️ Informations catégorie "Autre"', 'info');
+        const content = `
+            <div class="other-info-content">
+                <h3><i class="fas fa-info-circle"></i> Catégorie "Autre"</h3>
+                <p>La catégorie "Autre" est une catégorie spéciale qui contient tous les emails non catégorisés.</p>
+                
+                <div class="info-section">
+                    <h4>Caractéristiques :</h4>
+                    <ul>
+                        <li>Ne peut pas être supprimée</li>
+                        <li>Ne peut pas avoir de mots-clés</li>
+                        <li>Toujours visible dans la liste des emails</li>
+                        <li>Peut être pré-sélectionnée pour les tâches</li>
+                    </ul>
+                </div>
+                
+                <div class="info-section">
+                    <h4>Utilisation :</h4>
+                    <p>Les emails apparaissent dans "Autre" quand :</p>
+                    <ul>
+                        <li>Aucune catégorie ne correspond</li>
+                        <li>L'email n'a pas été analysé</li>
+                        <li>La catégorisation a échoué</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        this.showModal('Information', content, null, {
+            footer: `<button class="btn-modern secondary" onclick="window.categoriesPage.closeModal()">Fermer</button>`
+        });
     }
 
     toggleOtherCategory() {
         this.showToast('ℹ️ La catégorie "Autre" est toujours visible', 'info');
     }
 
-    renderFiltersTab(filters) {
-        return `
-            <div class="filters-layout">
-                <div class="filter-section">
-                    <h3><i class="fas fa-check-circle"></i> Filtres d'inclusion</h3>
-                    <p class="section-description">Ces filtres permettent d'inclure spécifiquement certains emails dans cette catégorie</p>
-                    
-                    <div class="filter-box">
-                        <h4><i class="fas fa-globe"></i> Domaines autorisés</h4>
-                        <p class="filter-hint">Emails provenant uniquement de ces domaines seront inclus dans cette catégorie</p>
-                        <div class="input-modern">
-                            <input type="text" id="include-domain" placeholder="exemple.com" 
-                                   onkeypress="if(event.key === 'Enter') window.categoriesPage.addFilter('includeDomains')">
-                            <button onclick="window.categoriesPage.addFilter('includeDomains')" style="background: #10B981;">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="tags" id="includeDomains-items">
-                            ${filters.includeDomains.map(d => `
-                                <span class="tag filter-tag">
-                                    <i class="fas fa-globe"></i>
-                                    ${d}
-                                    <button onclick="window.categoriesPage.removeFilter('includeDomains', '${d}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="filter-section">
-                    <h3><i class="fas fa-ban"></i> Filtres d'exclusion</h3>
-                    <p class="section-description">Ces filtres empêchent certains emails d'être classés dans cette catégorie</p>
-                    
-                    <div class="filter-box">
-                        <h4><i class="fas fa-shield-alt"></i> Domaines exclus</h4>
-                        <p class="filter-hint">Emails de ces domaines ne seront jamais classés dans cette catégorie</p>
-                        <div class="input-modern">
-                            <input type="text" id="exclude-domain" placeholder="spam.com" 
-                                   onkeypress="if(event.key === 'Enter') window.categoriesPage.addFilter('excludeDomains')">
-                            <button onclick="window.categoriesPage.addFilter('excludeDomains')" style="background: #EF4444;">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="tags" id="excludeDomains-items">
-                            ${filters.excludeDomains.map(d => `
-                                <span class="tag exclude-tag">
-                                    <i class="fas fa-shield-alt"></i>
-                                    ${d}
-                                    <button onclick="window.categoriesPage.removeFilter('excludeDomains', '${d}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="filter-box">
-                        <h4><i class="fas fa-user-slash"></i> Emails exclus</h4>
-                        <p class="filter-hint">Ces adresses email spécifiques seront toujours exclues</p>
-                        <div class="input-modern">
-                            <input type="text" id="exclude-email" placeholder="noreply@exemple.com" 
-                                   onkeypress="if(event.key === 'Enter') window.categoriesPage.addFilter('excludeEmails')">
-                            <button onclick="window.categoriesPage.addFilter('excludeEmails')" style="background: #EF4444;">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="tags" id="excludeEmails-items">
-                            ${filters.excludeEmails.map(e => `
-                                <span class="tag exclude-tag">
-                                    <i class="fas fa-user-slash"></i>
-                                    ${e}
-                                    <button onclick="window.categoriesPage.removeFilter('excludeEmails', '${e}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="filter-section">
-                    <h3><i class="fas fa-info-circle"></i> Informations</h3>
-                    <div class="filter-info">
-                        <div class="info-card">
-                            <h4>🎯 Comment ça fonctionne ?</h4>
-                            <ul>
-                                <li><strong>Domaines autorisés :</strong> Si définis, seuls les emails de ces domaines seront considérés pour cette catégorie</li>
-                                <li><strong>Exclusions :</strong> Les filtres d'exclusion s'appliquent après et retirent définitivement les emails</li>
-                                <li><strong>Priorité :</strong> Exclusion > Inclusion domaine > Mots-clés</li>
-                                <li><strong>Par défaut :</strong> Tous les emails sont autorisés (aucun filtre d'inclusion = tous autorisés)</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="info-card">
-                            <h4>💡 Exemples d'usage</h4>
-                            <ul>
-                                <li><strong>Newsletter :</strong> Autoriser "newsletter.com" mais exclure "noreply@spam.com"</li>
-                                <li><strong>Support :</strong> Autoriser "support.entreprise.com" mais exclure "auto-reply@"</li>
-                                <li><strong>Finance :</strong> Autoriser "billing.com" mais exclure "marketing@billing.com"</li>
-                                <li><strong>Spam :</strong> Exclure "publicite.com" et "promo@" sans restriction d'inclusion</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+    deleteCategory(categoryId) {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) {
+            return;
+        }
+        
+        // TODO: Implémenter la suppression via CategoryManager
+        this.showToast('🚧 Fonctionnalité en développement', 'warning');
     }
 
     // ================================================
-    // STYLES ÉTENDUS
+    // MODAL GÉNÉRIQUE
+    // ================================================
+    showModal(title, content, onSave, options = {}) {
+        this.closeModal();
+        
+        const modalHTML = `
+            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPage.closeModal()">
+                <div class="modal-modern">
+                    <div class="modal-header">
+                        <h2>${title}</h2>
+                        <button class="btn-close" onclick="window.categoriesPage.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        ${content}
+                    </div>
+                    
+                    ${options.footer ? `
+                        <div class="modal-footer">
+                            ${options.footer}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    // ================================================
+    // STYLES
     // ================================================
     addStyles() {
         if (document.getElementById('categoriesAdvancedStyles')) return;
@@ -2534,204 +2803,143 @@ class CategoriesPageAdvanced {
                 opacity: 1;
             }
             
-            /* Onglet test */
-            .test-tab {
+            /* Onglet filtres */
+            .filters-layout {
+                padding: 20px 0;
+            }
+            
+            .filter-section {
                 background: white;
                 border-radius: 16px;
                 padding: 24px;
-                margin: 20px 0;
+                margin-bottom: 20px;
+                border: 1px solid var(--border);
             }
             
-            .test-header {
-                margin-bottom: 24px;
-                text-align: center;
-            }
-            
-            .test-header h3 {
-                font-size: 20px;
-                font-weight: 700;
+            .filter-section h3 {
                 margin: 0 0 8px 0;
-                color: var(--text);
+                font-size: 18px;
+                font-weight: 600;
                 display: flex;
                 align-items: center;
-                justify-content: center;
                 gap: 8px;
             }
             
-            .test-form {
-                margin-bottom: 32px;
-            }
-            
-            .input-group {
-                margin-bottom: 16px;
-            }
-            
-            .input-group label {
-                display: block;
-                font-weight: 600;
-                margin-bottom: 8px;
-                color: var(--text);
-            }
-            
-            .input-group input,
-            .input-group textarea {
-                width: 100%;
-                padding: 12px 16px;
-                border: 2px solid var(--border);
-                border-radius: 8px;
+            .section-description {
                 font-size: 14px;
-                transition: border-color 0.3s;
-                box-sizing: border-box;
+                color: var(--text-secondary);
+                margin: 0 0 20px 0;
             }
             
-            .input-group input:focus,
-            .input-group textarea:focus {
-                outline: none;
-                border-color: var(--primary);
+            .filter-box {
+                margin-bottom: 24px;
             }
             
-            .btn-test {
-                width: 100%;
-                padding: 12px 24px;
-                background: var(--primary);
-                color: white;
-                border: none;
-                border-radius: 8px;
+            .filter-box:last-child {
+                margin-bottom: 0;
+            }
+            
+            .filter-box h4 {
+                margin: 0 0 8px 0;
                 font-size: 16px;
                 font-weight: 600;
-                cursor: pointer;
-                transition: all 0.3s;
                 display: flex;
                 align-items: center;
-                justify-content: center;
                 gap: 8px;
             }
             
-            .btn-test:hover {
-                background: #5558E3;
-                transform: translateY(-1px);
+            .filter-hint {
+                font-size: 13px;
+                color: var(--text-secondary);
+                margin: 0 0 12px 0;
             }
             
-            .test-results {
-                background: #f8fafc;
-                border-radius: 12px;
+            .filter-tag {
+                background: #10B98115;
+                color: #10B981;
+            }
+            
+            .exclude-tag {
+                background: #EF444415;
+                color: #EF4444;
+            }
+            
+            /* Other info modal */
+            .other-info-content {
                 padding: 20px;
-                margin: 20px 0;
-                border: 1px solid var(--border);
             }
             
-            .test-result {
-                padding: 16px;
-                border-radius: 8px;
-                margin-bottom: 16px;
-            }
-            
-            .test-result.success {
-                background: #f0fdf4;
-                border: 1px solid #22c55e;
-            }
-            
-            .test-result.failure {
-                background: #fef2f2;
-                border: 1px solid #ef4444;
-            }
-            
-            .test-result-header {
+            .other-info-content h3 {
+                margin: 0 0 16px 0;
+                font-size: 20px;
+                font-weight: 600;
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                margin-bottom: 12px;
+            }
+            
+            .info-section {
+                margin: 20px 0;
+            }
+            
+            .info-section h4 {
+                margin: 0 0 12px 0;
+                font-size: 16px;
                 font-weight: 600;
             }
             
-            .test-result-details {
-                font-size: 14px;
+            .info-section ul {
+                margin: 0;
+                padding-left: 24px;
             }
             
-            .test-detail {
-                margin-bottom: 8px;
+            .info-section li {
+                margin: 8px 0;
+                line-height: 1.5;
             }
             
-            .matched-patterns {
-                list-style: none;
-                padding: 0;
-                margin: 8px 0 0 0;
+            /* Settings content */
+            .settings-content {
+                padding: 20px;
             }
             
-            .matched-patterns li {
-                padding: 4px 8px;
-                margin: 4px 0;
-                border-radius: 4px;
-                font-size: 12px;
-            }
-            
-            .pattern-absolute {
-                background: #fee2e2;
-                color: #dc2626;
-            }
-            
-            .pattern-strong {
-                background: #fef3c7;
-                color: #d97706;
-            }
-            
-            .pattern-weak {
-                background: #dbeafe;
-                color: #2563eb;
-            }
-            
-            .test-examples {
-                margin-top: 24px;
-            }
-            
-            .test-examples h4 {
-                margin-bottom: 16px;
-                color: var(--text);
-            }
-            
-            .test-examples-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 12px;
-            }
-            
-            .test-example {
-                background: #f8fafc;
-                border: 1px solid var(--border);
-                border-radius: 8px;
-                padding: 12px;
-                cursor: pointer;
-                transition: all 0.3s;
-                text-align: left;
-            }
-            
-            .test-example:hover {
-                background: #e5e7eb;
-                border-color: var(--primary);
-            }
-            
-            .test-example strong {
-                display: block;
-                margin-bottom: 4px;
-                color: var(--text);
-            }
-            
-            .test-example span {
-                font-size: 12px;
-                color: var(--text-secondary);
-            }
-            
-            /* Notices */
-            .filters-notice {
-                background: #f0f9ff;
-                border: 1px solid #0ea5e9;
+            .danger-zone {
+                background: #fef2f2;
+                border: 1px solid #fecaca;
                 border-radius: 12px;
                 padding: 20px;
-                margin: 20px;
+            }
+            
+            .danger-zone h4 {
+                margin: 0 0 8px 0;
+                color: #dc2626;
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                color: #0c4a6e;
+                gap: 8px;
+            }
+            
+            .danger-zone p {
+                margin: 0 0 16px 0;
+                color: #7f1d1d;
+            }
+            
+            .btn-danger {
+                background: #dc2626;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.3s;
+            }
+            
+            .btn-danger:hover {
+                background: #b91c1c;
+                transform: translateY(-1px);
             }
             
             /* Footer modal */
@@ -2916,10 +3124,6 @@ class CategoriesPageAdvanced {
                 .import-options {
                     grid-template-columns: 1fr;
                 }
-                
-                .test-examples-grid {
-                    grid-template-columns: 1fr;
-                }
             }
         `;
         
@@ -2999,6 +3203,6 @@ if (document.readyState === 'loading') {
     setTimeout(initializeCategoriesPageAdvanced, 100);
 }
 
-console.log('[CategoriesPage] ✅ CategoriesPage v23.0 chargée - Intégration CategoryManager + Backup!');
+console.log('[CategoriesPage] ✅ CategoriesPage v24.0 chargée - Export/Import complet fonctionnel!');
 console.log('[CategoriesPage] 🎯 Pour un rendu manuel: window.categoriesPage.render(container)');
-console.log('[CategoriesPage] 📋 Onglets disponibles: Catégories, Backup & Import');
+console.log('[CategoriesPage] 📋 Fonctionnalités: Gestion individuelle mots-clés + Export/Import tâches');
