@@ -1,762 +1,729 @@
-// LicenseService.js - Service de gestion des licences EmailSortPro avec blocage strict
-// Version 6.1 - Blocage effectif des licences expirées
+// LicenseService.js - Service de gestion des licences EmailSortPro
+// Version 6.2 - Correction des permissions et de la synchronisation
 
-class LicenseService {
-    constructor() {
-        this.supabase = null;
-        this.currentUser = null;
-        this.initialized = false;
-        this.initPromise = null;
-        this.cachedLicenseStatus = null;
-        this.cacheExpiry = null;
-        
-        // Domaines personnels connus
-        this.personalDomains = [
-            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'live.com',
-            'aol.com', 'icloud.com', 'protonmail.com', 'mail.com', 'gmx.com',
-            'yandex.com', 'zoho.com', 'fastmail.com', 'tutanota.com', 'hushmail.com',
-            'yahoo.fr', 'orange.fr', 'free.fr', 'sfr.fr', 'laposte.net',
-            'wanadoo.fr', 'bbox.fr', 'hotmail.fr', 'live.fr', 'outlook.fr'
-        ];
-        
-        console.log('[LicenseService] Service created v6.1 - With strict license enforcement');
-    }
+(function(global) {
+    'use strict';
 
-    async initialize() {
-        if (this.initialized) {
-            return true;
-        }
-
-        if (this.initPromise) {
-            return this.initPromise;
-        }
-
-        this.initPromise = this._performInitialization();
-        return this.initPromise;
-    }
-
-    async _performInitialization() {
-        try {
-            console.log('[LicenseService] Starting initialization...');
+    class LicenseService {
+        constructor() {
+            this.supabase = null;
+            this.currentUser = null;
+            this.isInitialized = false;
+            this.licenseCache = new Map();
+            this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+            this.lastCheck = null;
+            this.checkInterval = null;
             
-            // Charger Supabase
-            if (!window.supabase) {
-                await this.loadSupabaseLibrary();
-            }
-
-            // Initialiser la configuration
-            if (!window.supabaseConfig || !window.supabaseConfig.initialized) {
-                await window.initializeSupabaseConfig();
-            }
-
-            // Créer le client Supabase
-            const config = window.supabaseConfig.getConfig();
-            this.supabase = window.supabase.createClient(
-                config.url,
-                config.anonKey,
-                config.auth
-            );
-
-            console.log('[LicenseService] ✅ Supabase client created');
-            
-            this.initialized = true;
-            return true;
-
-        } catch (error) {
-            console.error('[LicenseService] Initialization error:', error);
-            this.initialized = false;
-            this.initPromise = null;
-            throw error;
-        }
-    }
-
-    async loadSupabaseLibrary() {
-        return new Promise((resolve, reject) => {
-            if (window.supabase) {
-                resolve();
-                return;
-            }
-
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-            script.onload = () => {
-                console.log('[LicenseService] Supabase library loaded');
-                resolve();
+            // Configuration
+            this.config = {
+                trialDays: 15,
+                gracePeriodDays: 3,
+                checkIntervalMinutes: 30
             };
-            script.onerror = () => {
-                console.error('[LicenseService] Failed to load Supabase library');
-                reject(new Error('Failed to load Supabase'));
-            };
-            document.head.appendChild(script);
-        });
-    }
-
-    // Vérifier si un domaine est personnel
-    isPersonalDomain(email) {
-        const domain = email.split('@')[1];
-        return this.personalDomains.includes(domain.toLowerCase());
-    }
-
-    // MÉTHODE PRINCIPALE D'AUTHENTIFICATION
-    async authenticateWithEmail(email) {
-        try {
-            if (!this.initialized) {
-                await this.initialize();
-            }
-
-            console.log('[LicenseService] Authenticating user:', email);
             
-            // Vérifier le cache d'abord
-            if (this.cachedLicenseStatus && this.cacheExpiry && new Date() < this.cacheExpiry) {
-                const cachedUser = this.cachedLicenseStatus.user;
-                if (cachedUser && cachedUser.email === email) {
-                    console.log('[LicenseService] Using cached license status');
-                    return this.cachedLicenseStatus;
-                }
-            }
-
-            // Vérifier le statut de la licence
-            const licenseStatus = await this.checkLicenseStatus(email);
-            
-            // IMPORTANT: Bloquer immédiatement si la licence est expirée (sauf super admin)
-            if (!licenseStatus.valid && licenseStatus.status === 'expired') {
-                console.warn('[LicenseService] ❌ LICENSE EXPIRED - Blocking access');
-                this.clearCache();
-                return licenseStatus;
-            }
-            
-            // Mettre en cache le résultat seulement si valide
-            if (licenseStatus.valid) {
-                this.cachedLicenseStatus = licenseStatus;
-                this.cacheExpiry = new Date(Date.now() + 60 * 60 * 1000);
-                this.currentUser = licenseStatus.user;
-                
-                // Mettre à jour la dernière connexion
-                await this.updateLastLogin(licenseStatus.user.id);
-            }
-            
-            return licenseStatus;
-
-        } catch (error) {
-            console.error('[LicenseService] Authentication error:', error);
-            
-            // En cas d'erreur réseau, utiliser le cache si disponible ET valide
-            if (this.cachedLicenseStatus && 
-                this.cachedLicenseStatus.valid && 
-                error.message.includes('network')) {
-                console.log('[LicenseService] Network error, using cached status');
-                return { ...this.cachedLicenseStatus, offline: true };
-            }
-            
-            return {
-                valid: false,
-                status: 'error',
-                message: 'Erreur lors de la vérification de votre licence',
-                error: error.message
-            };
+            console.log('[LicenseService] Service created v6.2 - Fixed permissions');
         }
-    }
 
-    async checkLicenseStatus(email) {
-        try {
-            if (!this.initialized) {
-                await this.initialize();
+        // === INITIALISATION ===
+        async initialize() {
+            if (this.isInitialized) {
+                return true;
             }
 
-            console.log('[LicenseService] Checking license status for:', email);
-            
-            // Essayer d'abord avec la fonction RPC
             try {
-                const { data: rpcData, error: rpcError } = await this.supabase
-                    .rpc('check_user_by_email', { user_email: email });
+                console.log('[LicenseService] Starting initialization...');
                 
-                if (!rpcError && rpcData && rpcData.length > 0) {
-                    console.log('[LicenseService] User found via RPC');
-                    const user = rpcData[0];
-                    return this.processUserLicense(user);
+                // Initialiser la configuration Supabase
+                if (!window.supabaseConfig) {
+                    throw new Error('Supabase config not found');
                 }
-            } catch (rpcErr) {
-                console.log('[LicenseService] RPC not available, using direct query');
-            }
-            
-            // Requête directe en fallback
-            const { data: users, error } = await this.supabase
-                .from('users')
-                .select('*')
-                .eq('email', email);
 
-            if (error) {
-                console.error('[LicenseService] Database error:', error);
-                return { 
-                    valid: false, 
-                    status: 'error',
-                    message: 'Erreur de connexion à la base de données. Veuillez réessayer.'
+                const configInitialized = await window.initializeSupabaseConfig();
+                if (!configInitialized) {
+                    console.warn('[LicenseService] Supabase config initialization failed, running in offline mode');
+                    return false;
+                }
+
+                const config = window.supabaseConfig.getConfig();
+                
+                // Créer le client Supabase
+                this.supabase = window.supabase.createClient(
+                    config.url,
+                    config.anonKey,
+                    {
+                        auth: {
+                            autoRefreshToken: true,
+                            persistSession: false,
+                            detectSessionInUrl: false
+                        }
+                    }
+                );
+
+                console.log('[LicenseService] ✅ Supabase client created');
+                
+                this.isInitialized = true;
+                
+                // Démarrer la vérification périodique
+                this.startPeriodicCheck();
+                
+                return true;
+                
+            } catch (error) {
+                console.error('[LicenseService] Initialization error:', error);
+                this.isInitialized = false;
+                return false;
+            }
+        }
+
+        // === AUTHENTIFICATION ===
+        async authenticateWithEmail(email) {
+            if (!email) {
+                return {
+                    success: false,
+                    message: 'Email requis',
+                    status: 'error'
                 };
             }
 
-            if (!users || users.length === 0) {
-                console.log('[LicenseService] User not found');
-                return { 
-                    valid: false, 
-                    status: 'not_found',
-                    message: 'Compte utilisateur non trouvé'
+            try {
+                console.log('[LicenseService] Authenticating user:', email);
+                
+                // Vérifier dans le cache d'abord
+                const cached = this.getCachedLicense(email);
+                if (cached) {
+                    console.log('[LicenseService] Using cached license data');
+                    return cached;
+                }
+
+                // Vérifier l'utilisateur directement dans la table users
+                const { data: user, error } = await this.supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', email.toLowerCase().trim())
+                    .single();
+
+                if (error || !user) {
+                    console.log('[LicenseService] User not found');
+                    return {
+                        success: false,
+                        status: 'not_found',
+                        message: 'Utilisateur non trouvé'
+                    };
+                }
+
+                // Calculer le statut de la licence
+                const licenseStatus = this.calculateLicenseStatus(user);
+                
+                // Mettre à jour le statut si nécessaire
+                if (licenseStatus.status !== user.license_status) {
+                    await this.updateUserLicenseStatus(user.id, licenseStatus.status);
+                    user.license_status = licenseStatus.status;
+                }
+
+                // Mettre à jour la dernière connexion
+                await this.updateLastLogin(user.id);
+
+                // Mettre en cache
+                const result = {
+                    success: true,
+                    user: user,
+                    status: licenseStatus.status,
+                    daysRemaining: licenseStatus.daysRemaining,
+                    message: licenseStatus.message
+                };
+
+                this.setCachedLicense(email, result);
+                this.currentUser = user;
+
+                console.log('[LicenseService] Authentication successful:', result);
+                return result;
+
+            } catch (error) {
+                console.error('[LicenseService] Authentication error:', error);
+                return {
+                    success: false,
+                    message: 'Erreur lors de l\'authentification',
+                    status: 'error'
+                };
+            }
+        }
+
+        calculateLicenseStatus(user) {
+            if (!user.license_expires_at) {
+                return {
+                    status: 'active',
+                    daysRemaining: null,
+                    message: 'Licence permanente'
                 };
             }
 
-            const user = users[0];
-            return this.processUserLicense(user);
+            const now = new Date();
+            const expiryDate = new Date(user.license_expires_at);
+            const daysRemaining = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
 
-        } catch (error) {
-            console.error('[LicenseService] Error checking license:', error);
-            return { 
-                valid: false, 
-                status: 'error',
-                error: error.message,
-                message: 'Erreur de vérification. Veuillez réessayer.'
-            };
-        }
-    }
+            if (user.is_lifetime_free) {
+                return {
+                    status: 'active',
+                    daysRemaining: null,
+                    message: 'Licence gratuite à vie'
+                };
+            }
 
-    // Traiter la licence d'un utilisateur
-    processUserLicense(user) {
-        // Les super admins ont toujours accès
-        if (user.role === 'super_admin') {
-            console.log('[LicenseService] Super admin user - always valid');
-            return {
-                valid: true,
-                status: 'active',
-                user: user,
-                message: 'Accès super administrateur'
-            };
-        }
-
-        // Vérifier le statut de licence
-        const status = user.license_status;
-        const startsAt = user.license_starts_at ? new Date(user.license_starts_at) : null;
-        const expiresAt = user.license_expires_at ? new Date(user.license_expires_at) : null;
-        const now = new Date();
-
-        console.log('[LicenseService] User found:', {
-            email: user.email,
-            status: status,
-            role: user.role,
-            account_type: user.account_type,
-            has_expiry: !!expiresAt,
-            expires_at: expiresAt ? expiresAt.toISOString() : null,
-            now: now.toISOString()
-        });
-
-        // Vérifier si bloqué
-        if (status === 'blocked') {
-            const adminContact = this.getAdminContact(user);
-            return { 
-                valid: false, 
-                status: 'blocked',
-                message: 'Votre compte a été bloqué. Contactez votre administrateur.',
-                user: user,
-                adminContact: adminContact,
-                requiresAction: true
-            };
-        }
-
-        // Vérifier si la licence n'a pas encore commencé
-        if (startsAt && startsAt > now) {
-            return { 
-                valid: false, 
-                status: 'not_started',
-                message: `Votre licence commencera le ${startsAt.toLocaleDateString('fr-FR')}`,
-                startsAt: startsAt,
-                user: user,
-                requiresAction: true
-            };
-        }
-
-        // VÉRIFICATION CRITIQUE : Expiration de la licence
-        if (expiresAt && expiresAt < now) {
-            const adminContact = this.getAdminContact(user);
-            const daysExpired = Math.ceil((now - expiresAt) / (1000 * 60 * 60 * 24));
-            
-            console.warn(`[LicenseService] ❌ LICENSE EXPIRED ${daysExpired} days ago for:`, user.email);
-            
-            return { 
-                valid: false, 
-                status: 'expired',
-                message: `Votre licence a expiré depuis ${daysExpired} jour${daysExpired > 1 ? 's' : ''}`,
-                detailedMessage: `Votre période d'essai de 15 jours est terminée. Pour continuer à utiliser EmailSortPro, veuillez contacter votre administrateur ou le support pour renouveler votre licence.`,
-                expiredAt: expiresAt,
-                daysExpired: daysExpired,
-                user: user,
-                adminContact: adminContact,
-                requiresAction: true,
-                blockAccess: true // Flag explicite pour bloquer l'accès
-            };
-        }
-
-        // Calculer les jours restants
-        let daysRemaining = null;
-        let warningLevel = null;
-        
-        if (expiresAt) {
-            daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24));
-            
-            // Définir le niveau d'avertissement
-            if (daysRemaining <= 3) {
-                warningLevel = 'critical';
-            } else if (daysRemaining <= 7) {
-                warningLevel = 'warning';
-            } else if (daysRemaining <= 14) {
-                warningLevel = 'info';
+            if (daysRemaining > 0) {
+                if (user.license_status === 'trial') {
+                    return {
+                        status: 'trial',
+                        daysRemaining: daysRemaining,
+                        message: `Période d'essai - ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''} restant${daysRemaining > 1 ? 's' : ''}`
+                    };
+                }
+                return {
+                    status: 'active',
+                    daysRemaining: daysRemaining,
+                    message: `Licence active - ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''} restant${daysRemaining > 1 ? 's' : ''}`
+                };
+            } else if (daysRemaining > -this.config.gracePeriodDays) {
+                return {
+                    status: 'grace_period',
+                    daysRemaining: this.config.gracePeriodDays + daysRemaining,
+                    message: `Période de grâce - ${this.config.gracePeriodDays + daysRemaining} jour${(this.config.gracePeriodDays + daysRemaining) > 1 ? 's' : ''} restant${(this.config.gracePeriodDays + daysRemaining) > 1 ? 's' : ''}`
+                };
+            } else {
+                return {
+                    status: 'expired',
+                    daysRemaining: 0,
+                    message: 'Licence expirée'
+                };
             }
         }
 
-        // La licence est valide
-        return {
-            valid: true,
-            status: status || 'active',
-            startsAt: startsAt,
-            expiresAt: expiresAt,
-            daysRemaining: daysRemaining,
-            warningLevel: warningLevel,
-            user: user,
-            message: status === 'trial' ? 
-                `Période d'essai - ${daysRemaining} jour${daysRemaining > 1 ? 's' : ''} restant${daysRemaining > 1 ? 's' : ''}` : 
-                'Licence active'
-        };
-    }
+        async updateUserLicenseStatus(userId, status) {
+            try {
+                const { error } = await this.supabase
+                    .from('users')
+                    .update({ 
+                        license_status: status,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
 
-    // Obtenir le contact de l'administrateur
-    getAdminContact(user) {
-        // Pour les comptes individual, retourner le support
-        if (user.account_type === 'individual') {
-            return {
-                email: 'support@emailsortpro.com',
-                name: 'Support EmailSortPro',
-                phone: '+33 1 xx xx xx xx'
-            };
+                if (error) {
+                    console.error('[LicenseService] Error updating license status:', error);
+                }
+            } catch (error) {
+                console.error('[LicenseService] Failed to update license status:', error);
+            }
         }
 
-        // Pour les comptes professional, retourner un contact admin générique
-        const domain = user.email.split('@')[1];
-        return {
-            email: `admin@${domain}`,
-            name: 'Administrateur de votre entreprise',
-            fallbackEmail: 'support@emailsortpro.com'
-        };
-    }
+        async updateLastLogin(userId) {
+            try {
+                const now = new Date().toISOString();
+                const { data: user } = await this.supabase
+                    .from('users')
+                    .select('first_login_at, login_count')
+                    .eq('id', userId)
+                    .single();
 
-    // Créer un nouvel utilisateur avec période d'essai
-    async createUserWithTrial(email, accountType = 'professional', companyName = null) {
-        try {
-            if (!this.initialized) {
-                await this.initialize();
+                const updates = {
+                    last_login_at: now,
+                    login_count: (user?.login_count || 0) + 1,
+                    updated_at: now
+                };
+
+                if (!user?.first_login_at) {
+                    updates.first_login_at = now;
+                }
+
+                const { error } = await this.supabase
+                    .from('users')
+                    .update(updates)
+                    .eq('id', userId);
+
+                if (error) {
+                    console.error('[LicenseService] Error updating last login:', error);
+                }
+            } catch (error) {
+                console.error('[LicenseService] Failed to update last login:', error);
             }
+        }
 
-            console.log('[LicenseService] Creating user with trial:', { email, accountType, companyName });
-            
-            const domain = email.split('@')[1];
-            const name = email.split('@')[0];
-            const trialDays = 15; // Période d'essai fixe de 15 jours
-            
-            // Pour les comptes professionnels, gérer la société
-            let companyId = null;
-            let role = 'user';
-            
-            if (accountType === 'professional' && !this.isPersonalDomain(email)) {
-                const company = await this.getOrCreateCompany(domain, companyName);
-                if (company) {
-                    companyId = company.id;
-                    // Vérifier si c'est le premier utilisateur
-                    const isFirst = await this.isFirstUserOfCompany(company.id);
-                    if (isFirst) {
+        // === CRÉATION D'UTILISATEURS ===
+        async createUserWithTrial(email, accountType = 'individual', companyName = null, trialDays = 15) {
+            try {
+                console.log('[LicenseService] Creating user with trial:', email);
+
+                // Vérifier si l'utilisateur existe déjà
+                const { data: existingUser } = await this.supabase
+                    .from('users')
+                    .select('id')
+                    .eq('email', email.toLowerCase().trim())
+                    .single();
+
+                if (existingUser) {
+                    return {
+                        success: false,
+                        error: 'Un compte existe déjà avec cet email'
+                    };
+                }
+
+                // Créer ou récupérer la société si nécessaire
+                let companyId = null;
+                if (accountType === 'professional' && companyName) {
+                    const { data: company } = await this.supabase
+                        .from('companies')
+                        .select('id')
+                        .eq('name', companyName)
+                        .single();
+
+                    if (company) {
+                        companyId = company.id;
+                    } else {
+                        // Créer la société
+                        const { data: newCompany, error: companyError } = await this.supabase
+                            .from('companies')
+                            .insert({
+                                name: companyName,
+                                status: 'prospect',
+                                type: 'professional'
+                            })
+                            .select()
+                            .single();
+
+                        if (companyError) {
+                            console.error('[LicenseService] Error creating company:', companyError);
+                        } else {
+                            companyId = newCompany.id;
+                        }
+                    }
+                }
+
+                // Créer l'utilisateur
+                const now = new Date();
+                const trialEnd = new Date(now.getTime() + (trialDays * 24 * 60 * 60 * 1000));
+
+                // Déterminer le rôle en fonction du type de compte
+                let role = 'user';
+                if (accountType === 'individual') {
+                    // Les comptes individuels ont accès à leurs propres analytics
+                    role = 'user';
+                } else if (accountType === 'professional' && companyId) {
+                    // Le premier utilisateur d'une société devient admin
+                    const { count } = await this.supabase
+                        .from('users')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('company_id', companyId);
+                    
+                    if (count === 0) {
                         role = 'company_admin';
                     }
                 }
+
+                const { data: newUser, error } = await this.supabase
+                    .from('users')
+                    .insert({
+                        email: email.toLowerCase().trim(),
+                        name: email.split('@')[0],
+                        account_type: accountType,
+                        company_id: companyId,
+                        role: role,
+                        license_status: 'trial',
+                        license_starts_at: now.toISOString(),
+                        license_expires_at: trialEnd.toISOString(),
+                        trial_days: trialDays,
+                        created_at: now.toISOString()
+                    })
+                    .select()
+                    .single();
+
+                if (error) {
+                    console.error('[LicenseService] Error creating user:', error);
+                    return {
+                        success: false,
+                        error: 'Erreur lors de la création du compte'
+                    };
+                }
+
+                console.log('[LicenseService] User created successfully:', newUser);
+
+                return {
+                    success: true,
+                    user: newUser,
+                    message: `Compte créé avec ${trialDays} jours d'essai gratuit`
+                };
+
+            } catch (error) {
+                console.error('[LicenseService] Create user error:', error);
+                return {
+                    success: false,
+                    error: 'Erreur lors de la création du compte'
+                };
             }
-            
-            const startsAt = new Date();
-            const expiresAt = new Date();
-            expiresAt.setDate(expiresAt.getDate() + trialDays);
-
-            const { data: userData, error: userError } = await this.supabase
-                .from('users')
-                .insert({
-                    email: email,
-                    name: name,
-                    role: role,
-                    company_id: companyId,
-                    account_type: accountType,
-                    license_status: 'trial',
-                    license_starts_at: startsAt.toISOString(),
-                    license_expires_at: expiresAt.toISOString(),
-                    first_login_at: new Date().toISOString(),
-                    last_login_at: new Date().toISOString(),
-                    login_count: 1
-                })
-                .select()
-                .single();
-
-            if (userError) {
-                console.error('[LicenseService] Error creating user:', userError);
-                throw userError;
-            }
-
-            console.log('[LicenseService] ✅ User created with trial');
-
-            // Créer les stats
-            await this.createUserStats(email, name, domain);
-
-            return { success: true, user: userData };
-
-        } catch (error) {
-            console.error('[LicenseService] Error creating user with trial:', error);
-            return { success: false, error: error.message };
         }
-    }
 
-    async getOrCreateCompany(domain, companyName = null) {
-        try {
-            const { data: existing, error: searchError } = await this.supabase
-                .from('companies')
-                .select('*')
-                .eq('domain', domain)
-                .maybeSingle();
+        // === GESTION DU CACHE ===
+        getCachedLicense(email) {
+            const cached = this.licenseCache.get(email.toLowerCase());
+            if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+                return cached.data;
+            }
+            this.licenseCache.delete(email.toLowerCase());
+            return null;
+        }
 
-            if (existing) {
-                return existing;
+        setCachedLicense(email, data) {
+            this.licenseCache.set(email.toLowerCase(), {
+                data: data,
+                timestamp: Date.now()
+            });
+        }
+
+        clearCache() {
+            this.licenseCache.clear();
+        }
+
+        // === VÉRIFICATION PÉRIODIQUE ===
+        startPeriodicCheck() {
+            if (this.checkInterval) {
+                clearInterval(this.checkInterval);
             }
 
-            const name = companyName || domain.charAt(0).toUpperCase() + domain.slice(1).replace(/\.[^.]+$/, '');
-            
-            const { data: newCompany, error: createError } = await this.supabase
-                .from('companies')
-                .insert({
-                    name: name,
-                    domain: domain,
-                    is_virtual: false
-                })
-                .select()
-                .single();
+            this.checkInterval = setInterval(() => {
+                if (this.currentUser) {
+                    this.checkCurrentUserLicense();
+                }
+            }, this.config.checkIntervalMinutes * 60 * 1000);
+        }
 
-            if (createError) {
-                console.error('[LicenseService] Error creating company:', createError);
+        async checkCurrentUserLicense() {
+            if (!this.currentUser || !this.currentUser.email) return;
+
+            console.log('[LicenseService] Periodic license check...');
+            
+            const result = await this.authenticateWithEmail(this.currentUser.email);
+            
+            if (result.status === 'expired' || result.status === 'blocked') {
+                // Émettre un événement pour que l'application puisse réagir
+                window.dispatchEvent(new CustomEvent('licenseExpired', { 
+                    detail: result 
+                }));
+            }
+        }
+
+        stopPeriodicCheck() {
+            if (this.checkInterval) {
+                clearInterval(this.checkInterval);
+                this.checkInterval = null;
+            }
+        }
+
+        // === MÉTHODES UTILITAIRES ===
+        isLicenseValid() {
+            if (!this.currentUser) return false;
+            
+            const status = this.currentUser.license_status;
+            return status === 'active' || status === 'trial' || status === 'grace_period';
+        }
+
+        getDaysRemaining() {
+            if (!this.currentUser || !this.currentUser.license_expires_at) {
                 return null;
             }
 
-            return newCompany;
-
-        } catch (error) {
-            console.error('[LicenseService] Error in getOrCreateCompany:', error);
-            return null;
-        }
-    }
-
-    async isFirstUserOfCompany(companyId) {
-        try {
-            const { count, error } = await this.supabase
-                .from('users')
-                .select('*', { count: 'exact', head: true })
-                .eq('company_id', companyId);
-
-            if (error) {
-                console.error('[LicenseService] Error checking first user:', error);
-                return false;
-            }
-
-            return count === 0;
-
-        } catch (error) {
-            console.error('[LicenseService] Error in isFirstUserOfCompany:', error);
-            return false;
-        }
-    }
-
-    async createUserStats(email, name, domain) {
-        try {
-            const { error } = await this.supabase
-                .from('user_email_stats')
-                .insert({
-                    email: email,
-                    name: name,
-                    domain: domain,
-                    total_sessions: 1,
-                    last_activity: new Date().toISOString()
-                });
-
-            if (error && error.code !== '23505') { // Ignorer les doublons
-                console.error('[LicenseService] Error creating user stats:', error);
-            }
-
-        } catch (error) {
-            console.error('[LicenseService] Error in createUserStats:', error);
-        }
-    }
-
-    async updateLastLogin(userId) {
-        try {
-            const { data: currentUser, error: fetchError } = await this.supabase
-                .from('users')
-                .select('login_count')
-                .eq('id', userId)
-                .single();
-            
-            if (fetchError) throw fetchError;
-            
-            const { error } = await this.supabase
-                .from('users')
-                .update({
-                    last_login_at: new Date().toISOString(),
-                    login_count: (currentUser?.login_count || 0) + 1
-                })
-                .eq('id', userId);
-
-            if (error) throw error;
-
-        } catch (error) {
-            console.error('[LicenseService] Error updating last login:', error);
-        }
-    }
-
-    async updateUserLicenseStatus(userId, newStatus, expiresAt = null) {
-        try {
-            const updateData = {
-                license_status: newStatus,
-                updated_at: new Date().toISOString()
-            };
-
-            if (expiresAt) {
-                updateData.license_expires_at = expiresAt;
-            }
-
-            const { error } = await this.supabase
-                .from('users')
-                .update(updateData)
-                .eq('id', userId);
-
-            if (error) throw error;
-
-            // Invalider le cache
-            this.clearCache();
-
-            console.log('[LicenseService] Updated user license status to:', newStatus);
-            return { success: true };
-
-        } catch (error) {
-            console.error('[LicenseService] Error updating license status:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async updateUserLicenseDates(userId, startDate, endDate) {
-        try {
-            const startsAt = new Date(startDate);
-            const expiresAt = new Date(endDate);
-
-            if (startsAt >= expiresAt) {
-                return { success: false, error: 'La date de fin doit être après la date de début' };
-            }
-
-            const updateData = {
-                license_starts_at: startsAt.toISOString(),
-                license_expires_at: expiresAt.toISOString(),
-                updated_at: new Date().toISOString()
-            };
-
-            // Déterminer le statut en fonction des dates
             const now = new Date();
-            if (startsAt > now) {
-                updateData.license_status = 'pending';
-            } else if (expiresAt > now) {
-                updateData.license_status = 'active';
-            } else {
-                updateData.license_status = 'expired';
+            const expiryDate = new Date(this.currentUser.license_expires_at);
+            return Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        }
+
+        async extendLicense(userId, days) {
+            try {
+                const { data: user } = await this.supabase
+                    .from('users')
+                    .select('license_expires_at')
+                    .eq('id', userId)
+                    .single();
+
+                if (!user) {
+                    return { success: false, error: 'Utilisateur non trouvé' };
+                }
+
+                const currentExpiry = new Date(user.license_expires_at || new Date());
+                const newExpiry = new Date(currentExpiry.getTime() + (days * 24 * 60 * 60 * 1000));
+
+                const { error } = await this.supabase
+                    .from('users')
+                    .update({
+                        license_expires_at: newExpiry.toISOString(),
+                        license_status: 'active',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+
+                if (error) {
+                    console.error('[LicenseService] Error extending license:', error);
+                    return { success: false, error: 'Erreur lors de l\'extension' };
+                }
+
+                // Invalider le cache
+                this.clearCache();
+
+                return { 
+                    success: true, 
+                    newExpiry: newExpiry,
+                    message: `Licence étendue de ${days} jours`
+                };
+
+            } catch (error) {
+                console.error('[LicenseService] Extend license error:', error);
+                return { success: false, error: 'Erreur lors de l\'extension' };
             }
+        }
 
-            const { error } = await this.supabase
-                .from('users')
-                .update(updateData)
-                .eq('id', userId);
+        async activateLicense(userId, licenseKey) {
+            // Cette méthode pourrait être étendue pour gérer des clés de licence
+            // Pour l'instant, elle active simplement la licence
+            try {
+                const { error } = await this.supabase
+                    .from('users')
+                    .update({
+                        license_status: 'active',
+                        license_key: licenseKey,
+                        activated_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
 
-            if (error) throw error;
+                if (error) {
+                    console.error('[LicenseService] Error activating license:', error);
+                    return { success: false, error: 'Erreur lors de l\'activation' };
+                }
 
-            // Invalider le cache
+                // Invalider le cache
+                this.clearCache();
+
+                return { 
+                    success: true, 
+                    message: 'Licence activée avec succès'
+                };
+
+            } catch (error) {
+                console.error('[LicenseService] Activate license error:', error);
+                return { success: false, error: 'Erreur lors de l\'activation' };
+            }
+        }
+
+        // === MÉTHODES D'ADMINISTRATION ===
+        async getAllUsers(filters = {}) {
+            try {
+                let query = this.supabase
+                    .from('users')
+                    .select(`
+                        *,
+                        company:companies(id, name, domain)
+                    `)
+                    .order('created_at', { ascending: false });
+
+                // Appliquer les filtres
+                if (filters.status) {
+                    query = query.eq('license_status', filters.status);
+                }
+                if (filters.accountType) {
+                    query = query.eq('account_type', filters.accountType);
+                }
+                if (filters.companyId) {
+                    query = query.eq('company_id', filters.companyId);
+                }
+
+                const { data, error } = await query;
+
+                if (error) {
+                    console.error('[LicenseService] Error getting users:', error);
+                    return { success: false, error: error.message };
+                }
+
+                return { success: true, users: data || [] };
+
+            } catch (error) {
+                console.error('[LicenseService] Get users error:', error);
+                return { success: false, error: 'Erreur lors de la récupération des utilisateurs' };
+            }
+        }
+
+        async updateUserRole(userId, newRole) {
+            try {
+                const validRoles = ['user', 'company_admin', 'super_admin'];
+                if (!validRoles.includes(newRole)) {
+                    return { success: false, error: 'Rôle invalide' };
+                }
+
+                const { error } = await this.supabase
+                    .from('users')
+                    .update({
+                        role: newRole,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+
+                if (error) {
+                    console.error('[LicenseService] Error updating role:', error);
+                    return { success: false, error: error.message };
+                }
+
+                // Invalider le cache
+                this.clearCache();
+
+                return { success: true, message: 'Rôle mis à jour avec succès' };
+
+            } catch (error) {
+                console.error('[LicenseService] Update role error:', error);
+                return { success: false, error: 'Erreur lors de la mise à jour du rôle' };
+            }
+        }
+
+        async blockUser(userId, reason = '') {
+            try {
+                const { error } = await this.supabase
+                    .from('users')
+                    .update({
+                        license_status: 'blocked',
+                        blocked_at: new Date().toISOString(),
+                        blocked_reason: reason,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+
+                if (error) {
+                    console.error('[LicenseService] Error blocking user:', error);
+                    return { success: false, error: error.message };
+                }
+
+                // Invalider le cache
+                this.clearCache();
+
+                return { success: true, message: 'Utilisateur bloqué' };
+
+            } catch (error) {
+                console.error('[LicenseService] Block user error:', error);
+                return { success: false, error: 'Erreur lors du blocage' };
+            }
+        }
+
+        async unblockUser(userId) {
+            try {
+                const { data: user } = await this.supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+
+                if (!user) {
+                    return { success: false, error: 'Utilisateur non trouvé' };
+                }
+
+                // Recalculer le statut de licence approprié
+                const licenseStatus = this.calculateLicenseStatus(user);
+
+                const { error } = await this.supabase
+                    .from('users')
+                    .update({
+                        license_status: licenseStatus.status,
+                        blocked_at: null,
+                        blocked_reason: null,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userId);
+
+                if (error) {
+                    console.error('[LicenseService] Error unblocking user:', error);
+                    return { success: false, error: error.message };
+                }
+
+                // Invalider le cache
+                this.clearCache();
+
+                return { success: true, message: 'Utilisateur débloqué' };
+
+            } catch (error) {
+                console.error('[LicenseService] Unblock user error:', error);
+                return { success: false, error: 'Erreur lors du déblocage' };
+            }
+        }
+
+        // === ANALYTICS ===
+        async getUsageStats(userId = null, dateRange = {}) {
+            try {
+                let query = this.supabase
+                    .from('email_analytics')
+                    .select('*', { count: 'exact' });
+
+                if (userId) {
+                    const { data: user } = await this.supabase
+                        .from('users')
+                        .select('email')
+                        .eq('id', userId)
+                        .single();
+                    
+                    if (user) {
+                        query = query.eq('user_email', user.email);
+                    }
+                }
+
+                if (dateRange.start) {
+                    query = query.gte('created_at', dateRange.start);
+                }
+                if (dateRange.end) {
+                    query = query.lte('created_at', dateRange.end);
+                }
+
+                const { data, count, error } = await query;
+
+                if (error) {
+                    console.error('[LicenseService] Error getting usage stats:', error);
+                    return { success: false, error: error.message };
+                }
+
+                // Calculer les statistiques
+                const stats = {
+                    totalEvents: count || 0,
+                    emailScans: 0,
+                    totalEmails: 0,
+                    sessions: 0,
+                    errors: 0
+                };
+
+                if (data) {
+                    data.forEach(event => {
+                        if (event.event_type === 'email_scan') {
+                            stats.emailScans++;
+                            stats.totalEmails += event.email_count || 0;
+                        } else if (event.event_type === 'session_start') {
+                            stats.sessions++;
+                        } else if (event.event_type === 'error') {
+                            stats.errors++;
+                        }
+                    });
+                }
+
+                return { success: true, stats };
+
+            } catch (error) {
+                console.error('[LicenseService] Get usage stats error:', error);
+                return { success: false, error: 'Erreur lors de la récupération des statistiques' };
+            }
+        }
+
+        // === NETTOYAGE ===
+        destroy() {
+            this.stopPeriodicCheck();
             this.clearCache();
-
-            console.log('[LicenseService] ✅ License dates updated successfully');
-            return { success: true };
-
-        } catch (error) {
-            console.error('[LicenseService] Error updating license dates:', error);
-            return { success: false, error: error.message };
+            this.currentUser = null;
+            this.isInitialized = false;
+            console.log('[LicenseService] Service destroyed');
         }
     }
 
-    // Méthode pour prolonger une période d'essai (admin seulement)
-    async extendTrial(userId, additionalDays) {
-        try {
-            if (!this.isAdmin()) {
-                return { success: false, error: 'Seuls les administrateurs peuvent prolonger les essais' };
-            }
+    // Créer l'instance globale
+    global.licenseService = new LicenseService();
+    
+    console.log('[LicenseService] ✅ Service loaded v6.2 - Fixed permissions');
 
-            const { data: user, error: fetchError } = await this.supabase
-                .from('users')
-                .select('license_expires_at, license_status')
-                .eq('id', userId)
-                .single();
-
-            if (fetchError || !user) {
-                return { success: false, error: 'Utilisateur non trouvé' };
-            }
-
-            if (user.license_status !== 'trial' && user.license_status !== 'expired') {
-                return { success: false, error: 'Seuls les essais peuvent être prolongés' };
-            }
-
-            const currentExpiry = new Date(user.license_expires_at);
-            const newExpiry = new Date(Math.max(currentExpiry, new Date()));
-            newExpiry.setDate(newExpiry.getDate() + additionalDays);
-
-            const result = await this.updateUserLicenseStatus(userId, 'trial', newExpiry.toISOString());
-
-            if (result.success) {
-                console.log(`[LicenseService] Extended trial by ${additionalDays} days for user ${userId}`);
-            }
-
-            return result;
-
-        } catch (error) {
-            console.error('[LicenseService] Error extending trial:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    async getCurrentUser() {
-        return this.currentUser;
-    }
-
-    isAdmin() {
-        if (!this.currentUser) {
-            return false;
-        }
-        
-        return this.currentUser.role === 'company_admin' || 
-               this.currentUser.role === 'super_admin';
-    }
-
-    isSuperAdmin() {
-        return this.currentUser && this.currentUser.role === 'super_admin';
-    }
-
-    async getCompanyUsers() {
-        try {
-            if (!this.currentUser || !this.currentUser.company_id) {
-                return [];
-            }
-
-            const { data, error } = await this.supabase
-                .from('users')
-                .select('*')
-                .eq('company_id', this.currentUser.company_id)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-
-            return data || [];
-
-        } catch (error) {
-            console.error('[LicenseService] Error fetching company users:', error);
-            return [];
-        }
-    }
-
-    async deleteUser(userId) {
-        try {
-            if (!this.initialized) {
-                await this.initialize();
-            }
-
-            // Vérifier les permissions
-            if (!this.isAdmin()) {
-                return { success: false, error: 'Droits insuffisants' };
-            }
-
-            // Récupérer l'utilisateur pour avoir son email
-            const { data: targetUser } = await this.supabase
-                .from('users')
-                .select('email, role')
-                .eq('id', userId)
-                .single();
-
-            if (!targetUser) {
-                return { success: false, error: 'Utilisateur non trouvé' };
-            }
-
-            // Empêcher la suppression d'un super admin par un non super admin
-            if (targetUser.role === 'super_admin' && this.currentUser.role !== 'super_admin') {
-                return { success: false, error: 'Seul un super admin peut supprimer un autre super admin' };
-            }
-
-            // Empêcher l'auto-suppression
-            if (this.currentUser.id === userId) {
-                return { success: false, error: 'Vous ne pouvez pas supprimer votre propre compte' };
-            }
-
-            // Supprimer d'abord les stats
-            await this.supabase
-                .from('user_email_stats')
-                .delete()
-                .eq('email', targetUser.email);
-
-            // Supprimer l'utilisateur
-            const { error } = await this.supabase
-                .from('users')
-                .delete()
-                .eq('id', userId);
-
-            if (error) throw error;
-
-            console.log('[LicenseService] ✅ User deleted successfully');
-            return { success: true };
-
-        } catch (error) {
-            console.error('[LicenseService] Error deleting user:', error);
-            return { success: false, error: error.message };
-        }
-    }
-
-    clearCache() {
-        this.cachedLicenseStatus = null;
-        this.cacheExpiry = null;
-        console.log('[LicenseService] Cache cleared');
-    }
-
-    reset() {
-        this.supabase = null;
-        this.currentUser = null;
-        this.initialized = false;
-        this.initPromise = null;
-        this.clearCache();
-        console.log('[LicenseService] Service reset');
-    }
-
-    async debug() {
-        return {
-            initialized: this.initialized,
-            hasSupabase: !!this.supabase,
-            currentUser: this.currentUser ? {
-                email: this.currentUser.email,
-                status: this.currentUser.license_status,
-                role: this.currentUser.role,
-                company_id: this.currentUser.company_id,
-                accountType: this.currentUser.account_type,
-                expiresAt: this.currentUser.license_expires_at
-            } : null,
-            hasCachedStatus: !!this.cachedLicenseStatus,
-            cacheExpiry: this.cacheExpiry
-        };
-    }
-}
-
-// Créer l'instance globale
-window.licenseService = new LicenseService();
-
-console.log('[LicenseService] ✅ Service loaded v6.1 - With strict license enforcement');
+})(window);
