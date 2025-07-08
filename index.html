@@ -266,7 +266,7 @@
 
         /* === STYLES POUR LA PAGE DE LOGIN SIMPLE === */
         .login-page-styles {
-            background: #f8fafc;
+            background: white;
             min-height: 100vh;
             overflow: hidden;
             display: flex;
@@ -288,13 +288,12 @@
         /* COLONNE GAUCHE - Connexion */
         .login-left {
             flex: 1;
-            max-width: 50%;
+            max-width: 60%;
             padding: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
+            background: white;
         }
 
         .login-container {
@@ -306,8 +305,8 @@
         /* COLONNE DROITE - Documentation simple */
         .login-right {
             flex: 1;
-            max-width: 50%;
-            padding: 40px;
+            max-width: 40%;
+            padding: 60px 40px;
             background: white;
             overflow-y: auto;
             border-left: 1px solid #e2e8f0;
@@ -318,32 +317,36 @@
 
         .docs-container {
             text-align: center;
+            width: 100%;
         }
 
         .docs-title {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: 600;
             color: #1f2937;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         .docs-link {
             display: block;
-            padding: 12px 20px;
-            margin: 10px 0;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            padding: 15px 25px;
+            margin: 15px 0;
+            background: white;
+            border: 2px solid #4F46E5;
+            border-radius: 12px;
             color: #4F46E5;
             text-decoration: none;
-            font-weight: 500;
-            transition: all 0.2s ease;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .docs-link:hover {
             background: #4F46E5;
             color: white;
-            border-color: #4F46E5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
         }
 
         /* Styles de la section login (colonne gauche) */
@@ -1211,16 +1214,16 @@
                         <div class="docs-container">
                             <h2 class="docs-title">Documentation technique</h2>
                             
-                            <a href="https://github.com/vianneyhastings/emailsortpro/blob/main/Guide%20d'Int%C3%A9gration%20IT%20%E2%80%93%20EmailSortPro%20Version%201.0%20-%20Juillet%202025.pdf" 
+                            <a href="https://github.com/vianneyhastings/emailsortpro/raw/main/Guide%20d'Int%C3%A9gration%20IT%20%E2%80%93%20EmailSortPro%20Version%201.0%20-%20Juillet%202025.pdf" 
                                target="_blank" 
                                class="docs-link">
-                                Guide d'intégration IT (Français)
+                                Guide d'Intégration IT – EmailSortPro Version 1.0 - Juillet 2025.pdf
                             </a>
 
-                            <a href="https://github.com/vianneyhastings/emailsortpro/blob/main/IT%20Integration%20Guide%20%E2%80%93%20EmailSortPro%20Version%201.0%20-%20January%202025.pdf" 
+                            <a href="https://github.com/vianneyhastings/emailsortpro/raw/main/IT%20Integration%20Guide%20%E2%80%93%20EmailSortPro%20Version%201.0%20-%20January%202025.pdf" 
                                target="_blank" 
                                class="docs-link">
-                                IT Integration Guide (English)
+                                IT Integration Guide – EmailSortPro Version 1.0 - January 2025.pdf
                             </a>
                         </div>
                     </div>
