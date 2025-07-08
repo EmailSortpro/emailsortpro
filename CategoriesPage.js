@@ -632,16 +632,15 @@ class CategoriesPageAdvanced {
     }
 
     renderKeywordsTab(keywords, categoryId) {
-        const isReadOnly = !this.getCategories()[categoryId]?.isCustom;
+        // MODIFICATION: Toutes les catégories peuvent maintenant être modifiées
+        const isReadOnly = false; // Toujours permettre la modification
         
         return `
             <div class="keywords-layout">
-                ${isReadOnly ? `
-                    <div class="readonly-notice">
-                        <i class="fas fa-info-circle"></i>
-                        Cette catégorie est prédéfinie. Les mots-clés sont en lecture seule.
-                    </div>
-                ` : ''}
+                <div class="keywords-info">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Ajoutez ou supprimez des mots-clés pour améliorer la détection. Les modifications sont sauvegardées localement.</p>
+                </div>
                 
                 <div class="keywords-grid">
                     ${this.renderKeywordBox('absolute', 'Mots-clés absolus', keywords.absolute || [], '#FF6B6B', 'fa-star', 'Déclenchent toujours la catégorie', isReadOnly)}
