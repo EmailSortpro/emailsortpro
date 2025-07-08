@@ -307,10 +307,9 @@
         .login-right {
             flex: 1;
             max-width: 40%;
-            padding: 60px 20px;
+            padding: 60px 0px;
             background: white;
             overflow-y: auto;
-            border-left: 1px solid #e2e8f0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -319,6 +318,7 @@
         .docs-container {
             text-align: center;
             width: 100%;
+            max-width: none;
         }
 
         .docs-title {
@@ -330,7 +330,7 @@
 
         .docs-link {
             display: block;
-            padding: 8px 12px;
+            padding: 8px 0px;
             margin: 8px 0;
             background: white;
             border: 2px solid #4F46E5;
@@ -342,6 +342,9 @@
             transition: all 0.3s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             line-height: 1.2;
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
         }
 
         .docs-link:hover {
