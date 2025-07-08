@@ -1548,17 +1548,19 @@
     <script src="./analytics.js"></script>
     
     <script>
-        // Application Analytics avec synchronisation temps réel
+        // Application Analytics avec synchronisation temps réel améliorée
         class AnalyticsApp {
             constructor() {
                 this.supabaseClient = null;
                 this.currentUser = null;
                 this.users = [];
+                this.allUsers = []; // Stockage de tous les utilisateurs pour les super admins
                 this.currentTab = 'overview';
                 this.licenseService = window.licenseService;
                 this.analyticsModule = null;
                 this.dataSubscriptions = [];
                 this.syncInterval = null;
+                this.realtimeChannels = {};
                 
                 this.init();
             }
@@ -1784,82 +1786,197 @@
             }
 
             setupRealtimeSync() {
-                // Écouter les changements sur la table users
-                const usersSubscription = this.supabaseClient
-                    .channel('users-changes')
-                    .on('postgres_changes', 
-                        { event: '*', schema: 'public', table: 'users' }, 
+                // Nettoyer les anciennes subscriptions
+                this.cleanupSubscriptions();
+                
+                // Channel pour les changements sur la table users
+                const usersChannel = this.supabaseClient
+                    .channel('realtime:users')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: '*',
+                            schema: 'public',
+                            table: 'users'
+                        },
                         (payload) => {
                             console.log('User change detected:', payload);
                             this.handleUserChange(payload);
                         }
                     )
-                    .subscribe();
+                    .subscribe((status) => {
+                        console.log('Users channel status:', status);
+                    });
                 
-                // Écouter les changements sur la table user_email_stats
-                const statsSubscription = this.supabaseClient
-                    .channel('stats-changes')
-                    .on('postgres_changes', 
-                        { event: '*', schema: 'public', table: 'user_email_stats' }, 
+                // Channel pour les changements sur la table user_email_stats
+                const statsChannel = this.supabaseClient
+                    .channel('realtime:stats')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: '*',
+                            schema: 'public',
+                            table: 'user_email_stats'
+                        },
                         (payload) => {
                             console.log('Stats change detected:', payload);
                             this.handleStatsChange(payload);
                         }
                     )
-                    .subscribe();
+                    .subscribe((status) => {
+                        console.log('Stats channel status:', status);
+                    });
                 
-                // Écouter les changements sur la table email_analytics
-                const analyticsSubscription = this.supabaseClient
-                    .channel('analytics-changes')
-                    .on('postgres_changes', 
-                        { event: '*', schema: 'public', table: 'email_analytics' }, 
+                // Channel pour les changements sur la table email_analytics
+                const analyticsChannel = this.supabaseClient
+                    .channel('realtime:analytics')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: '*',
+                            schema: 'public',
+                            table: 'email_analytics'
+                        },
                         (payload) => {
                             console.log('Analytics change detected:', payload);
                             this.handleAnalyticsChange(payload);
                         }
                     )
-                    .subscribe();
+                    .subscribe((status) => {
+                        console.log('Analytics channel status:', status);
+                    });
                 
-                this.dataSubscriptions = [usersSubscription, statsSubscription, analyticsSubscription];
+                this.realtimeChannels = {
+                    users: usersChannel,
+                    stats: statsChannel,
+                    analytics: analyticsChannel
+                };
+            }
+
+            cleanupSubscriptions() {
+                // Nettoyer les anciennes subscriptions
+                Object.values(this.realtimeChannels).forEach(channel => {
+                    if (channel) {
+                        this.supabaseClient.removeChannel(channel);
+                    }
+                });
+                this.realtimeChannels = {};
             }
 
             async handleUserChange(payload) {
                 this.updateSyncStatus('syncing');
                 
-                switch (payload.eventType) {
-                    case 'INSERT':
-                    case 'UPDATE':
-                    case 'DELETE':
-                        await this.loadUsers();
-                        this.updateStats();
-                        this.renderCurrentTab();
-                        break;
+                try {
+                    const { eventType, new: newRecord, old: oldRecord } = payload;
+                    
+                    switch (eventType) {
+                        case 'INSERT':
+                            // Ajouter le nouvel utilisateur s'il correspond aux filtres
+                            if (this.shouldIncludeUser(newRecord)) {
+                                await this.loadUsers();
+                                this.updateStats();
+                                if (this.currentTab === 'users') {
+                                    this.renderUsers();
+                                }
+                            }
+                            break;
+                            
+                        case 'UPDATE':
+                            // Mettre à jour l'utilisateur dans la liste
+                            const index = this.users.findIndex(u => u.id === newRecord.id);
+                            if (index !== -1) {
+                                // Vérifier si l'utilisateur doit toujours être inclus
+                                if (this.shouldIncludeUser(newRecord)) {
+                                    this.users[index] = { ...this.users[index], ...newRecord };
+                                } else {
+                                    // Retirer l'utilisateur s'il ne correspond plus aux filtres
+                                    this.users.splice(index, 1);
+                                }
+                            } else if (this.shouldIncludeUser(newRecord)) {
+                                // Ajouter l'utilisateur s'il correspond maintenant aux filtres
+                                await this.loadUsers();
+                            }
+                            this.updateStats();
+                            if (this.currentTab === 'users' || this.currentTab === 'licenses') {
+                                this.renderCurrentTab();
+                            }
+                            break;
+                            
+                        case 'DELETE':
+                            // Retirer l'utilisateur de la liste
+                            this.users = this.users.filter(u => u.id !== oldRecord.id);
+                            this.allUsers = this.allUsers.filter(u => u.id !== oldRecord.id);
+                            this.updateStats();
+                            if (this.currentTab === 'users' || this.currentTab === 'licenses') {
+                                this.renderCurrentTab();
+                            }
+                            break;
+                    }
+                    
+                    this.updateSyncStatus('success');
+                } catch (error) {
+                    console.error('Error handling user change:', error);
+                    this.updateSyncStatus('error');
+                }
+            }
+
+            shouldIncludeUser(user) {
+                // Pour les super admins, inclure tous les utilisateurs
+                if (this.currentUser.role === 'super_admin') {
+                    return true;
                 }
                 
-                this.updateSyncStatus('success');
+                // Pour les comptes individuels, inclure seulement leur propre compte
+                if (this.currentUser.account_type === 'individual') {
+                    return user.id === this.currentUser.id;
+                }
+                
+                // Pour les admins de société, inclure seulement les utilisateurs de leur société
+                if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
+                    return user.company_id === this.currentUser.company_id;
+                }
+                
+                return false;
             }
 
             async handleStatsChange(payload) {
                 this.updateSyncStatus('syncing');
                 
-                await this.loadUserStats();
-                this.updateStats();
-                
-                if (this.currentTab === 'overview' && this.analyticsModule) {
-                    this.analyticsModule.loadAnalyticsData();
+                try {
+                    // Recharger les stats des utilisateurs
+                    await this.loadUserStats();
+                    this.updateStats();
+                    
+                    // Mettre à jour l'analytics module si actif
+                    if (this.currentTab === 'overview' && this.analyticsModule) {
+                        this.analyticsModule.loadAnalyticsData();
+                    }
+                    
+                    this.updateSyncStatus('success');
+                } catch (error) {
+                    console.error('Error handling stats change:', error);
+                    this.updateSyncStatus('error');
                 }
-                
-                this.updateSyncStatus('success');
             }
 
             async handleAnalyticsChange(payload) {
                 this.updateSyncStatus('syncing');
                 
-                if (this.currentTab === 'overview' && this.analyticsModule) {
-                    this.analyticsModule.loadAnalyticsData();
+                try {
+                    // Mettre à jour l'analytics module si actif
+                    if (this.currentTab === 'overview' && this.analyticsModule) {
+                        this.analyticsModule.loadAnalyticsData();
+                    }
+                    
+                    // Mettre à jour les stats globales
+                    await this.loadUserStats();
+                    this.updateStats();
+                    
+                    this.updateSyncStatus('success');
+                } catch (error) {
+                    console.error('Error handling analytics change:', error);
+                    this.updateSyncStatus('error');
                 }
-                
-                this.updateSyncStatus('success');
             }
 
             updateSyncStatus(status) {
@@ -1874,6 +1991,10 @@
                         break;
                     case 'success':
                         syncStatus.innerHTML = '<i class="fas fa-check-circle"></i> <span>Synchronisé</span>';
+                        setTimeout(() => {
+                            syncStatus.classList.remove('success');
+                            syncStatus.innerHTML = '<i class="fas fa-sync"></i> <span>En ligne</span>';
+                        }, 2000);
                         break;
                     case 'error':
                         syncStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span>Erreur de sync</span>';
@@ -1928,7 +2049,7 @@
                     // Initialiser le module analytics s'il existe
                     if (window.analyticsModule) {
                         this.analyticsModule = window.analyticsModule;
-                        // Passer la référence Supabase au module
+                        // Passer la référence Supabase et l'utilisateur au module
                         this.analyticsModule.supabaseClient = this.supabaseClient;
                         this.analyticsModule.currentUser = this.currentUser;
                         this.analyticsModule.render();
@@ -1963,12 +2084,18 @@
                     } else if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
                         query = query.eq('company_id', this.currentUser.company_id);
                     }
-                    // Les super admins voient tout
+                    // Les super admins voient tout (pas de filtre)
                     
                     const { data, error } = await query;
                     
                     if (!error) {
                         this.users = data || [];
+                        
+                        // Pour les super admins, stocker tous les utilisateurs
+                        if (this.currentUser.role === 'super_admin') {
+                            this.allUsers = [...this.users];
+                        }
+                        
                         await this.loadUserStats();
                     }
                     
@@ -2571,6 +2698,7 @@
                         
                         this.closeModal('addUserModal');
                         this.showMessage('success', `Utilisateur ajouté avec ${trialDays} jours d'essai`);
+                        // Les changements seront automatiquement synchronisés via realtime
                     } else {
                         alert('Erreur: ' + result.error);
                     }
@@ -2597,6 +2725,7 @@
                     
                     if (!error) {
                         this.showMessage('success', 'Utilisateur supprimé');
+                        // Les changements seront automatiquement synchronisés via realtime
                     } else {
                         alert('Erreur: ' + error.message);
                     }
@@ -2756,9 +2885,7 @@
             async logout() {
                 if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
                     // Nettoyer les subscriptions
-                    this.dataSubscriptions.forEach(sub => {
-                        sub.unsubscribe();
-                    });
+                    this.cleanupSubscriptions();
                     
                     // Nettoyer l'intervalle
                     if (this.syncInterval) {
