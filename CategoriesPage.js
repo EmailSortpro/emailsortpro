@@ -272,6 +272,12 @@ class CategoriesPageAdvanced {
                     <div class="stat-value">${this.getTotalKeywords(categories)}</div>
                     <div class="stat-label">Mots-clés</div>
                 </div>
+                <div class="search-modern">
+                    <i class="fas fa-search"></i>
+                    <input type="text" 
+                           placeholder="Rechercher..." 
+                           onkeyup="window.categoriesPage.handleSearch(this.value)">
+                </div>
             </div>
             
             <!-- Grille de catégories -->
@@ -439,24 +445,29 @@ class CategoriesPageAdvanced {
     renderCreateCategoryCard() {
         return `
             <div class="category-card create-card" 
-                 style="--cat-color: #6366F1"
+                 style="--cat-color: #94a3b8"
                  onclick="window.categoriesPage.showCreateCategoryModal()">
                 
                 <div class="card-header">
                     <div class="cat-emoji">➕</div>
                     <div class="cat-info">
-                        <div class="cat-name">Nouvelle catégorie</div>
+                        <div class="cat-name" style="color: #dc2626;">Nouvelle catégorie</div>
                         <div class="cat-meta">
-                            <span class="meta-description">Créer une catégorie personnalisée</span>
+                            <span class="meta-description">Créer une catégorie</span>
                         </div>
                     </div>
                 </div>
                 
                 <div class="card-actions" onclick="event.stopPropagation()">
-                    <div class="create-hint">
-                        <i class="fas fa-plus-circle"></i>
-                        Cliquez pour créer
-                    </div>
+                    <button class="btn-minimal" style="background: #f3f4f6; color: #6b7280; border-color: #e5e7eb;">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="btn-minimal task" style="opacity: 0.3; pointer-events: none;">
+                        <i class="fas fa-square"></i>
+                    </button>
+                    <button class="btn-minimal config" style="opacity: 0.3; pointer-events: none;">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
                 </div>
             </div>
         `;
@@ -2324,10 +2335,10 @@ class CategoriesPageAdvanced {
                 margin-top: 24px;
             }
             
-            /* Stats bar sans recherche */
+            /* Stats bar avec recherche */
             .stats-bar {
                 display: grid;
-                grid-template-columns: repeat(3, 120px);
+                grid-template-columns: repeat(3, 120px) 1fr;
                 gap: 16px;
                 margin-bottom: 24px;
                 padding: 0 8px;
@@ -3460,48 +3471,18 @@ class CategoriesPageAdvanced {
                 background: var(--primary);
             }
             
-            /* Carte de création */
+            /* Carte de création - même style que les autres */
             .category-card.create-card {
-                background: linear-gradient(135deg, #f0f9ff, #e0e7ff);
-                border: 2px dashed var(--primary);
                 cursor: pointer;
-                transition: all 0.3s;
             }
             
             .category-card.create-card:hover {
-                background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
-                border-style: solid;
-                transform: translateY(-4px);
-                box-shadow: 0 8px 20px rgba(99, 102, 241, 0.2);
+                border-color: #dc2626;
             }
             
             .create-card .cat-emoji {
-                background: var(--primary);
-                color: white;
-                font-size: 20px;
-                font-weight: bold;
-            }
-            
-            .create-card .cat-name {
-                color: var(--primary);
-                font-weight: 700;
-            }
-            
-            .create-card .meta-description {
-                color: #6366F1;
-                opacity: 0.8;
-            }
-            
-            .create-hint {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                color: var(--primary);
-                font-size: 12px;
-                font-weight: 600;
-                opacity: 0.8;
-                width: 100%;
-                justify-content: center;
+                background: #f3f4f6;
+                color: #6b7280;
             }
             
             .priority-hint {
