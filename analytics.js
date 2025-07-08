@@ -1,5 +1,5 @@
 // analytics.js - Module Analytics pour EmailSortPro avec synchronisation Supabase
-// Version 4.0 - Synchronisation temps réel avec Supabase
+// Version 5.0 - Synchronisation temps réel et filtrage par société
 
 class AnalyticsManager {
     constructor() {
@@ -18,7 +18,7 @@ class AnalyticsManager {
             domainOrganization: 3  // 3 centimes par organisation de domaine
         };
         
-        console.log('[Analytics] Manager initialized v4.0 with Supabase sync');
+        console.log('[Analytics] Manager initialized v5.0 with Supabase sync');
         this.initializeSession();
     }
 
@@ -295,7 +295,7 @@ class AnalyticsManager {
         
         const exportData = {
             exportedAt: new Date().toISOString(),
-            version: '4.0',
+            version: '5.0',
             currentSession: this.currentSession
         };
         
@@ -343,6 +343,7 @@ class AnalyticsModule {
         this.supabaseClient = null;
         this.currentUser = null;
         this.lastUpdate = null;
+        this.realtimeChannel = null;
     }
 
     async render() {
@@ -366,6 +367,9 @@ class AnalyticsModule {
         
         // Initialiser les événements
         this.initializeEvents();
+        
+        // Configurer la synchronisation temps réel
+        this.setupRealtimeSync();
         
         // Charger les données
         await this.loadAnalyticsData();
@@ -498,6 +502,11 @@ class AnalyticsModule {
                 .sync-indicator.offline {
                     background: #fef2f2;
                     color: #dc2626;
+                }
+
+                .sync-indicator.syncing {
+                    background: #dbeafe;
+                    color: #1d4ed8;
                 }
 
                 .sync-indicator i {
@@ -698,6 +707,9 @@ class AnalyticsModule {
                     font-size: 0.875rem;
                     color: #1f2937;
                     font-weight: 500;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
                 }
 
                 .chart-bar {
@@ -736,6 +748,16 @@ class AnalyticsModule {
                     height: 100%;
                     background: #4F46E5;
                     transition: width 0.3s ease;
+                }
+
+                .company-filter {
+                    margin-bottom: 16px;
+                    padding: 8px 12px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 6px;
+                    background: #f8fafc;
+                    font-size: 0.875rem;
+                    color: #475569;
                 }
 
                 @media (max-width: 768px) {
@@ -793,6 +815,56 @@ class AnalyticsModule {
         }
     }
 
+    setupRealtimeSync() {
+        if (!this.supabaseClient) return;
+        
+        // Nettoyer l'ancien channel s'il existe
+        if (this.realtimeChannel) {
+            this.supabaseClient.removeChannel(this.realtimeChannel);
+        }
+        
+        // Créer un nouveau channel pour les mises à jour temps réel
+        this.realtimeChannel = this.supabaseClient
+            .channel('analytics-realtime')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'email_analytics'
+                },
+                (payload) => {
+                    console.log('[AnalyticsModule] Realtime update received:', payload);
+                    this.handleRealtimeUpdate(payload);
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'user_email_stats'
+                },
+                (payload) => {
+                    console.log('[AnalyticsModule] Stats update received:', payload);
+                    this.handleRealtimeUpdate(payload);
+                }
+            )
+            .subscribe((status) => {
+                console.log('[AnalyticsModule] Realtime subscription status:', status);
+            });
+    }
+
+    async handleRealtimeUpdate(payload) {
+        // Indiquer la synchronisation
+        this.setSyncStatus('syncing');
+        
+        // Recharger les données avec un léger délai pour éviter les conflits
+        setTimeout(() => {
+            this.loadAnalyticsData();
+        }, 500);
+    }
+
     async loadAnalyticsData() {
         console.log('[AnalyticsModule] Loading analytics data from Supabase...');
         
@@ -816,28 +888,70 @@ class AnalyticsModule {
             // Utiliser Supabase depuis analytics ou depuis la référence passée
             const supabase = this.supabaseClient || this.analytics.supabase;
             
-            // Charger toutes les données depuis Supabase
+            // Déterminer le filtre à appliquer selon le rôle de l'utilisateur
+            let companyFilter = null;
+            let emailFilter = null;
+            
+            if (this.currentUser) {
+                if (this.currentUser.role === 'super_admin') {
+                    // Les super admins voient tout
+                    companyFilter = null;
+                    emailFilter = null;
+                } else if (this.currentUser.account_type === 'individual') {
+                    // Les comptes individuels voient seulement leurs propres données
+                    emailFilter = this.currentUser.email;
+                } else if (this.currentUser.role === 'company_admin' && this.currentUser.company_id) {
+                    // Les admins de société voient seulement les données de leur société
+                    companyFilter = this.currentUser.company_id;
+                }
+            }
+            
+            // Construire les requêtes avec les filtres appropriés
+            let statsQuery = supabase
+                .from('user_email_stats')
+                .select('*')
+                .order('total_emails_scanned', { ascending: false });
+            
+            let analyticsQuery = supabase
+                .from('email_analytics')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(1000);
+            
+            let recentQuery = supabase
+                .from('email_analytics')
+                .select('*')
+                .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+                .order('created_at', { ascending: false })
+                .limit(50);
+            
+            // Appliquer les filtres email si nécessaire
+            if (emailFilter) {
+                statsQuery = statsQuery.eq('email', emailFilter);
+                analyticsQuery = analyticsQuery.eq('user_email', emailFilter);
+                recentQuery = recentQuery.eq('user_email', emailFilter);
+            }
+            
+            // Pour les filtres par société, on doit d'abord récupérer les emails de la société
+            if (companyFilter) {
+                const { data: companyUsers } = await supabase
+                    .from('users')
+                    .select('email')
+                    .eq('company_id', companyFilter);
+                
+                if (companyUsers && companyUsers.length > 0) {
+                    const companyEmails = companyUsers.map(u => u.email);
+                    statsQuery = statsQuery.in('email', companyEmails);
+                    analyticsQuery = analyticsQuery.in('user_email', companyEmails);
+                    recentQuery = recentQuery.in('user_email', companyEmails);
+                }
+            }
+            
+            // Exécuter les requêtes
             const [statsResult, analyticsResult, recentResult] = await Promise.all([
-                // Stats des utilisateurs
-                supabase
-                    .from('user_email_stats')
-                    .select('*')
-                    .order('total_emails_scanned', { ascending: false }),
-                
-                // Analytics globales
-                supabase
-                    .from('email_analytics')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(1000),
-                
-                // Événements récents (dernières 24h)
-                supabase
-                    .from('email_analytics')
-                    .select('*')
-                    .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-                    .order('created_at', { ascending: false })
-                    .limit(50)
+                statsQuery,
+                analyticsQuery,
+                recentQuery
             ]);
             
             // Vérifier les erreurs
@@ -855,6 +969,11 @@ class AnalyticsModule {
             const userStats = statsResult.data || [];
             const analyticsData = analyticsResult.data || [];
             const recentEvents = recentResult.data || [];
+            
+            // Afficher une info si c'est filtré
+            if (companyFilter || emailFilter) {
+                this.showFilterInfo(companyFilter, emailFilter);
+            }
             
             // Mettre à jour l'interface
             this.updateOverviewStats(userStats, analyticsData);
@@ -875,15 +994,45 @@ class AnalyticsModule {
         }
     }
 
+    showFilterInfo(companyFilter, emailFilter) {
+        const container = document.querySelector('.analytics-header');
+        if (!container) return;
+        
+        // Retirer l'ancien filtre s'il existe
+        const existingFilter = container.querySelector('.company-filter');
+        if (existingFilter) {
+            existingFilter.remove();
+        }
+        
+        // Ajouter le nouveau filtre
+        if (companyFilter || emailFilter) {
+            const filterDiv = document.createElement('div');
+            filterDiv.className = 'company-filter';
+            
+            if (emailFilter) {
+                filterDiv.innerHTML = `<i class="fas fa-filter"></i> Données filtrées pour : ${emailFilter}`;
+            } else if (companyFilter) {
+                filterDiv.innerHTML = `<i class="fas fa-filter"></i> Données filtrées pour votre société`;
+            }
+            
+            container.appendChild(filterDiv);
+        }
+    }
+
     setSyncStatus(status) {
         const indicator = document.getElementById('analyticsSync');
         if (!indicator) return;
         
-        indicator.classList.remove('offline');
+        indicator.classList.remove('offline', 'syncing');
         
         switch (status) {
             case 'loading':
+                indicator.classList.add('syncing');
                 indicator.innerHTML = '<i class="fas fa-sync fa-spin"></i> Chargement...';
+                break;
+            case 'syncing':
+                indicator.classList.add('syncing');
+                indicator.innerHTML = '<i class="fas fa-sync fa-spin"></i> Synchronisation...';
                 break;
             case 'online':
                 indicator.innerHTML = '<i class="fas fa-circle"></i> En ligne';
@@ -1150,6 +1299,12 @@ class AnalyticsModule {
     hide() {
         this.stopAutoRefresh();
         
+        // Nettoyer le channel realtime
+        if (this.realtimeChannel && this.supabaseClient) {
+            this.supabaseClient.removeChannel(this.realtimeChannel);
+            this.realtimeChannel = null;
+        }
+        
         if (this.container) {
             this.container.style.display = 'none';
         }
@@ -1169,10 +1324,10 @@ class AnalyticsModule {
 // Créer l'instance globale de l'analytics manager
 if (!window.analyticsManager) {
     window.analyticsManager = new AnalyticsManager();
-    console.log('[Analytics] Global AnalyticsManager created v4.0');
+    console.log('[Analytics] Global AnalyticsManager created v5.0');
 }
 
 // Créer le module analytics global
 window.analyticsModule = new AnalyticsModule();
 
-console.log('[Analytics] ✅ Analytics module loaded successfully v4.0');
+console.log('[Analytics] ✅ Analytics module loaded successfully v5.0');
