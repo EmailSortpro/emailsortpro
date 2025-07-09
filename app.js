@@ -1,5 +1,5 @@
-// app.js - Application EmailSortPro avec intégration Analytics complète v4.2.1
-// CORRECTION: Erreurs de bind et authentification double
+// app.js - Application EmailSortPro avec intégration Analytics complète v4.2.2
+// CORRECTION: Fix authentification Google dans toute l'application
 
 class App {
     constructor() {
@@ -14,7 +14,7 @@ class App {
         this.netlifyDomain = 'emailsortpro.netlify.app';
         this.isNetlifyEnv = window.location.hostname.includes('netlify.app');
         
-        console.log('[App] Constructor - EmailSortPro v4.2.1 with analytics and dual auth...');
+        console.log('[App] Constructor - EmailSortPro v4.2.2 with analytics and dual auth...');
         console.log('[App] Environment:', this.isNetlifyEnv ? 'Netlify' : 'Local');
         console.log('[App] Domain:', window.location.hostname);
         
@@ -122,11 +122,11 @@ class App {
             
             console.log('[App] Auth services initialization results:', initResults);
             
-            // INITIALISER LES MODULES CRITIQUES
-            await this.initializeCriticalModules();
-            
             // CORRECTION: Vérifier l'authentification avec priorité Google
             await this.checkAuthenticationStatus();
+            
+            // INITIALISER LES MODULES CRITIQUES APRÈS L'AUTHENTIFICATION
+            await this.initializeCriticalModules();
             
         } catch (error) {
             await this.handleInitializationError(error);
@@ -154,7 +154,7 @@ class App {
         // 4. Vérifier DashboardModule
         await this.ensureDashboardModuleReady();
         
-        // 5. Vérifier MailService avec fallback
+        // 5. IMPORTANT: Initialiser MailService APRÈS l'authentification
         await this.ensureMailServiceReady();
         
         // 6. Vérifier les modules de scan
@@ -280,6 +280,18 @@ class App {
     async ensureMailServiceReady() {
         console.log('[App] Ensuring MailService is ready...');
         
+        // CORRECTION: Si on est authentifié, forcer l'initialisation de MailService
+        if (this.isAuthenticated && window.mailService) {
+            console.log('[App] User authenticated, initializing MailService...');
+            try {
+                await window.mailService.initialize();
+                console.log('[App] ✅ MailService initialized successfully');
+                return true;
+            } catch (error) {
+                console.warn('[App] MailService initialization error:', error);
+            }
+        }
+        
         if (window.mailService && typeof window.mailService.getEmails === 'function') {
             console.log('[App] ✅ MailService already ready');
             return true;
@@ -295,8 +307,12 @@ class App {
         }
         
         if (!window.mailService || typeof window.mailService.getEmails !== 'function') {
-            console.warn('[App] MailService not ready, creating fallback...');
-            this.createMailServiceFallback();
+            console.warn('[App] MailService not ready, but user is authenticated - NOT creating fallback');
+            // Ne PAS créer de fallback si l'utilisateur est authentifié
+            if (this.isAuthenticated) {
+                console.log('[App] User authenticated, MailService will initialize when needed');
+                return true;
+            }
             return false;
         }
         
@@ -2167,7 +2183,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // DIAGNOSTIC GLOBAL AVEC ANALYTICS
 // =====================================
 window.diagnoseApp = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS - EmailSortPro v4.2.1');
+    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS - EmailSortPro v4.2.2');
     
     try {
         if (window.app) {
@@ -2398,9 +2414,9 @@ window.analyticsHelpers = {
     }
 };
 
-console.log('✅ App v4.2.1 loaded - DUAL PROVIDER (Microsoft + Google) + ANALYTICS INTEGRATION');
+console.log('✅ App v4.2.2 loaded - DUAL PROVIDER (Microsoft + Google) + ANALYTICS INTEGRATION');
 console.log('🔧 Fonctions globales disponibles: window.diagnoseApp(), window.testServices(), window.repairMailService(), window.repairScanModule()');
 console.log('🌐 Helpers Netlify: window.netlifyHelpers');
 console.log('📊 Helpers Analytics: window.analyticsHelpers');
 console.log('📈 Analytics tracking: Email en clair, filtrage par domaine et par société');
-console.log('🔧 CORRECTION: Bind methods sécurisés, authentification Google prioritaire, chargement de toutes les pages');
+console.log('🔧 CORRECTION: MailService initialisé après authentification, pas de fallback si authentifié');
