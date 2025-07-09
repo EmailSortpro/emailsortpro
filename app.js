@@ -1,22 +1,51 @@
-// app.js - Application principale EmailSortPro v3.5
-// CORRECTION: Meilleure gestion de l'authentification Gmail
+// app.js - Application principale EmailSortPro v3.6
+// CORRECTION: Meilleure détection de l'authentification Gmail au démarrage
 
 class EmailSortProApp {
     constructor() {
-        this.version = '3.5';
+        this.version = '3.6';
         this.isInitialized = false;
         this.initPromise = null;
-        this.currentProvider = null; // 'microsoft' ou 'google'
+        this.currentProvider = null;
         
         console.log(`[App] EmailSortPro v${this.version} starting...`);
         
         // Bind des méthodes
         this.init = this.init.bind(this);
         this.checkAuthentication = this.checkAuthentication.bind(this);
-        this.handleNavigation = this.handleNavigation.bind(this);
+        
+        // Écouter les événements d'authentification Google
+        this.setupAuthListeners();
         
         // Lancer l'initialisation
         this.init();
+    }
+    
+    setupAuthListeners() {
+        // Écouter quand GoogleAuthService est prêt
+        window.addEventListener('googleAuthReady', (event) => {
+            console.log('[App] Google Auth Ready event:', event.detail);
+            if (event.detail.authenticated && !this.currentProvider) {
+                this.currentProvider = 'google';
+                this.handleAuthReady();
+            }
+        });
+        
+        // Écouter le succès de l'authentification Google
+        window.addEventListener('googleAuthSuccess', (event) => {
+            console.log('[App] Google Auth Success event:', event.detail);
+            this.currentProvider = 'google';
+            window.location.reload(); // Recharger pour appliquer l'auth
+        });
+        
+        // Écouter quand GoogleAuthService est initialisé
+        window.addEventListener('googleAuthServiceReady', (event) => {
+            console.log('[App] Google Auth Service Ready:', event.detail);
+            if (event.detail.authenticated && !this.currentProvider) {
+                this.currentProvider = 'google';
+                this.handleAuthReady();
+            }
+        });
     }
     
     async init() {
@@ -29,53 +58,108 @@ class EmailSortProApp {
     }
     
     async _doInit() {
-        console.log('[App] Initializing application...');
+        console.log('[App] Starting initialization...');
         
         try {
             // 1. Attendre que le DOM soit prêt
             await this.waitForDOM();
             
-            // 2. Attendre que les services soient chargés
+            // 2. Vérifier immédiatement l'authentification stockée
+            const quickAuthCheck = this.quickAuthCheck();
+            if (quickAuthCheck.authenticated) {
+                console.log('[App] ✅ Quick auth check passed:', quickAuthCheck.provider);
+                this.currentProvider = quickAuthCheck.provider;
+                
+                // Afficher l'interface immédiatement
+                this.showAppInterface();
+                
+                // Continuer l'initialisation en arrière-plan
+                this.backgroundInit();
+                return;
+            }
+            
+            // 3. Attendre que les services soient chargés
             await this.waitForServices();
             
-            // 3. Initialiser les services d'authentification
+            // 4. Initialiser les services
             await this.initializeAuthServices();
             
-            // 4. Vérifier l'authentification
+            // 5. Vérifier l'authentification complète
             const isAuthenticated = await this.checkAuthentication();
             
             if (isAuthenticated) {
                 console.log('[App] ✅ User authenticated with', this.currentProvider);
-                
-                // Afficher l'interface de l'app
-                if (window.showApp) {
-                    window.showApp();
-                } else {
-                    this.showAppInterface();
-                }
-                
-                // Initialiser les composants de l'app
+                this.showAppInterface();
                 await this.initializeAppComponents();
-                
-                // Mettre à jour l'affichage utilisateur
                 await this.updateUserDisplay();
-                
-                // Charger le dashboard par défaut
                 this.loadDashboard();
             } else {
-                console.log('[App] User not authenticated, showing login page');
+                console.log('[App] User not authenticated');
                 this.showLoginPage();
             }
             
-            // Configurer les gestionnaires d'événements
+            // 6. Configurer les événements
             this.setupEventHandlers();
             
             this.isInitialized = true;
-            console.log('[App] ✅ Application initialized successfully');
+            console.log('[App] ✅ Initialization complete');
             
         } catch (error) {
             console.error('[App] ❌ Initialization error:', error);
             this.showError('Erreur d\'initialisation: ' + error.message);
+        }
+    }
+    
+    quickAuthCheck() {
+        // Vérification rapide des tokens stockés
+        try {
+            // Vérifier le provider actif
+            const lastProvider = sessionStorage.getItem('lastAuthProvider');
+            
+            // Vérifier token Google
+            const googleToken = localStorage.getItem('google_token_emailsortpro');
+            if (googleToken) {
+                try {
+                    const tokenData = JSON.parse(googleToken);
+                    if (tokenData.access_token && tokenData.expires_at > Date.now()) {
+                        return { authenticated: true, provider: 'google' };
+                    }
+                } catch (e) {}
+            }
+            
+            // Vérifier MSAL
+            const msalKeys = localStorage.getItem('msal.account.keys');
+            if (msalKeys && lastProvider === 'microsoft') {
+                return { authenticated: true, provider: 'microsoft' };
+            }
+            
+        } catch (error) {
+            console.warn('[App] Quick auth check error:', error);
+        }
+        
+        return { authenticated: false, provider: null };
+    }
+    
+    async backgroundInit() {
+        // Initialisation en arrière-plan après affichage rapide
+        try {
+            await this.waitForServices();
+            await this.initializeAuthServices();
+            await this.initializeAppComponents();
+            await this.updateUserDisplay();
+            this.loadDashboard();
+            this.setupEventHandlers();
+            this.isInitialized = true;
+        } catch (error) {
+            console.error('[App] Background init error:', error);
+        }
+    }
+    
+    handleAuthReady() {
+        if (!document.body.classList.contains('app-active')) {
+            console.log('[App] Auth ready, showing app interface');
+            this.showAppInterface();
+            this.backgroundInit();
         }
     }
     
@@ -90,7 +174,7 @@ class EmailSortProApp {
     async waitForServices() {
         console.log('[App] Waiting for services...');
         
-        const maxAttempts = 50; // 5 secondes
+        const maxAttempts = 50;
         let attempts = 0;
         
         while (attempts < maxAttempts) {
@@ -101,7 +185,7 @@ class EmailSortProApp {
                 window.uiManager;
             
             if (servicesReady) {
-                console.log('[App] ✅ All services loaded');
+                console.log('[App] ✅ Services loaded');
                 return;
             }
             
@@ -109,34 +193,39 @@ class EmailSortProApp {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
         
-        // Vérifier quels services manquent
-        const missing = [];
-        if (!window.authService) missing.push('authService');
-        if (!window.googleAuthService) missing.push('googleAuthService');
-        if (!window.mailService) missing.push('mailService');
-        if (!window.uiManager) missing.push('uiManager');
-        
-        console.warn('[App] Missing services after timeout:', missing);
+        console.warn('[App] Some services missing after timeout');
     }
     
     async initializeAuthServices() {
         console.log('[App] Initializing auth services...');
         
-        // Initialiser Microsoft Auth Service
+        // Initialiser Google en premier si c'était le dernier provider
+        const lastProvider = sessionStorage.getItem('lastAuthProvider');
+        
+        if (lastProvider === 'google' && window.googleAuthService) {
+            try {
+                await window.googleAuthService.initialize();
+                console.log('[App] ✅ Google auth initialized');
+            } catch (error) {
+                console.warn('[App] Google auth init warning:', error);
+            }
+        }
+        
+        // Initialiser Microsoft
         if (window.authService) {
             try {
                 await window.authService.initialize();
-                console.log('[App] ✅ Microsoft auth service initialized');
+                console.log('[App] ✅ Microsoft auth initialized');
             } catch (error) {
                 console.warn('[App] Microsoft auth init warning:', error);
             }
         }
         
-        // Initialiser Google Auth Service
-        if (window.googleAuthService) {
+        // Initialiser Google si pas déjà fait
+        if (lastProvider !== 'google' && window.googleAuthService) {
             try {
                 await window.googleAuthService.initialize();
-                console.log('[App] ✅ Google auth service initialized');
+                console.log('[App] ✅ Google auth initialized');
             } catch (error) {
                 console.warn('[App] Google auth init warning:', error);
             }
@@ -146,11 +235,10 @@ class EmailSortProApp {
     async checkAuthentication() {
         console.log('[App] Checking authentication...');
         
-        // Récupérer le dernier provider utilisé
         const lastProvider = sessionStorage.getItem('lastAuthProvider');
-        console.log('[App] Last auth provider:', lastProvider);
+        console.log('[App] Last provider:', lastProvider);
         
-        // Vérifier Google en premier si c'était le dernier provider
+        // Vérifier Google d'abord si c'était le dernier
         if (lastProvider === 'google' && window.googleAuthService) {
             if (window.googleAuthService.isAuthenticated()) {
                 this.currentProvider = 'google';
@@ -166,7 +254,7 @@ class EmailSortProApp {
             return true;
         }
         
-        // Re-vérifier Google si ce n'était pas le dernier provider
+        // Re-vérifier Google
         if (lastProvider !== 'google' && window.googleAuthService) {
             if (window.googleAuthService.isAuthenticated()) {
                 this.currentProvider = 'google';
@@ -186,8 +274,15 @@ class EmailSortProApp {
             let user = null;
             
             if (this.currentProvider === 'google' && window.googleAuthService) {
-                user = await window.googleAuthService.getUserInfo();
-                user.provider = 'google';
+                const account = window.googleAuthService.getAccount();
+                if (account) {
+                    user = {
+                        displayName: account.displayName || account.name,
+                        mail: account.email,
+                        email: account.email,
+                        provider: 'google'
+                    };
+                }
             } else if (this.currentProvider === 'microsoft' && window.authService) {
                 const account = window.authService.getAccount();
                 if (account) {
@@ -226,10 +321,9 @@ class EmailSortProApp {
             loadingOverlay.classList.remove('active');
         }
         
-        const pageContent = document.getElementById('pageContent');
-        if (pageContent) {
-            pageContent.style.display = 'block';
-            pageContent.style.opacity = '1';
+        // Appeler onAuthSuccess si défini
+        if (window.onAuthSuccess) {
+            window.onAuthSuccess();
         }
     }
     
@@ -258,23 +352,13 @@ class EmailSortProApp {
             }
         }
         
-        // Initialiser d'autres composants selon le besoin
+        // Initialiser TaskManager
         if (window.taskManager && !window.taskManager.initialized) {
             try {
                 await window.taskManager.initialize();
                 console.log('[App] ✅ Task manager initialized');
             } catch (error) {
                 console.warn('[App] Task manager init warning:', error);
-            }
-        }
-        
-        // Initialiser PageManager
-        if (window.pageManager && window.pageManager.init) {
-            try {
-                await window.pageManager.init();
-                console.log('[App] ✅ Page manager initialized');
-            } catch (error) {
-                console.warn('[App] Page manager init warning:', error);
             }
         }
     }
@@ -286,8 +370,6 @@ class EmailSortProApp {
             window.dashboardModule.render();
         } else if (window.pageManager) {
             window.pageManager.loadPage('dashboard');
-        } else {
-            console.warn('[App] No dashboard loader available');
         }
     }
     
@@ -297,21 +379,10 @@ class EmailSortProApp {
         // Navigation
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
-            item.addEventListener('click', this.handleNavigation);
+            item.addEventListener('click', (e) => this.handleNavigation(e));
         });
         
-        // Vérification du callback Google au retour
-        window.addEventListener('hashchange', () => {
-            if (window.location.hash.includes('access_token')) {
-                console.log('[App] Google OAuth callback detected');
-                this.handleGoogleCallback();
-            }
-        });
-        
-        // Gestion du scroll
-        window.addEventListener('resize', () => this.checkScrollNeeded());
-        
-        // Vérifier immédiatement si on revient d'un callback Google
+        // Vérifier callback Google au chargement
         if (window.location.hash.includes('access_token')) {
             this.handleGoogleCallback();
         }
@@ -325,7 +396,7 @@ class EmailSortProApp {
         
         console.log('[App] Navigating to:', page);
         
-        // Mettre à jour la navigation active
+        // Mettre à jour la navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('active');
         });
@@ -337,11 +408,6 @@ class EmailSortProApp {
         } else if (window.pageManager) {
             window.pageManager.loadPage(page);
         }
-        
-        // Mettre à jour le mode de page
-        if (window.setPageMode) {
-            window.setPageMode(page);
-        }
     }
     
     async handleGoogleCallback() {
@@ -350,17 +416,12 @@ class EmailSortProApp {
         try {
             if (window.googleAuthService && window.googleAuthService.handleOAuthCallback) {
                 const fragment = window.location.hash;
-                const success = await window.googleAuthService.handleOAuthCallback(fragment);
+                await window.googleAuthService.handleOAuthCallback(fragment);
                 
-                if (success) {
-                    console.log('[App] ✅ Google authentication successful');
-                    
-                    // Nettoyer l'URL
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    
-                    // Recharger l'app avec l'utilisateur authentifié
-                    window.location.reload();
-                }
+                // Nettoyer l'URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // L'événement googleAuthSuccess déclenchera le rechargement
             }
         } catch (error) {
             console.error('[App] Error handling Google callback:', error);
@@ -369,29 +430,21 @@ class EmailSortProApp {
     }
     
     checkScrollNeeded() {
-        if (!document.body.classList.contains('app-active')) {
-            return;
-        }
-        
         const contentHeight = document.documentElement.scrollHeight;
         const viewportHeight = window.innerHeight;
         
         if (contentHeight > viewportHeight) {
             document.body.style.overflow = 'auto';
-            document.body.style.overflowY = 'auto';
         } else {
             document.body.style.overflow = 'hidden';
-            document.body.style.overflowY = 'hidden';
         }
     }
     
     showError(message) {
-        console.error('[App] Error:', message);
+        console.error('[App]', message);
         
         if (window.uiManager) {
             window.uiManager.showToast(message, 'error', 8000);
-        } else {
-            alert('Erreur: ' + message);
         }
     }
     
@@ -406,8 +459,6 @@ class EmailSortProApp {
                 console.error('[App] Microsoft login error:', error);
                 throw error;
             }
-        } else {
-            throw new Error('Microsoft auth service not available');
         }
     }
     
@@ -422,65 +473,33 @@ class EmailSortProApp {
                 console.error('[App] Google login error:', error);
                 throw error;
             }
-        } else {
-            throw new Error('Google auth service not available');
         }
     }
     
-    // Méthode de diagnostic
     getDebugInfo() {
         return {
             version: this.version,
             isInitialized: this.isInitialized,
             currentProvider: this.currentProvider,
             authentication: {
-                microsoft: window.authService ? window.authService.isAuthenticated() : false,
-                google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false,
+                microsoft: window.authService?.isAuthenticated() || false,
+                google: window.googleAuthService?.isAuthenticated() || false,
                 lastProvider: sessionStorage.getItem('lastAuthProvider')
             },
             services: {
                 authService: !!window.authService,
                 googleAuthService: !!window.googleAuthService,
                 mailService: !!window.mailService,
-                uiManager: !!window.uiManager,
-                pageManager: !!window.pageManager,
-                dashboardModule: !!window.dashboardModule
-            },
-            ui: {
-                isAppActive: document.body.classList.contains('app-active'),
-                isLoginMode: document.body.classList.contains('login-mode')
+                uiManager: !!window.uiManager
             }
         };
     }
 }
 
-// Créer l'instance de l'application
-console.log('[App] Creating EmailSortPro application instance...');
+// Créer l'instance
 window.app = new EmailSortProApp();
 
-// Exposer des méthodes globales pour la compatibilité
+// Exposer des méthodes globales
 window.checkScrollNeeded = () => window.app.checkScrollNeeded();
 
-// Fonction de diagnostic
-window.appDebug = function() {
-    console.group('=== APP DEBUG ===');
-    const debug = window.app.getDebugInfo();
-    console.log('App Info:', debug);
-    
-    if (window.googleAuthService) {
-        console.log('Google Auth:', window.googleAuthService.getDiagnosticInfo());
-    }
-    
-    if (window.authService) {
-        console.log('Microsoft Auth:', window.authService.getDiagnosticInfo());
-    }
-    
-    if (window.mailService) {
-        console.log('Mail Service:', window.mailService.getDebugInfo());
-    }
-    
-    console.groupEnd();
-};
-
-console.log('[App] ✅ EmailSortPro v3.5 loaded');
-console.log('[App] Use appDebug() for diagnostic information');
+console.log('[App] ✅ EmailSortPro v3.6 loaded');
