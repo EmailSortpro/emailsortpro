@@ -1,6 +1,6 @@
-// StartScan.js - Version 11.0 - Détection complète des connexions Gmail/Outlook
+// StartScan.js - Version 11.1 - Détection corrigée des connexions Gmail/Outlook
 
-console.log('[StartScan] 🚀 Loading StartScan.js v11.0 - Complete Connection Detection...');
+console.log('[StartScan] 🚀 Loading StartScan.js v11.1 - Fixed Connection Detection...');
 
 class MinimalScanModule {
     constructor() {
@@ -19,7 +19,7 @@ class MinimalScanModule {
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        console.log('[MinimalScan] Scanner v11.0 initialized - Complete Connection Detection');
+        console.log('[MinimalScan] Scanner v11.1 initialized - Fixed Connection Detection');
         this.detectConnectionsAndProvider();
         this.loadSettingsFromCategoryManager();
         this.addMinimalStyles();
@@ -60,36 +60,54 @@ class MinimalScanModule {
             userInfo: null
         };
 
-        // Vérifier Microsoft/Outlook
+        // Vérifier Microsoft/Outlook - Méthode corrigée
         try {
             if (window.authService) {
-                const msAuth = await window.authService.checkAuthStatus();
-                console.log('[MinimalScan] 🔍 Microsoft auth status:', msAuth);
+                // Utiliser isAuthenticated() au lieu de checkAuthStatus()
+                const isAuth = window.authService.isAuthenticated();
+                console.log('[MinimalScan] 🔍 Microsoft auth status:', isAuth);
                 
-                if (msAuth.isAuthenticated) {
+                if (isAuth) {
                     connections.microsoft = true;
                     connections.activeProvider = 'microsoft';
-                    connections.userInfo = msAuth.user;
-                    console.log('[MinimalScan] ✅ Microsoft connecté:', msAuth.user);
+                    
+                    // Essayer de récupérer les infos utilisateur
+                    try {
+                        const userInfo = await window.authService.getUserInfo();
+                        connections.userInfo = userInfo;
+                        console.log('[MinimalScan] ✅ Microsoft connecté:', userInfo.displayName || userInfo.mail);
+                    } catch (error) {
+                        console.warn('[MinimalScan] ⚠️ Erreur récupération info utilisateur Microsoft:', error);
+                    }
                 }
             }
         } catch (error) {
             console.warn('[MinimalScan] ⚠️ Erreur vérification Microsoft:', error);
         }
 
-        // Vérifier Google/Gmail
+        // Vérifier Google/Gmail - Méthode corrigée
         try {
             if (window.googleAuthService) {
-                const googleAuth = await window.googleAuthService.checkAuthStatus();
-                console.log('[MinimalScan] 🔍 Google auth status:', googleAuth);
+                // Utiliser isAuthenticated() au lieu de checkAuthStatus()
+                const isAuth = window.googleAuthService.isAuthenticated();
+                console.log('[MinimalScan] 🔍 Google auth status:', isAuth);
                 
-                if (googleAuth.isAuthenticated) {
+                if (isAuth) {
                     connections.google = true;
                     if (!connections.activeProvider) {
                         connections.activeProvider = 'google';
-                        connections.userInfo = googleAuth.user;
                     }
-                    console.log('[MinimalScan] ✅ Google connecté:', googleAuth.user);
+                    
+                    // Essayer de récupérer les infos utilisateur
+                    try {
+                        const userInfo = await window.googleAuthService.getUserInfo();
+                        if (!connections.userInfo) {
+                            connections.userInfo = userInfo;
+                        }
+                        console.log('[MinimalScan] ✅ Google connecté:', userInfo.displayName || userInfo.email);
+                    } catch (error) {
+                        console.warn('[MinimalScan] ⚠️ Erreur récupération info utilisateur Google:', error);
+                    }
                 }
             }
         } catch (error) {
@@ -98,11 +116,24 @@ class MinimalScanModule {
 
         // Vérifier app.js pour le provider actif
         try {
-            if (window.app && window.app.getCurrentProvider) {
-                const currentProvider = window.app.getCurrentProvider();
-                if (currentProvider) {
-                    connections.activeProvider = currentProvider;
-                    console.log('[MinimalScan] 🎯 Provider actif depuis app.js:', currentProvider);
+            if (window.app) {
+                // Vérifier les propriétés de l'app
+                if (window.app.activeProvider) {
+                    connections.activeProvider = window.app.activeProvider;
+                    console.log('[MinimalScan] 🎯 Provider actif depuis app.activeProvider:', window.app.activeProvider);
+                }
+                
+                // Vérifier l'utilisateur dans app
+                if (window.app.user) {
+                    if (!connections.userInfo) {
+                        connections.userInfo = window.app.user;
+                    }
+                    
+                    // Détecter le provider depuis les infos utilisateur
+                    if (window.app.user.provider) {
+                        connections.activeProvider = window.app.user.provider === 'microsoft' ? 'microsoft' : 'google';
+                        console.log('[MinimalScan] 🎯 Provider détecté depuis user.provider:', connections.activeProvider);
+                    }
                 }
             }
         } catch (error) {
@@ -120,6 +151,19 @@ class MinimalScanModule {
         
         if (!this.connectedService) {
             console.warn('[MinimalScan] ⚠️ Aucun service connecté détecté');
+            // Au lieu de defaulter à outlook, essayer de détecter plus intelligemment
+            
+            // Vérifier si window.app a des infos
+            if (window.app && window.app.user && window.app.user.email) {
+                const email = window.app.user.email;
+                if (email.includes('@gmail.com')) {
+                    this.emailProvider = 'gmail';
+                    this.connectedService = 'google';
+                    console.log('[MinimalScan] 📧 Gmail détecté par email utilisateur');
+                    return;
+                }
+            }
+            
             this.emailProvider = 'outlook'; // Fallback par défaut
             return;
         }
@@ -129,37 +173,11 @@ class MinimalScanModule {
             case 'microsoft':
                 this.emailProvider = 'outlook';
                 console.log('[MinimalScan] 📧 Provider email: Outlook (Microsoft connecté)');
-                
-                // Vérifier le domaine email pour plus de précision
-                try {
-                    const msAuth = await window.authService.checkAuthStatus();
-                    if (msAuth.user && typeof msAuth.user === 'string') {
-                        const domain = msAuth.user.split('@')[1];
-                        if (domain && domain.includes('outlook') || domain.includes('hotmail') || domain.includes('live')) {
-                            console.log('[MinimalScan] 🎯 Confirmé Outlook par domaine email:', domain);
-                        }
-                    }
-                } catch (error) {
-                    console.warn('[MinimalScan] ⚠️ Erreur vérification domaine Microsoft:', error);
-                }
                 break;
 
             case 'google':
                 this.emailProvider = 'gmail';
                 console.log('[MinimalScan] 📧 Provider email: Gmail (Google connecté)');
-                
-                // Vérifier le domaine email pour plus de précision
-                try {
-                    const googleAuth = await window.googleAuthService.checkAuthStatus();
-                    if (googleAuth.user && typeof googleAuth.user === 'string') {
-                        const domain = googleAuth.user.split('@')[1];
-                        if (domain && domain.includes('gmail')) {
-                            console.log('[MinimalScan] 🎯 Confirmé Gmail par domaine email:', domain);
-                        }
-                    }
-                } catch (error) {
-                    console.warn('[MinimalScan] ⚠️ Erreur vérification domaine Google:', error);
-                }
                 break;
 
             default:
@@ -173,6 +191,25 @@ class MinimalScanModule {
         
         if (!this.connectedService) {
             console.warn('[MinimalScan] ⚠️ Aucun service connecté - Mode déconnecté');
+            
+            // Dernière tentative de détection via localStorage
+            try {
+                const storedProvider = localStorage.getItem('detectedEmailProvider');
+                const storedService = localStorage.getItem('detectedConnectedService');
+                
+                if (storedProvider && storedService && storedService !== 'none') {
+                    this.emailProvider = storedProvider;
+                    this.connectedService = storedService;
+                    console.log('[MinimalScan] 📦 Récupération depuis localStorage:', {
+                        provider: this.emailProvider,
+                        service: this.connectedService
+                    });
+                    return;
+                }
+            } catch (error) {
+                console.warn('[MinimalScan] ⚠️ Erreur lecture localStorage:', error);
+            }
+            
             this.emailProvider = 'outlook'; // Fallback par défaut
         }
 
@@ -318,19 +355,28 @@ class MinimalScanModule {
         // Vérifier l'authentification selon le service connecté
         try {
             if (this.connectedService === 'microsoft' && window.authService) {
-                const authStatus = await window.authService.checkAuthStatus();
-                status.authenticated = authStatus.isAuthenticated;
+                status.authenticated = window.authService.isAuthenticated();
                 if (!status.authenticated) {
                     status.errors.push('Microsoft non authentifié');
                 }
             } else if (this.connectedService === 'google' && window.googleAuthService) {
-                const authStatus = await window.googleAuthService.checkAuthStatus();
-                status.authenticated = authStatus.isAuthenticated;
+                status.authenticated = window.googleAuthService.isAuthenticated();
                 if (!status.authenticated) {
                     status.errors.push('Google non authentifié');
                 }
             } else {
-                status.errors.push('Aucun service d\'authentification disponible');
+                // Vérifier les deux services si aucun n'est spécifiquement connecté
+                if (window.authService && window.authService.isAuthenticated()) {
+                    status.authenticated = true;
+                    this.connectedService = 'microsoft';
+                    this.emailProvider = 'outlook';
+                } else if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+                    status.authenticated = true;
+                    this.connectedService = 'google';
+                    this.emailProvider = 'gmail';
+                } else {
+                    status.errors.push('Aucun service d\'authentification disponible');
+                }
             }
         } catch (error) {
             status.errors.push(`Erreur authentification: ${error.message}`);
@@ -360,7 +406,7 @@ class MinimalScanModule {
     // RENDU AVEC DÉTECTION COMPLÈTE
     // ================================================
     async render(container) {
-        console.log('[MinimalScan] 🎯 Rendu du scanner v11.0...');
+        console.log('[MinimalScan] 🎯 Rendu du scanner v11.1...');
         
         try {
             this.addMinimalStyles();
@@ -381,7 +427,7 @@ class MinimalScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[MinimalScan] ✅ Scanner v11.0 rendu avec succès');
+            console.log('[MinimalScan] ✅ Scanner v11.1 rendu avec succès');
             
         } catch (error) {
             console.error('[MinimalScan] ❌ Erreur lors du rendu:', error);
@@ -478,7 +524,7 @@ class MinimalScanModule {
         return `
             <div class="minimal-scanner ${isGmail ? 'gmail-mode' : ''}">
                 <div class="scanner-card-minimal">
-                    <div class="scanner-icon ${isGmail ? 'gmail-mode' : ''}">
+                    <div class="scanner-icon ${isGmail ? 'gmail-mode' : ''}" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
                         <i class="fas fa-lock"></i>
                     </div>
                     
@@ -680,7 +726,7 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Minimaliste v11.0 - Complete Connection Detection */
+            /* Scanner Ultra-Minimaliste v11.1 - Fixed Connection Detection */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -834,7 +880,7 @@ class MinimalScanModule {
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[MinimalScan] ✅ Styles v11.0 ajoutés');
+        console.log('[MinimalScan] ✅ Styles v11.1 ajoutés');
     }
 
     // ================================================
@@ -1223,6 +1269,10 @@ class MinimalScanModule {
                 googleAuthService: !!window.googleAuthService,
                 mailService: !!window.mailService,
                 emailScanner: !!window.emailScanner
+            },
+            authStatus: {
+                microsoft: window.authService ? window.authService.isAuthenticated() : false,
+                google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false
             }
         };
     }
@@ -1271,6 +1321,10 @@ window.debugEmailProvider = function() {
             microsoft: !!window.authService,
             google: !!window.googleAuthService
         },
+        authStatus: {
+            microsoft: window.authService ? window.authService.isAuthenticated() : false,
+            google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false
+        },
         debugInfo: window.minimalScanModule?.getDebugInfo()
     };
 };
@@ -1281,8 +1335,12 @@ window.testConnections = async function() {
     // Test Microsoft
     if (window.authService) {
         try {
-            const msAuth = await window.authService.checkAuthStatus();
-            console.log('Microsoft:', msAuth);
+            const isAuth = window.authService.isAuthenticated();
+            console.log('Microsoft authenticated:', isAuth);
+            if (isAuth) {
+                const userInfo = await window.authService.getUserInfo();
+                console.log('Microsoft user:', userInfo);
+            }
         } catch (error) {
             console.error('Erreur Microsoft:', error);
         }
@@ -1291,22 +1349,27 @@ window.testConnections = async function() {
     // Test Google
     if (window.googleAuthService) {
         try {
-            const googleAuth = await window.googleAuthService.checkAuthStatus();
-            console.log('Google:', googleAuth);
+            const isAuth = window.googleAuthService.isAuthenticated();
+            console.log('Google authenticated:', isAuth);
+            if (isAuth) {
+                const userInfo = await window.googleAuthService.getUserInfo();
+                console.log('Google user:', userInfo);
+            }
         } catch (error) {
             console.error('Erreur Google:', error);
         }
     }
     
     // Test app
-    if (window.app?.getCurrentProvider) {
-        console.log('App provider:', window.app.getCurrentProvider());
+    if (window.app) {
+        console.log('App activeProvider:', window.app.activeProvider);
+        console.log('App user:', window.app.user);
     }
     
     console.log('Debug info:', window.minimalScanModule?.getDebugInfo());
     console.groupEnd();
 };
 
-console.log('[StartScan] ✅ Scanner v11.0 chargé - Détection complète des connexions!');
+console.log('[StartScan] ✅ Scanner v11.1 chargé - Détection corrigée des connexions!');
 console.log('[StartScan] 📧 Provider détecté:', window.minimalScanModule?.emailProvider);
 console.log('[StartScan] 🔐 Service connecté:', window.minimalScanModule?.connectedService);
