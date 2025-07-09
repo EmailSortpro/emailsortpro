@@ -1,5 +1,4 @@
-
-// PageManagerGmail.js - Version 1.0 - Adapté pour Gmail
+// PageManagerGmail.js - Version 1.1 - Correction authentification Gmail
 
 class PageManagerGmail {
     constructor() {
@@ -47,6 +46,141 @@ class PageManagerGmail {
         };
         
         this.safeInit();
+    }
+
+    getLocalStorageItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (error) {
+            console.warn('[PageManagerGmail] LocalStorage non disponible:', error);
+            return null;
+        }
+    }
+
+    setLocalStorageItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (error) {
+            console.warn('[PageManagerGmail] LocalStorage non disponible:', error);
+        }
+    }
+
+    safeInit() {
+        try {
+            this.detectGmailEnvironment();
+            this.setupEventListeners();
+            this.setupSyncListeners();
+            this.setupCategoryManagerIntegration();
+            this.isInitialized = true;
+            console.log('[PageManagerGmail] ✅ Version 1.1 - Gmail Edition initialisée avec auth corrigée');
+        } catch (error) {
+            console.error('[PageManagerGmail] Erreur initialisation:', error);
+        }
+    }
+
+    // ================================================
+    // DÉTECTION ENVIRONNEMENT GMAIL
+    // ================================================
+    detectGmailEnvironment() {
+        console.log('[PageManagerGmail] 🔍 Détection environnement Gmail...');
+        
+        // Vérifier l'URL
+        const hostname = window.location.hostname.toLowerCase();
+        if (hostname.includes('mail.google.com') || hostname.includes('gmail.com')) {
+            this.gmailDetected = true;
+            console.log('[PageManagerGmail] ✅ Gmail détecté via URL');
+        }
+        
+        // Vérifier les éléments DOM spécifiques à Gmail
+        const gmailSelectors = [
+            '.gmail_default',
+            '[gh="tl"]', // Toolbar Gmail
+            '.T-I.T-I-KE', // Bouton composer
+            '.zA', // Ligne d'email Gmail
+            '.nH .no .nH', // Structure Gmail
+            '[role="main"][aria-label*="Gmail"]'
+        ];
+        
+        for (const selector of gmailSelectors) {
+            if (document.querySelector(selector)) {
+                this.gmailDetected = true;
+                console.log('[PageManagerGmail] ✅ Gmail détecté via DOM:', selector);
+                break;
+            }
+        }
+        
+        // Observer pour détecter Gmail après chargement
+        if (!this.gmailDetected) {
+            this.observeGmailLoad();
+        }
+    }
+
+    observeGmailLoad() {
+        const observer = new MutationObserver((mutations) => {
+            if (document.querySelector('.gmail_default') || document.querySelector('[gh="tl"]')) {
+                this.gmailDetected = true;
+                console.log('[PageManagerGmail] ✅ Gmail détecté après chargement');
+                observer.disconnect();
+            }
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Timeout après 10 secondes
+        setTimeout(() => observer.disconnect(), 10000);
+    }
+
+    // ================================================
+    // INTÉGRATION CATEGORYMANAGER
+    // ================================================
+    setupCategoryManagerIntegration() {
+        console.log('[PageManagerGmail] 🔗 Configuration intégration CategoryManager...');
+        
+        if (window.categoryManager) {
+            console.log('[PageManagerGmail] ✅ CategoryManager détecté');
+            this.syncState.categoryManagerSynced = true;
+            
+            window.categoryManager.addChangeListener((type, value, settings) => {
+                console.log('[PageManagerGmail] 📨 Changement CategoryManager reçu:', type, value);
+                this.handleCategoryManagerChange(type, value, settings);
+            });
+        } else {
+            console.warn('[PageManagerGmail] ⚠️ CategoryManager non trouvé, attente...');
+            setTimeout(() => this.setupCategoryManagerIntegration(), 2000);
+        }
+    }
+
+    handleCategoryManagerChange(type, value, settings) {
+        console.log('[PageManagerGmail] 🔄 Traitement changement CategoryManager:', type);
+        
+        switch (type) {
+            case 'taskPreselectedCategories':
+                this.invalidateTaskCategoriesCache();
+                this.handleTaskPreselectedCategoriesChange(value);
+                break;
+                
+            case 'activeCategories':
+                this.handleActiveCategoriesChange(value);
+                break;
+                
+            case 'categoryCreated':
+            case 'categoryUpdated':
+            case 'categoryDeleted':
+                this.handleCategoryStructureChange(type, value);
+                break;
+                
+            default:
+                this.handleGenericCategoryChange(type, value);
+        }
+        
+        if (this.currentPage === 'emails') {
+            setTimeout(() => {
+                this.refreshEmailsView();
+            }, 100);
+        }
     }
 
     // ================================================
@@ -166,6 +300,53 @@ class PageManagerGmail {
         }
     }
 
+    renderAuthRequiredState(pageName) {
+        return `
+            <div class="auth-required-state">
+                <div class="auth-icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h3 class="auth-title">Authentification requise</h3>
+                <p class="auth-text">
+                    Vous devez être connecté pour accéder à cette page.
+                </p>
+                <div class="auth-actions">
+                    <button class="btn btn-primary" onclick="window.pageManagerGmail.handleLogin()">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Se connecter
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.pageManagerGmail.loadPage('dashboard')">
+                        <i class="fas fa-home"></i>
+                        Retour au tableau de bord
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    async handleLogin() {
+        console.log('[PageManagerGmail] Handling Gmail login request...');
+        
+        try {
+            if (window.googleAuthService && typeof window.googleAuthService.login === 'function') {
+                console.log('[PageManagerGmail] Using GoogleAuthService.login()');
+                await window.googleAuthService.login();
+            } else if (window.googleAuthService && typeof window.googleAuthService.signIn === 'function') {
+                console.log('[PageManagerGmail] Using GoogleAuthService.signIn()');
+                await window.googleAuthService.signIn();
+            } else if (window.authService && typeof window.authService.login === 'function') {
+                console.log('[PageManagerGmail] Fallback to Microsoft auth');
+                await window.authService.login();
+            } else {
+                console.log('[PageManagerGmail] No login method available, redirecting to Google');
+                window.location.href = 'https://accounts.google.com/signin/v2/identifier?service=mail&continue=https://mail.google.com';
+            }
+        } catch (error) {
+            console.error('[PageManagerGmail] Login error:', error);
+            this.showError('Erreur lors de la connexion: ' + error.message);
+        }
+    }
+
     // ================================================
     // RENDU DE LA PAGE SCANNER CORRIGÉ
     // ================================================
@@ -227,225 +408,6 @@ class PageManagerGmail {
                 </div>
             </div>
         `;
-    }
-
-    // ================================================
-    // GESTION LOGIN GMAIL
-    // ================================================
-    async handleLogin() {
-        console.log('[PageManagerGmail] Handling Gmail login request...');
-        
-        try {
-            if (window.googleAuthService && typeof window.googleAuthService.login === 'function') {
-                console.log('[PageManagerGmail] Using GoogleAuthService.login()');
-                await window.googleAuthService.login();
-            } else if (window.googleAuthService && typeof window.googleAuthService.signIn === 'function') {
-                console.log('[PageManagerGmail] Using GoogleAuthService.signIn()');
-                await window.googleAuthService.signIn();
-            } else if (window.authService && typeof window.authService.login === 'function') {
-                console.log('[PageManagerGmail] Fallback to Microsoft auth');
-                await window.authService.login();
-            } else {
-                console.log('[PageManagerGmail] No login method available, redirecting to Google');
-                window.location.href = 'https://accounts.google.com/signin/v2/identifier?service=mail&continue=https://mail.google.com';
-            }
-        } catch (error) {
-            console.error('[PageManagerGmail] Login error:', error);
-            this.showError('Erreur lors de la connexion: ' + error.message);
-        }
-    }
-
-    // ================================================
-    // MÉTHODES HÉRITÉES DE PageManager
-    // ================================================
-    getLocalStorageItem(key) {
-        try {
-            return localStorage.getItem(key);
-        } catch (error) {
-            console.warn('[PageManagerGmail] LocalStorage non disponible:', error);
-            return null;
-        }
-    }
-
-    setLocalStorageItem(key, value) {
-        try {
-            localStorage.setItem(key, value);
-        } catch (error) {
-            console.warn('[PageManagerGmail] LocalStorage non disponible:', error);
-        }
-    }
-
-    safeInit() {
-        try {
-            this.detectGmailEnvironment();
-            this.setupEventListeners();
-            this.setupSyncListeners();
-            this.setupCategoryManagerIntegration();
-            this.isInitialized = true;
-            console.log('[PageManagerGmail] ✅ Version 1.1 - Gmail Edition initialisée avec auth corrigée');
-        } catch (error) {
-            console.error('[PageManagerGmail] Erreur initialisation:', error);
-        }
-    }
-
-    detectGmailEnvironment() {
-        console.log('[PageManagerGmail] 🔍 Détection environnement Gmail...');
-        
-        // Vérifier l'URL
-        const hostname = window.location.hostname.toLowerCase();
-        if (hostname.includes('mail.google.com') || hostname.includes('gmail.com')) {
-            this.gmailDetected = true;
-            console.log('[PageManagerGmail] ✅ Gmail détecté via URL');
-        }
-        
-        // Vérifier les éléments DOM spécifiques à Gmail
-        const gmailSelectors = [
-            '.gmail_default',
-            '[gh="tl"]', // Toolbar Gmail
-            '.T-I.T-I-KE', // Bouton composer
-            '.zA', // Ligne d'email Gmail
-            '.nH .no .nH', // Structure Gmail
-            '[role="main"][aria-label*="Gmail"]'
-        ];
-        
-        for (const selector of gmailSelectors) {
-            if (document.querySelector(selector)) {
-                this.gmailDetected = true;
-                console.log('[PageManagerGmail] ✅ Gmail détecté via DOM:', selector);
-                break;
-            }
-        }
-        
-        // Observer pour détecter Gmail après chargement
-        if (!this.gmailDetected) {
-            this.observeGmailLoad();
-        }
-    }
-
-    observeGmailLoad() {
-        const observer = new MutationObserver((mutations) => {
-            if (document.querySelector('.gmail_default') || document.querySelector('[gh="tl"]')) {
-                this.gmailDetected = true;
-                console.log('[PageManagerGmail] ✅ Gmail détecté après chargement');
-                observer.disconnect();
-            }
-        });
-        
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-        
-        // Timeout après 10 secondes
-        setTimeout(() => observer.disconnect(), 10000);
-    }
-
-    setupCategoryManagerIntegration() {
-        console.log('[PageManagerGmail] 🔗 Configuration intégration CategoryManager...');
-        
-        if (window.categoryManager) {
-            console.log('[PageManagerGmail] ✅ CategoryManager détecté');
-            this.syncState.categoryManagerSynced = true;
-            
-            window.categoryManager.addChangeListener((type, value, settings) => {
-                console.log('[PageManagerGmail] 📨 Changement CategoryManager reçu:', type, value);
-                this.handleCategoryManagerChange(type, value, settings);
-            });
-        } else {
-            console.warn('[PageManagerGmail] ⚠️ CategoryManager non trouvé, attente...');
-            setTimeout(() => this.setupCategoryManagerIntegration(), 2000);
-        }
-    }
-    handleCategoryManagerChange(type, value, settings) {
-        console.log('[PageManagerGmail] 🔄 Traitement changement CategoryManager:', type);
-        
-        switch (type) {
-            case 'taskPreselectedCategories':
-                this.invalidateTaskCategoriesCache();
-                this.handleTaskPreselectedCategoriesChange(value);
-                break;
-                
-            case 'activeCategories':
-                this.handleActiveCategoriesChange(value);
-                break;
-                
-            case 'categoryCreated':
-            case 'categoryUpdated':
-            case 'categoryDeleted':
-                this.handleCategoryStructureChange(type, value);
-                break;
-                
-            default:
-                this.handleGenericCategoryChange(type, value);
-        }
-        
-        if (this.currentPage === 'emails') {
-            setTimeout(() => {
-                this.refreshEmailsView();
-            }, 100);
-        }
-    }
-
-    // ================================================
-    // AUTHENTIFICATION GMAIL
-    // ================================================
-    async checkAuthenticationStatus() {
-        try {
-            let isAuthenticated = false;
-            let user = null;
-            
-            // Vérifier si on est dans Gmail
-            if (this.gmailDetected) {
-                // Gmail est déjà authentifié si on peut voir l'interface
-                const gmailInterface = document.querySelector('.gmail_default') || 
-                                     document.querySelector('[gh="tl"]') ||
-                                     document.querySelector('.T-I.T-I-KE');
-                
-                if (gmailInterface) {
-                    isAuthenticated = true;
-                    console.log('[PageManagerGmail] ✅ Utilisateur connecté à Gmail');
-                    
-                    // Essayer de récupérer l'email de l'utilisateur
-                    const accountButton = document.querySelector('[aria-label*="Google Account"]');
-                    if (accountButton) {
-                        const emailMatch = accountButton.getAttribute('aria-label')?.match(/([^@]+@[^)]+)/);
-                        if (emailMatch) {
-                            user = emailMatch[1];
-                        }
-                    }
-                }
-            }
-            
-            // Vérifier via l'API Gmail si disponible
-            if (window.gapi && window.gapi.auth2) {
-                try {
-                    const auth2 = gapi.auth2.getAuthInstance();
-                    if (auth2 && auth2.isSignedIn.get()) {
-                        isAuthenticated = true;
-                        const profile = auth2.currentUser.get().getBasicProfile();
-                        user = profile.getEmail();
-                        this.syncState.gmailAPIConnected = true;
-                        console.log('[PageManagerGmail] ✅ Connecté via API Gmail:', user);
-                    }
-                } catch (error) {
-                    console.warn('[PageManagerGmail] API Gmail non disponible:', error);
-                }
-            }
-            
-            return {
-                isAuthenticated,
-                user,
-                source: isAuthenticated ? 'gmail' : 'none'
-            };
-            
-        } catch (error) {
-            console.error('[PageManagerGmail] Erreur vérification authentification:', error);
-            return {
-                isAuthenticated: false,
-                user: null,
-                error: error.message
-            };
-        }
     }
 
     // ================================================
@@ -1131,13 +1093,6 @@ class PageManagerGmail {
     // Toutes les autres méthodes du PageManager original sont héritées
     // On peut les surcharger si nécessaire pour adapter à Gmail
     
-    handleLogin() {
-        console.log('[PageManagerGmail] Handling Gmail login request...');
-        
-        // Pour Gmail, rediriger vers la page de connexion Google
-        window.location.href = 'https://accounts.google.com/signin/v2/identifier?service=mail&continue=https://mail.google.com';
-    }
-
     cleanup() {
         if (this.categoryManagerChangeListener) {
             window.categoryManager?.removeChangeListener?.(this.categoryManagerChangeListener);
@@ -1172,7 +1127,6 @@ const methodsToCopy = [
     'checkEmailSyncStatus',
     'tryRecoverScanResults',
     'requiresAuthentication',
-    'renderAuthRequiredState',
     'renderPage',
     'delegateToModule',
     'initializePageEvents',
@@ -1216,20 +1170,10 @@ const methodsToCopy = [
     'renderTasks',
     'renderCategories',
     'renderSettings',
-    'renderScanner',
     'startFallbackScan',
     'renderRanger',
     'renderEmptyEmailsState',
     'renderEmptyState',
-    'openPersonCalendar',
-    'createCalendarReminder',
-    'searchCalendarEvents',
-    'showPersonCalendarModal',
-    'showReminderCreationModal',
-    'saveReminder',
-    'createNewEvent',
-    'createOutlookReminder',
-    'saveLocalReminder',
     'configureAI',
     'getVisibleEmails',
     'matchesSearch',
@@ -1273,7 +1217,7 @@ if (window.pageManagerGmail) {
     window.pageManagerGmail.cleanup?.();
 }
 
-console.log('[PageManagerGmail] 🚀 Création nouvelle instance v1.0...');
+console.log('[PageManagerGmail] 🚀 Création nouvelle instance v1.1...');
 window.pageManagerGmail = new PageManagerGmail();
 
 // Bind toutes les méthodes
@@ -1293,4 +1237,4 @@ window.debugPageManagerGmail = function() {
     return window.pageManagerGmail?.getSyncStatus() || { error: 'PageManagerGmail non disponible' };
 };
 
-console.log('✅ PageManagerGmail v1.0 loaded - Gmail Edition');
+console.log('✅ PageManagerGmail v1.1 loaded - Gmail Edition avec auth corrigée');
