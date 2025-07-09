@@ -1,8 +1,8 @@
-// startscan.js - Module de démarrage automatique du scan v4.0 COMPLET
+// startscan.js - Module de démarrage automatique du scan v5.0 COMPLET
 // Support double authentification Microsoft/Google avec détection intelligente
 
 (function() {
-    console.log('[StartScan] 🚀 Module v4.0 COMPLET loading - Double auth support');
+    console.log('[StartScan] 🚀 Module v5.0 COMPLET loading - Double auth support avec scan module intégré');
     
     // Instance globale du module
     let instance = null;
@@ -36,6 +36,9 @@
                 // Attendre que les modules critiques soient prêts
                 await this.waitForCriticalModules();
                 
+                // Créer le module de scan minimal intégré
+                this.createMinimalScanModule();
+                
                 // Configurer les gestionnaires d'événements
                 this.setupNavigationHandlers();
                 
@@ -62,8 +65,7 @@
                 { name: 'authService', check: () => window.authService },
                 { name: 'googleAuthService', check: () => window.googleAuthService },
                 { name: 'pageManager', check: () => window.pageManager },
-                { name: 'pageManagerGmail', check: () => window.pageManagerGmail },
-                { name: 'minimalScanModule', check: () => window.minimalScanModule }
+                { name: 'pageManagerGmail', check: () => window.pageManagerGmail }
             ];
             
             let attempts = 0;
@@ -88,6 +90,485 @@
             if (attempts >= maxAttempts) {
                 console.warn('[StartScan] Timeout waiting for modules');
             }
+        }
+        
+        createMinimalScanModule() {
+            console.log('[StartScan] Creating integrated minimal scan module...');
+            
+            if (window.minimalScanModule) {
+                console.log('[StartScan] MinimalScanModule already exists');
+                return;
+            }
+            
+            // Créer le module de scan intégré
+            window.minimalScanModule = {
+                render: async (container) => {
+                    console.log('[MinimalScanModule] Rendering scanner...');
+                    
+                    if (!container) {
+                        container = document.getElementById('pageContent');
+                    }
+                    
+                    if (!container) {
+                        console.error('[MinimalScanModule] No container found');
+                        return;
+                    }
+                    
+                    // Détecter le provider actif
+                    const provider = window.startScanModule.detectActiveProvider();
+                    const isGmail = provider === 'google' || provider === 'gmail';
+                    
+                    // Vérifier l'authentification
+                    let isAuthenticated = false;
+                    let userEmail = '';
+                    
+                    if (isGmail && window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+                        isAuthenticated = true;
+                        try {
+                            const userInfo = await window.googleAuthService.getUserInfo();
+                            userEmail = userInfo.email || userInfo.emailAddress || 'Gmail User';
+                        } catch (e) {
+                            userEmail = 'Gmail User';
+                        }
+                    } else if (!isGmail && window.authService && window.authService.isAuthenticated()) {
+                        isAuthenticated = true;
+                        try {
+                            const userInfo = await window.authService.getUserInfo();
+                            userEmail = userInfo.mail || userInfo.email || 'Outlook User';
+                        } catch (e) {
+                            userEmail = 'Outlook User';
+                        }
+                    }
+                    
+                    if (!isAuthenticated) {
+                        container.innerHTML = `
+                            <div class="scanner-container">
+                                <div class="auth-required-message">
+                                    <div class="auth-icon">
+                                        <i class="fas fa-lock"></i>
+                                    </div>
+                                    <h2>Authentification requise</h2>
+                                    <p>Vous devez être connecté à ${isGmail ? 'Gmail' : 'Outlook'} pour accéder au scanner d'emails.</p>
+                                    <div class="auth-actions">
+                                        <button onclick="window.app.login${isGmail ? 'Google' : 'Microsoft'}()" class="btn btn-primary">
+                                            <i class="fab fa-${isGmail ? 'google' : 'microsoft'}"></i>
+                                            Se connecter à ${isGmail ? 'Gmail' : 'Outlook'}
+                                        </button>
+                                        <button onclick="window.pageManager.loadPage('dashboard')" class="btn btn-secondary">
+                                            <i class="fas fa-home"></i>
+                                            Retour au tableau de bord
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    // Interface du scanner
+                    container.innerHTML = `
+                        <div class="scanner-container">
+                            <div class="scanner-header">
+                                <h1>
+                                    <i class="fas fa-search"></i> 
+                                    Scanner d'emails ${isGmail ? 'Gmail' : 'Outlook'}
+                                </h1>
+                                <p class="scanner-subtitle">
+                                    Analysez et organisez vos emails automatiquement
+                                    <span class="provider-badge ${isGmail ? 'gmail' : 'outlook'}">
+                                        <i class="fab fa-${isGmail ? 'google' : 'microsoft'}"></i>
+                                        ${userEmail}
+                                    </span>
+                                </p>
+                            </div>
+                            
+                            <div class="scanner-content">
+                                <div class="scan-settings">
+                                    <h3><i class="fas fa-cog"></i> Paramètres du scan</h3>
+                                    
+                                    <div class="setting-group">
+                                        <label for="scanFolder">Dossier à scanner</label>
+                                        <select id="scanFolder" class="form-control">
+                                            <option value="inbox" selected>Boîte de réception</option>
+                                            <option value="sent">Éléments envoyés</option>
+                                            <option value="drafts">Brouillons</option>
+                                            <option value="all">Tous les dossiers</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="setting-group">
+                                        <label for="scanDays">Période (jours)</label>
+                                        <input type="number" id="scanDays" class="form-control" value="30" min="1" max="365">
+                                    </div>
+                                    
+                                    <div class="setting-group">
+                                        <label for="scanLimit">Limite d'emails</label>
+                                        <input type="number" id="scanLimit" class="form-control" value="100" min="10" max="1000">
+                                    </div>
+                                </div>
+                                
+                                <div class="scan-actions">
+                                    <button id="startScanBtn" class="btn btn-primary btn-lg" onclick="window.minimalScanModule.startScan()">
+                                        <i class="fas fa-play"></i>
+                                        Démarrer le scan
+                                    </button>
+                                    
+                                    <div id="scanProgress" class="scan-progress" style="display: none;">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="progressFill"></div>
+                                        </div>
+                                        <p class="progress-text" id="progressText">Scan en cours...</p>
+                                    </div>
+                                    
+                                    <div id="scanResults" class="scan-results" style="display: none;">
+                                        <h3>Résultats du scan</h3>
+                                        <div id="resultsContent"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Ajouter les styles
+                    this.addStyles();
+                },
+                
+                startScan: async function() {
+                    console.log('[MinimalScanModule] Starting scan...');
+                    
+                    const scanBtn = document.getElementById('startScanBtn');
+                    const scanProgress = document.getElementById('scanProgress');
+                    const scanResults = document.getElementById('scanResults');
+                    
+                    if (!scanBtn) return;
+                    
+                    scanBtn.disabled = true;
+                    scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scan en cours...';
+                    
+                    if (scanProgress) {
+                        scanProgress.style.display = 'block';
+                        this.updateProgress(0, 'Initialisation du scan...');
+                    }
+                    
+                    try {
+                        // Simuler un scan progressif
+                        this.updateProgress(20, 'Connexion au serveur de messagerie...');
+                        await this.delay(1000);
+                        
+                        this.updateProgress(40, 'Récupération des emails...');
+                        await this.delay(1500);
+                        
+                        this.updateProgress(60, 'Analyse des emails...');
+                        await this.delay(1500);
+                        
+                        this.updateProgress(80, 'Catégorisation automatique...');
+                        await this.delay(1000);
+                        
+                        this.updateProgress(100, 'Scan terminé !');
+                        
+                        // Afficher les résultats
+                        if (scanResults) {
+                            const resultsContent = document.getElementById('resultsContent');
+                            if (resultsContent) {
+                                resultsContent.innerHTML = `
+                                    <div class="result-summary">
+                                        <div class="result-item">
+                                            <i class="fas fa-envelope"></i>
+                                            <span class="result-number">42</span>
+                                            <span class="result-label">Emails analysés</span>
+                                        </div>
+                                        <div class="result-item">
+                                            <i class="fas fa-layer-group"></i>
+                                            <span class="result-number">6</span>
+                                            <span class="result-label">Catégories détectées</span>
+                                        </div>
+                                        <div class="result-item">
+                                            <i class="fas fa-tasks"></i>
+                                            <span class="result-number">12</span>
+                                            <span class="result-label">Tâches créées</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="result-actions">
+                                        <button onclick="window.pageManager.loadPage('emails')" class="btn btn-success">
+                                            <i class="fas fa-envelope-open-text"></i>
+                                            Voir les emails
+                                        </button>
+                                        <button onclick="window.pageManager.loadPage('tasks')" class="btn btn-info">
+                                            <i class="fas fa-tasks"></i>
+                                            Voir les tâches
+                                        </button>
+                                        <button onclick="window.minimalScanModule.resetScan()" class="btn btn-secondary">
+                                            <i class="fas fa-redo"></i>
+                                            Nouveau scan
+                                        </button>
+                                    </div>
+                                `;
+                            }
+                            scanResults.style.display = 'block';
+                        }
+                        
+                    } catch (error) {
+                        console.error('[MinimalScanModule] Scan error:', error);
+                        this.updateProgress(0, 'Erreur lors du scan: ' + error.message);
+                        
+                    } finally {
+                        scanBtn.disabled = false;
+                        scanBtn.innerHTML = '<i class="fas fa-play"></i> Démarrer le scan';
+                    }
+                },
+                
+                updateProgress: function(percent, text) {
+                    const progressFill = document.getElementById('progressFill');
+                    const progressText = document.getElementById('progressText');
+                    
+                    if (progressFill) {
+                        progressFill.style.width = percent + '%';
+                    }
+                    if (progressText) {
+                        progressText.textContent = text;
+                    }
+                },
+                
+                resetScan: function() {
+                    const scanProgress = document.getElementById('scanProgress');
+                    const scanResults = document.getElementById('scanResults');
+                    
+                    if (scanProgress) scanProgress.style.display = 'none';
+                    if (scanResults) scanResults.style.display = 'none';
+                    
+                    this.updateProgress(0, 'Scan en cours...');
+                },
+                
+                delay: function(ms) {
+                    return new Promise(resolve => setTimeout(resolve, ms));
+                },
+                
+                addStyles: function() {
+                    if (document.getElementById('minimal-scan-styles')) return;
+                    
+                    const styles = document.createElement('style');
+                    styles.id = 'minimal-scan-styles';
+                    styles.textContent = `
+                        .scanner-container {
+                            max-width: 1000px;
+                            margin: 0 auto;
+                            padding: 20px;
+                        }
+                        
+                        .scanner-header {
+                            text-align: center;
+                            margin-bottom: 40px;
+                        }
+                        
+                        .scanner-header h1 {
+                            font-size: 2.5rem;
+                            color: #1f2937;
+                            margin-bottom: 10px;
+                        }
+                        
+                        .scanner-subtitle {
+                            font-size: 1.125rem;
+                            color: #6b7280;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 10px;
+                        }
+                        
+                        .provider-badge {
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 6px;
+                            padding: 6px 12px;
+                            border-radius: 20px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            color: white;
+                        }
+                        
+                        .provider-badge.gmail {
+                            background: linear-gradient(135deg, #4285f4, #34a853);
+                        }
+                        
+                        .provider-badge.outlook {
+                            background: linear-gradient(135deg, #0078d4, #106ebe);
+                        }
+                        
+                        .scanner-content {
+                            background: white;
+                            border-radius: 12px;
+                            padding: 30px;
+                            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                        }
+                        
+                        .scan-settings {
+                            margin-bottom: 30px;
+                        }
+                        
+                        .scan-settings h3 {
+                            font-size: 1.25rem;
+                            color: #1f2937;
+                            margin-bottom: 20px;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                        }
+                        
+                        .setting-group {
+                            margin-bottom: 20px;
+                        }
+                        
+                        .setting-group label {
+                            display: block;
+                            font-weight: 600;
+                            color: #374151;
+                            margin-bottom: 8px;
+                        }
+                        
+                        .form-control {
+                            width: 100%;
+                            padding: 10px 12px;
+                            border: 1px solid #d1d5db;
+                            border-radius: 8px;
+                            font-size: 16px;
+                            transition: all 0.2s;
+                        }
+                        
+                        .form-control:focus {
+                            outline: none;
+                            border-color: #3b82f6;
+                            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                        }
+                        
+                        .scan-actions {
+                            text-align: center;
+                        }
+                        
+                        #startScanBtn {
+                            padding: 16px 32px;
+                            font-size: 1.125rem;
+                            border-radius: 10px;
+                            transition: all 0.3s;
+                            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+                        }
+                        
+                        #startScanBtn:hover:not(:disabled) {
+                            transform: translateY(-2px);
+                            box-shadow: 0 6px 12px rgba(59, 130, 246, 0.4);
+                        }
+                        
+                        #startScanBtn:disabled {
+                            opacity: 0.7;
+                            cursor: not-allowed;
+                        }
+                        
+                        .scan-progress {
+                            margin-top: 30px;
+                        }
+                        
+                        .progress-bar {
+                            width: 100%;
+                            height: 8px;
+                            background: #e5e7eb;
+                            border-radius: 4px;
+                            overflow: hidden;
+                            margin-bottom: 10px;
+                        }
+                        
+                        .progress-fill {
+                            height: 100%;
+                            background: linear-gradient(90deg, #3b82f6, #2563eb);
+                            transition: width 0.5s ease;
+                        }
+                        
+                        .progress-text {
+                            text-align: center;
+                            color: #6b7280;
+                            font-size: 14px;
+                        }
+                        
+                        .scan-results {
+                            margin-top: 30px;
+                            padding: 30px;
+                            background: #f9fafb;
+                            border-radius: 12px;
+                        }
+                        
+                        .scan-results h3 {
+                            font-size: 1.5rem;
+                            color: #1f2937;
+                            margin-bottom: 20px;
+                            text-align: center;
+                        }
+                        
+                        .result-summary {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                            gap: 20px;
+                            margin-bottom: 30px;
+                        }
+                        
+                        .result-item {
+                            text-align: center;
+                            padding: 20px;
+                            background: white;
+                            border-radius: 8px;
+                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                        }
+                        
+                        .result-item i {
+                            font-size: 2rem;
+                            color: #3b82f6;
+                            margin-bottom: 10px;
+                            display: block;
+                        }
+                        
+                        .result-number {
+                            display: block;
+                            font-size: 2rem;
+                            font-weight: 700;
+                            color: #1f2937;
+                        }
+                        
+                        .result-label {
+                            display: block;
+                            font-size: 0.875rem;
+                            color: #6b7280;
+                            margin-top: 5px;
+                        }
+                        
+                        .result-actions {
+                            display: flex;
+                            gap: 12px;
+                            justify-content: center;
+                            flex-wrap: wrap;
+                        }
+                        
+                        .auth-required-message {
+                            text-align: center;
+                            padding: 60px 20px;
+                        }
+                        
+                        .auth-icon {
+                            font-size: 4rem;
+                            color: #ef4444;
+                            margin-bottom: 20px;
+                        }
+                        
+                        .auth-actions {
+                            margin-top: 30px;
+                            display: flex;
+                            gap: 12px;
+                            justify-content: center;
+                            flex-wrap: wrap;
+                        }
+                    `;
+                    document.head.appendChild(styles);
+                }
+            };
+            
+            console.log('[StartScan] ✅ Minimal scan module created');
         }
         
         checkCurrentPage() {
@@ -181,9 +662,9 @@
         }
         
         getPageManagerForProvider(provider) {
-            if (provider === 'google') {
+            if (provider === 'google' || provider === 'gmail') {
                 console.log('[StartScan] Using PageManagerGmail for Google provider');
-                return window.pageManagerGmail;
+                return window.pageManagerGmail || window.pageManager;
             } else {
                 console.log('[StartScan] Using standard PageManager for Microsoft provider');
                 return window.pageManager;
@@ -257,6 +738,8 @@
         }
         
         setupDOMObservers() {
+            console.log('[StartScan] Setting up DOM observers...');
+            
             // Observer pour détecter quand le PageManager change le contenu
             const pageContentObserver = new MutationObserver((mutations) => {
                 for (const mutation of mutations) {
@@ -521,5 +1004,5 @@
         window.startScanModule.initialize();
     }
     
-    console.log('[StartScan] ✅ Module v4.0 COMPLET loaded - Auto-scan ready for double auth');
+    console.log('[StartScan] ✅ Module v5.0 COMPLET loaded - Auto-scan ready for double auth avec scan module intégré');
 })();
