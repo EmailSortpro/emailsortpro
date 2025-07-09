@@ -1,6 +1,6 @@
-// StartScan.js - Version 10.0 - Complètement corrigée pour récupération emails
+// StartScan.js - Version 11.0 - Scanner non bloquant optimisé
 
-console.log('[StartScan] 🚀 Loading StartScan.js v10.0...');
+console.log('[StartScan] 🚀 Loading StartScan.js v11.0...');
 
 class MinimalScanModule {
     constructor() {
@@ -11,13 +11,14 @@ class MinimalScanModule {
         this.scanStartTime = null;
         this.currentProvider = null;
         this.scanResults = null;
+        this.abortController = null;
         
         // Intégration avec les paramètres
         this.settings = {};
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        console.log('[StartScan] Scanner v10.0 initialized');
+        console.log('[StartScan] Scanner v11.0 initialized - Non bloquant');
         this.detectAuthProvider();
         this.loadSettingsFromCategoryManager();
         this.addMinimalStyles();
@@ -127,7 +128,7 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Minimaliste v10.0 */
+            /* Scanner Ultra-Minimaliste v11.0 */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -278,6 +279,15 @@ class MinimalScanModule {
                 transform: none;
             }
             
+            .cancel-button {
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                margin-top: 10px;
+            }
+            
+            .cancel-button:hover {
+                box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+            }
+            
             .progress-section-minimal {
                 opacity: 0;
                 transition: opacity 0.3s ease;
@@ -329,15 +339,23 @@ class MinimalScanModule {
                 font-weight: 500;
                 flex-direction: column;
             }
+            
+            .error-state {
+                background: rgba(239, 68, 68, 0.1);
+                color: #dc2626;
+                padding: 20px;
+                border-radius: 10px;
+                margin-top: 20px;
+            }
         `;
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[StartScan] ✅ Styles v10.0 ajoutés');
+        console.log('[StartScan] ✅ Styles v11.0 ajoutés');
     }
 
     async render(container) {
-        console.log('[StartScan] 🎯 Rendu du scanner v10.0...');
+        console.log('[StartScan] 🎯 Rendu du scanner v11.0...');
         
         try {
             this.addMinimalStyles();
@@ -355,7 +373,7 @@ class MinimalScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[StartScan] ✅ Scanner v10.0 rendu avec succès');
+            console.log('[StartScan] ✅ Scanner v11.0 rendu avec succès');
             
         } catch (error) {
             console.error('[StartScan] ❌ Erreur lors du rendu:', error);
@@ -400,6 +418,11 @@ class MinimalScanModule {
                         </div>
                         <div class="progress-text" id="progressText">Initialisation...</div>
                         <div class="progress-status" id="progressStatus">Préparation du scan</div>
+                        
+                        <button class="scan-button-minimal cancel-button" id="cancelScanBtn" onclick="window.minimalScanModule.cancelScan()" style="display: none;">
+                            <i class="fas fa-stop"></i>
+                            <span>Annuler le scan</span>
+                        </button>
                     </div>
                     
                     <div class="scan-info">
@@ -529,7 +552,7 @@ class MinimalScanModule {
     }
 
     // ================================================
-    // SCAN PRINCIPAL AVEC RÉCUPÉRATION D'EMAILS
+    // SCAN PRINCIPAL NON BLOQUANT
     // ================================================
     async startScan() {
         if (this.scanInProgress) {
@@ -537,11 +560,12 @@ class MinimalScanModule {
             return;
         }
         
-        console.log('[StartScan] 🚀 Démarrage du scan v10.0');
+        console.log('[StartScan] 🚀 Démarrage du scan v11.0 non bloquant');
         
         try {
             this.scanInProgress = true;
             this.scanStartTime = Date.now();
+            this.abortController = new AbortController();
             
             const progressSection = document.getElementById('progressSection');
             if (progressSection) {
@@ -554,49 +578,80 @@ class MinimalScanModule {
                 scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Scan en cours...</span>';
             }
             
+            // Afficher le bouton d'annulation
+            const cancelBtn = document.getElementById('cancelScanBtn');
+            if (cancelBtn) {
+                cancelBtn.style.display = 'block';
+            }
+            
             // Préparer les options de scan
             const scanOptions = {
                 days: this.selectedDays,
                 provider: this.currentProvider,
                 taskPreselectedCategories: [...this.taskPreselectedCategories],
-                onProgress: (progress) => this.updateProgress(progress.progress || 0, progress.message || '', progress.phase || '')
+                onProgress: (progress) => this.updateProgress(progress.progress || 0, progress.message || '', progress.phase || ''),
+                abortSignal: this.abortController.signal
             };
             
             console.log('[StartScan] 📊 Options de scan:', scanOptions);
             
-            // Lancer le scan
-            const results = await this.executeScan(scanOptions);
+            // Lancer le scan de manière asynchrone
+            const results = await this.executeScanAsync(scanOptions);
             
-            this.scanResults = results;
-            console.log('[StartScan] ✅ Scan terminé:', results);
-            
-            this.completeScan();
+            if (results) {
+                this.scanResults = results;
+                console.log('[StartScan] ✅ Scan terminé:', results);
+                this.completeScan();
+            }
             
         } catch (error) {
-            console.error('[StartScan] ❌ Erreur de scan:', error);
-            this.showScanError(error);
+            if (error.name === 'AbortError') {
+                console.log('[StartScan] ⚠️ Scan annulé par l\'utilisateur');
+                this.showScanCancelled();
+            } else {
+                console.error('[StartScan] ❌ Erreur de scan:', error);
+                this.showScanError(error);
+            }
+        } finally {
+            this.scanInProgress = false;
+            this.abortController = null;
         }
     }
 
-    async executeScan(scanOptions) {
-        console.log('[StartScan] 🔄 Exécution du scan...');
+    async executeScanAsync(scanOptions) {
+        console.log('[StartScan] 🔄 Exécution du scan asynchrone...');
         
         try {
             // Étape 1: Initialiser MailService
             this.updateProgress(10, 'Initialisation du service mail...', 'init');
             await this.initializeMailService();
             
-            // Étape 2: Récupérer les emails
-            this.updateProgress(30, 'Récupération des emails...', 'fetching');
-            const emails = await this.fetchEmails(scanOptions);
+            // Vérifier l'annulation
+            if (scanOptions.abortSignal?.aborted) {
+                throw new Error('Scan annulé');
+            }
+            
+            // Étape 2: Récupérer les emails par batch
+            this.updateProgress(20, 'Récupération des emails...', 'fetching');
+            const emails = await this.fetchEmailsBatched(scanOptions);
+            
+            // Vérifier l'annulation
+            if (scanOptions.abortSignal?.aborted) {
+                throw new Error('Scan annulé');
+            }
             
             // Étape 3: Catégoriser les emails
             this.updateProgress(60, 'Catégorisation des emails...', 'categorizing');
-            const categorizedEmails = await this.categorizeEmails(emails, scanOptions);
+            const categorizedEmails = await this.categorizeEmailsBatched(emails, scanOptions);
             
-            // Étape 4: Analyser pour les tâches
-            this.updateProgress(80, 'Analyse IA pour les tâches...', 'analyzing');
-            const analyzedEmails = await this.analyzeForTasks(categorizedEmails, scanOptions);
+            // Vérifier l'annulation
+            if (scanOptions.abortSignal?.aborted) {
+                throw new Error('Scan annulé');
+            }
+            
+            // Étape 4: Analyser pour les tâches (optionnel et rapide)
+            this.updateProgress(80, 'Analyse rapide pour les tâches...', 'analyzing');
+            const analyzedEmails = await this.quickAnalyzeForTasks(categorizedEmails, scanOptions);
             
             // Étape 5: Finaliser
             this.updateProgress(100, 'Finalisation...', 'complete');
@@ -635,8 +690,8 @@ class MinimalScanModule {
         }
     }
 
-    async fetchEmails(scanOptions) {
-        console.log('[StartScan] 📧 Récupération des emails...');
+    async fetchEmailsBatched(scanOptions) {
+        console.log('[StartScan] 📧 Récupération des emails par batch...');
         
         try {
             // Calculer les dates
@@ -646,36 +701,56 @@ class MinimalScanModule {
             
             let emails = [];
             
-            // Utiliser la nouvelle méthode getMessages
+            // Utiliser la méthode getMessages avec limite raisonnable
             if (window.mailService && typeof window.mailService.getMessages === 'function') {
                 console.log('[StartScan] 📬 Utilisation de getMessages...');
                 
                 const folder = this.currentProvider === 'google' ? 'INBOX' : 'inbox';
                 
-                emails = await window.mailService.getMessages(folder, {
-                    top: 500,
-                    filter: this.buildDateFilter(startDate, endDate)
-                });
+                // Récupérer les emails par batch de 50
+                const batchSize = 50;
+                let offset = 0;
+                let hasMore = true;
                 
-                console.log(`[StartScan] ✅ ${emails.length} emails récupérés via getMessages`);
-            } else {
-                console.log('[StartScan] 📧 Génération d\'emails de démonstration...');
-                emails = this.generateDemoEmails(scanOptions.days);
+                while (hasMore && emails.length < 200) { // Limite à 200 emails max
+                    // Vérifier l'annulation
+                    if (scanOptions.abortSignal?.aborted) {
+                        throw new Error('Scan annulé');
+                    }
+                    
+                    const batch = await window.mailService.getMessages(folder, {
+                        top: batchSize,
+                        skip: offset,
+                        filter: this.buildDateFilter(startDate, endDate)
+                    });
+                    
+                    if (batch && batch.length > 0) {
+                        emails = emails.concat(batch);
+                        offset += batch.length;
+                        hasMore = batch.length === batchSize;
+                        
+                        // Mettre à jour le progrès
+                        const progress = 20 + Math.min(30, (emails.length / 200) * 30);
+                        this.updateProgress(progress, `${emails.length} emails récupérés...`, 'fetching');
+                        
+                        // Pause courte pour ne pas bloquer l'UI
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    } else {
+                        hasMore = false;
+                    }
+                }
+                
+                console.log(`[StartScan] ✅ ${emails.length} emails récupérés`);
             }
             
             // Filtrer les emails valides
             emails = emails.filter(email => email && email.subject && email.from);
             
-            console.log(`[StartScan] ✅ ${emails.length} emails valides récupérés`);
-            
             return emails;
             
         } catch (error) {
             console.error('[StartScan] ❌ Erreur récupération emails:', error);
-            
-            // Fallback vers emails de démonstration
-            console.log('[StartScan] 📧 Fallback vers emails de démonstration...');
-            return this.generateDemoEmails(scanOptions.days);
+            throw error;
         }
     }
 
@@ -690,176 +765,115 @@ class MinimalScanModule {
         }
     }
 
-    generateDemoEmails(days) {
-        console.log('[StartScan] 🎭 Génération d\'emails de démonstration...');
-        
-        const demoEmails = [];
-        const senders = [
-            { name: 'Amazon', email: 'noreply@amazon.com', category: 'shopping' },
-            { name: 'Microsoft', email: 'noreply@microsoft.com', category: 'notifications' },
-            { name: 'Newsletter Tech', email: 'news@techcrunch.com', category: 'newsletters' },
-            { name: 'Banque BNP', email: 'info@bnpparibas.com', category: 'finance' },
-            { name: 'Nike Store', email: 'offers@nike.com', category: 'marketing' },
-            { name: 'GitHub', email: 'noreply@github.com', category: 'notifications' },
-            { name: 'LinkedIn', email: 'messages@linkedin.com', category: 'social' },
-            { name: 'Spotify', email: 'no-reply@spotify.com', category: 'entertainment' }
-        ];
-        
-        const subjects = [
-            'Votre commande a été expédiée',
-            'Nouveau message dans votre boîte',
-            'Newsletter hebdomadaire',
-            'Votre relevé bancaire est disponible',
-            'Offre spéciale limitée',
-            'Notification de sécurité',
-            'Invitation à vous connecter',
-            'Nouvelles fonctionnalités disponibles'
-        ];
-        
-        const emailCount = Math.min(50, days * 5); // 5 emails par jour max
-        
-        for (let i = 0; i < emailCount; i++) {
-            const sender = senders[Math.floor(Math.random() * senders.length)];
-            const subject = subjects[Math.floor(Math.random() * subjects.length)];
-            const hoursAgo = Math.floor(Math.random() * (days * 24));
-            
-            const email = {
-                id: `demo_${Date.now()}_${i}`,
-                subject: subject,
-                from: {
-                    emailAddress: {
-                        name: sender.name,
-                        address: sender.email
-                    }
-                },
-                receivedDateTime: new Date(Date.now() - (hoursAgo * 60 * 60 * 1000)).toISOString(),
-                bodyPreview: `Ceci est un email de démonstration de ${sender.name}. Lorem ipsum dolor sit amet, consectetur adipiscing elit.`,
-                isRead: Math.random() > 0.3,
-                hasAttachments: Math.random() > 0.8,
-                importance: Math.random() > 0.9 ? 'high' : 'normal',
-                category: sender.category,
-                webLink: `https://example.com/email/${i}`,
-                provider: this.currentProvider,
-                isDemoEmail: true
-            };
-            
-            demoEmails.push(email);
-        }
-        
-        console.log(`[StartScan] ✅ ${demoEmails.length} emails de démonstration générés`);
-        return demoEmails;
-    }
-
-    async categorizeEmails(emails, scanOptions) {
-        console.log('[StartScan] 🏷️ Catégorisation des emails...');
+    async categorizeEmailsBatched(emails, scanOptions) {
+        console.log('[StartScan] 🏷️ Catégorisation des emails par batch...');
         
         if (!window.categoryManager) {
             console.warn('[StartScan] ⚠️ CategoryManager non disponible');
             return emails;
         }
         
+        const batchSize = 20;
         let categorizedCount = 0;
         let preselectedCount = 0;
         
-        for (let i = 0; i < emails.length; i++) {
-            const email = emails[i];
+        for (let i = 0; i < emails.length; i += batchSize) {
+            // Vérifier l'annulation
+            if (scanOptions.abortSignal?.aborted) {
+                throw new Error('Scan annulé');
+            }
             
-            try {
-                // Analyser l'email avec CategoryManager
-                const analysis = window.categoryManager.analyzeEmail(email);
-                
-                // Appliquer les résultats
-                email.category = analysis.category || email.category || 'other';
-                email.categoryScore = analysis.score || 0;
-                email.categoryConfidence = analysis.confidence || 0;
-                email.matchedPatterns = analysis.matchedPatterns || [];
-                email.hasAbsolute = analysis.hasAbsolute || false;
-                email.isSpam = analysis.isSpam || false;
-                email.isCC = analysis.isCC || false;
-                email.isExcluded = analysis.isExcluded || false;
-                
-                // Vérifier si l'email est pré-sélectionné pour les tâches
-                email.isPreselectedForTasks = scanOptions.taskPreselectedCategories.includes(email.category);
-                
-                if (email.isPreselectedForTasks) {
-                    preselectedCount++;
+            const batch = emails.slice(i, i + batchSize);
+            
+            for (const email of batch) {
+                try {
+                    // Analyser l'email avec CategoryManager
+                    const analysis = window.categoryManager.analyzeEmail(email);
+                    
+                    // Appliquer les résultats
+                    email.category = analysis.category || email.category || 'other';
+                    email.categoryScore = analysis.score || 0;
+                    email.categoryConfidence = analysis.confidence || 0;
+                    email.matchedPatterns = analysis.matchedPatterns || [];
+                    email.hasAbsolute = analysis.hasAbsolute || false;
+                    email.isSpam = analysis.isSpam || false;
+                    email.isCC = analysis.isCC || false;
+                    email.isExcluded = analysis.isExcluded || false;
+                    
+                    // Vérifier si l'email est pré-sélectionné pour les tâches
+                    email.isPreselectedForTasks = scanOptions.taskPreselectedCategories.includes(email.category);
+                    
+                    if (email.isPreselectedForTasks) {
+                        preselectedCount++;
+                    }
+                    
+                    categorizedCount++;
+                    
+                } catch (error) {
+                    console.error('[StartScan] ❌ Erreur catégorisation email:', error);
+                    email.category = email.category || 'other';
+                    email.isPreselectedForTasks = false;
                 }
-                
-                categorizedCount++;
-                
-            } catch (error) {
-                console.error('[StartScan] ❌ Erreur catégorisation email:', error);
-                
-                // Valeurs par défaut en cas d'erreur
-                email.category = email.category || 'other';
-                email.categoryScore = 0;
-                email.categoryConfidence = 0;
-                email.matchedPatterns = [];
-                email.hasAbsolute = false;
-                email.isSpam = false;
-                email.isCC = false;
-                email.isExcluded = false;
-                email.isPreselectedForTasks = false;
-                email.categoryError = error.message;
             }
             
             // Mise à jour du progrès
-            if (i % 10 === 0) {
-                const progress = 60 + Math.round((i / emails.length) * 20);
-                this.updateProgress(progress, `Catégorisation: ${i + 1}/${emails.length}`, 'categorizing');
-            }
+            const progress = 60 + Math.round((categorizedCount / emails.length) * 20);
+            this.updateProgress(progress, `Catégorisation: ${categorizedCount}/${emails.length}`, 'categorizing');
+            
+            // Pause courte pour ne pas bloquer l'UI
+            await new Promise(resolve => setTimeout(resolve, 50));
         }
         
-        console.log(`[StartScan] ✅ ${categorizedCount} emails catégorisés, ${preselectedCount} pré-sélectionnés pour tâches`);
+        console.log(`[StartScan] ✅ ${categorizedCount} emails catégorisés, ${preselectedCount} pré-sélectionnés`);
         return emails;
     }
 
-    async analyzeForTasks(emails, scanOptions) {
-        console.log('[StartScan] 🤖 Analyse IA pour les tâches...');
+    async quickAnalyzeForTasks(emails, scanOptions) {
+        console.log('[StartScan] 🤖 Analyse rapide pour les tâches...');
         
-        if (!window.aiTaskAnalyzer) {
-            console.warn('[StartScan] ⚠️ AITaskAnalyzer non disponible');
-            return emails;
-        }
+        // Pour l'instant, on marque juste les emails pré-sélectionnés
+        // L'analyse IA complète se fera dans la page emails pour éviter les blocages
         
-        // Sélectionner les emails à analyser (priorité aux pré-sélectionnés)
         const preselectedEmails = emails.filter(email => email.isPreselectedForTasks);
-        const otherEmails = emails.filter(email => !email.isPreselectedForTasks && email.categoryConfidence > 0.7);
+        console.log(`[StartScan] ⭐ ${preselectedEmails.length} emails pré-sélectionnés pour analyse ultérieure`);
         
-        const emailsToAnalyze = [...preselectedEmails.slice(0, 10), ...otherEmails.slice(0, 5)];
+        // Marquer pour analyse différée
+        preselectedEmails.forEach(email => {
+            email.pendingAIAnalysis = true;
+        });
         
-        console.log(`[StartScan] 🎯 Analyse de ${emailsToAnalyze.length} emails (${preselectedEmails.length} pré-sélectionnés)`);
+        return emails;
+    }
+
+    cancelScan() {
+        console.log('[StartScan] ❌ Annulation du scan demandée');
         
-        let analyzedCount = 0;
-        
-        for (let i = 0; i < emailsToAnalyze.length; i++) {
-            const email = emailsToAnalyze[i];
-            
-            try {
-                const analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
-                
-                email.aiAnalysis = analysis;
-                email.taskSuggested = analysis?.mainTask?.title ? true : false;
-                
-                analyzedCount++;
-                
-                // Pause courte pour éviter la surcharge
-                if (i < emailsToAnalyze.length - 1) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-                
-            } catch (error) {
-                console.error('[StartScan] ❌ Erreur analyse IA:', error);
-                email.aiAnalysisError = error.message;
-            }
-            
-            // Mise à jour du progrès
-            const progress = 80 + Math.round((i / emailsToAnalyze.length) * 20);
-            this.updateProgress(progress, `Analyse IA: ${i + 1}/${emailsToAnalyze.length}`, 'analyzing');
+        if (this.abortController) {
+            this.abortController.abort();
         }
         
-        console.log(`[StartScan] ✅ ${analyzedCount} emails analysés par IA`);
-        return emails;
+        this.showScanCancelled();
+    }
+
+    showScanCancelled() {
+        console.log('[StartScan] ⚠️ Scan annulé');
+        
+        const progressSection = document.getElementById('progressSection');
+        if (progressSection) {
+            progressSection.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-stop-circle" style="font-size: 24px; margin-bottom: 10px;"></i>
+                    <div style="font-weight: 600; margin-bottom: 10px;">Scan annulé</div>
+                    <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
+                            style="width: auto; padding: 10px 20px; height: 40px; font-size: 14px; margin: 0 auto;">
+                        <i class="fas fa-redo"></i>
+                        <span>Recommencer</span>
+                    </button>
+                </div>
+            `;
+        }
+        
+        this.scanInProgress = false;
     }
 
     updateProgress(percent, text, status) {
@@ -876,6 +890,12 @@ class MinimalScanModule {
 
     completeScan() {
         console.log('[StartScan] 🎉 Scan terminé avec succès');
+        
+        // Masquer le bouton d'annulation
+        const cancelBtn = document.getElementById('cancelScanBtn');
+        if (cancelBtn) {
+            cancelBtn.style.display = 'none';
+        }
         
         setTimeout(() => {
             const scanBtn = document.getElementById('minimalScanBtn');
@@ -915,6 +935,7 @@ class MinimalScanModule {
             if (window.emailScanner && this.scanResults?.emails) {
                 window.emailScanner.emails = this.scanResults.emails;
                 window.emailScanner.startScanSynced = true;
+                console.log('[StartScan] ✅ Emails transférés vers EmailScanner');
             }
             
         } catch (error) {
@@ -956,18 +977,25 @@ class MinimalScanModule {
     showScanError(error) {
         console.error('[StartScan] ❌ Erreur de scan:', error);
         
+        // Masquer le bouton d'annulation
+        const cancelBtn = document.getElementById('cancelScanBtn');
+        if (cancelBtn) {
+            cancelBtn.style.display = 'none';
+        }
+        
         const progressSection = document.getElementById('progressSection');
         if (progressSection) {
             progressSection.innerHTML = `
-                <div style="text-align: center; padding: 20px 0;">
-                    <div style="font-size: 16px; font-weight: 600; color: #ef4444; margin-bottom: 8px;">
+                <div class="error-state">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom: 10px;"></i>
+                    <div style="font-weight: 600; color: #dc2626; margin-bottom: 8px;">
                         Erreur de scan
                     </div>
                     <div style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">
                         ${error.message}
                     </div>
                     <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
-                            style="width: auto; padding: 0 20px; height: 40px; font-size: 14px;">
+                            style="width: auto; padding: 10px 20px; height: 40px; font-size: 14px;">
                         <i class="fas fa-redo"></i>
                         <span>Réessayer</span>
                     </button>
@@ -980,6 +1008,7 @@ class MinimalScanModule {
 
     resetScanner() {
         this.scanInProgress = false;
+        this.abortController = null;
         
         const progressSection = document.getElementById('progressSection');
         if (progressSection) {
@@ -991,6 +1020,11 @@ class MinimalScanModule {
             scanBtn.disabled = false;
             scanBtn.innerHTML = '<i class="fas fa-play"></i> <span>Démarrer le scan</span>';
             scanBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        }
+        
+        const cancelBtn = document.getElementById('cancelScanBtn');
+        if (cancelBtn) {
+            cancelBtn.style.display = 'none';
         }
         
         this.updateProgress(0, 'Initialisation...', 'Préparation du scan');
@@ -1010,7 +1044,7 @@ class MinimalScanModule {
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             settings: this.settings,
             scanResults: this.scanResults,
-            version: '10.0'
+            version: '11.0'
         };
     }
 
@@ -1018,6 +1052,7 @@ class MinimalScanModule {
         this.scanInProgress = false;
         this.isInitialized = false;
         this.scanResults = null;
+        this.abortController = null;
         console.log('[StartScan] 🧹 Nettoyage terminé');
     }
 
@@ -1039,4 +1074,4 @@ window.MinimalScanModule = MinimalScanModule;
 window.minimalScanModule = new MinimalScanModule();
 window.scanStartModule = window.minimalScanModule;
 
-console.log('[StartScan] ✅ Scanner v10.0 chargé - Récupération d\'emails intégrée!');
+console.log('[StartScan] ✅ Scanner v11.0 chargé - Version non bloquante avec annulation!');
