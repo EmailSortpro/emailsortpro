@@ -1,3 +1,4 @@
+
 // PageManagerGmail.js - Version 1.0 - Adapté pour Gmail
 
 class PageManagerGmail {
@@ -48,6 +49,215 @@ class PageManagerGmail {
         this.safeInit();
     }
 
+    // ================================================
+    // AUTHENTIFICATION GMAIL CORRIGÉE
+    // ================================================
+    async checkAuthenticationStatus() {
+        try {
+            let isAuthenticated = false;
+            let user = null;
+            
+            // Vérifier d'abord GoogleAuthService
+            if (window.googleAuthService) {
+                console.log('[PageManagerGmail] Vérification authentification Google...');
+                
+                // Utiliser checkAuthentication() au lieu de checkAuthStatus()
+                if (typeof window.googleAuthService.checkAuthentication === 'function') {
+                    try {
+                        const authStatus = await window.googleAuthService.checkAuthentication();
+                        isAuthenticated = authStatus.isAuthenticated || false;
+                        user = authStatus.user || null;
+                        this.syncState.gmailAPIConnected = isAuthenticated;
+                        console.log('[PageManagerGmail] GoogleAuthService.checkAuthentication():', authStatus);
+                    } catch (error) {
+                        console.warn('[PageManagerGmail] Erreur checkAuthentication:', error);
+                    }
+                }
+                
+                // Fallback sur isAuthenticated()
+                if (!isAuthenticated && typeof window.googleAuthService.isAuthenticated === 'function') {
+                    isAuthenticated = window.googleAuthService.isAuthenticated();
+                    console.log('[PageManagerGmail] GoogleAuthService.isAuthenticated():', isAuthenticated);
+                }
+                
+                // Essayer de récupérer l'utilisateur si authentifié
+                if (isAuthenticated && !user && typeof window.googleAuthService.getUserInfo === 'function') {
+                    try {
+                        const userInfo = await window.googleAuthService.getUserInfo();
+                        user = userInfo?.email || userInfo?.emailAddress || null;
+                        console.log('[PageManagerGmail] User info récupéré:', user);
+                    } catch (error) {
+                        console.warn('[PageManagerGmail] Erreur getUserInfo:', error);
+                    }
+                }
+            }
+            
+            // Vérifier aussi Microsoft au cas où (double authentification)
+            if (!isAuthenticated && window.authService) {
+                console.log('[PageManagerGmail] Vérification authentification Microsoft comme fallback...');
+                
+                if (typeof window.authService.isAuthenticated === 'function') {
+                    const msAuth = window.authService.isAuthenticated();
+                    if (msAuth) {
+                        isAuthenticated = true;
+                        user = 'Microsoft User';
+                        console.log('[PageManagerGmail] Authentifié via Microsoft');
+                    }
+                }
+            }
+            
+            // Vérifier si on est dans Gmail natif
+            if (!isAuthenticated && this.gmailDetected) {
+                // Gmail est déjà authentifié si on peut voir l'interface
+                const gmailInterface = document.querySelector('.gmail_default') || 
+                                     document.querySelector('[gh="tl"]') ||
+                                     document.querySelector('.T-I.T-I-KE');
+                
+                if (gmailInterface) {
+                    isAuthenticated = true;
+                    console.log('[PageManagerGmail] ✅ Utilisateur connecté à Gmail (interface détectée)');
+                    
+                    // Essayer de récupérer l'email de l'utilisateur
+                    const accountButton = document.querySelector('[aria-label*="Google Account"]');
+                    if (accountButton) {
+                        const emailMatch = accountButton.getAttribute('aria-label')?.match(/([^@]+@[^)]+)/);
+                        if (emailMatch) {
+                            user = emailMatch[1];
+                        }
+                    }
+                }
+            }
+            
+            // Dernier recours : vérifier localStorage
+            if (!isAuthenticated) {
+                try {
+                    const storedAuth = this.getLocalStorageItem('googleAuthStatus') || 
+                                      this.getLocalStorageItem('authStatus') || 
+                                      this.getLocalStorageItem('userInfo');
+                    if (storedAuth) {
+                        isAuthenticated = true;
+                        console.log('[PageManagerGmail] Found stored authentication indicator');
+                    }
+                } catch (error) {
+                    console.warn('[PageManagerGmail] Cannot access localStorage:', error);
+                }
+            }
+            
+            console.log('[PageManagerGmail] ✅ Résultat final authentification:', {
+                isAuthenticated,
+                user,
+                source: isAuthenticated ? 'detected' : 'none',
+                gmailAPIConnected: this.syncState.gmailAPIConnected
+            });
+            
+            return {
+                isAuthenticated,
+                user,
+                source: isAuthenticated ? 'gmail' : 'none'
+            };
+            
+        } catch (error) {
+            console.error('[PageManagerGmail] ❌ Erreur vérification authentification:', error);
+            return {
+                isAuthenticated: false,
+                user: null,
+                error: error.message
+            };
+        }
+    }
+
+    // ================================================
+    // RENDU DE LA PAGE SCANNER CORRIGÉ
+    // ================================================
+    async renderScanner(container) {
+        console.log('[PageManagerGmail] Rendering scanner page...');
+        
+        const authStatus = await this.checkAuthenticationStatus();
+        console.log('[PageManagerGmail] Auth status for scanner:', authStatus);
+        
+        // Si authentifié, déléguer au module scanner
+        if (authStatus.isAuthenticated) {
+            if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
+                try {
+                    console.log('[PageManagerGmail] Délégation au minimalScanModule...');
+                    await window.minimalScanModule.render(container);
+                    return;
+                } catch (error) {
+                    console.error('[PageManagerGmail] Erreur avec minimalScanModule:', error);
+                }
+            }
+        }
+        
+        // Si non authentifié, afficher la page de connexion
+        container.innerHTML = `
+            <div class="scanner-auth-required">
+                <div class="scanner-header">
+                    <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
+                    <p>Connectez-vous pour analyser vos emails</p>
+                </div>
+                
+                <div class="auth-card">
+                    <div class="auth-icon">
+                        <i class="fab fa-google"></i>
+                    </div>
+                    <h3>Connexion Google</h3>
+                    <p>Accédez à vos emails Gmail</p>
+                    <button class="btn btn-primary btn-large" onclick="window.pageManagerGmail.handleLogin()">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Se connecter à Google
+                    </button>
+                </div>
+                
+                <div class="scanner-info">
+                    <div class="info-card">
+                        <i class="fas fa-shield-alt"></i>
+                        <h4>Sécurisé</h4>
+                        <p>Authentification OAuth2 Google</p>
+                    </div>
+                    <div class="info-card">
+                        <i class="fas fa-robot"></i>
+                        <h4>IA Intégrée</h4>
+                        <p>Analyse intelligente avec Claude AI</p>
+                    </div>
+                    <div class="info-card">
+                        <i class="fas fa-tasks"></i>
+                        <h4>Productivité</h4>
+                        <p>Convertit automatiquement en tâches</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ================================================
+    // GESTION LOGIN GMAIL
+    // ================================================
+    async handleLogin() {
+        console.log('[PageManagerGmail] Handling Gmail login request...');
+        
+        try {
+            if (window.googleAuthService && typeof window.googleAuthService.login === 'function') {
+                console.log('[PageManagerGmail] Using GoogleAuthService.login()');
+                await window.googleAuthService.login();
+            } else if (window.googleAuthService && typeof window.googleAuthService.signIn === 'function') {
+                console.log('[PageManagerGmail] Using GoogleAuthService.signIn()');
+                await window.googleAuthService.signIn();
+            } else if (window.authService && typeof window.authService.login === 'function') {
+                console.log('[PageManagerGmail] Fallback to Microsoft auth');
+                await window.authService.login();
+            } else {
+                console.log('[PageManagerGmail] No login method available, redirecting to Google');
+                window.location.href = 'https://accounts.google.com/signin/v2/identifier?service=mail&continue=https://mail.google.com';
+            }
+        } catch (error) {
+            console.error('[PageManagerGmail] Login error:', error);
+            this.showError('Erreur lors de la connexion: ' + error.message);
+        }
+    }
+
+    // ================================================
+    // MÉTHODES HÉRITÉES DE PageManager
+    // ================================================
     getLocalStorageItem(key) {
         try {
             return localStorage.getItem(key);
@@ -72,15 +282,12 @@ class PageManagerGmail {
             this.setupSyncListeners();
             this.setupCategoryManagerIntegration();
             this.isInitialized = true;
-            console.log('[PageManagerGmail] ✅ Version 1.0 - Gmail Edition initialisée');
+            console.log('[PageManagerGmail] ✅ Version 1.1 - Gmail Edition initialisée avec auth corrigée');
         } catch (error) {
             console.error('[PageManagerGmail] Erreur initialisation:', error);
         }
     }
 
-    // ================================================
-    // DÉTECTION ENVIRONNEMENT GMAIL
-    // ================================================
     detectGmailEnvironment() {
         console.log('[PageManagerGmail] 🔍 Détection environnement Gmail...');
         
@@ -133,9 +340,6 @@ class PageManagerGmail {
         setTimeout(() => observer.disconnect(), 10000);
     }
 
-    // ================================================
-    // INTÉGRATION CATEGORYMANAGER
-    // ================================================
     setupCategoryManagerIntegration() {
         console.log('[PageManagerGmail] 🔗 Configuration intégration CategoryManager...');
         
@@ -152,7 +356,6 @@ class PageManagerGmail {
             setTimeout(() => this.setupCategoryManagerIntegration(), 2000);
         }
     }
-
     handleCategoryManagerChange(type, value, settings) {
         console.log('[PageManagerGmail] 🔄 Traitement changement CategoryManager:', type);
         
