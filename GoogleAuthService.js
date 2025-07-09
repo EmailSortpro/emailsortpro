@@ -1,5 +1,5 @@
-// GoogleAuthService.js - Service Google SÉCURISÉ pour EmailSortPro v4.4
-// CORRECTION: Rechargement automatique de l'utilisateur depuis le token en cache
+// GoogleAuthService.js - Service Google SÉCURISÉ v4.5
+// CORRECTION COMPLÈTE : Détection automatique de l'authentification existante
 
 class GoogleAuthService {
     constructor() {
@@ -9,7 +9,7 @@ class GoogleAuthService {
         this.expectedDomain = 'emailsortpro.netlify.app';
         this.provider = 'google';
         
-        // Configuration Google OAuth2 SÉCURISÉE - SANS CLIENT SECRET
+        // Configuration OAuth2 sécurisée
         this.config = {
             clientId: '436941729211-2dr129lfjnc22k1k7f42ofisjbfthmr2.apps.googleusercontent.com',
             scopes: [
@@ -29,35 +29,43 @@ class GoogleAuthService {
             rateLimitDelay: 100
         };
         
-        console.log('[GoogleAuthService] Constructor - Version SÉCURISÉE v4.4');
-        console.log('[GoogleAuthService] 🔒 Security Mode: NO CLIENT SECRET');
-        console.log('[GoogleAuthService] 🚀 Scan Mode: UNLIMITED');
+        console.log('[GoogleAuthService] Constructor v4.5 - Auto-detection activée');
         this.verifyDomain();
         
-        // NOUVEAU: Auto-initialisation pour recharger l'utilisateur
-        this.autoInitialize();
+        // IMPORTANT: Vérifier immédiatement s'il y a un token valide
+        this.checkExistingAuth();
     }
 
-    // NOUVEAU: Auto-initialisation au démarrage
-    async autoInitialize() {
-        console.log('[GoogleAuthService] Auto-initializing...');
+    // NOUVEAU: Vérification immédiate de l'authentification existante
+    checkExistingAuth() {
+        console.log('[GoogleAuthService] Vérification authentification existante...');
+        
         try {
-            await this.initialize();
-            
-            // Si on a un token valide mais pas d'utilisateur, le recharger
             const cachedToken = this.getCachedToken();
-            if (cachedToken && this.isTokenValid(cachedToken) && !this.currentUser) {
-                console.log('[GoogleAuthService] Reloading user from valid token...');
-                await this.loadUserInfoFromToken(cachedToken.access_token);
+            if (cachedToken && this.isTokenValid(cachedToken)) {
+                console.log('[GoogleAuthService] ✅ Token valide trouvé, récupération user...');
                 
-                // IMPORTANT: Marquer comme provider actif si on a réussi
-                if (this.currentUser) {
-                    sessionStorage.setItem('lastAuthProvider', 'google');
-                    console.log('[GoogleAuthService] ✅ User reloaded successfully:', this.currentUser.email);
+                // Récupérer les infos utilisateur du cache si disponibles
+                const cachedUserStr = sessionStorage.getItem('google_user_info');
+                if (cachedUserStr) {
+                    try {
+                        this.currentUser = JSON.parse(cachedUserStr);
+                        console.log('[GoogleAuthService] ✅ User récupéré du cache:', this.currentUser.email);
+                        
+                        // Marquer comme provider actif
+                        sessionStorage.setItem('lastAuthProvider', 'google');
+                        
+                        // Déclencher un événement pour notifier l'app
+                        window.dispatchEvent(new CustomEvent('googleAuthReady', {
+                            detail: { user: this.currentUser, authenticated: true }
+                        }));
+                    } catch (e) {
+                        console.warn('[GoogleAuthService] Erreur parsing user cache:', e);
+                    }
                 }
             }
         } catch (error) {
-            console.warn('[GoogleAuthService] Auto-init warning:', error);
+            console.warn('[GoogleAuthService] Erreur vérification auth existante:', error);
         }
     }
 
@@ -70,23 +78,18 @@ class GoogleAuthService {
             current: currentDomain,
             expected: this.expectedDomain,
             isCorrect: isCorrectDomain,
-            isLocalhost: isLocalhost,
-            origin: window.location.origin,
-            securityMode: 'SECURE',
-            scanMode: 'UNLIMITED'
+            isLocalhost: isLocalhost
         });
     }
 
     async initialize() {
-        console.log('[GoogleAuthService] Initialize - Starting...');
+        console.log('[GoogleAuthService] Initialize...');
         
         if (this.initializationPromise) {
-            console.log('[GoogleAuthService] Already initializing, returning existing promise');
             return this.initializationPromise;
         }
         
         if (this.isInitialized) {
-            console.log('[GoogleAuthService] Already initialized');
             return Promise.resolve(true);
         }
 
@@ -96,36 +99,40 @@ class GoogleAuthService {
 
     async _doInitialize() {
         try {
-            console.log('[GoogleAuthService] Initialisation OAuth2 sécurisée...');
+            console.log('[GoogleAuthService] Initialisation...');
             
-            // Vérifier s'il y a un token en cache AVANT de marquer comme initialisé
+            // Vérifier s'il y a un token en cache
             const cachedToken = this.getCachedToken();
             if (cachedToken && this.isTokenValid(cachedToken)) {
-                console.log('[GoogleAuthService] Valid token found in cache');
+                console.log('[GoogleAuthService] Token valide en cache');
                 
-                try {
-                    // Charger les infos utilisateur depuis le token
-                    await this.loadUserInfoFromToken(cachedToken.access_token);
-                    console.log('[GoogleAuthService] ✅ User loaded from cached token');
-                    
-                    // Marquer Google comme provider actif
-                    sessionStorage.setItem('lastAuthProvider', 'google');
-                } catch (error) {
-                    console.warn('[GoogleAuthService] Failed to load user from cached token:', error);
-                    // Ne pas échouer l'initialisation pour autant
+                // Si on n'a pas encore l'utilisateur, le charger
+                if (!this.currentUser) {
+                    try {
+                        await this.loadUserInfoFromToken(cachedToken.access_token);
+                        sessionStorage.setItem('lastAuthProvider', 'google');
+                    } catch (error) {
+                        console.warn('[GoogleAuthService] Erreur chargement user:', error);
+                        // Ne pas échouer l'initialisation
+                    }
                 }
-            } else {
-                console.log('[GoogleAuthService] No valid token in cache');
             }
             
-            // Marquer comme initialisé APRÈS avoir tenté de charger l'utilisateur
             this.isInitialized = true;
+            console.log('[GoogleAuthService] ✅ Initialisation terminée');
             
-            console.log('[GoogleAuthService] ✅ Initialization complete');
+            // Notifier que le service est prêt
+            window.dispatchEvent(new CustomEvent('googleAuthServiceReady', {
+                detail: { 
+                    authenticated: this.isAuthenticated(),
+                    user: this.currentUser 
+                }
+            }));
+            
             return true;
             
         } catch (error) {
-            console.error('[GoogleAuthService] ❌ Initialization error:', error);
+            console.error('[GoogleAuthService] ❌ Erreur initialisation:', error);
             this.isInitialized = false;
             this.initializationPromise = null;
             throw error;
@@ -133,133 +140,94 @@ class GoogleAuthService {
     }
 
     isAuthenticated() {
-        const hasCurrentUser = this.currentUser !== null;
+        const hasUser = this.currentUser !== null;
         const hasValidToken = this.hasValidCachedToken();
-        const isInit = this.isInitialized;
-        const authenticated = hasCurrentUser && isInit && hasValidToken;
+        const result = hasUser && hasValidToken && this.isInitialized;
         
-        console.log('[GoogleAuthService] Authentication check:', {
-            hasCurrentUser,
+        console.log('[GoogleAuthService] isAuthenticated check:', {
+            hasUser,
             hasValidToken,
-            isInitialized: isInit,
-            result: authenticated,
-            userEmail: this.currentUser?.email,
-            provider: this.provider
+            isInitialized: this.isInitialized,
+            result,
+            userEmail: this.currentUser?.email
         });
         
-        return authenticated;
+        return result;
     }
 
     hasValidCachedToken() {
         const cachedToken = this.getCachedToken();
-        const isValid = cachedToken && this.isTokenValid(cachedToken);
-        return isValid;
+        return cachedToken && this.isTokenValid(cachedToken);
     }
 
     getAccount() {
-        if (!this.isAuthenticated()) {
-            console.log('[GoogleAuthService] getAccount: Not authenticated');
-            return null;
-        }
-        
         if (!this.currentUser) {
-            console.log('[GoogleAuthService] getAccount: No current user');
             return null;
         }
         
-        const account = {
+        return {
             id: this.currentUser.sub || this.currentUser.id,
             name: this.currentUser.name,
             email: this.currentUser.email,
             imageUrl: this.currentUser.picture,
             provider: 'google',
-            // Format compatible Microsoft
             username: this.currentUser.email,
             displayName: this.currentUser.name,
             mail: this.currentUser.email,
-            userPrincipalName: this.currentUser.email,
-            // Capacités de scan
-            scanCapabilities: {
-                unlimited: true,
-                maxEmails: this.scanLimits.maxEmails,
-                batchSize: this.scanLimits.batchSize
-            }
+            userPrincipalName: this.currentUser.email
         };
-        
-        console.log('[GoogleAuthService] getAccount returning:', account.email);
-        return account;
     }
 
     async login() {
-        console.log('[GoogleAuthService] Login OAuth2 SÉCURISÉ...');
+        console.log('[GoogleAuthService] Login...');
         
-        // S'assurer que le service est initialisé
         if (!this.isInitialized) {
             await this.initialize();
         }
 
         try {
-            // Marquer Google comme provider actif AVANT la redirection
+            // Marquer Google comme provider actif
             sessionStorage.setItem('lastAuthProvider', 'google');
             
-            // Construire l'URL OAuth2 sécurisée (flow implicit)
-            const authUrl = this.buildSecureOAuth2Url();
+            // Construire l'URL OAuth2
+            const authUrl = this.buildOAuth2Url();
             
-            console.log('[GoogleAuthService] 🔒 Redirecting to Google OAuth2...');
+            console.log('[GoogleAuthService] Redirection vers Google...');
             
-            // Afficher message à l'utilisateur
             if (window.uiManager) {
-                window.uiManager.showToast(
-                    'Redirection vers Google Gmail...',
-                    'info',
-                    3000
-                );
+                window.uiManager.showToast('Redirection vers Google...', 'info');
             }
             
-            // Rediriger vers Google OAuth2
+            // Rediriger
             window.location.href = authUrl;
             
-            // Cette promesse ne se résoudra jamais car on redirige
-            return new Promise(() => {});
+            return new Promise(() => {}); // Ne jamais résoudre car on redirige
             
         } catch (error) {
-            console.error('[GoogleAuthService] ❌ Login error:', error);
-            
-            if (window.uiManager) {
-                window.uiManager.showToast(
-                    'Erreur de connexion Gmail: ' + error.message,
-                    'error',
-                    8000
-                );
-            }
-            
+            console.error('[GoogleAuthService] Erreur login:', error);
             throw error;
         }
     }
 
-    buildSecureOAuth2Url() {
+    buildOAuth2Url() {
         const state = 'google_auth_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        
-        // Sauvegarder l'état pour validation
         sessionStorage.setItem('google_oauth_state', state);
         
         const params = new URLSearchParams({
             client_id: this.config.clientId,
             redirect_uri: this.config.redirectUri,
             scope: this.config.scopes.join(' '),
-            response_type: 'token', // Flow implicit
+            response_type: 'token',
             access_type: 'online',
             prompt: 'select_account',
             state: state
         });
         
-        console.log('[GoogleAuthService] OAuth2 URL built');
-        
         return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
     }
 
     async handleOAuthCallback(fragment) {
-        console.log('[GoogleAuthService] Processing OAuth2 callback...');
+        console.log('[GoogleAuthService] Traitement callback OAuth2...');
         
         try {
             const fragmentParams = new URLSearchParams(fragment.substring(1));
@@ -278,9 +246,9 @@ class GoogleAuthService {
                 throw new Error('No access token in fragment');
             }
             
-            console.log('[GoogleAuthService] Token received');
+            console.log('[GoogleAuthService] Token reçu');
             
-            // Charger les informations utilisateur
+            // Charger les infos utilisateur
             await this.loadUserInfoFromToken(accessToken);
             
             // Sauvegarder le token
@@ -296,11 +264,17 @@ class GoogleAuthService {
             // Marquer comme provider actif
             sessionStorage.setItem('lastAuthProvider', 'google');
             
-            console.log('[GoogleAuthService] ✅ OAuth2 authentication successful');
+            console.log('[GoogleAuthService] ✅ Authentification réussie');
+            
+            // Déclencher un événement
+            window.dispatchEvent(new CustomEvent('googleAuthSuccess', {
+                detail: { user: this.currentUser }
+            }));
+            
             return true;
             
         } catch (error) {
-            console.error('[GoogleAuthService] ❌ OAuth2 callback error:', error);
+            console.error('[GoogleAuthService] ❌ Erreur callback:', error);
             throw error;
         } finally {
             sessionStorage.removeItem('google_oauth_state');
@@ -308,40 +282,28 @@ class GoogleAuthService {
     }
 
     async loadUserInfoFromToken(accessToken) {
-        console.log('[GoogleAuthService] Loading user info...');
+        console.log('[GoogleAuthService] Chargement infos utilisateur...');
         
-        if (!accessToken) {
-            throw new Error('No access token provided');
-        }
-        
-        const userInfoEndpoint = 'https://www.googleapis.com/oauth2/v2/userinfo';
-        
-        try {
-            const response = await fetch(userInfoEndpoint, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Accept': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`User info error: ${response.status}`);
+        const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Accept': 'application/json'
             }
-            
-            const userInfo = await response.json();
-            this.currentUser = userInfo;
-            
-            // Sauvegarder les infos utilisateur en session
-            sessionStorage.setItem('google_user_info', JSON.stringify(userInfo));
-            
-            console.log('[GoogleAuthService] ✅ User info loaded:', userInfo.email);
-            
-            return userInfo;
-            
-        } catch (error) {
-            console.error('[GoogleAuthService] Error loading user info:', error);
-            throw error;
+        });
+        
+        if (!response.ok) {
+            throw new Error(`User info error: ${response.status}`);
         }
+        
+        const userInfo = await response.json();
+        this.currentUser = userInfo;
+        
+        // Sauvegarder en session
+        sessionStorage.setItem('google_user_info', JSON.stringify(userInfo));
+        
+        console.log('[GoogleAuthService] ✅ User chargé:', userInfo.email);
+        
+        return userInfo;
     }
 
     saveToken(tokenData) {
@@ -350,15 +312,13 @@ class GoogleAuthService {
                 access_token: tokenData.access_token,
                 expires_at: tokenData.expires_at || (Date.now() + (tokenData.expires_in * 1000)),
                 token_type: tokenData.token_type || 'Bearer',
-                created_at: Date.now(),
-                flow_type: 'implicit_secure',
-                scan_capabilities: this.scanLimits
+                created_at: Date.now()
             };
             
             localStorage.setItem('google_token_emailsortpro', JSON.stringify(tokenInfo));
-            console.log('[GoogleAuthService] Token saved');
+            console.log('[GoogleAuthService] Token sauvegardé');
         } catch (error) {
-            console.warn('[GoogleAuthService] Error saving token:', error);
+            console.warn('[GoogleAuthService] Erreur sauvegarde token:', error);
         }
     }
 
@@ -369,7 +329,7 @@ class GoogleAuthService {
                 return JSON.parse(tokenStr);
             }
         } catch (error) {
-            console.warn('[GoogleAuthService] Error reading cached token:', error);
+            console.warn('[GoogleAuthService] Erreur lecture token:', error);
         }
         return null;
     }
@@ -387,7 +347,6 @@ class GoogleAuthService {
     }
 
     async getAccessToken() {
-        // S'assurer que le service est initialisé
         if (!this.isInitialized) {
             await this.initialize();
         }
@@ -397,59 +356,27 @@ class GoogleAuthService {
             return cachedToken.access_token;
         }
         
-        console.warn('[GoogleAuthService] No valid token available');
-        
-        // Si on a un utilisateur mais pas de token valide, forcer la reconnexion
-        if (this.currentUser) {
-            console.log('[GoogleAuthService] User exists but token invalid, clearing user');
-            this.currentUser = null;
-            sessionStorage.removeItem('google_user_info');
-        }
-        
         return null;
     }
 
     async getUserInfo() {
         if (!this.isAuthenticated()) {
-            // Tenter de recharger depuis le cache
-            const cachedUserStr = sessionStorage.getItem('google_user_info');
-            if (cachedUserStr) {
-                try {
-                    this.currentUser = JSON.parse(cachedUserStr);
-                    console.log('[GoogleAuthService] User restored from session cache');
-                } catch (e) {
-                    console.warn('[GoogleAuthService] Failed to parse cached user info');
-                }
-            }
-            
-            if (!this.isAuthenticated()) {
-                throw new Error('Not authenticated with Google');
-            }
+            throw new Error('Not authenticated');
         }
 
-        const userInfo = {
+        return {
             id: this.currentUser.id || this.currentUser.sub,
             displayName: this.currentUser.name,
-            givenName: this.currentUser.given_name || this.currentUser.name?.split(' ')[0],
-            familyName: this.currentUser.family_name || this.currentUser.name?.split(' ').slice(1).join(' '),
             mail: this.currentUser.email,
             userPrincipalName: this.currentUser.email,
             imageUrl: this.currentUser.picture,
             provider: 'google',
-            username: this.currentUser.email,
-            name: this.currentUser.name,
-            email: this.currentUser.email,
-            scanCapabilities: {
-                unlimited: true,
-                ...this.scanLimits
-            }
+            email: this.currentUser.email
         };
-        
-        return userInfo;
     }
 
     async logout() {
-        console.log('[GoogleAuthService] Logging out...');
+        console.log('[GoogleAuthService] Logout...');
         
         try {
             // Révoquer le token si possible
@@ -459,128 +386,46 @@ class GoogleAuthService {
                     await fetch(`https://oauth2.googleapis.com/revoke?token=${cachedToken.access_token}`, {
                         method: 'POST'
                     });
-                    console.log('[GoogleAuthService] Token revoked');
-                } catch (revokeError) {
-                    console.warn('[GoogleAuthService] Token revocation error:', revokeError);
+                } catch (e) {
+                    // Ignorer les erreurs de révocation
                 }
             }
             
-            // Nettoyer les données
             this.forceCleanup();
             
-            console.log('[GoogleAuthService] ✅ Logout complete');
-            
         } catch (error) {
-            console.error('[GoogleAuthService] Logout error:', error);
+            console.error('[GoogleAuthService] Erreur logout:', error);
             this.forceCleanup();
         }
     }
 
-    async reset() {
-        console.log('[GoogleAuthService] Resetting...');
-        this.forceCleanup();
-    }
-
     forceCleanup() {
-        console.log('[GoogleAuthService] Force cleanup...');
+        console.log('[GoogleAuthService] Cleanup...');
         
         this.currentUser = null;
         this.isInitialized = false;
         this.initializationPromise = null;
         
         try {
-            // Nettoyer le stockage
             localStorage.removeItem('google_token_emailsortpro');
             sessionStorage.removeItem('google_oauth_state');
             sessionStorage.removeItem('google_user_info');
             
-            // Si Google était le dernier provider, le supprimer
             if (sessionStorage.getItem('lastAuthProvider') === 'google') {
                 sessionStorage.removeItem('lastAuthProvider');
             }
-            
-            // Nettoyer autres clés Google
-            const keysToRemove = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key && (key.includes('google_token') || key.includes('google_auth'))) {
-                    keysToRemove.push(key);
-                }
-            }
-            keysToRemove.forEach(key => localStorage.removeItem(key));
-            
-            console.log('[GoogleAuthService] Cleanup complete');
         } catch (error) {
-            console.warn('[GoogleAuthService] Cleanup error:', error);
+            console.warn('[GoogleAuthService] Erreur cleanup:', error);
         }
-    }
-
-    getScanLimits() {
-        return {
-            ...this.scanLimits,
-            provider: 'google',
-            unlimited: true
-        };
-    }
-
-    adjustScanLimits(options = {}) {
-        if (options.batchSize && options.batchSize > 0) {
-            this.scanLimits.batchSize = Math.min(options.batchSize, 500);
-        }
-        
-        if (options.rateLimitDelay && options.rateLimitDelay >= 0) {
-            this.scanLimits.rateLimitDelay = options.rateLimitDelay;
-        }
-        
-        console.log('[GoogleAuthService] Scan limits adjusted:', this.scanLimits);
-        return this.scanLimits;
-    }
-
-    getDiagnosticInfo() {
-        const cachedToken = this.getCachedToken();
-        const cachedUserInfo = sessionStorage.getItem('google_user_info');
-        
-        return {
-            isInitialized: this.isInitialized,
-            hasCurrentUser: !!this.currentUser,
-            userEmail: this.currentUser?.email || 'No user',
-            expectedDomain: this.expectedDomain,
-            currentDomain: window.location.hostname,
-            domainMatch: window.location.hostname === this.expectedDomain,
-            provider: this.provider,
-            method: 'OAuth2 Implicit Flow (NO CLIENT SECRET)',
-            securityMode: 'SECURE_NO_CLIENT_SECRET',
-            scanMode: 'UNLIMITED',
-            scanLimits: this.scanLimits,
-            isAuthenticated: this.isAuthenticated(),
-            lastAuthProvider: sessionStorage.getItem('lastAuthProvider'),
-            hasCachedUserInfo: !!cachedUserInfo,
-            config: {
-                clientId: this.config.clientId.substring(0, 15) + '...',
-                hasClientSecret: false,
-                scopes: this.config.scopes,
-                origin: window.location.origin,
-                redirectUri: this.config.redirectUri,
-                responseType: this.config.responseType
-            },
-            tokenInfo: cachedToken ? {
-                hasToken: !!cachedToken.access_token,
-                isValid: this.isTokenValid(cachedToken),
-                expiresAt: cachedToken.expires_at ? new Date(cachedToken.expires_at).toISOString() : null,
-                flowType: cachedToken.flow_type || 'unknown',
-                createdAt: cachedToken.created_at ? new Date(cachedToken.created_at).toISOString() : null
-            } : null,
-            currentUrl: window.location.href
-        };
     }
 
     async testGmailConnection() {
-        console.log('[GoogleAuthService] Testing Gmail API connection...');
+        console.log('[GoogleAuthService] Test connexion Gmail...');
         
         try {
             const token = await this.getAccessToken();
             if (!token) {
-                throw new Error('No access token available');
+                throw new Error('No access token');
             }
 
             const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
@@ -595,53 +440,44 @@ class GoogleAuthService {
             }
 
             const profile = await response.json();
-            console.log('[GoogleAuthService] ✅ Gmail API test successful');
+            console.log('[GoogleAuthService] ✅ Gmail API OK');
             
             return {
                 success: true,
                 provider: 'google',
                 email: profile.emailAddress,
-                messagesTotal: profile.messagesTotal,
-                threadsTotal: profile.threadsTotal,
-                securityMode: 'SECURE',
-                scanMode: 'UNLIMITED',
-                scanLimits: this.scanLimits
+                messagesTotal: profile.messagesTotal
             };
 
         } catch (error) {
-            console.error('[GoogleAuthService] ❌ Gmail API test failed:', error);
+            console.error('[GoogleAuthService] ❌ Test Gmail échoué:', error);
             return {
                 success: false,
                 provider: 'google',
-                error: error.message,
-                securityMode: 'SECURE',
-                scanMode: 'FAILED'
+                error: error.message
             };
         }
+    }
+
+    getDiagnosticInfo() {
+        const cachedToken = this.getCachedToken();
+        
+        return {
+            isInitialized: this.isInitialized,
+            hasCurrentUser: !!this.currentUser,
+            userEmail: this.currentUser?.email,
+            isAuthenticated: this.isAuthenticated(),
+            lastAuthProvider: sessionStorage.getItem('lastAuthProvider'),
+            tokenInfo: cachedToken ? {
+                hasToken: !!cachedToken.access_token,
+                isValid: this.isTokenValid(cachedToken),
+                expiresAt: cachedToken.expires_at ? new Date(cachedToken.expires_at).toISOString() : null
+            } : null
+        };
     }
 }
 
 // Créer l'instance globale
-try {
-    window.googleAuthService = new GoogleAuthService();
-    console.log('[GoogleAuthService] ✅ Instance created - v4.4');
-} catch (error) {
-    console.error('[GoogleAuthService] ❌ Failed to create instance:', error);
-    
-    window.googleAuthService = {
-        isInitialized: false,
-        provider: 'google',
-        initialize: () => Promise.resolve(),
-        login: () => Promise.reject(new Error('GoogleAuthService unavailable')),
-        isAuthenticated: () => false,
-        getScanLimits: () => ({ unlimited: false, maxEmails: 0 }),
-        getDiagnosticInfo: () => ({ 
-            error: 'GoogleAuthService failed: ' + error.message,
-            provider: 'google'
-        })
-    };
-}
+window.googleAuthService = new GoogleAuthService();
 
-console.log('✅ GoogleAuthService v4.4 loaded');
-console.log('🔒 Security Mode: OAuth2 Implicit Flow (NO CLIENT SECRET)');
-console.log('🚀 Scan Mode: UNLIMITED');
+console.log('[GoogleAuthService] ✅ v4.5 loaded - Auto-detection activée');
