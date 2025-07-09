@@ -1,12 +1,14 @@
-// app.js - Application principale EmailSortPro v3.6
-// CORRECTION: Meilleure détection de l'authentification Gmail au démarrage
+// app.js - Application principale EmailSortPro v3.7
+// CORRECTION: Détection correcte de l'authentification Gmail et Microsoft
 
 class EmailSortProApp {
     constructor() {
-        this.version = '3.6';
+        this.version = '3.7';
         this.isInitialized = false;
         this.initPromise = null;
         this.currentProvider = null;
+        this.isAuthenticated = false;
+        this.user = null;
         
         console.log(`[App] EmailSortPro v${this.version} starting...`);
         
@@ -27,6 +29,8 @@ class EmailSortProApp {
             console.log('[App] Google Auth Ready event:', event.detail);
             if (event.detail.authenticated && !this.currentProvider) {
                 this.currentProvider = 'google';
+                this.isAuthenticated = true;
+                this.user = event.detail.user;
                 this.handleAuthReady();
             }
         });
@@ -35,6 +39,8 @@ class EmailSortProApp {
         window.addEventListener('googleAuthSuccess', (event) => {
             console.log('[App] Google Auth Success event:', event.detail);
             this.currentProvider = 'google';
+            this.isAuthenticated = true;
+            this.user = event.detail.user;
             window.location.reload(); // Recharger pour appliquer l'auth
         });
         
@@ -43,6 +49,8 @@ class EmailSortProApp {
             console.log('[App] Google Auth Service Ready:', event.detail);
             if (event.detail.authenticated && !this.currentProvider) {
                 this.currentProvider = 'google';
+                this.isAuthenticated = true;
+                this.user = event.detail.user;
                 this.handleAuthReady();
             }
         });
@@ -69,6 +77,7 @@ class EmailSortProApp {
             if (quickAuthCheck.authenticated) {
                 console.log('[App] ✅ Quick auth check passed:', quickAuthCheck.provider);
                 this.currentProvider = quickAuthCheck.provider;
+                this.isAuthenticated = true;
                 
                 // Afficher l'interface immédiatement
                 this.showAppInterface();
@@ -242,6 +251,8 @@ class EmailSortProApp {
         if (lastProvider === 'google' && window.googleAuthService) {
             if (window.googleAuthService.isAuthenticated()) {
                 this.currentProvider = 'google';
+                this.isAuthenticated = true;
+                this.user = window.googleAuthService.getAccount();
                 console.log('[App] ✅ Authenticated with Google');
                 return true;
             }
@@ -250,6 +261,8 @@ class EmailSortProApp {
         // Vérifier Microsoft
         if (window.authService && window.authService.isAuthenticated()) {
             this.currentProvider = 'microsoft';
+            this.isAuthenticated = true;
+            this.user = window.authService.getAccount();
             console.log('[App] ✅ Authenticated with Microsoft');
             return true;
         }
@@ -258,12 +271,15 @@ class EmailSortProApp {
         if (lastProvider !== 'google' && window.googleAuthService) {
             if (window.googleAuthService.isAuthenticated()) {
                 this.currentProvider = 'google';
+                this.isAuthenticated = true;
+                this.user = window.googleAuthService.getAccount();
                 console.log('[App] ✅ Authenticated with Google');
                 return true;
             }
         }
         
         console.log('[App] ❌ Not authenticated');
+        this.isAuthenticated = false;
         return false;
     }
     
@@ -295,10 +311,17 @@ class EmailSortProApp {
                 }
             }
             
-            if (user && window.updateUserDisplay) {
-                window.updateUserDisplay(user);
+            if (user && window.uiManager) {
+                window.uiManager.updateAuthStatus(user);
                 console.log('[App] ✅ User display updated:', user.email);
             }
+            
+            // Exposer globalement pour les autres modules
+            window.updateUserDisplay = (userData) => {
+                if (window.uiManager) {
+                    window.uiManager.updateAuthStatus(userData);
+                }
+            };
             
         } catch (error) {
             console.error('[App] Error updating user display:', error);
@@ -402,9 +425,9 @@ class EmailSortProApp {
         });
         event.currentTarget.classList.add('active');
         
-        // Charger la page
-        if (page === 'dashboard' && window.dashboardModule) {
-            window.dashboardModule.render();
+        // Charger la page via le bon PageManager
+        if (this.currentProvider === 'google' && window.pageManagerGmail) {
+            window.pageManagerGmail.loadPage(page);
         } else if (window.pageManager) {
             window.pageManager.loadPage(page);
         }
@@ -476,11 +499,35 @@ class EmailSortProApp {
         }
     }
     
+    // Méthode publique pour le logout
+    async logout() {
+        console.log('[App] Logout requested');
+        
+        try {
+            if (this.currentProvider === 'google' && window.googleAuthService) {
+                await window.googleAuthService.logout();
+            } else if (this.currentProvider === 'microsoft' && window.authService) {
+                await window.authService.logout();
+            }
+            
+            this.currentProvider = null;
+            this.isAuthenticated = false;
+            this.user = null;
+            
+            window.location.reload();
+        } catch (error) {
+            console.error('[App] Logout error:', error);
+            window.location.reload();
+        }
+    }
+    
     getDebugInfo() {
         return {
             version: this.version,
             isInitialized: this.isInitialized,
             currentProvider: this.currentProvider,
+            isAuthenticated: this.isAuthenticated,
+            user: this.user?.email || null,
             authentication: {
                 microsoft: window.authService?.isAuthenticated() || false,
                 google: window.googleAuthService?.isAuthenticated() || false,
@@ -502,4 +549,4 @@ window.app = new EmailSortProApp();
 // Exposer des méthodes globales
 window.checkScrollNeeded = () => window.app.checkScrollNeeded();
 
-console.log('[App] ✅ EmailSortPro v3.6 loaded');
+console.log('[App] ✅ EmailSortPro v3.7 loaded');
