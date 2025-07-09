@@ -1,5 +1,5 @@
-// authService.js - Microsoft Authentication Service v4.3
-// Service dédié à l'authentification Microsoft/Outlook
+// authService.js - Microsoft Authentication Service v4.4
+// Service dédié à l'authentification Microsoft/Outlook avec support dual-provider
 
 class MicrosoftAuthService {
     constructor() {
@@ -12,7 +12,7 @@ class MicrosoftAuthService {
         this.configWaitAttempts = 0;
         this.maxConfigWaitAttempts = 50;
         
-        console.log('[MicrosoftAuthService] Constructor called v4.3');
+        console.log('[MicrosoftAuthService] Constructor called v4.4 - Dual provider support');
         
         // Vérifier si Google est le provider principal
         if (this.isGooglePrimaryProvider()) {
@@ -327,4 +327,4 @@ class MicrosoftAuthService {
 // Créer l'instance globale
 window.authService = new MicrosoftAuthService();
 
-console.log('[MicrosoftAuthService] ✅ Service loaded and ready');
+console.log('[MicrosoftAuthService] ✅ Service loaded and ready - v4.4');
