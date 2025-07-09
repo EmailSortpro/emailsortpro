@@ -163,11 +163,9 @@
         
         // Configuration centralisée pour Microsoft et Google
         const CONFIG = {
-            // Client IDs - SYNCHRONISÉS AVEC index.html
             DEFAULT_MICROSOFT_CLIENT_ID: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
             DEFAULT_GOOGLE_CLIENT_ID: '436941729211-2dr129lfjnc22k1k7f42ofisjbfthmr2.apps.googleusercontent.com',
             
-            // Détection de l'environnement
             environment: {
                 isNetlify: window.location.hostname.includes('netlify'),
                 isGitHubPages: window.location.hostname.includes('github.io'),
@@ -195,7 +193,6 @@
             const welcomeMsg = document.getElementById('welcome-message');
             const userName = account.name || account.username || account.displayName || account.email || 'Utilisateur';
             
-            // Badge de provider
             const providerBadge = provider === 'microsoft' ? 
                 '<span class="provider-badge microsoft-badge">Outlook</span>' : 
                 provider === 'google' ? 
@@ -245,11 +242,11 @@
             
             // Paramètres Microsoft (MSAL)
             const hasMicrosoftParams = urlParams.has('code') && urlParams.has('state') && 
-                                     !urlParams.has('scope'); // MSAL n'utilise pas scope dans l'URL
+                                     !urlParams.has('scope');
             
             // Paramètres Google OAuth2
             const hasGoogleParams = urlParams.has('code') && urlParams.has('state') &&
-                                   urlParams.has('scope'); // Google inclut scope
+                                   urlParams.has('scope');
             
             // Fragment pour les tokens directs (Google implicit flow)
             const hasTokenFragment = fragment.has('access_token');
@@ -266,13 +263,13 @@
             });
             
             if (hasTokenFragment && hasGoogleState) {
-                return 'google-implicit'; // Google implicit flow
+                return 'google-implicit';
             } else if (hasGoogleParams) {
                 return 'google';
             } else if (hasMicrosoftParams) {
                 return 'microsoft';
             } else if (hasTokenFragment) {
-                return 'token'; // Token direct générique
+                return 'token';
             } else {
                 return 'unknown';
             }
@@ -319,6 +316,10 @@
                 
                 if (response && response.account) {
                     console.log('[Auth Callback] ✅ Microsoft authentication successful!');
+                    
+                    // Marquer comme provider actif
+                    sessionStorage.setItem('lastAuthProvider', 'microsoft');
+                    
                     showSuccess(response.account, 'microsoft');
                     return true;
                 } else {
@@ -354,12 +355,6 @@
                     throw new Error('No access token in fragment');
                 }
                 
-                // Vérifier l'état
-                const savedState = sessionStorage.getItem('google_oauth_state');
-                if (!state || !state.startsWith('google_auth_')) {
-                    console.warn('[Auth Callback] Invalid Google state format');
-                }
-                
                 console.log('[Auth Callback] Google implicit flow token received');
                 
                 // Stocker les informations pour que l'app les récupère
@@ -376,16 +371,50 @@
                 // Sauvegarder le token
                 localStorage.setItem('google_token_emailsortpro', JSON.stringify(tokenData));
                 
-                // Nettoyer l'URL
-                window.history.replaceState({}, document.title, window.location.pathname);
+                // CORRECTION: Marquer Google comme provider actif
+                sessionStorage.setItem('lastAuthProvider', 'google');
                 
-                // Afficher succès
-                showSuccess({ 
-                    name: 'Utilisateur Gmail', 
-                    email: 'Connexion Gmail réussie' 
-                }, 'google');
-                
-                return true;
+                // Charger les infos utilisateur pour l'affichage
+                try {
+                    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (userResponse.ok) {
+                        const userInfo = await userResponse.json();
+                        console.log('[Auth Callback] Google user info loaded:', userInfo.email);
+                        
+                        // Sauvegarder les infos utilisateur
+                        sessionStorage.setItem('google_user_info', JSON.stringify(userInfo));
+                        
+                        // Nettoyer l'URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        
+                        // Afficher succès avec vraies infos
+                        showSuccess({ 
+                            name: userInfo.name || 'Utilisateur Gmail',
+                            email: userInfo.email || 'Gmail connecté'
+                        }, 'google');
+                        
+                        return true;
+                    } else {
+                        throw new Error('Failed to load user info');
+                    }
+                    
+                } catch (userError) {
+                    console.warn('[Auth Callback] Could not load Google user info:', userError);
+                    
+                    // Continuer quand même avec le token
+                    showSuccess({ 
+                        name: 'Utilisateur Gmail', 
+                        email: 'Gmail connecté'
+                    }, 'google');
+                    
+                    return true;
+                }
                 
             } catch (error) {
                 console.error('[Auth Callback] ❌ Error processing Google implicit callback:', error);
@@ -413,17 +442,12 @@
                     throw new Error('No authorization code received from Google');
                 }
                 
-                if (!state || !state.startsWith('google_auth_')) {
-                    throw new Error('Invalid or missing Google OAuth2 state');
-                }
-                
                 console.log('[Auth Callback] Google OAuth2 code flow parameters valid');
+                console.warn('[Auth Callback] Code flow detected but using implicit flow redirect');
                 
-                // Note: Le code flow nécessiterait un backend pour échanger le code
-                // Dans ce cas, on redirige vers l'app qui devra gérer l'authentification
-                console.warn('[Auth Callback] Code flow detected but no backend available');
-                
-                showError('Configuration OAuth2 incorrecte. Utilisez le flow implicit.', 'google');
+                // Rediriger vers l'app qui gèrera l'authentification
+                showError('Redirection vers l\'application...', 'google');
+                setTimeout(() => redirectToApp(), 2000);
                 
                 return false;
                 
@@ -452,7 +476,7 @@
                 
                 console.log('[Auth Callback] Direct token found');
                 
-                // Déterminer le provider basé sur l'état ou d'autres indices
+                // Déterminer le provider basé sur l'état
                 const provider = state && state.includes('google') ? 'google' : 'unknown';
                 
                 // Sauvegarder le token
@@ -461,14 +485,20 @@
                     token_type: tokenType || 'Bearer',
                     expires_in: parseInt(expiresIn) || 3600,
                     expires_at: Date.now() + (parseInt(expiresIn) || 3600) * 1000,
-                    provider: provider
+                    provider: provider,
+                    timestamp: Date.now()
                 };
                 
-                sessionStorage.setItem('direct_token_data', JSON.stringify(tokenData));
+                if (provider === 'google') {
+                    localStorage.setItem('google_token_emailsortpro', JSON.stringify(tokenData));
+                    sessionStorage.setItem('lastAuthProvider', 'google');
+                } else {
+                    sessionStorage.setItem('direct_token_data', JSON.stringify(tokenData));
+                }
                 
                 showSuccess({ 
-                    name: 'Utilisateur connecté', 
-                    email: 'Token reçu' 
+                    name: provider === 'google' ? 'Utilisateur Gmail' : 'Utilisateur connecté', 
+                    email: provider === 'google' ? 'Gmail connecté' : 'Token reçu'
                 }, provider);
                 
                 return true;
@@ -511,7 +541,6 @@
                         
                     case 'unknown':
                     default:
-                        // Essayer Microsoft d'abord, puis Google implicit
                         console.log('[Auth Callback] Unknown type, trying Microsoft first...');
                         success = await processMicrosoftCallback();
                         
@@ -534,8 +563,7 @@
                     const foundCachedAccount = await checkCachedAccounts();
                     
                     if (!foundCachedAccount) {
-                        // Redirection directe si pas de callback spécifique détecté
-                        console.log('[Auth Callback] No specific callback detected, redirecting to app...');
+                        console.log('[Auth Callback] No cached accounts found, redirecting to app...');
                         setTimeout(() => {
                             redirectToApp();
                         }, 2000);
@@ -553,6 +581,46 @@
             console.log('[Auth Callback] Checking for cached accounts...');
             
             try {
+                // Vérifier Google cache en premier
+                const googleToken = localStorage.getItem('google_token_emailsortpro');
+                if (googleToken) {
+                    try {
+                        const tokenData = JSON.parse(googleToken);
+                        const now = Date.now();
+                        const expiresAt = tokenData.expires_at || 0;
+                        const isValid = expiresAt > (now + 5 * 60 * 1000);
+                        
+                        if (isValid) {
+                            console.log('[Auth Callback] Found valid Google token in cache');
+                            sessionStorage.setItem('lastAuthProvider', 'google');
+                            
+                            // Essayer de récupérer les infos utilisateur
+                            const userInfoStr = sessionStorage.getItem('google_user_info');
+                            if (userInfoStr) {
+                                try {
+                                    const userInfo = JSON.parse(userInfoStr);
+                                    showSuccess({ 
+                                        name: userInfo.name || 'Utilisateur Gmail',
+                                        email: userInfo.email || 'Gmail connecté'
+                                    }, 'google');
+                                    return true;
+                                } catch (parseError) {
+                                    console.warn('[Auth Callback] Error parsing cached user info:', parseError);
+                                }
+                            }
+                            
+                            // Fallback si pas d'infos utilisateur
+                            showSuccess({ 
+                                name: 'Utilisateur Gmail', 
+                                email: 'Session Gmail trouvée' 
+                            }, 'google');
+                            return true;
+                        }
+                    } catch (parseError) {
+                        console.warn('[Auth Callback] Error parsing Google token:', parseError);
+                    }
+                }
+                
                 // Vérifier MSAL cache
                 if (typeof msal !== 'undefined') {
                     const tempMsalConfig = {
@@ -570,21 +638,10 @@
                     const accounts = tempMsalInstance.getAllAccounts();
                     if (accounts.length > 0) {
                         console.log('[Auth Callback] Found existing Microsoft account in cache');
+                        sessionStorage.setItem('lastAuthProvider', 'microsoft');
                         showSuccess(accounts[0], 'microsoft');
                         return true;
                     }
-                }
-                
-                // Vérifier Google cache
-                const googleToken = localStorage.getItem('google_token_emailsortpro') || 
-                                  sessionStorage.getItem('google_callback_data');
-                if (googleToken) {
-                    console.log('[Auth Callback] Found existing Google data in cache');
-                    showSuccess({ 
-                        name: 'Utilisateur Gmail', 
-                        email: 'Session Gmail trouvée' 
-                    }, 'google');
-                    return true;
                 }
                 
             } catch (error) {
@@ -596,7 +653,6 @@
 
         // Attendre que les bibliothèques soient chargées puis traiter
         function waitForLibrariesAndProcess() {
-            // MSAL est requis pour Microsoft seulement
             let msalReady = typeof msal !== 'undefined';
             
             if (!msalReady) {
@@ -639,7 +695,7 @@
             }
         });
 
-        // Fonction de diagnostic pour les deux providers
+        // Fonction de diagnostic
         window.authCallbackDebug = function() {
             console.group('=== DUAL AUTH CALLBACK DEBUG ===');
             console.log('Environment:', CONFIG.environment);
@@ -653,7 +709,6 @@
             console.log('Base path:', CONFIG.basePath);
             console.log('MSAL loaded:', typeof msal !== 'undefined');
             
-            // Analyser les paramètres
             const urlParams = new URLSearchParams(window.location.search);
             const fragment = new URLSearchParams(window.location.hash.substring(1));
             
@@ -661,11 +716,10 @@
             console.log('  Search params:', Object.fromEntries(urlParams.entries()));
             console.log('  Fragment params:', Object.fromEntries(fragment.entries()));
             
-            // Vérifier les données en cache
             console.log('Cache Analysis:');
-            console.log('  Google callback data:', sessionStorage.getItem('google_callback_data'));
-            console.log('  Google token data:', localStorage.getItem('google_token_emailsortpro'));
-            console.log('  Direct token data:', sessionStorage.getItem('direct_token_data'));
+            console.log('  Google token:', localStorage.getItem('google_token_emailsortpro'));
+            console.log('  Google user info:', sessionStorage.getItem('google_user_info'));
+            console.log('  Last auth provider:', sessionStorage.getItem('lastAuthProvider'));
             
             console.groupEnd();
         };
