@@ -1,667 +1,524 @@
-// startscan.js - Module de scan automatique v4.0 COMPLET
-// Support total double authentification Outlook/Gmail avec toutes les fonctionnalités
+// startscan.js - Module de démarrage automatique du scan v4.0 COMPLET
+// Support double authentification Microsoft/Google avec détection intelligente
 
 (function() {
-    'use strict';
-    
     console.log('[StartScan] 🚀 Module v4.0 COMPLET loading - Double auth support');
+    
+    // Instance globale du module
+    let instance = null;
     
     class StartScanModule {
         constructor() {
-            this.isInitialized = false;
-            this.scanAttempts = 0;
-            this.maxScanAttempts = 3;
-            this.observerTimeout = null;
-            this.pageObserver = null;
-            this.moduleCheckInterval = null;
-            this.navigationWrapped = false;
-            this.pendingScan = false;
-            this.lastProvider = null;
+            if (instance) {
+                return instance;
+            }
             
-            // Configuration des délais
-            this.delays = {
-                moduleCheck: 100,
-                scanStart: 1500,
-                interfaceWait: 500,
-                retryInterval: 2000,
-                observerTimeout: 10000
-            };
+            this.initialized = false;
+            this.scanInProgress = false;
+            this.activeProvider = null; // 'microsoft' ou 'google'
+            this.currentPageManager = null; // PageManager ou PageManagerGmail
+            this.autoStartAttempts = 0;
+            this.maxAutoStartAttempts = 5;
             
             console.log('[StartScan] Module instance created');
+            instance = this;
         }
         
-        // ========================================
-        // INITIALISATION PRINCIPALE
-        // ========================================
-        init() {
-            if (this.isInitialized) {
+        async initialize() {
+            if (this.initialized) {
                 console.log('[StartScan] Already initialized');
                 return;
             }
             
             console.log('[StartScan] Initializing module...');
             
-            this.isInitialized = true;
-            
-            // Attendre que les modules critiques soient chargés
-            this.waitForCriticalModules().then(() => {
-                console.log('[StartScan] ✅ Critical modules ready');
+            try {
+                // Attendre que les modules critiques soient prêts
+                await this.waitForCriticalModules();
                 
-                // Configurer les handlers de navigation
+                // Configurer les gestionnaires d'événements
                 this.setupNavigationHandlers();
                 
                 // Vérifier la page actuelle
                 this.checkCurrentPage();
                 
-                // Configurer les observers
-                this.setupObservers();
+                // Observer les changements DOM
+                this.setupDOMObservers();
                 
+                this.initialized = true;
                 console.log('[StartScan] ✅ Module fully initialized');
-            }).catch(error => {
-                console.error('[StartScan] ❌ Failed to initialize:', error);
                 
-                // Réessayer après un délai
-                setTimeout(() => this.init(), 5000);
-            });
+            } catch (error) {
+                console.error('[StartScan] Initialization error:', error);
+                this.initialized = false;
+            }
         }
         
-        // ========================================
-        // ATTENTE DES MODULES CRITIQUES
-        // ========================================
         async waitForCriticalModules() {
             console.log('[StartScan] Waiting for critical modules...');
             
             const requiredModules = [
-                { name: 'minimalScanModule', check: () => window.minimalScanModule },
-                { name: 'pageManager', check: () => window.pageManager || window.pageManagerGmail },
-                { name: 'uiManager', check: () => window.uiManager }
+                { name: 'app', check: () => window.app },
+                { name: 'authService', check: () => window.authService },
+                { name: 'googleAuthService', check: () => window.googleAuthService },
+                { name: 'pageManager', check: () => window.pageManager },
+                { name: 'pageManagerGmail', check: () => window.pageManagerGmail },
+                { name: 'minimalScanModule', check: () => window.minimalScanModule }
             ];
             
-            const maxWaitTime = 30000; // 30 secondes
-            const startTime = Date.now();
+            let attempts = 0;
+            const maxAttempts = 50;
             
-            while (Date.now() - startTime < maxWaitTime) {
-                const allReady = requiredModules.every(module => {
-                    const isReady = module.check();
-                    if (!isReady) {
-                        console.log(`[StartScan] Waiting for ${module.name}...`);
-                    }
-                    return isReady;
-                });
+            while (attempts < maxAttempts) {
+                const missingModules = requiredModules.filter(m => !m.check());
                 
-                if (allReady) {
+                if (missingModules.length === 0) {
                     console.log('[StartScan] ✅ All critical modules ready');
-                    return true;
+                    break;
                 }
                 
-                await new Promise(resolve => setTimeout(resolve, this.delays.moduleCheck));
+                if (attempts % 10 === 0) {
+                    console.log('[StartScan] Waiting for:', missingModules.map(m => m.name).join(', '));
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
             }
             
-            throw new Error('Timeout waiting for critical modules');
+            if (attempts >= maxAttempts) {
+                console.warn('[StartScan] Timeout waiting for modules');
+            }
         }
         
-        // ========================================
-        // VÉRIFICATION DE LA PAGE ACTUELLE
-        // ========================================
         checkCurrentPage() {
             console.log('[StartScan] Checking current page...');
             
-            const currentPage = this.getCurrentPage();
+            // Vérifier la page actuelle via l'URL ou le DOM
+            const currentPage = window.location.hash || this.getCurrentPageFromDOM();
             console.log('[StartScan] Current page:', currentPage);
             
-            if (currentPage === 'scanner') {
-                console.log('[StartScan] Already on scanner page, preparing auto-scan...');
-                this.pendingScan = true;
-                setTimeout(() => this.autoStartScan(), this.delays.scanStart);
+            if (currentPage.includes('scanner')) {
+                // Délai pour s'assurer que tout est chargé
+                setTimeout(() => {
+                    this.attemptAutoStart();
+                }, 1000);
             }
         }
         
-        // ========================================
-        // OBTENIR LA PAGE ACTUELLE
-        // ========================================
-        getCurrentPage() {
-            // Vérifier tous les PageManagers possibles
-            const managers = [
-                window.pageManagerGmail,
-                window.pageManager,
-                window.app
-            ];
-            
-            for (const manager of managers) {
-                if (manager && manager.currentPage) {
-                    return manager.currentPage;
-                }
+        getCurrentPageFromDOM() {
+            // Vérifier quel bouton de navigation est actif
+            const activeNav = document.querySelector('.nav-item.active');
+            if (activeNav) {
+                return activeNav.dataset.page || '';
             }
             
-            // Vérifier l'URL
-            const path = window.location.pathname;
-            if (path.includes('scanner')) {
+            // Vérifier le contenu de la page
+            const pageContent = document.getElementById('pageContent');
+            if (pageContent && pageContent.innerHTML.includes('scanner')) {
                 return 'scanner';
             }
             
-            // Vérifier la navigation active
-            const activeNav = document.querySelector('.nav-item.active');
-            if (activeNav) {
-                return activeNav.dataset.page;
-            }
-            
-            return null;
+            return '';
         }
         
-        // ========================================
-        // DÉTECTION DU PROVIDER ACTIF
-        // ========================================
-        getActiveProvider() {
+        detectActiveProvider() {
             console.log('[StartScan] Detecting active provider...');
             
-            // 1. Vérifier via l'app
+            // Méthode 1: Vérifier via l'app
             if (window.app && window.app.activeProvider) {
                 console.log('[StartScan] Provider from app:', window.app.activeProvider);
-                this.lastProvider = window.app.activeProvider;
                 return window.app.activeProvider;
             }
             
-            // 2. Vérifier Google
-            if (window.googleAuthService) {
-                try {
-                    if (typeof window.googleAuthService.isAuthenticated === 'function' && 
-                        window.googleAuthService.isAuthenticated()) {
-                        console.log('[StartScan] Google provider detected');
-                        this.lastProvider = 'google';
-                        return 'google';
-                    }
-                } catch (e) {
-                    console.warn('[StartScan] Error checking Google auth:', e);
-                }
+            // Méthode 2: Vérifier l'authentification Google
+            if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+                console.log('[StartScan] Google authentication detected');
+                return 'google';
             }
             
-            // 3. Vérifier Microsoft
-            if (window.authService) {
-                try {
-                    if (typeof window.authService.isAuthenticated === 'function' && 
-                        window.authService.isAuthenticated()) {
-                        console.log('[StartScan] Microsoft provider detected');
-                        this.lastProvider = 'microsoft';
-                        return 'microsoft';
-                    }
-                } catch (e) {
-                    console.warn('[StartScan] Error checking Microsoft auth:', e);
-                }
+            // Méthode 3: Vérifier l'authentification Microsoft
+            if (window.authService && window.authService.isAuthenticated()) {
+                console.log('[StartScan] Microsoft authentication detected');
+                return 'microsoft';
             }
             
-            // 4. Vérifier sessionStorage
+            // Méthode 4: Vérifier le localStorage/sessionStorage
             const lastProvider = sessionStorage.getItem('lastAuthProvider');
             if (lastProvider) {
                 console.log('[StartScan] Provider from session:', lastProvider);
-                this.lastProvider = lastProvider;
                 return lastProvider;
             }
             
-            // 5. Utiliser le dernier provider connu
-            if (this.lastProvider) {
-                console.log('[StartScan] Using last known provider:', this.lastProvider);
-                return this.lastProvider;
+            // Méthode 5: Vérifier les tokens
+            const googleToken = localStorage.getItem('google_token_emailsortpro');
+            if (googleToken) {
+                try {
+                    const tokenData = JSON.parse(googleToken);
+                    if (tokenData.access_token && tokenData.expires_at > Date.now()) {
+                        console.log('[StartScan] Valid Google token found');
+                        return 'google';
+                    }
+                } catch (e) {
+                    // Ignorer les erreurs de parsing
+                }
             }
             
-            console.log('[StartScan] No active provider found');
+            // Méthode 6: Vérifier l'interface utilisateur
+            const authStatus = document.getElementById('authStatus');
+            if (authStatus) {
+                const authText = authStatus.innerText.toLowerCase();
+                if (authText.includes('gmail')) {
+                    console.log('[StartScan] Gmail detected in UI');
+                    return 'google';
+                } else if (authText.includes('outlook')) {
+                    console.log('[StartScan] Outlook detected in UI');
+                    return 'microsoft';
+                }
+            }
+            
+            console.warn('[StartScan] No active provider detected');
             return null;
         }
         
-        // ========================================
-        // CONFIGURATION DES HANDLERS DE NAVIGATION
-        // ========================================
+        getPageManagerForProvider(provider) {
+            if (provider === 'google') {
+                console.log('[StartScan] Using PageManagerGmail for Google provider');
+                return window.pageManagerGmail;
+            } else {
+                console.log('[StartScan] Using standard PageManager for Microsoft provider');
+                return window.pageManager;
+            }
+        }
+        
         setupNavigationHandlers() {
             console.log('[StartScan] Setting up navigation handlers...');
             
-            // Wrapper pour les PageManagers existants
-            this.wrapExistingPageManagers();
+            // Wrapper pour intercepter les navigations vers scanner
+            this.wrapPageManagerMethods();
             
-            // Observer pour les PageManagers qui arrivent plus tard
-            this.observePageManagers();
+            // Observer les clics sur les boutons de navigation
+            document.addEventListener('click', (e) => {
+                const navItem = e.target.closest('.nav-item');
+                if (navItem && navItem.dataset.page === 'scanner') {
+                    console.log('[StartScan] Scanner navigation clicked');
+                    setTimeout(() => {
+                        this.attemptAutoStart();
+                    }, 500);
+                }
+            });
             
             console.log('[StartScan] Navigation handlers configured');
         }
         
-        // ========================================
-        // WRAPPER POUR LES PAGEMANAGERS EXISTANTS
-        // ========================================
-        wrapExistingPageManagers() {
-            // PageManager standard
-            if (window.pageManager && !window.pageManager._startScanWrapped) {
-                this.wrapLoadPage(window.pageManager, 'PageManager');
-                window.pageManager._startScanWrapped = true;
-            }
-            
-            // PageManagerGmail
-            if (window.pageManagerGmail && !window.pageManagerGmail._startScanWrapped) {
-                this.wrapLoadPage(window.pageManagerGmail, 'PageManagerGmail');
-                window.pageManagerGmail._startScanWrapped = true;
-            }
-        }
-        
-        // ========================================
-        // WRAPPER POUR LA MÉTHODE loadPage
-        // ========================================
-        wrapLoadPage(pageManager, managerName) {
-            console.log(`[StartScan] Wrapping loadPage for ${managerName}`);
-            
-            const originalLoadPage = pageManager.loadPage;
-            const self = this;
-            
-            pageManager.loadPage = function(pageName, ...args) {
-                console.log(`[StartScan] ${managerName} navigation to:`, pageName);
+        wrapPageManagerMethods() {
+            // Wrapper pour PageManager standard
+            if (window.pageManager && window.pageManager.loadPage) {
+                const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
                 
-                // Appeler la méthode originale
-                const result = originalLoadPage.call(this, pageName, ...args);
-                
-                // Si navigation vers scanner, préparer le scan auto
-                if (pageName === 'scanner') {
-                    console.log('[StartScan] Navigation to scanner detected');
-                    self.pendingScan = true;
+                window.pageManager.loadPage = (page, ...args) => {
+                    console.log('[StartScan] PageManager navigation to:', page);
                     
-                    // Attendre que la page soit chargée
-                    Promise.resolve(result).then(() => {
+                    const result = originalLoadPage(page, ...args);
+                    
+                    if (page === 'scanner') {
+                        console.log('[StartScan] Scanner page loaded via PageManager');
                         setTimeout(() => {
-                            self.autoStartScan();
-                        }, self.delays.scanStart);
-                    }).catch(error => {
-                        console.error('[StartScan] Error during page load:', error);
-                    });
-                }
+                            this.attemptAutoStart();
+                        }, 500);
+                    }
+                    
+                    return result;
+                };
                 
-                return result;
-            };
-            
-            console.log(`[StartScan] ✅ ${managerName}.loadPage wrapped`);
-        }
-        
-        // ========================================
-        // OBSERVER POUR PAGEMANAGERS TARDIFS
-        // ========================================
-        observePageManagers() {
-            console.log('[StartScan] Setting up PageManager observer...');
-            
-            let checkCount = 0;
-            const maxChecks = 30; // 15 secondes
-            
-            const checkManagers = () => {
-                checkCount++;
-                
-                // Vérifier et wrapper les nouveaux PageManagers
-                this.wrapExistingPageManagers();
-                
-                // Continuer à vérifier
-                if (checkCount < maxChecks) {
-                    setTimeout(checkManagers, 500);
-                } else {
-                    console.log('[StartScan] PageManager observer timeout');
-                }
-            };
-            
-            // Démarrer la vérification
-            checkManagers();
-        }
-        
-        // ========================================
-        // CONFIGURATION DES OBSERVERS DOM
-        // ========================================
-        setupObservers() {
-            console.log('[StartScan] Setting up DOM observers...');
-            
-            // Observer pour détecter les changements de navigation
-            this.setupNavigationObserver();
-            
-            // Observer pour détecter l'apparition du bouton de scan
-            this.setupScanButtonObserver();
-        }
-        
-        // ========================================
-        // OBSERVER POUR LA NAVIGATION
-        // ========================================
-        setupNavigationObserver() {
-            // Observer les clics sur la navigation
-            document.addEventListener('click', (event) => {
-                const navItem = event.target.closest('.nav-item');
-                if (navItem && navItem.dataset.page === 'scanner') {
-                    console.log('[StartScan] Scanner navigation clicked');
-                    this.pendingScan = true;
-                }
-            });
-        }
-        
-        // ========================================
-        // OBSERVER POUR LE BOUTON DE SCAN
-        // ========================================
-        setupScanButtonObserver() {
-            if (this.pageObserver) {
-                this.pageObserver.disconnect();
+                console.log('[StartScan] ✅ PageManager.loadPage wrapped');
             }
             
-            this.pageObserver = new MutationObserver((mutations, observer) => {
-                // Vérifier si on est sur la page scanner
-                if (this.getCurrentPage() !== 'scanner') {
-                    return;
-                }
+            // Wrapper pour PageManagerGmail
+            if (window.pageManagerGmail && window.pageManagerGmail.loadPage) {
+                const originalLoadPageGmail = window.pageManagerGmail.loadPage.bind(window.pageManagerGmail);
                 
-                // Chercher le bouton de scan
-                const scanBtn = document.getElementById('minimalScanBtn');
-                if (scanBtn && !scanBtn.disabled && this.pendingScan) {
-                    console.log('[StartScan] Scan button detected via observer');
-                    observer.disconnect();
-                    this.pageObserver = null;
+                window.pageManagerGmail.loadPage = (page, ...args) => {
+                    console.log('[StartScan] PageManagerGmail navigation to:', page);
                     
-                    // Réinitialiser le flag
-                    this.pendingScan = false;
+                    const result = originalLoadPageGmail(page, ...args);
                     
-                    // Démarrer le scan
-                    setTimeout(() => {
-                        this.triggerScan(scanBtn);
-                    }, this.delays.interfaceWait);
-                }
-            });
-            
-            // Observer le body pour détecter l'ajout du bouton
-            this.pageObserver.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-            
-            // Timeout de sécurité
-            if (this.observerTimeout) {
-                clearTimeout(this.observerTimeout);
+                    if (page === 'scanner') {
+                        console.log('[StartScan] Scanner page loaded via PageManagerGmail');
+                        setTimeout(() => {
+                            this.attemptAutoStart();
+                        }, 500);
+                    }
+                    
+                    return result;
+                };
+                
+                console.log('[StartScan] ✅ PageManagerGmail.loadPage wrapped');
             }
-            
-            this.observerTimeout = setTimeout(() => {
-                if (this.pageObserver) {
-                    this.pageObserver.disconnect();
-                    this.pageObserver = null;
-                    console.log('[StartScan] Button observer timeout');
-                }
-            }, this.delays.observerTimeout);
         }
         
-        // ========================================
-        // DÉMARRAGE AUTOMATIQUE DU SCAN
-        // ========================================
-        async autoStartScan() {
+        setupDOMObservers() {
+            // Observer pour détecter quand le PageManager change le contenu
+            const pageContentObserver = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        const content = document.getElementById('pageContent');
+                        if (content && content.innerHTML.includes('scanner-container')) {
+                            console.log('[StartScan] Scanner content detected');
+                            setTimeout(() => {
+                                this.attemptAutoStart();
+                            }, 300);
+                            break;
+                        }
+                    }
+                }
+            });
+            
+            const pageContent = document.getElementById('pageContent');
+            if (pageContent) {
+                pageContentObserver.observe(pageContent, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+            
+            // Timeout pour l'observer
+            setTimeout(() => {
+                pageContentObserver.disconnect();
+            }, 30000);
+            
+            console.log('[StartScan] DOM observers configured');
+        }
+        
+        async attemptAutoStart() {
             console.log('[StartScan] 🎯 Auto-start scan initiated...');
             
-            // Vérifier qu'on est toujours sur la page scanner
-            if (this.getCurrentPage() !== 'scanner') {
-                console.log('[StartScan] Not on scanner page anymore, aborting');
-                this.pendingScan = false;
+            if (this.scanInProgress) {
+                console.log('[StartScan] Scan already in progress, skipping');
                 return;
             }
             
-            this.scanAttempts++;
-            
-            if (this.scanAttempts > this.maxScanAttempts) {
-                console.warn('[StartScan] Max scan attempts reached');
-                this.scanAttempts = 0;
-                this.pendingScan = false;
+            if (this.autoStartAttempts >= this.maxAutoStartAttempts) {
+                console.log('[StartScan] Max auto-start attempts reached');
                 return;
             }
+            
+            this.autoStartAttempts++;
             
             try {
-                // 1. Vérifier que le module de scan est prêt
-                if (!window.minimalScanModule) {
-                    console.warn('[StartScan] Scan module not ready, waiting...');
-                    this.setupScanButtonObserver();
+                // Détecter le provider actif
+                this.activeProvider = this.detectActiveProvider();
+                console.log('[StartScan] Active provider for scan:', this.activeProvider);
+                
+                if (!this.activeProvider) {
+                    console.warn('[StartScan] No active provider detected, aborting');
                     return;
                 }
                 
-                // 2. Vérifier l'authentification
+                // Obtenir le bon PageManager selon le provider
+                this.currentPageManager = this.getPageManagerForProvider(this.activeProvider);
+                
+                if (!this.currentPageManager) {
+                    console.error('[StartScan] PageManager not available for provider:', this.activeProvider);
+                    return;
+                }
+                
+                // Vérifier l'authentification via le bon service
                 const isAuthenticated = await this.checkAuthentication();
+                
                 if (!isAuthenticated) {
-                    console.log('[StartScan] User not authenticated, cannot start scan');
-                    this.pendingScan = false;
-                    this.scanAttempts = 0;
+                    console.log('[StartScan] User not authenticated, showing auth message');
+                    this.showAuthenticationRequired();
                     return;
                 }
                 
-                // 3. Obtenir le provider actif
-                const provider = this.getActiveProvider();
-                console.log('[StartScan] Active provider for scan:', provider);
-                
-                // 4. Attendre que l'interface soit prête
-                const scanBtn = await this.waitForScanButton();
-                if (!scanBtn) {
-                    console.warn('[StartScan] Scan button not found, setting up observer');
-                    this.setupScanButtonObserver();
-                    return;
-                }
-                
-                // 5. Vérifier que le bouton n'est pas désactivé
-                if (scanBtn.disabled) {
-                    console.log('[StartScan] Scan button is disabled, waiting...');
-                    setTimeout(() => this.autoStartScan(), this.delays.retryInterval);
-                    return;
-                }
-                
-                // 6. Démarrer le scan
-                console.log('[StartScan] 🚀 Starting automatic scan...');
-                this.triggerScan(scanBtn);
-                
-                // Réinitialiser les compteurs
-                this.scanAttempts = 0;
-                this.pendingScan = false;
+                // Chercher et cliquer sur le bouton de scan
+                await this.findAndClickScanButton();
                 
             } catch (error) {
-                console.error('[StartScan] Error in auto-start:', error);
-                
-                // Réessayer après un délai
-                if (this.scanAttempts < this.maxScanAttempts) {
-                    setTimeout(() => this.autoStartScan(), this.delays.retryInterval);
-                } else {
-                    this.scanAttempts = 0;
-                    this.pendingScan = false;
-                }
+                console.error('[StartScan] Error during auto-start:', error);
             }
         }
         
-        // ========================================
-        // VÉRIFICATION DE L'AUTHENTIFICATION
-        // ========================================
         async checkAuthentication() {
             console.log('[StartScan] Checking authentication...');
             
-            // 1. Vérifier via minimalScanModule
-            if (window.minimalScanModule && typeof window.minimalScanModule.checkAuthentication === 'function') {
-                try {
-                    const isAuth = await window.minimalScanModule.checkAuthentication();
-                    console.log('[StartScan] MinimalScanModule auth check:', isAuth);
-                    return isAuth;
-                } catch (error) {
-                    console.warn('[StartScan] Error checking auth via minimalScanModule:', error);
-                }
-            }
-            
-            // 2. Vérifier via l'app
+            // Vérifier via l'app
             if (window.app && window.app.isAuthenticated) {
-                console.log('[StartScan] App authentication:', true);
-                return true;
+                console.log('[StartScan] App authentication:', window.app.isAuthenticated);
+                return window.app.isAuthenticated;
             }
             
-            // 3. Vérifier manuellement
-            const provider = this.getActiveProvider();
-            const isAuth = provider !== null;
-            console.log('[StartScan] Manual auth check:', isAuth);
-            return isAuth;
-        }
-        
-        // ========================================
-        // ATTENDRE LE BOUTON DE SCAN
-        // ========================================
-        async waitForScanButton() {
-            console.log('[StartScan] Waiting for scan button...');
-            
-            return new Promise((resolve) => {
-                let attempts = 0;
-                const maxAttempts = 50; // 5 secondes
-                
-                const checkButton = () => {
-                    attempts++;
-                    
-                    const scanBtn = document.getElementById('minimalScanBtn');
-                    if (scanBtn) {
-                        console.log('[StartScan] ✅ Scan button found');
-                        resolve(scanBtn);
-                        return;
-                    }
-                    
-                    if (attempts >= maxAttempts) {
-                        console.warn('[StartScan] Scan button timeout');
-                        resolve(null);
-                        return;
-                    }
-                    
-                    setTimeout(checkButton, 100);
-                };
-                
-                checkButton();
-            });
-        }
-        
-        // ========================================
-        // DÉCLENCHER LE SCAN
-        // ========================================
-        triggerScan(scanBtn) {
-            console.log('[StartScan] Triggering scan...');
-            
-            try {
-                // Méthode 1: Appeler directement startScan
-                if (window.minimalScanModule && typeof window.minimalScanModule.startScan === 'function') {
-                    console.log('[StartScan] Calling minimalScanModule.startScan()');
-                    window.minimalScanModule.startScan();
-                    console.log('[StartScan] ✅ Scan started successfully via method call');
-                    return;
-                }
-                
-                // Méthode 2: Simuler un clic sur le bouton
-                if (scanBtn && !scanBtn.disabled) {
-                    console.log('[StartScan] Simulating click on scan button');
-                    scanBtn.click();
-                    console.log('[StartScan] ✅ Scan started successfully via button click');
-                    return;
-                }
-                
-                console.error('[StartScan] ❌ Could not trigger scan - no method available');
-                
-            } catch (error) {
-                console.error('[StartScan] ❌ Error triggering scan:', error);
+            // Vérifier selon le provider
+            if (this.activeProvider === 'google') {
+                const isGoogleAuth = window.googleAuthService && window.googleAuthService.isAuthenticated();
+                console.log('[StartScan] Google authentication:', isGoogleAuth);
+                return isGoogleAuth;
+            } else {
+                const isMicrosoftAuth = window.authService && window.authService.isAuthenticated();
+                console.log('[StartScan] Microsoft authentication:', isMicrosoftAuth);
+                return isMicrosoftAuth;
             }
         }
         
-        // ========================================
-        // MÉTHODES UTILITAIRES
-        // ========================================
-        
-        // Forcer un scan manuel (utile pour debug)
-        forceScan() {
-            console.log('[StartScan] Force scan requested');
-            this.pendingScan = true;
-            this.scanAttempts = 0;
-            this.autoStartScan();
-        }
-        
-        // Obtenir l'état du module
-        getStatus() {
-            return {
-                initialized: this.isInitialized,
-                pendingScan: this.pendingScan,
-                scanAttempts: this.scanAttempts,
-                lastProvider: this.lastProvider,
-                currentPage: this.getCurrentPage(),
-                activeProvider: this.getActiveProvider(),
-                minimalScanModule: !!window.minimalScanModule,
-                pageManager: !!window.pageManager,
-                pageManagerGmail: !!window.pageManagerGmail,
-                navigationWrapped: this.navigationWrapped
-            };
-        }
-        
-        // Réinitialiser le module
-        reset() {
-            console.log('[StartScan] Resetting module...');
+        showAuthenticationRequired() {
+            const pageContent = document.getElementById('pageContent');
+            if (!pageContent) return;
             
-            this.scanAttempts = 0;
-            this.pendingScan = false;
-            
-            if (this.pageObserver) {
-                this.pageObserver.disconnect();
-                this.pageObserver = null;
-            }
-            
-            if (this.observerTimeout) {
-                clearTimeout(this.observerTimeout);
-                this.observerTimeout = null;
-            }
-            
-            console.log('[StartScan] Module reset complete');
-        }
-        
-        // Nettoyage complet
-        cleanup() {
-            console.log('[StartScan] Cleaning up...');
-            
-            this.reset();
-            this.isInitialized = false;
-            this.navigationWrapped = false;
-            
-            if (this.moduleCheckInterval) {
-                clearInterval(this.moduleCheckInterval);
-                this.moduleCheckInterval = null;
-            }
-            
-            console.log('[StartScan] Cleanup complete');
-        }
-    }
-    
-    // ========================================
-    // CRÉATION ET INITIALISATION DU MODULE
-    // ========================================
-    const startScanModule = new StartScanModule();
-    
-    // Exposer globalement
-    window.startScanModule = startScanModule;
-    
-    // Fonctions globales pour compatibilité
-    window.autoStartScan = () => startScanModule.autoStartScan();
-    window.forceStartScan = () => startScanModule.forceScan();
-    window.getStartScanStatus = () => startScanModule.getStatus();
-    
-    // ========================================
-    // INITIALISATION AU CHARGEMENT
-    // ========================================
-    
-    // Fonction d'initialisation sécurisée
-    const safeInit = () => {
-        try {
-            // Vérifier que les modules de base sont présents
-            if (!window.uiManager) {
-                console.log('[StartScan] UIManager not ready, waiting...');
-                setTimeout(safeInit, 500);
+            // Ne pas remplacer le contenu si c'est déjà un message d'authentification
+            if (pageContent.innerHTML.includes('Authentification requise')) {
                 return;
             }
             
-            // Initialiser le module
-            startScanModule.init();
+            console.log('[StartScan] Showing authentication required message');
             
-        } catch (error) {
-            console.error('[StartScan] Error during initialization:', error);
-            setTimeout(safeInit, 1000);
+            const providerName = this.activeProvider === 'google' ? 'Gmail' : 'Outlook';
+            
+            pageContent.innerHTML = `
+                <div class="scanner-container">
+                    <div class="auth-required-message">
+                        <div class="auth-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <h2>Authentification requise</h2>
+                        <p>Vous devez être connecté à ${providerName} pour accéder au scanner d'emails.</p>
+                        <div class="auth-actions">
+                            <button onclick="window.app.login${this.activeProvider === 'google' ? 'Google' : 'Microsoft'}()" class="btn btn-primary">
+                                <i class="fab fa-${this.activeProvider === 'google' ? 'google' : 'microsoft'}"></i>
+                                Se connecter à ${providerName}
+                            </button>
+                            <button onclick="window.pageManager.loadPage('dashboard')" class="btn btn-secondary">
+                                <i class="fas fa-home"></i>
+                                Retour au tableau de bord
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
-    };
+        
+        async findAndClickScanButton() {
+            console.log('[StartScan] Waiting for scan button...');
+            
+            let attempts = 0;
+            const maxAttempts = 20;
+            
+            const checkButton = async () => {
+                // Chercher le bouton selon différents sélecteurs possibles
+                const selectors = [
+                    '#startScanBtn',
+                    '.scan-button',
+                    'button[onclick*="startScan"]',
+                    'button[onclick*="scanEmails"]',
+                    '.start-scan-btn',
+                    '#scanButton'
+                ];
+                
+                let scanButton = null;
+                for (const selector of selectors) {
+                    scanButton = document.querySelector(selector);
+                    if (scanButton) {
+                        console.log('[StartScan] Scan button found with selector:', selector);
+                        break;
+                    }
+                }
+                
+                if (scanButton && !scanButton.disabled) {
+                    console.log('[StartScan] ✅ Clicking scan button...');
+                    
+                    // Simuler un vrai clic utilisateur
+                    const event = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    
+                    scanButton.dispatchEvent(event);
+                    
+                    // Marquer le scan comme en cours
+                    this.scanInProgress = true;
+                    
+                    // Réinitialiser après un délai
+                    setTimeout(() => {
+                        this.scanInProgress = false;
+                    }, 5000);
+                    
+                    console.log('[StartScan] ✅ Scan started automatically');
+                    return true;
+                }
+                
+                attempts++;
+                if (attempts < maxAttempts) {
+                    setTimeout(checkButton, 250);
+                } else {
+                    console.log('[StartScan] Scan button timeout');
+                    this.setupButtonObserver();
+                }
+            };
+            
+            await checkButton();
+        }
+        
+        setupButtonObserver() {
+            console.log('[StartScan] Scan button not found, setting up observer');
+            
+            const buttonObserver = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    if (mutation.type === 'childList') {
+                        const scanButton = document.querySelector('#startScanBtn, .scan-button, button[onclick*="startScan"]');
+                        if (scanButton && !scanButton.disabled) {
+                            console.log('[StartScan] Scan button appeared');
+                            buttonObserver.disconnect();
+                            scanButton.click();
+                            break;
+                        }
+                    }
+                }
+            });
+            
+            const pageContent = document.getElementById('pageContent');
+            if (pageContent) {
+                buttonObserver.observe(pageContent, {
+                    childList: true,
+                    subtree: true
+                });
+                
+                // Timeout pour l'observer
+                setTimeout(() => {
+                    buttonObserver.disconnect();
+                }, 10000);
+            }
+        }
+        
+        // Méthode publique pour forcer le démarrage
+        forceStart() {
+            console.log('[StartScan] Force start requested');
+            this.scanInProgress = false;
+            this.autoStartAttempts = 0;
+            this.attemptAutoStart();
+        }
+        
+        // Méthode pour réinitialiser le module
+        reset() {
+            console.log('[StartScan] Module reset');
+            this.scanInProgress = false;
+            this.autoStartAttempts = 0;
+            this.activeProvider = null;
+            this.currentPageManager = null;
+        }
+    }
+    
+    // Créer et initialiser l'instance
+    window.startScanModule = new StartScanModule();
     
     // Initialiser quand le DOM est prêt
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             console.log('[StartScan] DOM ready, starting initialization...');
-            setTimeout(safeInit, 1000); // Attendre que les autres modules soient chargés
+            window.startScanModule.initialize();
         });
     } else {
-        console.log('[StartScan] DOM already loaded, starting initialization...');
-        setTimeout(safeInit, 1000); // Attendre que les autres modules soient chargés
+        console.log('[StartScan] DOM already ready, starting initialization...');
+        window.startScanModule.initialize();
     }
     
     console.log('[StartScan] ✅ Module v4.0 COMPLET loaded - Auto-scan ready for double auth');
