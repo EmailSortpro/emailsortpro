@@ -1,4 +1,4 @@
-// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ pour emailsortpro.netlify.app v4.0
+// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ pour emailsortpro.netlify.app v4.1
 
 class AuthService {
     constructor() {
@@ -448,6 +448,11 @@ class AuthService {
     }
 
     async getAccessToken() {
+        if (!this.isInitialized) {
+            console.warn('[AuthService] Not initialized, cannot get access token');
+            return null;
+        }
+
         if (!this.isAuthenticated()) {
             console.warn('[AuthService] Not authenticated for token request');
             return null;
@@ -684,4 +689,4 @@ setTimeout(() => {
     }
 }, 2000);
 
-console.log('✅ AuthService loaded with enhanced Microsoft support for emailsortpro.netlify.app v4.0');
+console.log('✅ AuthService loaded with enhanced Microsoft support for emailsortpro.netlify.app v4.1');
