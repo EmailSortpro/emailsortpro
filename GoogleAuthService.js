@@ -1,5 +1,5 @@
-// GoogleAuthService.js - Service Google SÉCURISÉ v4.5
-// CORRECTION COMPLÈTE : Détection automatique de l'authentification existante
+// GoogleAuthService.js - Service Google SÉCURISÉ v4.6
+// CORRECTION : Propagation correcte de l'authentification vers l'app
 
 class GoogleAuthService {
     constructor() {
@@ -29,7 +29,7 @@ class GoogleAuthService {
             rateLimitDelay: 100
         };
         
-        console.log('[GoogleAuthService] Constructor v4.5 - Auto-detection activée');
+        console.log('[GoogleAuthService] Constructor v4.6 - Propagation auth améliorée');
         this.verifyDomain();
         
         // IMPORTANT: Vérifier immédiatement s'il y a un token valide
@@ -55,6 +55,9 @@ class GoogleAuthService {
                         // Marquer comme provider actif
                         sessionStorage.setItem('lastAuthProvider', 'google');
                         
+                        // IMPORTANT: Propager l'authentification vers l'app
+                        this.propagateAuthToApp();
+                        
                         // Déclencher un événement pour notifier l'app
                         window.dispatchEvent(new CustomEvent('googleAuthReady', {
                             detail: { user: this.currentUser, authenticated: true }
@@ -66,6 +69,25 @@ class GoogleAuthService {
             }
         } catch (error) {
             console.warn('[GoogleAuthService] Erreur vérification auth existante:', error);
+        }
+    }
+
+    // NOUVEAU: Propager l'authentification vers l'app principale
+    propagateAuthToApp() {
+        console.log('[GoogleAuthService] Propagation auth vers app...');
+        
+        // Mettre à jour l'app si elle existe
+        if (window.app) {
+            window.app.currentProvider = 'google';
+            window.app.isAuthenticated = true;
+            window.app.user = this.currentUser;
+            console.log('[GoogleAuthService] ✅ App mise à jour avec auth Google');
+        }
+        
+        // Mettre à jour mailService si il existe
+        if (window.mailService) {
+            window.mailService.currentProvider = 'google';
+            console.log('[GoogleAuthService] ✅ MailService mis à jour');
         }
     }
 
@@ -111,6 +133,9 @@ class GoogleAuthService {
                     try {
                         await this.loadUserInfoFromToken(cachedToken.access_token);
                         sessionStorage.setItem('lastAuthProvider', 'google');
+                        
+                        // Propager l'auth
+                        this.propagateAuthToApp();
                     } catch (error) {
                         console.warn('[GoogleAuthService] Erreur chargement user:', error);
                         // Ne pas échouer l'initialisation
@@ -263,6 +288,9 @@ class GoogleAuthService {
             
             // Marquer comme provider actif
             sessionStorage.setItem('lastAuthProvider', 'google');
+            
+            // Propager l'auth vers l'app
+            this.propagateAuthToApp();
             
             console.log('[GoogleAuthService] ✅ Authentification réussie');
             
@@ -480,4 +508,4 @@ class GoogleAuthService {
 // Créer l'instance globale
 window.googleAuthService = new GoogleAuthService();
 
-console.log('[GoogleAuthService] ✅ v4.5 loaded - Auto-detection activée');
+console.log('[GoogleAuthService] ✅ v4.6 loaded - Propagation auth améliorée');
