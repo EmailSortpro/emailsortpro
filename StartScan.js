@@ -1,6 +1,6 @@
-// StartScan.js - Version 9.0 - Mise en évidence des catégories pré-sélectionnées
+// StartScan.js - Version 9.1 - Détection automatique Outlook/Gmail
 
-console.log('[StartScan] 🚀 Loading StartScan.js v9.0...');
+console.log('[StartScan] 🚀 Loading StartScan.js v9.1...');
 
 class MinimalScanModule {
     constructor() {
@@ -9,15 +9,59 @@ class MinimalScanModule {
         this.selectedDays = 7;
         this.stylesAdded = false;
         this.scanStartTime = null;
+        this.currentProvider = null; // 'google' ou 'microsoft'
         
         // Intégration avec les paramètres
         this.settings = {};
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        console.log('[MinimalScan] Scanner v9.0 initialized - Mise en évidence des catégories');
+        console.log('[MinimalScan] Scanner v9.1 initialized - Détection Outlook/Gmail');
+        this.detectAuthProvider();
         this.loadSettingsFromCategoryManager();
         this.addMinimalStyles();
+    }
+
+    // ================================================
+    // DÉTECTION DU PROVIDER D'AUTHENTIFICATION
+    // ================================================
+    detectAuthProvider() {
+        console.log('[MinimalScan] 🔍 Détection du provider d\'authentification...');
+        
+        // 1. Vérifier le dernier provider utilisé
+        const lastProvider = sessionStorage.getItem('lastAuthProvider');
+        console.log('[MinimalScan] Dernier provider:', lastProvider);
+        
+        // 2. Vérifier Google Auth
+        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            this.currentProvider = 'google';
+            console.log('[MinimalScan] ✅ Authentifié avec Google/Gmail');
+            return;
+        }
+        
+        // 3. Vérifier Microsoft Auth
+        if (window.authService && window.authService.isAuthenticated()) {
+            this.currentProvider = 'microsoft';
+            console.log('[MinimalScan] ✅ Authentifié avec Microsoft/Outlook');
+            return;
+        }
+        
+        // 4. Vérifier l'app principale
+        if (window.app && window.app.currentProvider) {
+            this.currentProvider = window.app.currentProvider;
+            console.log('[MinimalScan] ✅ Provider depuis app:', this.currentProvider);
+            return;
+        }
+        
+        // 5. Fallback sur le dernier provider
+        if (lastProvider === 'google' || lastProvider === 'microsoft') {
+            this.currentProvider = lastProvider;
+            console.log('[MinimalScan] ⚠️ Utilisation du dernier provider:', lastProvider);
+            return;
+        }
+        
+        console.log('[MinimalScan] ❌ Aucun provider détecté');
+        this.currentProvider = null;
     }
 
     // ================================================
@@ -153,7 +197,7 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Minimaliste v9.0 */
+            /* Scanner Ultra-Minimaliste v9.1 */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -213,6 +257,27 @@ class MinimalScanModule {
                 font-size: 18px;
                 color: #6b7280;
                 margin-bottom: 35px;
+            }
+            
+            /* Badge du provider */
+            .provider-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 16px;
+                border-radius: 20px;
+                font-size: 14px;
+                font-weight: 600;
+                color: white;
+                margin-bottom: 20px;
+            }
+            
+            .provider-badge.google {
+                background: linear-gradient(135deg, #4285f4, #34a853);
+            }
+            
+            .provider-badge.microsoft {
+                background: linear-gradient(135deg, #0078d4, #106ebe);
             }
             
             /* Affichage des catégories pré-sélectionnées */
@@ -544,17 +609,20 @@ class MinimalScanModule {
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[MinimalScan] ✅ Styles v9.0 ajoutés');
+        console.log('[MinimalScan] ✅ Styles v9.1 ajoutés');
     }
 
     async render(container) {
-        console.log('[MinimalScan] 🎯 Rendu du scanner v9.0...');
+        console.log('[MinimalScan] 🎯 Rendu du scanner v9.1...');
         
         try {
             this.addMinimalStyles();
             this.checkSettingsUpdate();
             
-            if (!window.authService?.isAuthenticated()) {
+            // Re-détecter le provider au cas où
+            this.detectAuthProvider();
+            
+            if (!this.currentProvider) {
                 container.innerHTML = this.renderNotAuthenticated();
                 return;
             }
@@ -565,7 +633,7 @@ class MinimalScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[MinimalScan] ✅ Scanner v9.0 rendu avec succès');
+            console.log('[MinimalScan] ✅ Scanner v9.1 rendu avec succès');
             
         } catch (error) {
             console.error('[MinimalScan] ❌ Erreur lors du rendu:', error);
@@ -574,6 +642,9 @@ class MinimalScanModule {
     }
 
     renderMinimalScanner() {
+        const providerName = this.currentProvider === 'google' ? 'Gmail' : 'Outlook';
+        const providerIcon = this.currentProvider === 'google' ? 'fab fa-google' : 'fab fa-microsoft';
+        
         return `
             <div class="minimal-scanner">
                 <div class="scanner-card-minimal">
@@ -583,6 +654,11 @@ class MinimalScanModule {
                     
                     <h1 class="scanner-title">Scanner Email</h1>
                     <p class="scanner-subtitle">Organisez vos emails automatiquement avec IA</p>
+                    
+                    <div class="provider-badge ${this.currentProvider}">
+                        <i class="${providerIcon}"></i>
+                        <span>Connecté via ${providerName}</span>
+                    </div>
                     
                     <div id="preselected-categories-display">
                         ${this.renderPreselectedCategories()}
@@ -717,13 +793,34 @@ class MinimalScanModule {
                     <h1 class="scanner-title">Connexion requise</h1>
                     <p class="scanner-subtitle">Connectez-vous pour analyser vos emails</p>
                     
-                    <button class="scan-button-minimal" onclick="window.authService.login()">
+                    <button class="scan-button-minimal" onclick="window.minimalScanModule.handleLogin('google')" style="margin-bottom: 15px;">
+                        <i class="fab fa-google"></i>
+                        <span>Se connecter avec Gmail</span>
+                    </button>
+                    
+                    <button class="scan-button-minimal" onclick="window.minimalScanModule.handleLogin('microsoft')">
                         <i class="fab fa-microsoft"></i>
-                        <span>Se connecter</span>
+                        <span>Se connecter avec Outlook</span>
                     </button>
                 </div>
             </div>
         `;
+    }
+
+    async handleLogin(provider) {
+        console.log('[MinimalScan] Tentative de connexion:', provider);
+        
+        try {
+            if (provider === 'google' && window.googleAuthService) {
+                await window.googleAuthService.login();
+            } else if (provider === 'microsoft' && window.authService) {
+                await window.authService.login();
+            } else {
+                console.error('[MinimalScan] Service d\'authentification non disponible pour:', provider);
+            }
+        } catch (error) {
+            console.error('[MinimalScan] Erreur de connexion:', error);
+        }
     }
 
     renderError(error) {
@@ -746,8 +843,18 @@ class MinimalScanModule {
     }
 
     async checkServices() {
-        if (!window.authService?.isAuthenticated()) {
-            throw new Error('Authentification requise');
+        if (!this.currentProvider) {
+            throw new Error('Aucune authentification détectée');
+        }
+        
+        if (this.currentProvider === 'google') {
+            if (!window.googleAuthService || !window.googleAuthService.isAuthenticated()) {
+                throw new Error('Authentification Google requise');
+            }
+        } else if (this.currentProvider === 'microsoft') {
+            if (!window.authService || !window.authService.isAuthenticated()) {
+                throw new Error('Authentification Microsoft requise');
+            }
         }
         
         if (!window.mailService) {
@@ -789,6 +896,7 @@ class MinimalScanModule {
         }
         
         console.log('[MinimalScan] 🚀 Démarrage du scan');
+        console.log('[MinimalScan] 📧 Provider:', this.currentProvider);
         console.log('[MinimalScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
         
         try {
@@ -828,6 +936,7 @@ class MinimalScanModule {
             autoCategrize: this.settings.scanSettings?.autoCategrize !== false,
             includeSpam: !this.settings.preferences?.excludeSpam,
             detectCC: this.settings.preferences?.detectCC !== false,
+            provider: this.currentProvider, // Ajouter le provider
             onProgress: (progress) => this.updateProgress(progress.progress?.current || 0, progress.message || '', progress.phase || '')
         };
         
@@ -866,6 +975,7 @@ class MinimalScanModule {
                     success: true,
                     total: 150,
                     categorized: 130,
+                    provider: this.currentProvider,
                     taskPreselectedCategories: [...this.taskPreselectedCategories],
                     stats: { 
                         preselectedForTasks: this.taskPreselectedCategories.length > 0 ? 25 : 0,
@@ -932,6 +1042,7 @@ class MinimalScanModule {
             success: true,
             total: this.scanResults?.total || 0,
             categorized: this.scanResults?.categorized || 0,
+            provider: this.currentProvider, // Important pour la redirection
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             preselectedForTasks: this.scanResults?.stats?.preselectedForTasks || 0,
             scanDuration: Math.floor((Date.now() - this.scanStartTime) / 1000),
@@ -940,6 +1051,7 @@ class MinimalScanModule {
         
         try {
             sessionStorage.setItem('scanResults', JSON.stringify(essentialResults));
+            sessionStorage.setItem('lastScanProvider', this.currentProvider);
         } catch (error) {
             console.warn('[MinimalScan] Erreur stockage:', error);
         }
@@ -952,9 +1064,21 @@ class MinimalScanModule {
             window.uiManager.showToast(message, 'success', 4000);
         }
         
+        // Redirection intelligente selon le provider
         setTimeout(() => {
-            if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+            console.log('[MinimalScan] 🚀 Redirection post-scan pour provider:', this.currentProvider);
+            
+            if (this.currentProvider === 'google' && window.pageManagerGmail) {
+                console.log('[MinimalScan] → Redirection vers PageManagerGmail');
+                window.pageManagerGmail.loadPage('emails');
+            } else if (this.currentProvider === 'microsoft' && window.pageManager) {
+                console.log('[MinimalScan] → Redirection vers PageManager (Microsoft)');
                 window.pageManager.loadPage('emails');
+            } else if (window.pageManager) {
+                console.log('[MinimalScan] → Redirection vers PageManager par défaut');
+                window.pageManager.loadPage('emails');
+            } else {
+                console.warn('[MinimalScan] ⚠️ Aucun PageManager disponible pour la redirection');
             }
         }, 500);
     }
@@ -1000,6 +1124,7 @@ class MinimalScanModule {
         
         this.updateProgress(0, 'Initialisation...', 'Préparation du scan');
         
+        this.detectAuthProvider();
         this.loadSettingsFromCategoryManager();
         this.updatePreselectedCategoriesDisplay();
         
@@ -1026,6 +1151,7 @@ class MinimalScanModule {
             isInitialized: this.isInitialized,
             scanInProgress: this.scanInProgress,
             selectedDays: this.selectedDays,
+            currentProvider: this.currentProvider,
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             settings: this.settings,
             lastSettingsSync: this.lastSettingsSync,
@@ -1049,6 +1175,7 @@ class MinimalScanModule {
         this.cleanup();
         this.settings = {};
         this.taskPreselectedCategories = [];
+        this.currentProvider = null;
         console.log('[MinimalScan] Instance détruite');
     }
 }
@@ -1062,4 +1189,4 @@ window.MinimalScanModule = MinimalScanModule;
 window.minimalScanModule = new MinimalScanModule();
 window.scanStartModule = window.minimalScanModule;
 
-console.log('[StartScan] ✅ Scanner v9.0 chargé - Mise en évidence des catégories pré-sélectionnées!');
+console.log('[StartScan] ✅ Scanner v9.1 chargé - Détection automatique Outlook/Gmail!');
