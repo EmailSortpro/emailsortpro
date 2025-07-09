@@ -1,4 +1,6 @@
-// PageManagerGmail.js - Version 1.1 - Correction authentification Gmail
+// PageManagerGmail.js - Version 1.2 - Correction complète de l'authentification Gmail
+
+console.log('[PageManagerGmail] 🚀 Création nouvelle instance v1.2...');
 
 class PageManagerGmail {
     constructor() {
@@ -28,7 +30,12 @@ class PageManagerGmail {
             categoryManagerSynced: false,
             lastSyncTimestamp: null,
             emailCount: 0,
-            gmailAPIConnected: false
+            gmailAPIConnected: false,
+            authState: {
+                isAuthenticated: false,
+                provider: null,
+                user: null
+            }
         };
         
         // Cache pour optimisation
@@ -72,7 +79,7 @@ class PageManagerGmail {
             this.setupSyncListeners();
             this.setupCategoryManagerIntegration();
             this.isInitialized = true;
-            console.log('[PageManagerGmail] ✅ Version 1.1 - Gmail Edition initialisée avec auth corrigée');
+            console.log('[PageManagerGmail] ✅ Version 1.2 - Gmail Edition initialisée avec auth complète');
         } catch (error) {
             console.error('[PageManagerGmail] Erreur initialisation:', error);
         }
@@ -134,6 +141,541 @@ class PageManagerGmail {
     }
 
     // ================================================
+    // AUTHENTIFICATION GMAIL COMPLÈTEMENT CORRIGÉE
+    // ================================================
+    async checkAuthenticationStatus() {
+        console.log('[PageManagerGmail] 🔐 Vérification authentification complète...');
+        
+        try {
+            // Réinitialiser l'état
+            this.syncState.authState = {
+                isAuthenticated: false,
+                provider: null,
+                user: null
+            };
+            
+            let isAuthenticated = false;
+            let user = null;
+            let provider = null;
+            
+            // 1. Vérifier GoogleAuthService en priorité
+            if (window.googleAuthService) {
+                console.log('[PageManagerGmail] Vérification Google Auth Service...');
+                
+                // Méthode 1: isAuthenticated()
+                if (typeof window.googleAuthService.isAuthenticated === 'function') {
+                    try {
+                        const googleAuth = window.googleAuthService.isAuthenticated();
+                        if (googleAuth) {
+                            isAuthenticated = true;
+                            provider = 'google';
+                            console.log('[PageManagerGmail] ✅ Google isAuthenticated: true');
+                        }
+                    } catch (error) {
+                        console.warn('[PageManagerGmail] Erreur isAuthenticated:', error);
+                    }
+                }
+                
+                // Méthode 2: checkAuthentication() pour plus de détails
+                if (!isAuthenticated && typeof window.googleAuthService.checkAuthentication === 'function') {
+                    try {
+                        const authCheck = await window.googleAuthService.checkAuthentication();
+                        if (authCheck && authCheck.isAuthenticated) {
+                            isAuthenticated = true;
+                            provider = 'google';
+                            user = authCheck.user;
+                            this.syncState.gmailAPIConnected = true;
+                            console.log('[PageManagerGmail] ✅ Google checkAuthentication: authenticated', authCheck);
+                        }
+                    } catch (error) {
+                        console.warn('[PageManagerGmail] Erreur checkAuthentication:', error);
+                    }
+                }
+                
+                // Méthode 3: Vérifier le token stocké
+                if (!isAuthenticated) {
+                    const storedToken = this.getLocalStorageItem('google_token_emailsortpro');
+                    if (storedToken) {
+                        try {
+                            const tokenData = JSON.parse(storedToken);
+                            if (tokenData && tokenData.access_token) {
+                                const expiresAt = tokenData.expires_at || 0;
+                                if (expiresAt > Date.now()) {
+                                    isAuthenticated = true;
+                                    provider = 'google';
+                                    console.log('[PageManagerGmail] ✅ Token Google valide trouvé');
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('[PageManagerGmail] Erreur parsing token:', e);
+                        }
+                    }
+                }
+                
+                // Récupérer les infos utilisateur si authentifié
+                if (isAuthenticated && !user) {
+                    if (typeof window.googleAuthService.getUserInfo === 'function') {
+                        try {
+                            user = await window.googleAuthService.getUserInfo();
+                            console.log('[PageManagerGmail] ✅ User info récupéré:', user?.email || user?.emailAddress);
+                        } catch (error) {
+                            console.warn('[PageManagerGmail] Erreur getUserInfo:', error);
+                        }
+                    }
+                }
+            }
+            
+            // 2. Vérifier Microsoft comme fallback
+            if (!isAuthenticated && window.authService) {
+                console.log('[PageManagerGmail] Vérification Microsoft Auth comme fallback...');
+                
+                if (typeof window.authService.isAuthenticated === 'function') {
+                    try {
+                        const msAuth = window.authService.isAuthenticated();
+                        if (msAuth) {
+                            isAuthenticated = true;
+                            provider = 'microsoft';
+                            user = { email: 'Microsoft User', provider: 'microsoft' };
+                            console.log('[PageManagerGmail] ✅ Authentifié via Microsoft');
+                        }
+                    } catch (error) {
+                        console.warn('[PageManagerGmail] Erreur Microsoft auth:', error);
+                    }
+                }
+            }
+            
+            // 3. Vérifier via l'app principale
+            if (!isAuthenticated && window.app) {
+                console.log('[PageManagerGmail] Vérification via App principale...');
+                
+                if (window.app.isAuthenticated) {
+                    isAuthenticated = true;
+                    provider = window.app.activeProvider;
+                    user = window.app.user;
+                    console.log('[PageManagerGmail] ✅ Authentifié via App:', provider);
+                }
+            }
+            
+            // 4. Vérifier les résultats du scan stockés
+            if (!isAuthenticated) {
+                try {
+                    const scanResults = sessionStorage.getItem('scanResults');
+                    const scanProvider = sessionStorage.getItem('lastScanProvider');
+                    
+                    if (scanResults && scanProvider) {
+                        isAuthenticated = true;
+                        provider = scanProvider;
+                        console.log('[PageManagerGmail] ✅ Authentification détectée via scan results:', provider);
+                    }
+                } catch (e) {
+                    console.warn('[PageManagerGmail] Erreur lecture sessionStorage:', e);
+                }
+            }
+            
+            // 5. Vérifier Gmail natif
+            if (!isAuthenticated && this.gmailDetected) {
+                const gmailInterface = document.querySelector('.gmail_default') || 
+                                     document.querySelector('[gh="tl"]') ||
+                                     document.querySelector('.T-I.T-I-KE');
+                
+                if (gmailInterface) {
+                    isAuthenticated = true;
+                    provider = 'gmail-native';
+                    console.log('[PageManagerGmail] ✅ Utilisateur connecté à Gmail natif');
+                    
+                    // Essayer de récupérer l'email de l'utilisateur
+                    const accountButton = document.querySelector('[aria-label*="Google Account"]');
+                    if (accountButton) {
+                        const emailMatch = accountButton.getAttribute('aria-label')?.match(/([^@]+@[^)]+)/);
+                        if (emailMatch) {
+                            user = { email: emailMatch[1], provider: 'gmail-native' };
+                        }
+                    }
+                }
+            }
+            
+            // 6. Dernière tentative : indicateurs localStorage
+            if (!isAuthenticated) {
+                const authIndicators = [
+                    'googleAuthStatus',
+                    'authStatus',
+                    'userInfo',
+                    'msalAccount',
+                    'google_user_info'
+                ];
+                
+                for (const indicator of authIndicators) {
+                    try {
+                        const value = this.getLocalStorageItem(indicator);
+                        if (value) {
+                            isAuthenticated = true;
+                            provider = indicator.includes('google') ? 'google' : 'microsoft';
+                            console.log('[PageManagerGmail] ✅ Indicateur auth trouvé:', indicator);
+                            break;
+                        }
+                    } catch (e) {
+                        // Ignorer les erreurs
+                    }
+                }
+            }
+            
+            // Mettre à jour l'état de synchronisation
+            this.syncState.authState = {
+                isAuthenticated,
+                provider,
+                user
+            };
+            
+            console.log('[PageManagerGmail] ✅ Résultat final authentification:', {
+                isAuthenticated,
+                provider,
+                user: user?.email || user?.emailAddress || 'unknown',
+                gmailAPIConnected: this.syncState.gmailAPIConnected
+            });
+            
+            return this.syncState.authState;
+            
+        } catch (error) {
+            console.error('[PageManagerGmail] ❌ Erreur critique vérification authentification:', error);
+            return {
+                isAuthenticated: false,
+                provider: null,
+                user: null,
+                error: error.message
+            };
+        }
+    }
+
+    // ================================================
+    // MÉTHODE LOADPAGE CORRIGÉE
+    // ================================================
+    async loadPage(pageName) {
+        console.log('[PageManagerGmail] Loading page:', pageName);
+        
+        if (!pageName || this.currentPage === pageName) {
+            console.log('[PageManagerGmail] Same page or no page specified, skipping');
+            return;
+        }
+        
+        this.currentPage = pageName;
+        
+        // Mettre à jour la navigation
+        this.updateNavigation(pageName);
+        
+        // Afficher le loading
+        this.showLoading();
+        
+        try {
+            // Vérifier si la page nécessite une authentification
+            if (this.requiresAuthentication(pageName)) {
+                console.log('[PageManagerGmail] Page requires authentication:', pageName);
+                
+                const authStatus = await this.checkAuthenticationStatus();
+                console.log('[PageManagerGmail] Auth status for page:', authStatus);
+                
+                if (!authStatus.isAuthenticated) {
+                    console.log('[PageManagerGmail] User not authenticated, showing auth required message');
+                    this.renderAuthRequiredState(pageName);
+                    return;
+                }
+            }
+            
+            // Rendre la page
+            await this.renderPage(pageName);
+            
+        } catch (error) {
+            console.error('[PageManagerGmail] Error loading page:', error);
+            this.showError('Erreur lors du chargement de la page: ' + error.message);
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    // ================================================
+    // RENDU PAGE AUTHENTIFICATION REQUISE
+    // ================================================
+    renderAuthRequiredState(pageName) {
+        const container = this.getPageContainer();
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="auth-required-state">
+                <div class="auth-icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h3 class="auth-title">Authentification requise</h3>
+                <p class="auth-text">
+                    Vous devez être connecté pour accéder à cette page.
+                </p>
+                <div class="auth-actions">
+                    <button class="btn btn-primary gmail-login-btn" onclick="window.pageManagerGmail.handleLogin('google')">
+                        <i class="fab fa-google"></i>
+                        Se connecter avec Google
+                    </button>
+                    <button class="btn btn-secondary" onclick="window.pageManagerGmail.loadPage('dashboard')">
+                        <i class="fas fa-home"></i>
+                        Retour au tableau de bord
+                    </button>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-link" onclick="window.pageManagerGmail.refreshAuthStatus()">
+                        <i class="fas fa-sync"></i>
+                        Actualiser le statut de connexion
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        this.hideLoading();
+    }
+
+    // ================================================
+    // MÉTHODE DE CONNEXION
+    // ================================================
+    async handleLogin(provider = 'google') {
+        console.log('[PageManagerGmail] Handling login request for:', provider);
+        
+        try {
+            this.showLoading('Connexion en cours...');
+            
+            if (provider === 'google' && window.googleAuthService) {
+                if (typeof window.googleAuthService.login === 'function') {
+                    console.log('[PageManagerGmail] Using GoogleAuthService.login()');
+                    await window.googleAuthService.login();
+                } else if (typeof window.googleAuthService.signIn === 'function') {
+                    console.log('[PageManagerGmail] Using GoogleAuthService.signIn()');
+                    await window.googleAuthService.signIn();
+                } else {
+                    throw new Error('Méthode de connexion Google non disponible');
+                }
+            } else if (provider === 'microsoft' && window.authService) {
+                console.log('[PageManagerGmail] Using Microsoft auth');
+                await window.authService.login();
+            } else {
+                throw new Error(`Provider ${provider} non disponible`);
+            }
+            
+            // Après connexion, recharger la page actuelle
+            setTimeout(() => {
+                this.loadPage(this.currentPage);
+            }, 1000);
+            
+        } catch (error) {
+            console.error('[PageManagerGmail] Login error:', error);
+            this.showError('Erreur lors de la connexion: ' + error.message);
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    // ================================================
+    // ACTUALISATION DU STATUT D'AUTHENTIFICATION
+    // ================================================
+    async refreshAuthStatus() {
+        console.log('[PageManagerGmail] Refreshing auth status...');
+        
+        this.showLoading('Actualisation...');
+        
+        try {
+            const authStatus = await this.checkAuthenticationStatus();
+            
+            if (authStatus.isAuthenticated) {
+                this.showToast('✅ Connexion détectée !', 'success');
+                
+                // Recharger la page actuelle
+                setTimeout(() => {
+                    this.loadPage(this.currentPage);
+                }, 500);
+            } else {
+                this.showToast('❌ Aucune connexion active', 'error');
+            }
+        } catch (error) {
+            console.error('[PageManagerGmail] Error refreshing auth:', error);
+            this.showError('Erreur lors de l\'actualisation');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    // ================================================
+    // RENDU DE LA PAGE SCANNER CORRIGÉ
+    // ================================================
+    async renderScanner(container) {
+        console.log('[PageManagerGmail] Rendering scanner page...');
+        
+        const authStatus = await this.checkAuthenticationStatus();
+        console.log('[PageManagerGmail] Auth status for scanner:', authStatus);
+        
+        // Si authentifié, déléguer au module scanner
+        if (authStatus.isAuthenticated) {
+            if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
+                try {
+                    console.log('[PageManagerGmail] Délégation au minimalScanModule...');
+                    await window.minimalScanModule.render(container);
+                    return;
+                } catch (error) {
+                    console.error('[PageManagerGmail] Erreur avec minimalScanModule:', error);
+                    this.showError('Erreur du module scanner: ' + error.message);
+                }
+            } else {
+                console.error('[PageManagerGmail] MinimalScanModule non disponible');
+                this.showError('Module scanner non disponible');
+            }
+        } else {
+            // Si non authentifié, afficher l'état d'authentification requise
+            this.renderAuthRequiredState('scanner');
+        }
+    }
+
+    // ================================================
+    // RENDU DE LA PAGE EMAILS
+    // ================================================
+    async renderEmails(container) {
+        console.log('[PageManagerGmail] Rendering emails page...');
+        
+        const authStatus = await this.checkAuthenticationStatus();
+        
+        if (!authStatus.isAuthenticated) {
+            this.renderAuthRequiredState('emails');
+            return;
+        }
+        
+        // Vérifier s'il y a des résultats de scan
+        await this.checkEmailSyncStatus();
+        
+        // Si pas d'emails, proposer de scanner
+        const emails = await this.getAllEmails();
+        
+        if (!emails || emails.length === 0) {
+            container.innerHTML = this.renderEmptyEmailsState();
+            return;
+        }
+        
+        // Ajouter les styles
+        this.addEmailsStyles();
+        
+        // Construire l'interface
+        const categories = await this.getCategories();
+        const categoryCounts = this.calculateCategoryCounts(emails);
+        
+        container.innerHTML = `
+            <div class="emails-page-modern">
+                ${!this.hideExplanation ? `
+                    <div class="explanation-notice">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Sélectionnez des emails pour créer des tâches automatiquement</span>
+                        <button class="close-notice" onclick="window.pageManagerGmail.hideExplanationMessage()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                ` : ''}
+                
+                <div class="page-header-modern">
+                    <div class="header-left">
+                        <h1 class="page-title">
+                            <i class="fas fa-envelope"></i>
+                            Emails
+                            <span class="email-count">${emails.length}</span>
+                            <span class="provider-badge gmail">
+                                <i class="fab fa-google"></i> Gmail
+                            </span>
+                        </h1>
+                    </div>
+                    
+                    <div class="header-right">
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" 
+                                   class="search-input gmail-style" 
+                                   placeholder="Rechercher dans les emails..."
+                                   value="${this.searchTerm}"
+                                   onchange="window.pageManagerGmail.handleSearch(event)">
+                            ${this.searchTerm ? `
+                                <button class="clear-search" onclick="window.pageManagerGmail.clearSearch()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="view-toggles">
+                            <button class="view-toggle ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                    onclick="window.pageManagerGmail.changeViewMode('flat')"
+                                    title="Vue liste">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <button class="view-toggle ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                    onclick="window.pageManagerGmail.changeViewMode('grouped-domain')"
+                                    title="Grouper par domaine">
+                                <i class="fas fa-sitemap"></i>
+                            </button>
+                            <button class="view-toggle ${this.currentViewMode === 'grouped-category' ? 'active' : ''}" 
+                                    onclick="window.pageManagerGmail.changeViewMode('grouped-category')"
+                                    title="Grouper par catégorie">
+                                <i class="fas fa-layer-group"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="category-tabs-container">
+                    ${this.buildCategoryTabs(categories, categoryCounts)}
+                </div>
+                
+                <div class="controls-bar">
+                    <div class="selection-info">
+                        <span id="selectionCount">
+                            ${this.selectedEmails.size} email${this.selectedEmails.size !== 1 ? 's' : ''} sélectionné${this.selectedEmails.size !== 1 ? 's' : ''}
+                        </span>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" 
+                                onclick="window.pageManagerGmail.toggleBulkActions()"
+                                ${this.selectedEmails.size === 0 ? 'disabled' : ''}>
+                            <i class="fas fa-cog"></i>
+                            Actions groupées
+                        </button>
+                        
+                        <button class="btn btn-primary" 
+                                onclick="window.pageManagerGmail.createTasksFromSelection()"
+                                ${this.selectedEmails.size === 0 ? 'disabled' : ''}>
+                            <i class="fas fa-tasks"></i>
+                            Créer ${this.selectedEmails.size} tâche${this.selectedEmails.size !== 1 ? 's' : ''}
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="bulkActionsPanel" class="bulk-actions-panel" style="display: none;">
+                    <button class="bulk-action" onclick="window.pageManagerGmail.bulkMarkAsRead()">
+                        <i class="fas fa-envelope-open"></i> Marquer comme lu
+                    </button>
+                    <button class="bulk-action" onclick="window.pageManagerGmail.bulkArchive()">
+                        <i class="fas fa-archive"></i> Archiver
+                    </button>
+                    <button class="bulk-action" onclick="window.pageManagerGmail.bulkDelete()">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </button>
+                    <button class="bulk-action" onclick="window.pageManagerGmail.bulkExport()">
+                        <i class="fas fa-download"></i> Exporter
+                    </button>
+                </div>
+                
+                <div class="emails-container" id="emailsContainer">
+                    ${await this.renderEmailsList(emails)}
+                </div>
+            </div>
+        `;
+        
+        // Initialiser les événements
+        this.setupEmailsEventListeners();
+        
+        // Analyser les premiers emails si activé
+        if (this.autoAnalyzeEnabled) {
+            this.analyzeFirstEmails();
+        }
+    }
+
+    // ================================================
     // INTÉGRATION CATEGORYMANAGER
     // ================================================
     setupCategoryManagerIntegration() {
@@ -184,915 +726,353 @@ class PageManagerGmail {
     }
 
     // ================================================
-    // AUTHENTIFICATION GMAIL CORRIGÉE
+    // SYNCHRONISATION AVEC LE SCAN
     // ================================================
-    async checkAuthenticationStatus() {
-        try {
-            let isAuthenticated = false;
-            let user = null;
-            
-            // Vérifier d'abord GoogleAuthService
-            if (window.googleAuthService) {
-                console.log('[PageManagerGmail] Vérification authentification Google...');
-                
-                // Utiliser checkAuthentication() au lieu de checkAuthStatus()
-                if (typeof window.googleAuthService.checkAuthentication === 'function') {
-                    try {
-                        const authStatus = await window.googleAuthService.checkAuthentication();
-                        isAuthenticated = authStatus.isAuthenticated || false;
-                        user = authStatus.user || null;
-                        this.syncState.gmailAPIConnected = isAuthenticated;
-                        console.log('[PageManagerGmail] GoogleAuthService.checkAuthentication():', authStatus);
-                    } catch (error) {
-                        console.warn('[PageManagerGmail] Erreur checkAuthentication:', error);
-                    }
-                }
-                
-                // Fallback sur isAuthenticated()
-                if (!isAuthenticated && typeof window.googleAuthService.isAuthenticated === 'function') {
-                    isAuthenticated = window.googleAuthService.isAuthenticated();
-                    console.log('[PageManagerGmail] GoogleAuthService.isAuthenticated():', isAuthenticated);
-                }
-                
-                // Essayer de récupérer l'utilisateur si authentifié
-                if (isAuthenticated && !user && typeof window.googleAuthService.getUserInfo === 'function') {
-                    try {
-                        const userInfo = await window.googleAuthService.getUserInfo();
-                        user = userInfo?.email || userInfo?.emailAddress || null;
-                        console.log('[PageManagerGmail] User info récupéré:', user);
-                    } catch (error) {
-                        console.warn('[PageManagerGmail] Erreur getUserInfo:', error);
-                    }
-                }
-            }
-            
-            // Vérifier aussi Microsoft au cas où (double authentification)
-            if (!isAuthenticated && window.authService) {
-                console.log('[PageManagerGmail] Vérification authentification Microsoft comme fallback...');
-                
-                if (typeof window.authService.isAuthenticated === 'function') {
-                    const msAuth = window.authService.isAuthenticated();
-                    if (msAuth) {
-                        isAuthenticated = true;
-                        user = 'Microsoft User';
-                        console.log('[PageManagerGmail] Authentifié via Microsoft');
-                    }
-                }
-            }
-            
-            // Vérifier si on est dans Gmail natif
-            if (!isAuthenticated && this.gmailDetected) {
-                // Gmail est déjà authentifié si on peut voir l'interface
-                const gmailInterface = document.querySelector('.gmail_default') || 
-                                     document.querySelector('[gh="tl"]') ||
-                                     document.querySelector('.T-I.T-I-KE');
-                
-                if (gmailInterface) {
-                    isAuthenticated = true;
-                    console.log('[PageManagerGmail] ✅ Utilisateur connecté à Gmail (interface détectée)');
-                    
-                    // Essayer de récupérer l'email de l'utilisateur
-                    const accountButton = document.querySelector('[aria-label*="Google Account"]');
-                    if (accountButton) {
-                        const emailMatch = accountButton.getAttribute('aria-label')?.match(/([^@]+@[^)]+)/);
-                        if (emailMatch) {
-                            user = emailMatch[1];
-                        }
-                    }
-                }
-            }
-            
-            // Dernier recours : vérifier localStorage
-            if (!isAuthenticated) {
-                try {
-                    const storedAuth = this.getLocalStorageItem('googleAuthStatus') || 
-                                      this.getLocalStorageItem('authStatus') || 
-                                      this.getLocalStorageItem('userInfo');
-                    if (storedAuth) {
-                        isAuthenticated = true;
-                        console.log('[PageManagerGmail] Found stored authentication indicator');
-                    }
-                } catch (error) {
-                    console.warn('[PageManagerGmail] Cannot access localStorage:', error);
-                }
-            }
-            
-            console.log('[PageManagerGmail] ✅ Résultat final authentification:', {
-                isAuthenticated,
-                user,
-                source: isAuthenticated ? 'detected' : 'none',
-                gmailAPIConnected: this.syncState.gmailAPIConnected
-            });
-            
-            return {
-                isAuthenticated,
-                user,
-                source: isAuthenticated ? 'gmail' : 'none'
-            };
-            
-        } catch (error) {
-            console.error('[PageManagerGmail] ❌ Erreur vérification authentification:', error);
-            return {
-                isAuthenticated: false,
-                user: null,
-                error: error.message
-            };
-        }
-    }
-
-    renderAuthRequiredState(pageName) {
-        return `
-            <div class="auth-required-state">
-                <div class="auth-icon">
-                    <i class="fas fa-lock"></i>
-                </div>
-                <h3 class="auth-title">Authentification requise</h3>
-                <p class="auth-text">
-                    Vous devez être connecté pour accéder à cette page.
-                </p>
-                <div class="auth-actions">
-                    <button class="btn btn-primary" onclick="window.pageManagerGmail.handleLogin()">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Se connecter
-                    </button>
-                    <button class="btn btn-secondary" onclick="window.pageManagerGmail.loadPage('dashboard')">
-                        <i class="fas fa-home"></i>
-                        Retour au tableau de bord
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    async handleLogin() {
-        console.log('[PageManagerGmail] Handling Gmail login request...');
+    async checkEmailSyncStatus() {
+        console.log('[PageManagerGmail] Checking email sync status...');
         
         try {
-            if (window.googleAuthService && typeof window.googleAuthService.login === 'function') {
-                console.log('[PageManagerGmail] Using GoogleAuthService.login()');
-                await window.googleAuthService.login();
-            } else if (window.googleAuthService && typeof window.googleAuthService.signIn === 'function') {
-                console.log('[PageManagerGmail] Using GoogleAuthService.signIn()');
-                await window.googleAuthService.signIn();
-            } else if (window.authService && typeof window.authService.login === 'function') {
-                console.log('[PageManagerGmail] Fallback to Microsoft auth');
-                await window.authService.login();
-            } else {
-                console.log('[PageManagerGmail] No login method available, redirecting to Google');
-                window.location.href = 'https://accounts.google.com/signin/v2/identifier?service=mail&continue=https://mail.google.com';
-            }
-        } catch (error) {
-            console.error('[PageManagerGmail] Login error:', error);
-            this.showError('Erreur lors de la connexion: ' + error.message);
-        }
-    }
-
-    // ================================================
-    // RENDU DE LA PAGE SCANNER CORRIGÉ
-    // ================================================
-    async renderScanner(container) {
-        console.log('[PageManagerGmail] Rendering scanner page...');
-        
-        const authStatus = await this.checkAuthenticationStatus();
-        console.log('[PageManagerGmail] Auth status for scanner:', authStatus);
-        
-        // Si authentifié, déléguer au module scanner
-        if (authStatus.isAuthenticated) {
-            if (window.minimalScanModule && typeof window.minimalScanModule.render === 'function') {
-                try {
-                    console.log('[PageManagerGmail] Délégation au minimalScanModule...');
-                    await window.minimalScanModule.render(container);
-                    return;
-                } catch (error) {
-                    console.error('[PageManagerGmail] Erreur avec minimalScanModule:', error);
+            // Vérifier les résultats du scan dans sessionStorage
+            const scanResults = sessionStorage.getItem('scanResults');
+            if (scanResults) {
+                const results = JSON.parse(scanResults);
+                console.log('[PageManagerGmail] Scan results found:', results);
+                
+                if (results.provider === 'google' || results.provider === 'gmail') {
+                    this.syncState.emailCount = results.total || 0;
+                    this.lastScanData = results;
+                    
+                    // Nettoyer après utilisation
+                    sessionStorage.removeItem('scanResults');
                 }
             }
-        }
-        
-        // Si non authentifié, afficher la page de connexion
-        container.innerHTML = `
-            <div class="scanner-auth-required">
-                <div class="scanner-header">
-                    <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
-                    <p>Connectez-vous pour analyser vos emails</p>
-                </div>
-                
-                <div class="auth-card">
-                    <div class="auth-icon">
-                        <i class="fab fa-google"></i>
-                    </div>
-                    <h3>Connexion Google</h3>
-                    <p>Accédez à vos emails Gmail</p>
-                    <button class="btn btn-primary btn-large" onclick="window.pageManagerGmail.handleLogin()">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Se connecter à Google
-                    </button>
-                </div>
-                
-                <div class="scanner-info">
-                    <div class="info-card">
-                        <i class="fas fa-shield-alt"></i>
-                        <h4>Sécurisé</h4>
-                        <p>Authentification OAuth2 Google</p>
-                    </div>
-                    <div class="info-card">
-                        <i class="fas fa-robot"></i>
-                        <h4>IA Intégrée</h4>
-                        <p>Analyse intelligente avec Claude AI</p>
-                    </div>
-                    <div class="info-card">
-                        <i class="fas fa-tasks"></i>
-                        <h4>Productivité</h4>
-                        <p>Convertit automatiquement en tâches</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // ================================================
-    // RENDU SPÉCIFIQUE GMAIL
-    // ================================================
-    renderEmailCard(email) {
-        const hasTask = this.createdTasks.has(email.id);
-        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
-        const senderEmail = email.from?.emailAddress?.address || '';
-        
-        const preselectedCategories = this.getTaskPreselectedCategories();
-        
-        let isPreselectedForTasks = email.isPreselectedForTasks === true;
-        
-        if (!isPreselectedForTasks && preselectedCategories.includes(email.category)) {
-            isPreselectedForTasks = true;
-            email.isPreselectedForTasks = true;
-        }
-        
-        const isSelected = this.selectedEmails.has(email.id) || isPreselectedForTasks;
-        
-        if (isPreselectedForTasks && !this.selectedEmails.has(email.id)) {
-            this.selectedEmails.add(email.id);
-        }
-        
-        // Détection newsletter Gmail
-        const isNewsletter = this.detectGmailNewsletter(email);
-        
-        const cardClasses = [
-            'email-card',
-            isSelected ? 'selected' : '',
-            hasTask ? 'has-task' : '',
-            isPreselectedForTasks ? 'preselected' : '',
-            email.webSimulated ? 'simulated' : '',
-            isNewsletter ? 'newsletter' : '',
-            'gmail-style'
-        ].filter(Boolean).join(' ');
-        
-        return `
-            <div class="${cardClasses}" 
-                 data-email-id="${email.id}"
-                 data-category="${email.category}"
-                 data-preselected="${isPreselectedForTasks}">
-                
-                <input type="checkbox" 
-                       class="email-checkbox gmail-checkbox" 
-                       ${isSelected ? 'checked' : ''}
-                       onchange="event.stopPropagation(); window.pageManagerGmail.toggleEmailSelection('${email.id}')">
-                
-                <div class="priority-bar" 
-                     style="background-color: ${isPreselectedForTasks ? '#8b5cf6' : this.getEmailPriorityColor(email)}"></div>
-                
-                <div class="email-content" onclick="window.pageManagerGmail.handleEmailClick(event, '${email.id}')">
-                    <div class="email-header">
-                        <h3 class="email-title">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
-                        <div class="email-meta">
-                            ${isNewsletter ? `
-                                <span class="newsletter-badge">
-                                    <i class="fas fa-newspaper"></i> Newsletter
-                                </span>
-                            ` : ''}
-                            <span class="email-type">
-                                ${email.webSimulated ? '🤖 Simulé' : '📧 Email'}
-                            </span>
-                            <span class="email-date">
-                                📅 ${this.formatEmailDate(email.receivedDateTime)}
-                            </span>
-                            ${isPreselectedForTasks ? `
-                                <span class="preselected-badge">
-                                    ⭐ Pré-sélectionné
-                                </span>
-                            ` : ''}
-                            ${email.labels && email.labels.length > 0 ? `
-                                <span class="gmail-labels">
-                                    ${email.labels.map(label => `
-                                        <span class="gmail-label">${label}</span>
-                                    `).join('')}
-                                </span>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="email-sender">
-                        <i class="fas fa-envelope"></i>
-                        <span class="sender-name">${this.escapeHtml(senderName)}</span>
-                        ${email.hasAttachments ? '<span class="attachment-indicator">📎 Pièce jointe</span>' : ''}
-                        ${email.category && email.category !== 'other' ? `
-                            <span class="category-badge" 
-                                  style="background: ${this.getCategoryColor(email.category)}20; 
-                                         color: ${this.getCategoryColor(email.category)};
-                                         ${isPreselectedForTasks ? 'font-weight: 700;' : ''}">
-                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
-                                ${isPreselectedForTasks ? ' ⭐' : ''}
-                            </span>
-                        ` : ''}
-                    </div>
-                </div>
-                
-                <div class="email-actions">
-                    ${this.renderEmailActions(email, isNewsletter)}
-                </div>
-            </div>
-        `;
-    }
-
-    // ================================================
-    // DÉTECTION NEWSLETTER GMAIL
-    // ================================================
-    detectGmailNewsletter(email) {
-        // Vérifier les headers spécifiques Gmail
-        if (email.headers) {
-            const unsubscribeHeader = email.headers['List-Unsubscribe'] || 
-                                     email.headers['list-unsubscribe'];
-            if (unsubscribeHeader) {
-                return true;
+            
+            // Si pas d'emails, essayer de récupérer depuis EmailScanner
+            if (window.emailScanner && typeof window.emailScanner.getEmails === 'function') {
+                const emails = await window.emailScanner.getEmails();
+                if (emails && emails.length > 0) {
+                    this.syncState.emailCount = emails.length;
+                    this.syncState.emailScannerSynced = true;
+                }
             }
+            
+        } catch (error) {
+            console.warn('[PageManagerGmail] Error checking email sync:', error);
         }
+    }
+
+    // ================================================
+    // RÉCUPÉRATION DES EMAILS
+    // ================================================
+    async getAllEmails() {
+        console.log('[PageManagerGmail] Getting all emails...');
         
-        // Vérifier les labels Gmail
-        if (email.labels && Array.isArray(email.labels)) {
-            const newsletterLabels = ['promotions', 'updates', 'forums', 'social'];
-            if (email.labels.some(label => newsletterLabels.includes(label.toLowerCase()))) {
-                return true;
+        try {
+            // 1. Essayer EmailScanner d'abord
+            if (window.emailScanner && typeof window.emailScanner.getEmails === 'function') {
+                const emails = await window.emailScanner.getEmails();
+                if (emails && emails.length > 0) {
+                    console.log('[PageManagerGmail] ✅ Emails from EmailScanner:', emails.length);
+                    return emails;
+                }
             }
-        }
-        
-        // Vérifier le contenu pour des liens de désabonnement
-        const bodyText = (email.bodyPreview || email.body?.content || '').toLowerCase();
-        const unsubscribeKeywords = [
-            'unsubscribe',
-            'se désabonner',
-            'désinscrire',
-            'stop receiving',
-            'opt out',
-            'email preferences',
-            'notification settings',
-            'gérer vos préférences'
-        ];
-        
-        return unsubscribeKeywords.some(keyword => bodyText.includes(keyword));
-    }
-
-    // ================================================
-    // ACTIONS SPÉCIFIQUES GMAIL
-    // ================================================
-    renderEmailActions(email, isNewsletter) {
-        const hasTask = this.createdTasks.has(email.id);
-        const actions = [];
-        
-        if (!hasTask) {
-            actions.push(`
-                <button class="action-btn create-task" 
-                        onclick="event.stopPropagation(); window.pageManagerGmail.showTaskCreationModal('${email.id}')"
-                        title="Créer une tâche à partir de cet email">
-                    <i class="fas fa-tasks"></i>
-                </button>
-            `);
-        } else {
-            actions.push(`
-                <button class="action-btn view-task" 
-                        onclick="event.stopPropagation(); window.pageManagerGmail.openCreatedTask('${email.id}')"
-                        title="Voir la tâche créée">
-                    <i class="fas fa-check-circle"></i>
-                </button>
-            `);
-        }
-        
-        // Bouton Se désabonner pour les newsletters
-        if (isNewsletter) {
-            actions.push(`
-                <button class="action-btn unsubscribe gmail-unsubscribe" 
-                        onclick="event.stopPropagation(); window.pageManagerGmail.handleUnsubscribe('${email.id}')"
-                        title="Se désabonner de cette newsletter">
-                    <i class="fas fa-user-minus"></i>
-                </button>
-            `);
-        }
-        
-        // Bouton Archive Gmail
-        actions.push(`
-            <button class="action-btn archive gmail-archive" 
-                    onclick="event.stopPropagation(); window.pageManagerGmail.archiveEmail('${email.id}')"
-                    title="Archiver cet email">
-                <i class="fas fa-archive"></i>
-            </button>
-        `);
-        
-        // Bouton Label Gmail
-        actions.push(`
-            <button class="action-btn label gmail-label" 
-                    onclick="event.stopPropagation(); window.pageManagerGmail.showLabelMenu('${email.id}')"
-                    title="Ajouter un label">
-                <i class="fas fa-tag"></i>
-            </button>
-        `);
-        
-        actions.push(`
-            <button class="action-btn details" 
-                    onclick="event.stopPropagation(); window.pageManagerGmail.showEmailModal('${email.id}')"
-                    title="Voir le contenu complet de l'email">
-                <i class="fas fa-eye"></i>
-            </button>
-        `);
-        
-        return actions.join('');
-    }
-
-    // ================================================
-    // GESTION NEWSLETTER GMAIL
-    // ================================================
-    async handleUnsubscribe(emailId) {
-        const email = this.getEmailById(emailId);
-        if (!email) return;
-        
-        console.log('[PageManagerGmail] 🔔 Gestion désabonnement:', emailId);
-        
-        // Chercher le lien de désabonnement
-        const unsubscribeLink = this.findUnsubscribeLink(email);
-        
-        if (unsubscribeLink) {
-            // Afficher modal de confirmation
-            this.showUnsubscribeModal(email, unsubscribeLink);
-        } else {
-            // Proposer d'archiver ou de bloquer
-            this.showAlternativeUnsubscribeModal(email);
-        }
-    }
-
-    findUnsubscribeLink(email) {
-        // Vérifier les headers
-        if (email.headers && email.headers['List-Unsubscribe']) {
-            const header = email.headers['List-Unsubscribe'];
-            const urlMatch = header.match(/<(https?:\/\/[^>]+)>/);
-            if (urlMatch) {
-                return urlMatch[1];
+            
+            // 2. Essayer de récupérer depuis le cache local
+            const cachedEmails = this.getCachedEmails();
+            if (cachedEmails && cachedEmails.length > 0) {
+                console.log('[PageManagerGmail] ✅ Emails from cache:', cachedEmails.length);
+                return cachedEmails;
             }
+            
+            // 3. Générer des emails de démonstration pour Gmail
+            console.log('[PageManagerGmail] 📧 Generating demo Gmail emails...');
+            return this.generateDemoGmailEmails();
+            
+        } catch (error) {
+            console.error('[PageManagerGmail] Error getting emails:', error);
+            return [];
         }
-        
-        // Chercher dans le contenu
-        const bodyContent = email.body?.content || email.bodyPreview || '';
-        const unsubscribeRegex = /<a[^>]+href=["']([^"']+)["'][^>]*>([^<]*unsubscribe[^<]*)<\/a>/gi;
-        const match = unsubscribeRegex.exec(bodyContent);
-        
-        if (match) {
-            return match[1];
+    }
+
+    getCachedEmails() {
+        try {
+            const cached = this.getLocalStorageItem('gmail_emails_cache');
+            if (cached) {
+                return JSON.parse(cached);
+            }
+        } catch (error) {
+            console.warn('[PageManagerGmail] Error reading cache:', error);
         }
-        
         return null;
     }
 
-    showUnsubscribeModal(email, unsubscribeLink) {
-        const modalId = 'unsubscribe_modal_' + Date.now();
-        const senderName = email.from?.emailAddress?.name || 'cet expéditeur';
-        
-        const modalHTML = `
-            <div id="${modalId}" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); z-index: 99999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
-                <div style="background: white; border-radius: 16px; max-width: 500px; width: 100%; padding: 32px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                    <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #ea4335 0%, #fbbc04 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: white; font-size: 28px;">
-                            <i class="fas fa-user-minus"></i>
-                        </div>
-                        <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #1f2937;">Se désabonner</h2>
-                        <p style="margin: 0; color: #6b7280; font-size: 16px;">Voulez-vous vous désabonner de ${this.escapeHtml(senderName)} ?</p>
-                    </div>
-                    
-                    <div style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <i class="fas fa-info-circle" style="color: #f59e0b; font-size: 20px; flex-shrink: 0;"></i>
-                            <div style="font-size: 14px; color: #92400e;">
-                                Vous allez être redirigé vers la page de désabonnement. 
-                                Gmail marquera également cet expéditeur pour filtrer les futures newsletters.
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; gap: 12px; justify-content: center;">
-                        <button onclick="document.getElementById('${modalId}').remove();"
-                                style="padding: 12px 24px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600; color: #374151;">
-                            Annuler
-                        </button>
-                        <button onclick="window.pageManagerGmail.confirmUnsubscribe('${email.id}', '${encodeURIComponent(unsubscribeLink)}'); document.getElementById('${modalId}').remove();"
-                                style="padding: 12px 24px; background: linear-gradient(135deg, #ea4335 0%, #d33b2c 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                            <i class="fas fa-external-link-alt"></i> Se désabonner
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-    }
-
-    showAlternativeUnsubscribeModal(email) {
-        const modalId = 'alt_unsubscribe_modal_' + Date.now();
-        const senderName = email.from?.emailAddress?.name || 'cet expéditeur';
-        const senderEmail = email.from?.emailAddress?.address || '';
-        
-        const modalHTML = `
-            <div id="${modalId}" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); z-index: 99999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
-                <div style="background: white; border-radius: 16px; max-width: 500px; width: 100%; padding: 32px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                    <div style="text-align: center; margin-bottom: 24px;">
-                        <div style="width: 64px; height: 64px; background: linear-gradient(135deg, #4285f4 0%, #34a853 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: white; font-size: 28px;">
-                            <i class="fas fa-filter"></i>
-                        </div>
-                        <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: 700; color: #1f2937;">Gérer les emails</h2>
-                        <p style="margin: 0; color: #6b7280; font-size: 16px;">Aucun lien de désabonnement trouvé</p>
-                    </div>
-                    
-                    <div style="background: #dbeafe; border: 1px solid #3b82f6; border-radius: 12px; padding: 16px; margin-bottom: 24px;">
-                        <div style="font-weight: 600; color: #1e40af; margin-bottom: 8px;">${this.escapeHtml(senderName)}</div>
-                        <div style="font-size: 14px; color: #3730a3;">${this.escapeHtml(senderEmail)}</div>
-                    </div>
-                    
-                    <div style="display: flex; flex-direction: column; gap: 12px;">
-                        <button onclick="window.pageManagerGmail.createGmailFilter('${email.id}'); document.getElementById('${modalId}').remove();"
-                                style="padding: 16px; background: white; border: 2px solid #4285f4; border-radius: 8px; cursor: pointer; font-weight: 600; color: #1d4ed8; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <i class="fas fa-filter"></i> Créer un filtre Gmail
-                        </button>
-                        
-                        <button onclick="window.pageManagerGmail.blockSender('${email.id}'); document.getElementById('${modalId}').remove();"
-                                style="padding: 16px; background: white; border: 2px solid #ea4335; border-radius: 8px; cursor: pointer; font-weight: 600; color: #dc2626; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <i class="fas fa-ban"></i> Bloquer cet expéditeur
-                        </button>
-                        
-                        <button onclick="document.getElementById('${modalId}').remove();"
-                                style="padding: 12px; background: #f3f4f6; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; color: #6b7280;">
-                            Annuler
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-    }
-
-    async confirmUnsubscribe(emailId, encodedLink) {
-        const link = decodeURIComponent(encodedLink);
-        
-        // Marquer l'email
-        const email = this.getEmailById(emailId);
-        if (email) {
-            // Ajouter aux emails traités
-            this.setLocalStorageItem(`unsubscribed_${email.from?.emailAddress?.address}`, 'true');
-        }
-        
-        // Ouvrir le lien dans un nouvel onglet
-        window.open(link, '_blank');
-        
-        this.showToast('Redirection vers la page de désabonnement...', 'info');
-        
-        // Optionnel : archiver l'email
-        setTimeout(() => {
-            this.archiveEmail(emailId);
-        }, 2000);
-    }
-
-    async createGmailFilter(emailId) {
-        const email = this.getEmailById(emailId);
-        if (!email) return;
-        
-        const senderEmail = email.from?.emailAddress?.address;
-        console.log('[PageManagerGmail] 📧 Création filtre Gmail pour:', senderEmail);
-        
-        // Simuler la création d'un filtre (dans une vraie implémentation, utiliser l'API Gmail)
-        this.setLocalStorageItem(`gmail_filter_${senderEmail}`, JSON.stringify({
-            created: new Date().toISOString(),
-            action: 'skip_inbox',
-            label: 'Filtered'
-        }));
-        
-        this.showToast('Filtre Gmail créé. Les futurs emails seront automatiquement archivés.', 'success');
-        this.archiveEmail(emailId);
-    }
-
-    async blockSender(emailId) {
-        const email = this.getEmailById(emailId);
-        if (!email) return;
-        
-        const senderEmail = email.from?.emailAddress?.address;
-        console.log('[PageManagerGmail] 🚫 Blocage expéditeur:', senderEmail);
-        
-        // Simuler le blocage (dans une vraie implémentation, utiliser l'API Gmail)
-        this.setLocalStorageItem(`blocked_sender_${senderEmail}`, 'true');
-        
-        this.showToast('Expéditeur bloqué. Vous ne recevrez plus d\'emails de cette adresse.', 'success');
-        
-        // Supprimer l'email de la vue
-        this.selectedEmails.delete(emailId);
-        this.refreshEmailsView();
-    }
-
-    async archiveEmail(emailId) {
-        console.log('[PageManagerGmail] 📦 Archivage email:', emailId);
-        
-        // Simuler l'archivage
-        const email = this.getEmailById(emailId);
-        if (email) {
-            email.archived = true;
-            email.labels = email.labels || [];
-            if (!email.labels.includes('Archived')) {
-                email.labels.push('Archived');
+    generateDemoGmailEmails() {
+        const demoEmails = [
+            {
+                id: 'gmail_demo_1',
+                subject: 'Votre commande Amazon a été expédiée',
+                from: { emailAddress: { name: 'Amazon', address: 'ship-confirm@amazon.com' }},
+                receivedDateTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+                bodyPreview: 'Votre commande #123-456 a été expédiée et arrivera demain...',
+                category: 'shopping',
+                hasAttachments: false,
+                isRead: false,
+                labels: ['Promotions'],
+                webSimulated: true
+            },
+            {
+                id: 'gmail_demo_2',
+                subject: 'Newsletter hebdomadaire - Tech News',
+                from: { emailAddress: { name: 'TechCrunch', address: 'newsletter@techcrunch.com' }},
+                receivedDateTime: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+                bodyPreview: 'Les dernières actualités tech de la semaine. Unsubscribe at the bottom...',
+                category: 'newsletters',
+                hasAttachments: false,
+                isRead: true,
+                labels: ['Updates'],
+                headers: { 'List-Unsubscribe': '<http://techcrunch.com/unsubscribe>' },
+                webSimulated: true
+            },
+            {
+                id: 'gmail_demo_3',
+                subject: 'Rappel: Réunion demain à 14h',
+                from: { emailAddress: { name: 'Google Calendar', address: 'calendar-notification@google.com' }},
+                receivedDateTime: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+                bodyPreview: 'Rappel: Vous avez une réunion prévue demain à 14h00...',
+                category: 'notifications',
+                hasAttachments: false,
+                isRead: false,
+                labels: ['Important'],
+                webSimulated: true
+            },
+            {
+                id: 'gmail_demo_4',
+                subject: 'Votre relevé bancaire est disponible',
+                from: { emailAddress: { name: 'BNP Paribas', address: 'noreply@bnpparibas.com' }},
+                receivedDateTime: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+                bodyPreview: 'Votre relevé bancaire du mois de décembre est maintenant disponible...',
+                category: 'finance',
+                hasAttachments: true,
+                isRead: false,
+                labels: [],
+                webSimulated: true
+            },
+            {
+                id: 'gmail_demo_5',
+                subject: '50% de réduction sur votre prochain achat',
+                from: { emailAddress: { name: 'Nike', address: 'offers@nike.com' }},
+                receivedDateTime: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
+                bodyPreview: 'Profitez de 50% de réduction sur une sélection d\'articles...',
+                category: 'marketing',
+                hasAttachments: false,
+                isRead: true,
+                labels: ['Promotions'],
+                webSimulated: true
             }
-        }
-        
-        this.showToast('Email archivé', 'success');
-        this.refreshEmailsView();
-    }
-
-    showLabelMenu(emailId) {
-        const email = this.getEmailById(emailId);
-        if (!email) return;
-        
-        const modalId = 'label_menu_' + Date.now();
-        
-        // Labels Gmail par défaut
-        const defaultLabels = [
-            { name: 'Important', color: '#fbbc04', icon: 'star' },
-            { name: 'Travail', color: '#4285f4', icon: 'briefcase' },
-            { name: 'Personnel', color: '#0f9d58', icon: 'user' },
-            { name: 'À faire', color: '#ea4335', icon: 'check-square' },
-            { name: 'Projet', color: '#673ab7', icon: 'folder' },
-            { name: 'Finance', color: '#ff5722', icon: 'dollar-sign' }
         ];
         
-        const currentLabels = email.labels || [];
+        // Si on a des catégories pré-sélectionnées, marquer certains emails
+        const preselectedCategories = this.getTaskPreselectedCategories();
+        if (preselectedCategories.length > 0) {
+            demoEmails.forEach(email => {
+                if (preselectedCategories.includes(email.category)) {
+                    email.isPreselectedForTasks = true;
+                }
+            });
+        }
         
-        const modalHTML = `
-            <div id="${modalId}" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
-                <div style="background: white; border-radius: 16px; max-width: 400px; width: 100%; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                    <h3 style="margin: 0 0 20px 0; font-size: 20px; font-weight: 700; color: #1f2937; display: flex; align-items: center; gap: 8px;">
-                        <i class="fas fa-tags" style="color: #4285f4;"></i>
-                        Ajouter des labels
-                    </h3>
-                    
-                    <div style="display: grid; gap: 8px; max-height: 300px; overflow-y: auto;">
-                        ${defaultLabels.map(label => {
-                            const isSelected = currentLabels.includes(label.name);
-                            return `
-                                <label style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 2px solid ${isSelected ? label.color : '#e5e7eb'}; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; background: ${isSelected ? label.color + '20' : 'white'};">
-                                    <input type="checkbox" 
-                                           ${isSelected ? 'checked' : ''} 
-                                           onchange="window.pageManagerGmail.toggleLabel('${emailId}', '${label.name}')"
-                                           style="width: 16px; height: 16px; cursor: pointer;">
-                                    <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
-                                        <i class="fas fa-${label.icon}" style="color: ${label.color}; font-size: 16px;"></i>
-                                        <span style="font-weight: 500; color: #374151;">${label.name}</span>
-                                    </div>
-                                </label>
-                            `;
-                        }).join('')}
+        return demoEmails;
+    }
+
+    // ================================================
+    // RENDU ÉTAT VIDE
+    // ================================================
+    renderEmptyEmailsState() {
+        return `
+            <div class="empty-state-container">
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-inbox"></i>
                     </div>
-                    
-                    <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
-                        <button onclick="document.getElementById('${modalId}').remove();"
-                                style="padding: 10px 20px; background: #4285f4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                            Terminé
+                    <h2>Aucun email trouvé</h2>
+                    <p>Commencez par scanner vos emails Gmail pour les organiser</p>
+                    <div class="empty-actions">
+                        <button class="btn btn-primary" onclick="window.pageManagerGmail.loadPage('scanner')">
+                            <i class="fas fa-search"></i>
+                            Scanner mes emails
                         </button>
+                        <button class="btn btn-secondary" onclick="window.pageManagerGmail.refreshEmails()">
+                            <i class="fas fa-sync"></i>
+                            Actualiser
+                        </button>
+                    </div>
+                    <div class="provider-info" style="margin-top: 30px;">
+                        <span class="provider-badge gmail">
+                            <i class="fab fa-google"></i>
+                            Connecté via Gmail
+                        </span>
                     </div>
                 </div>
             </div>
         `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
     }
 
-    toggleLabel(emailId, labelName) {
-        const email = this.getEmailById(emailId);
-        if (!email) return;
+    // ================================================
+    // ACTUALISATION DES EMAILS
+    // ================================================
+    async refreshEmails() {
+        console.log('[PageManagerGmail] Refreshing emails...');
         
-        email.labels = email.labels || [];
+        this.showLoading('Actualisation des emails...');
         
-        const index = email.labels.indexOf(labelName);
-        if (index > -1) {
-            email.labels.splice(index, 1);
+        try {
+            // Recharger la page emails
+            await this.loadPage('emails');
+            
+            this.showToast('✅ Emails actualisés', 'success');
+        } catch (error) {
+            console.error('[PageManagerGmail] Error refreshing emails:', error);
+            this.showError('Erreur lors de l\'actualisation');
+        }
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================
+    showLoading(message = 'Chargement...') {
+        if (window.uiManager && typeof window.uiManager.showLoading === 'function') {
+            window.uiManager.showLoading(message);
+        }
+    }
+
+    hideLoading() {
+        if (window.uiManager && typeof window.uiManager.hideLoading === 'function') {
+            window.uiManager.hideLoading();
+        }
+    }
+
+    showError(message) {
+        if (window.uiManager && typeof window.uiManager.showToast === 'function') {
+            window.uiManager.showToast(message, 'error', 8000);
         } else {
-            email.labels.push(labelName);
+            console.error('[PageManagerGmail]', message);
+        }
+    }
+
+    showToast(message, type = 'info') {
+        if (window.uiManager && typeof window.uiManager.showToast === 'function') {
+            window.uiManager.showToast(message, type);
+        }
+    }
+
+    getPageContainer() {
+        return document.getElementById('pageContent');
+    }
+
+    updateNavigation(pageName) {
+        // Mettre à jour la navigation active
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.page === pageName) {
+                item.classList.add('active');
+            }
+        });
+    }
+
+    requiresAuthentication(pageName) {
+        const authRequired = ['scanner', 'emails', 'tasks'];
+        return authRequired.includes(pageName);
+    }
+
+    async renderPage(pageName) {
+        const container = this.getPageContainer();
+        if (!container) {
+            throw new Error('Page container not found');
         }
         
-        console.log('[PageManagerGmail] 🏷️ Labels mis à jour:', email.labels);
-    }
-
-    // ================================================
-    // STYLES SPÉCIFIQUES GMAIL
-    // ================================================
-    addEmailsStyles() {
-        if (document.getElementById('gmailEmailsPageStyles')) return;
-        
-        const baseStyles = document.getElementById('emailsPageStyles');
-        if (baseStyles) {
-            baseStyles.remove();
+        switch (pageName) {
+            case 'scanner':
+                await this.renderScanner(container);
+                break;
+            case 'emails':
+                await this.renderEmails(container);
+                break;
+            case 'tasks':
+                await this.renderTasks(container);
+                break;
+            case 'categories':
+            case 'settings':
+                await this.renderCategories(container);
+                break;
+            case 'ranger':
+                await this.renderRanger(container);
+                break;
+            default:
+                throw new Error(`Page inconnue: ${pageName}`);
         }
-        
-        const styles = document.createElement('style');
-        styles.id = 'gmailEmailsPageStyles';
-        styles.textContent = `
-            /* Styles Gmail spécifiques */
-            .email-card.gmail-style {
-                font-family: 'Google Sans', Roboto, Arial, sans-serif;
-                border-left: 4px solid transparent;
-                transition: all 0.2s ease;
-            }
-            
-            .email-card.gmail-style:hover {
-                background: #f8f9fa;
-                box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-            }
-            
-            .email-card.newsletter {
-                border-left-color: #fbbc04;
-            }
-            
-            .gmail-checkbox {
-                border-radius: 3px;
-                border: 2px solid #dadce0;
-                width: 20px;
-                height: 20px;
-            }
-            
-            .gmail-checkbox:checked {
-                background: #1a73e8;
-                border-color: #1a73e8;
-            }
-            
-            .newsletter-badge {
-                background: #fef7e0;
-                color: #f9ab00;
-                border: 1px solid #f9ab00;
-                padding: 2px 8px;
-                border-radius: 4px;
-                font-size: 11px;
-                font-weight: 500;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-            
-            .gmail-labels {
-                display: flex;
-                gap: 4px;
-                flex-wrap: wrap;
-            }
-            
-            .gmail-label {
-                background: #e8f0fe;
-                color: #1967d2;
-                padding: 2px 8px;
-                border-radius: 3px;
-                font-size: 11px;
-                font-weight: 500;
-            }
-            
-            .action-btn.gmail-unsubscribe {
-                color: #ea4335;
-            }
-            
-            .action-btn.gmail-unsubscribe:hover {
-                background: #fce8e6;
-                border-color: #ea4335;
-            }
-            
-            .action-btn.gmail-archive {
-                color: #5f6368;
-            }
-            
-            .action-btn.gmail-archive:hover {
-                background: #f1f3f4;
-                border-color: #5f6368;
-            }
-            
-            .action-btn.gmail-label {
-                color: #1a73e8;
-            }
-            
-            .action-btn.gmail-label:hover {
-                background: #e8f0fe;
-                border-color: #1a73e8;
-            }
-            
-            /* Provider badge Gmail */
-            .provider-badge.gmail {
-                background: rgba(66, 133, 244, 0.1);
-                border-color: rgba(66, 133, 244, 0.3);
-                color: #1a73e8;
-                font-family: 'Google Sans', Roboto, Arial, sans-serif;
-            }
-            
-            /* Catégories Gmail style */
-            .category-tab.gmail-style {
-                font-family: 'Google Sans', Roboto, Arial, sans-serif;
-                border-radius: 4px;
-                text-transform: uppercase;
-                font-size: 11px;
-                letter-spacing: 0.5px;
-            }
-            
-            .category-tab.gmail-style:hover {
-                background: #f8f9fa;
-                border-color: #dadce0;
-            }
-            
-            .category-tab.gmail-style.active {
-                background: #1a73e8;
-                border-color: #1a73e8;
-                color: white;
-            }
-            
-            /* Search box Gmail style */
-            .search-input.gmail-style {
-                background: #f1f3f4;
-                border: 1px solid transparent;
-                border-radius: 8px;
-                font-family: 'Google Sans', Roboto, Arial, sans-serif;
-            }
-            
-            .search-input.gmail-style:focus {
-                background: white;
-                border-color: #dadce0;
-                box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
-            }
-            
-            /* Boutons Gmail style */
-            .btn.gmail-style {
-                font-family: 'Google Sans', Roboto, Arial, sans-serif;
-                border-radius: 4px;
-                text-transform: none;
-                letter-spacing: 0.25px;
-                font-weight: 500;
-            }
-            
-            .btn-primary.gmail-style {
-                background: #1a73e8;
-                border-color: #1a73e8;
-            }
-            
-            .btn-primary.gmail-style:hover {
-                background: #1765cc;
-                box-shadow: 0 1px 2px 0 rgba(66,133,244,0.3), 0 1px 3px 1px rgba(66,133,244,0.15);
-            }
-        `;
-        
-        document.head.appendChild(styles);
-        
-        // Ajouter aussi les styles de base adaptés
-        const baseStylesAdapted = document.createElement('style');
-        baseStylesAdapted.id = 'emailsPageStyles';
-        baseStylesAdapted.textContent = this.getBaseEmailStyles();
-        document.head.appendChild(baseStylesAdapted);
-    }
-
-    getBaseEmailStyles() {
-        // Retourner les styles de base du PageManager original
-        // mais adaptés pour Gmail
-        return `
-            .emails-page-modern {
-                padding: 16px;
-                background: #f8f9fa;
-                min-height: 100vh;
-                font-family: 'Google Sans', Roboto, Arial, sans-serif;
-            }
-
-            .explanation-notice {
-                background: #e8f0fe;
-                border: 1px solid #1a73e8;
-                border-radius: 4px;
-                padding: 10px 14px;
-                margin: 0 16px 12px 16px;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                color: #1967d2;
-                font-size: 13px;
-                font-weight: 500;
-            }
-
-            /* ... autres styles de base adaptés pour Gmail ... */
-        `;
     }
 
     // ================================================
-    // MÉTHODES HÉRITÉES
+    // MÉTHODES EXISTANTES À COPIER
     // ================================================
-    // Toutes les autres méthodes du PageManager original sont héritées
-    // On peut les surcharger si nécessaire pour adapter à Gmail
     
+    handleTaskPreselectedCategoriesChange(value) {
+        console.log('[PageManagerGmail] 📋 Catégories tâches pré-sélectionnées changées:', value);
+        
+        // Si on est sur la page emails, mettre à jour l'affichage
+        if (this.currentPage === 'emails') {
+            const visibleEmails = this.getVisibleEmails();
+            
+            visibleEmails.forEach(email => {
+                const emailCard = document.querySelector(`[data-email-id="${email.id}"]`);
+                if (!emailCard) return;
+                
+                const shouldBePreselected = value.includes(email.category);
+                const isCurrentlyPreselected = emailCard.dataset.preselected === 'true';
+                
+                if (shouldBePreselected !== isCurrentlyPreselected) {
+                    emailCard.dataset.preselected = shouldBePreselected;
+                    
+                    if (shouldBePreselected) {
+                        emailCard.classList.add('preselected');
+                        if (!this.selectedEmails.has(email.id)) {
+                            this.selectedEmails.add(email.id);
+                            const checkbox = emailCard.querySelector('.email-checkbox');
+                            if (checkbox) checkbox.checked = true;
+                        }
+                    } else {
+                        emailCard.classList.remove('preselected');
+                    }
+                }
+            });
+            
+            this.updateControlsOnly();
+        }
+    }
+
+    getTaskPreselectedCategories() {
+        const now = Date.now();
+        if (this._taskCategoriesCache && (now - this._taskCategoriesCacheTime) < 5000) {
+            return this._taskCategoriesCache;
+        }
+        
+        if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
+            this._taskCategoriesCache = window.categoryManager.getTaskPreselectedCategories() || [];
+            this._taskCategoriesCacheTime = now;
+            return this._taskCategoriesCache;
+        }
+        
+        return [];
+    }
+
+    invalidateTaskCategoriesCache() {
+        this._taskCategoriesCache = null;
+        this._taskCategoriesCacheTime = 0;
+    }
+
+    // ================================================
+    // CLEANUP
+    // ================================================
     cleanup() {
         if (this.categoryManagerChangeListener) {
             window.categoryManager?.removeChangeListener?.(this.categoryManagerChangeListener);
@@ -1112,10 +1092,6 @@ class PageManagerGmail {
 // ================================================
 // Copier les méthodes du PageManager original qui ne sont pas redéfinies
 const methodsToCopy = [
-    'handleTaskPreselectedCategoriesChange',
-    'handleActiveCategoriesChange',
-    'handleCategoryStructureChange',
-    'handleGenericCategoryChange',
     'setupSyncListeners',
     'handleScanCompleted',
     'handleEmailScannerSynced',
@@ -1123,28 +1099,19 @@ const methodsToCopy = [
     'handleEmailScannerReady',
     'setupEventListeners',
     'handleGenericSettingsChanged',
-    'loadPage',
-    'checkEmailSyncStatus',
     'tryRecoverScanResults',
-    'requiresAuthentication',
-    'renderPage',
-    'delegateToModule',
     'initializePageEvents',
-    'getAllEmails',
     'getCategories',
-    'getTaskPreselectedCategories',
-    'invalidateTaskCategoriesCache',
-    'renderEmails',
     'buildCategoryTabs',
     'renderEmailsList',
     'renderFlatView',
     'renderGroupedView',
     'renderEmailGroup',
+    'renderEmailCard',
     'toggleEmailSelection',
     'updateControlsOnly',
     'clearSelection',
     'refreshEmailsView',
-    'refreshEmails',
     'filterByCategory',
     'changeViewMode',
     'hideExplanationMessage',
@@ -1172,7 +1139,6 @@ const methodsToCopy = [
     'renderSettings',
     'startFallbackScan',
     'renderRanger',
-    'renderEmptyEmailsState',
     'renderEmptyState',
     'configureAI',
     'getVisibleEmails',
@@ -1189,15 +1155,26 @@ const methodsToCopy = [
     'getCategoryName',
     'analyzeFirstEmails',
     'safeCall',
-    'getPageContainer',
     'showPageContent',
-    'updateNavigation',
-    'showLoading',
-    'hideLoading',
-    'showError',
-    'showToast',
     'renderErrorPage',
-    'getSyncStatus'
+    'getSyncStatus',
+    'handleActiveCategoriesChange',
+    'handleCategoryStructureChange',
+    'handleGenericCategoryChange',
+    'detectGmailNewsletter',
+    'renderEmailActions',
+    'handleUnsubscribe',
+    'findUnsubscribeLink',
+    'showUnsubscribeModal',
+    'showAlternativeUnsubscribeModal',
+    'confirmUnsubscribe',
+    'createGmailFilter',
+    'blockSender',
+    'archiveEmail',
+    'showLabelMenu',
+    'toggleLabel',
+    'addEmailsStyles',
+    'getBaseEmailStyles'
 ];
 
 // Copier les méthodes depuis le prototype de PageManager si disponible
@@ -1217,7 +1194,6 @@ if (window.pageManagerGmail) {
     window.pageManagerGmail.cleanup?.();
 }
 
-console.log('[PageManagerGmail] 🚀 Création nouvelle instance v1.1...');
 window.pageManagerGmail = new PageManagerGmail();
 
 // Bind toutes les méthodes
@@ -1232,9 +1208,20 @@ if (window.location.hostname.includes('gmail.com') || window.location.hostname.i
     window.pageManager = window.pageManagerGmail;
 }
 
+// Fonction globale pour basculer entre les gestionnaires
+window.switchPageManager = function(provider) {
+    if (provider === 'gmail' && window.pageManagerGmail) {
+        window.pageManager = window.pageManagerGmail;
+        console.log('[Global] Switched to PageManagerGmail');
+    } else if (provider === 'microsoft' && window.pageManagerOriginal) {
+        window.pageManager = window.pageManagerOriginal;
+        console.log('[Global] Switched to PageManager (Microsoft)');
+    }
+};
+
 // Fonctions de debug globales
 window.debugPageManagerGmail = function() {
     return window.pageManagerGmail?.getSyncStatus() || { error: 'PageManagerGmail non disponible' };
 };
 
-console.log('✅ PageManagerGmail v1.1 loaded - Gmail Edition avec auth corrigée');
+console.log('✅ PageManagerGmail v1.2 loaded - Gmail Edition avec authentification complète');
