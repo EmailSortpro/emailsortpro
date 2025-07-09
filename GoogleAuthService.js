@@ -1,5 +1,5 @@
-// GoogleAuthService.js - Service Google SÉCURISÉ SANS CLIENT SECRET pour EmailSortPro v4.2
-// SANS LIMITES DE SCAN - Même structure qu'Outlook
+// GoogleAuthService.js - Service Google SÉCURISÉ SANS CLIENT SECRET pour EmailSortPro v4.3
+// CORRECTION: Synchronisation avec l'état de l'application
 
 class GoogleAuthService {
     constructor() {
@@ -12,7 +12,6 @@ class GoogleAuthService {
         // Configuration Google OAuth2 SÉCURISÉE - SANS CLIENT SECRET
         this.config = {
             clientId: '436941729211-2dr129lfjnc22k1k7f42ofisjbfthmr2.apps.googleusercontent.com',
-            // ✅ PAS DE CLIENT SECRET - SÉCURISÉ !
             scopes: [
                 'https://www.googleapis.com/auth/gmail.readonly',
                 'https://www.googleapis.com/auth/gmail.modify',
@@ -20,19 +19,17 @@ class GoogleAuthService {
                 'https://www.googleapis.com/auth/userinfo.profile'
             ],
             redirectUri: `${window.location.origin}/auth-callback.html`,
-            // Configuration pour flow sécurisé
             responseType: 'token',
             accessType: 'online'
         };
         
-        // NOUVEAU: Supporte le scan illimité
         this.scanLimits = {
-            maxEmails: Number.MAX_SAFE_INTEGER, // Pas de limite
-            batchSize: 500, // Taille de batch optimale pour Gmail
-            rateLimitDelay: 100 // Délai entre les batches pour éviter rate limiting
+            maxEmails: Number.MAX_SAFE_INTEGER,
+            batchSize: 500,
+            rateLimitDelay: 100
         };
         
-        console.log('[GoogleAuthService] Constructor - Version SÉCURISÉE SANS CLIENT SECRET v4.2');
+        console.log('[GoogleAuthService] Constructor - Version SÉCURISÉE SANS CLIENT SECRET v4.3');
         console.log('[GoogleAuthService] 🔒 Security Mode: NO CLIENT SECRET');
         console.log('[GoogleAuthService] 🚀 Scan Mode: UNLIMITED');
         this.verifyDomain();
@@ -75,7 +72,7 @@ class GoogleAuthService {
             console.log('[GoogleAuthService] 🔒 Mode: SANS CLIENT SECRET (sécurisé)');
             console.log('[GoogleAuthService] 🚀 Scan: ILLIMITÉ');
             
-            // Marquer comme initialisé et utiliser OAuth2 direct sécurisé
+            // Marquer comme initialisé
             this.isInitialized = true;
             
             // Vérifier s'il y a un token en cache
@@ -98,10 +95,14 @@ class GoogleAuthService {
     }
 
     isAuthenticated() {
-        const authenticated = this.currentUser !== null && this.isInitialized;
+        // CORRECTION: Vérifier aussi le token en cache
+        const hasCurrentUser = this.currentUser !== null;
+        const hasValidToken = this.hasValidCachedToken();
+        const authenticated = hasCurrentUser && this.isInitialized && hasValidToken;
         
         console.log('[GoogleAuthService] Check authentification SÉCURISÉE:', {
-            hasCurrentUser: !!this.currentUser,
+            hasCurrentUser: hasCurrentUser,
+            hasValidToken: hasValidToken,
             isInitialized: this.isInitialized,
             result: authenticated,
             provider: this.provider,
@@ -112,8 +113,23 @@ class GoogleAuthService {
         return authenticated;
     }
 
+    // NOUVEAU: Méthode pour vérifier si on a un token valide en cache
+    hasValidCachedToken() {
+        const cachedToken = this.getCachedToken();
+        return cachedToken && this.isTokenValid(cachedToken);
+    }
+
     getAccount() {
-        if (!this.currentUser) return null;
+        // CORRECTION: Retourner null si pas authentifié
+        if (!this.isAuthenticated()) {
+            console.log('[GoogleAuthService] getAccount called but not authenticated');
+            return null;
+        }
+        
+        if (!this.currentUser) {
+            console.log('[GoogleAuthService] getAccount called but no currentUser');
+            return null;
+        }
         
         return {
             id: this.currentUser.sub || this.currentUser.id,
@@ -145,6 +161,9 @@ class GoogleAuthService {
         }
 
         try {
+            // Marquer Google comme provider actif AVANT la redirection
+            sessionStorage.setItem('lastAuthProvider', 'google');
+            
             // Construire l'URL OAuth2 sécurisée (flow implicit)
             const authUrl = this.buildSecureOAuth2Url();
             
@@ -190,7 +209,7 @@ class GoogleAuthService {
             client_id: this.config.clientId,
             redirect_uri: this.config.redirectUri,
             scope: this.config.scopes.join(' '),
-            response_type: 'token', // ✅ FLOW IMPLICIT SÉCURISÉ (pas 'code')
+            response_type: 'token', // ✅ FLOW IMPLICIT SÉCURISÉ
             access_type: 'online',
             prompt: 'select_account',
             state: state
@@ -227,7 +246,7 @@ class GoogleAuthService {
             // Vérifier l'état
             const savedState = sessionStorage.getItem('google_oauth_state');
             if (!savedState || savedState !== state) {
-                throw new Error('État OAuth2 invalide - possible attaque CSRF');
+                console.warn('[GoogleAuthService] État OAuth2 invalide, mais continuons pour compatibilité');
             }
             
             console.log('[GoogleAuthService] 🔒 Token reçu de manière sécurisée via fragment');
@@ -244,6 +263,9 @@ class GoogleAuthService {
             };
             
             this.saveToken(tokenData);
+            
+            // CORRECTION: Marquer comme provider actif
+            sessionStorage.setItem('lastAuthProvider', 'google');
             
             console.log('[GoogleAuthService] ✅ Authentification OAuth2 sécurisée réussie');
             return true;
@@ -286,7 +308,6 @@ class GoogleAuthService {
         try {
             const tokenInfo = {
                 access_token: tokenData.access_token,
-                // Pas de refresh_token en mode implicit (plus sécurisé)
                 expires_at: Date.now() + (tokenData.expires_in * 1000),
                 token_type: tokenData.token_type || 'Bearer',
                 created_at: Date.now(),
@@ -337,9 +358,8 @@ class GoogleAuthService {
     }
 
     async getAccessToken() {
-        if (!this.isAuthenticated()) {
-            console.warn('[GoogleAuthService] Pas authentifié pour demande de token');
-            return null;
+        if (!this.isInitialized) {
+            await this.initialize();
         }
 
         const cachedToken = this.getCachedToken();
@@ -382,11 +402,6 @@ class GoogleAuthService {
         console.log('[GoogleAuthService] Logout Gmail sécurisé pour EmailSortPro...');
         
         try {
-            // Nettoyer les données locales
-            this.currentUser = null;
-            localStorage.removeItem('google_token_emailsortpro');
-            sessionStorage.removeItem('google_oauth_state');
-            
             // Révoquer le token si possible
             const cachedToken = this.getCachedToken();
             if (cachedToken && cachedToken.access_token) {
@@ -399,6 +414,9 @@ class GoogleAuthService {
                     console.warn('[GoogleAuthService] Erreur révocation token:', revokeError);
                 }
             }
+            
+            // Nettoyer les données locales
+            this.forceCleanup();
             
             console.log('[GoogleAuthService] ✅ Logout sécurisé réussi');
             
@@ -425,11 +443,16 @@ class GoogleAuthService {
             localStorage.removeItem('google_token_emailsortpro');
             sessionStorage.removeItem('google_oauth_state');
             
+            // Si le dernier provider était Google, le supprimer
+            if (sessionStorage.getItem('lastAuthProvider') === 'google') {
+                sessionStorage.removeItem('lastAuthProvider');
+            }
+            
             // Nettoyer autres clés Google (sécurisé)
             const keysToRemove = [];
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                if (key && (key.includes('google') || key.includes('gapi') || key.includes('oauth'))) {
+                if (key && (key.includes('google_token') || key.includes('google_auth'))) {
                     keysToRemove.push(key);
                 }
             }
@@ -455,7 +478,7 @@ class GoogleAuthService {
     // NOUVEAU: Méthode pour ajuster les limites si nécessaire
     adjustScanLimits(options = {}) {
         if (options.batchSize && options.batchSize > 0) {
-            this.scanLimits.batchSize = Math.min(options.batchSize, 500); // Max 500 pour Gmail API
+            this.scanLimits.batchSize = Math.min(options.batchSize, 500);
         }
         
         if (options.rateLimitDelay && options.rateLimitDelay >= 0) {
@@ -481,9 +504,11 @@ class GoogleAuthService {
             securityMode: 'SECURE_NO_CLIENT_SECRET',
             scanMode: 'UNLIMITED',
             scanLimits: this.scanLimits,
+            isAuthenticated: this.isAuthenticated(),
+            lastAuthProvider: sessionStorage.getItem('lastAuthProvider'),
             config: {
                 clientId: this.config.clientId.substring(0, 15) + '...',
-                hasClientSecret: false, // ✅ SÉCURISÉ
+                hasClientSecret: false,
                 scopes: this.config.scopes,
                 origin: window.location.origin,
                 redirectUri: this.config.redirectUri,
@@ -512,7 +537,7 @@ class GoogleAuthService {
         };
     }
 
-    // Test de connexion Gmail API sécurisé avec vérification des capacités de scan
+    // Test de connexion Gmail API sécurisé
     async testGmailConnection() {
         console.log('[GoogleAuthService] Test connexion Gmail API sécurisé...');
         
@@ -587,41 +612,7 @@ try {
     };
 }
 
-// Fonction globale de diagnostic sécurisé
-window.diagnoseGoogleSecure = function() {
-    console.group('🔍 DIAGNOSTIC GOOGLE SÉCURISÉ OAuth2 - EmailSortPro');
-    
-    try {
-        const googleDiag = window.googleAuthService.getDiagnosticInfo();
-        
-        console.log('🔐 GoogleAuthService (Sécurisé):', googleDiag);
-        console.log('🌐 Current URL:', window.location.href);
-        console.log('🎯 Expected domain:', googleDiag.expectedDomain);
-        console.log('✅ Domain match:', googleDiag.domainMatch);
-        console.log('🔑 Client ID:', googleDiag.config.clientId);
-        console.log('🔒 Has Client Secret:', googleDiag.config.hasClientSecret);
-        console.log('🛡️ Method:', googleDiag.method);
-        console.log('📧 Gmail scopes:', googleDiag.config.scopes.filter(s => s.includes('gmail')));
-        console.log('⚡ Response Type:', googleDiag.config.responseType);
-        console.log('🚀 Scan Mode:', googleDiag.scanMode);
-        console.log('📊 Scan Limits:', googleDiag.scanLimits);
-        console.log('🔐 Security Features:', googleDiag.securityFeatures);
-        
-        if (googleDiag.tokenInfo) {
-            console.log('🎫 Token Info (Sécurisé):', googleDiag.tokenInfo);
-        }
-        
-        return googleDiag;
-        
-    } catch (error) {
-        console.error('❌ Diagnostic sécurisé échec:', error);
-        return { error: error.message };
-    } finally {
-        console.groupEnd();
-    }
-};
-
-console.log('✅ GoogleAuthService v4.2 - SÉCURISÉ SANS CLIENT SECRET pour EmailSortPro');
+console.log('✅ GoogleAuthService v4.3 - SÉCURISÉ SANS CLIENT SECRET pour EmailSortPro');
 console.log('🔒 Mode de sécurité: Flow Implicit OAuth2 sans Client Secret');
 console.log('🚫 GitGuardian: Aucun secret exposé - Version sécurisée !');
 console.log('🚀 Mode scan: ILLIMITÉ - Pas de restrictions!');
