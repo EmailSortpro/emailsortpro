@@ -832,48 +832,26 @@ class MinimalScanModule {
         console.log('[StartScan] 🤖 Analyse rapide pour les tâches...');
         
         // Pour l'instant, on marque juste les emails pré-sélectionnés
-        // L'analyse IA complète se fera dans la page emails pour éviter les blocages
+        // L'analyse IA complète sera faite dans la page emails
+        let markedCount = 0;
         
-        const preselectedEmails = emails.filter(email => email.isPreselectedForTasks);
-        console.log(`[StartScan] ⭐ ${preselectedEmails.length} emails pré-sélectionnés pour analyse ultérieure`);
-        
-        // Marquer pour analyse différée
-        preselectedEmails.forEach(email => {
-            email.pendingAIAnalysis = true;
+        emails.forEach(email => {
+            if (email.isPreselectedForTasks) {
+                email.suggestedForTask = true;
+                markedCount++;
+            }
         });
         
+        console.log(`[StartScan] ✅ ${markedCount} emails marqués pour tâches`);
         return emails;
     }
 
     cancelScan() {
-        console.log('[StartScan] ❌ Annulation du scan demandée');
+        console.log('[StartScan] ⚠️ Annulation du scan demandée');
         
         if (this.abortController) {
             this.abortController.abort();
         }
-        
-        this.showScanCancelled();
-    }
-
-    showScanCancelled() {
-        console.log('[StartScan] ⚠️ Scan annulé');
-        
-        const progressSection = document.getElementById('progressSection');
-        if (progressSection) {
-            progressSection.innerHTML = `
-                <div class="error-state">
-                    <i class="fas fa-stop-circle" style="font-size: 24px; margin-bottom: 10px;"></i>
-                    <div style="font-weight: 600; margin-bottom: 10px;">Scan annulé</div>
-                    <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
-                            style="width: auto; padding: 10px 20px; height: 40px; font-size: 14px; margin: 0 auto;">
-                        <i class="fas fa-redo"></i>
-                        <span>Recommencer</span>
-                    </button>
-                </div>
-            `;
-        }
-        
-        this.scanInProgress = false;
     }
 
     updateProgress(percent, text, status) {
@@ -891,12 +869,6 @@ class MinimalScanModule {
     completeScan() {
         console.log('[StartScan] 🎉 Scan terminé avec succès');
         
-        // Masquer le bouton d'annulation
-        const cancelBtn = document.getElementById('cancelScanBtn');
-        if (cancelBtn) {
-            cancelBtn.style.display = 'none';
-        }
-        
         setTimeout(() => {
             const scanBtn = document.getElementById('minimalScanBtn');
             if (scanBtn) {
@@ -904,10 +876,31 @@ class MinimalScanModule {
                 scanBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
             }
             
+            const cancelBtn = document.getElementById('cancelScanBtn');
+            if (cancelBtn) {
+                cancelBtn.style.display = 'none';
+            }
+            
             setTimeout(() => {
                 this.redirectToResults();
             }, 1500);
         }, 500);
+    }
+
+    showScanCancelled() {
+        console.log('[StartScan] ⚠️ Scan annulé');
+        
+        const progressSection = document.getElementById('progressSection');
+        if (progressSection) {
+            progressSection.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Scan annulé</p>
+                </div>
+            `;
+        }
+        
+        this.resetScanner();
     }
 
     redirectToResults() {
@@ -935,7 +928,6 @@ class MinimalScanModule {
             if (window.emailScanner && this.scanResults?.emails) {
                 window.emailScanner.emails = this.scanResults.emails;
                 window.emailScanner.startScanSynced = true;
-                console.log('[StartScan] ✅ Emails transférés vers EmailScanner');
             }
             
         } catch (error) {
@@ -977,25 +969,18 @@ class MinimalScanModule {
     showScanError(error) {
         console.error('[StartScan] ❌ Erreur de scan:', error);
         
-        // Masquer le bouton d'annulation
-        const cancelBtn = document.getElementById('cancelScanBtn');
-        if (cancelBtn) {
-            cancelBtn.style.display = 'none';
-        }
-        
         const progressSection = document.getElementById('progressSection');
         if (progressSection) {
             progressSection.innerHTML = `
                 <div class="error-state">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom: 10px;"></i>
-                    <div style="font-weight: 600; color: #dc2626; margin-bottom: 8px;">
+                    <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
                         Erreur de scan
                     </div>
-                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">
+                    <div style="font-size: 12px; margin-bottom: 16px;">
                         ${error.message}
                     </div>
                     <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
-                            style="width: auto; padding: 10px 20px; height: 40px; font-size: 14px;">
+                            style="width: auto; padding: 0 20px; height: 40px; font-size: 14px;">
                         <i class="fas fa-redo"></i>
                         <span>Réessayer</span>
                     </button>
@@ -1008,7 +993,6 @@ class MinimalScanModule {
 
     resetScanner() {
         this.scanInProgress = false;
-        this.abortController = null;
         
         const progressSection = document.getElementById('progressSection');
         if (progressSection) {
@@ -1052,7 +1036,9 @@ class MinimalScanModule {
         this.scanInProgress = false;
         this.isInitialized = false;
         this.scanResults = null;
-        this.abortController = null;
+        if (this.abortController) {
+            this.abortController.abort();
+        }
         console.log('[StartScan] 🧹 Nettoyage terminé');
     }
 
@@ -1074,4 +1060,4 @@ window.MinimalScanModule = MinimalScanModule;
 window.minimalScanModule = new MinimalScanModule();
 window.scanStartModule = window.minimalScanModule;
 
-console.log('[StartScan] ✅ Scanner v11.0 chargé - Version non bloquante avec annulation!');
+console.log('[StartScan] ✅ Scanner v11.0 chargé - Non bloquant avec annulation!');
