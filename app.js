@@ -1,1617 +1,2206 @@
-// app.js - Application EmailSortPro complète v5.0
-// Double authentification Gmail/Outlook avec interface complète
+// app.js - Application EmailSortPro avec intégration Analytics complète v4.2
+// Tracking des emails en clair et filtrage par domaine
 
-class EmailSortProApp {
+class App {
     constructor() {
-        this.version = '5.0';
-        this.isInitialized = false;
-        this.initPromise = null;
-        this.currentProvider = null;
-        this.isAuthenticated = false;
         this.user = null;
+        this.isAuthenticated = false;
+        this.activeProvider = null; // 'microsoft' ou 'google'
+        this.initializationAttempts = 0;
+        this.maxInitAttempts = 3;
+        this.isInitializing = false;
+        this.initializationPromise = null;
         this.currentPage = 'dashboard';
-        this.lastScrollState = null;
-        this.contentObserver = null;
+        this.netlifyDomain = 'coruscating-dodol-f30e8d.netlify.app';
+        this.isNetlifyEnv = window.location.hostname.includes('netlify.app');
         
-        console.log(`[App] EmailSortPro v${this.version} - Initialisation complète...`);
+        console.log('[App] Constructor - EmailSortPro v4.2 with analytics email tracking...');
+        console.log('[App] Environment:', this.isNetlifyEnv ? 'Netlify' : 'Local');
+        console.log('[App] Domain:', window.location.hostname);
         
-        // Configuration des providers
-        this.providers = {
-            google: {
-                name: 'Gmail',
-                icon: 'fab fa-google',
-                color: '#4285f4',
-                gradient: 'linear-gradient(135deg, #4285f4, #34a853)'
+        // Initialiser Analytics Manager immédiatement
+        this.initializeAnalytics();
+    }
+
+    // =====================================
+    // INITIALISATION ANALYTICS AVEC CAPTURE D'EMAIL
+    // =====================================
+    initializeAnalytics() {
+        console.log('[App] Initializing analytics with email tracking...');
+        
+        try {
+            // Vérifier si l'analytics manager est disponible
+            if (window.analyticsManager) {
+                console.log('[App] ✅ Analytics manager ready');
+                
+                // Track page load event
+                window.analyticsManager.onPageLoad('index');
+                
+                console.log('[App] ✅ Analytics initialized successfully');
+            } else {
+                console.warn('[App] Analytics manager not available yet, will retry...');
+                
+                // Retry après un délai
+                setTimeout(() => {
+                    if (window.analyticsManager) {
+                        console.log('[App] ✅ Analytics manager now available');
+                        window.analyticsManager.onPageLoad('index');
+                    } else {
+                        console.warn('[App] Analytics manager still not available');
+                    }
+                }, 1000);
+            }
+        } catch (error) {
+            console.warn('[App] Error initializing analytics:', error);
+        }
+    }
+
+    async init() {
+        console.log('[App] Initializing dual provider application...');
+        
+        if (this.initializationPromise) {
+            console.log('[App] Already initializing, waiting...');
+            return this.initializationPromise;
+        }
+        
+        if (this.isInitializing) {
+            console.log('[App] Already initializing, skipping...');
+            return;
+        }
+        
+        this.initializationPromise = this._doInit();
+        return this.initializationPromise;
+    }
+
+    async _doInit() {
+        this.isInitializing = true;
+        this.initializationAttempts++;
+        
+        try {
+            if (!this.checkPrerequisites()) {
+                return;
+            }
+
+            console.log('[App] Initializing auth services...');
+            
+            const initTimeout = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Initialization timeout')), 30000)
+            );
+            
+            // Initialiser les deux services d'authentification en parallèle
+            const authPromises = [];
+            
+            if (window.authService) {
+                authPromises.push(
+                    window.authService.initialize().then(() => {
+                        console.log('[App] ✅ Microsoft auth service initialized');
+                        return 'microsoft';
+                    }).catch(error => {
+                        console.warn('[App] ⚠️ Microsoft auth service failed:', error.message);
+                        return null;
+                    })
+                );
+            }
+            
+            if (window.googleAuthService) {
+                authPromises.push(
+                    window.googleAuthService.initialize().then(() => {
+                        console.log('[App] ✅ Google auth service initialized');
+                        return 'google';
+                    }).catch(error => {
+                        console.warn('[App] ⚠️ Google auth service failed:', error.message);
+                        return null;
+                    })
+                );
+            }
+            
+            // Attendre au moins un service d'auth
+            const initResults = await Promise.race([
+                Promise.allSettled(authPromises),
+                initTimeout
+            ]);
+            
+            console.log('[App] Auth services initialization results:', initResults);
+            
+            // INITIALISER LES MODULES CRITIQUES
+            await this.initializeCriticalModules();
+            
+            await this.checkAuthenticationStatus();
+            
+        } catch (error) {
+            await this.handleInitializationError(error);
+        } finally {
+            this.isInitializing = false;
+            this.setupEventListeners();
+        }
+    }
+
+    // =====================================
+    // INITIALISATION DES MODULES CRITIQUES AVEC VERIFICATION ROBUSTE
+    // =====================================
+    async initializeCriticalModules() {
+        console.log('[App] Initializing critical modules...');
+        
+        // 1. Vérifier TaskManager
+        await this.ensureTaskManagerReady();
+        
+        // 2. Vérifier PageManager
+        await this.ensurePageManagerReady();
+        
+        // 3. Vérifier TasksView
+        await this.ensureTasksViewReady();
+        
+        // 4. Vérifier DashboardModule
+        await this.ensureDashboardModuleReady();
+        
+        // 5. Vérifier MailService avec fallback
+        await this.ensureMailServiceReady();
+        
+        // 6. Vérifier les modules de scan
+        await this.ensureScanModulesReady();
+        
+        // 7. Bind methods
+        this.bindModuleMethods();
+        
+        // 8. Initialiser la gestion du scroll
+        this.initializeScrollManager();
+        
+        console.log('[App] Critical modules initialized');
+    }
+
+    // [Le reste des méthodes reste identique jusqu'à checkAuthenticationStatus]
+
+    // =====================================
+    // VÉRIFICATION DE L'AUTHENTIFICATION AVEC ANALYTICS
+    // =====================================
+    async checkAuthenticationStatus() {
+        console.log('[App] Checking authentication status for both providers...');
+        
+        // Vérifier d'abord s'il y a un callback Google à traiter
+        const googleCallbackHandled = await this.handleGoogleCallback();
+        if (googleCallbackHandled) {
+            this.showAppWithTransition();
+            return;
+        }
+        
+        // Vérifier Microsoft d'abord
+        if (window.authService && window.authService.isAuthenticated()) {
+            const account = window.authService.getAccount();
+            if (account) {
+                console.log('[App] Microsoft authentication found, getting user info...');
+                try {
+                    this.user = await window.authService.getUserInfo();
+                    this.user.provider = 'microsoft';
+                    this.isAuthenticated = true;
+                    this.activeProvider = 'microsoft';
+                    
+                    // ANALYTICS: Track authentication avec email en clair
+                    this.trackUserAuthentication(this.user);
+                    
+                    console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
+                    this.showAppWithTransition();
+                    return;
+                } catch (userInfoError) {
+                    console.error('[App] Error getting Microsoft user info:', userInfoError);
+                    if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
+                        console.log('[App] Microsoft token seems invalid, clearing auth');
+                        await window.authService.reset();
+                    }
+                }
+            }
+        }
+        
+        // Vérifier Google ensuite
+        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            const account = window.googleAuthService.getAccount();
+            if (account) {
+                console.log('[App] Google authentication found, getting user info...');
+                try {
+                    this.user = await window.googleAuthService.getUserInfo();
+                    this.user.provider = 'google';
+                    this.isAuthenticated = true;
+                    this.activeProvider = 'google';
+                    
+                    // ANALYTICS: Track authentication avec email en clair
+                    this.trackUserAuthentication(this.user);
+                    
+                    console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
+                    this.showAppWithTransition();
+                    return;
+                } catch (userInfoError) {
+                    console.error('[App] Error getting Google user info:', userInfoError);
+                    await window.googleAuthService.reset();
+                }
+            }
+        }
+        
+        // Aucune authentification trouvée
+        console.log('[App] No valid authentication found');
+        this.showLogin();
+    }
+
+    // =====================================
+    // TRACKING ANALYTICS AVEC EMAIL EN CLAIR
+    // =====================================
+    trackUserAuthentication(user) {
+        console.log('[App] Tracking user authentication for analytics...');
+        
+        if (!window.analyticsManager || typeof window.analyticsManager.trackAuthentication !== 'function') {
+            console.warn('[App] Analytics manager not available for authentication tracking');
+            return;
+        }
+        
+        try {
+            // Préparer les données utilisateur avec email en clair
+            const userInfo = {
+                displayName: user.displayName || user.name || 'Utilisateur',
+                mail: user.mail || user.email || user.userPrincipalName,
+                userPrincipalName: user.userPrincipalName || user.email,
+                email: user.email || user.mail || user.userPrincipalName, // Email explicite
+                provider: user.provider || 'unknown',
+                // Données supplémentaires si disponibles
+                homeAccountId: user.homeAccountId,
+                localAccountId: user.localAccountId,
+                tenantId: user.tenantId
+            };
+            
+            console.log('[App] ✅ Tracking authentication with email:', {
+                email: userInfo.email,
+                name: userInfo.displayName,
+                provider: userInfo.provider
+            });
+            
+            // Appeler la méthode de tracking
+            window.analyticsManager.trackAuthentication(userInfo.provider, userInfo);
+            
+            console.log('[App] ✅ Authentication tracked successfully in analytics');
+            
+        } catch (error) {
+            console.warn('[App] Error tracking authentication:', error);
+        }
+    }
+
+    // =====================================
+    // TRACKING D'ÉVÉNEMENTS ANALYTICS
+    // =====================================
+    trackEvent(eventType, eventData = {}) {
+        if (!window.analyticsManager || typeof window.analyticsManager.trackEvent !== 'function') {
+            return;
+        }
+        
+        try {
+            // Ajouter automatiquement les infos utilisateur si disponibles
+            const enrichedData = {
+                ...eventData,
+                userEmail: this.user?.email || this.user?.mail || 'anonymous',
+                userName: this.user?.displayName || this.user?.name || 'Anonymous',
+                provider: this.activeProvider || 'unknown'
+            };
+            
+            window.analyticsManager.trackEvent(eventType, enrichedData);
+            console.log('[App] ✅ Event tracked:', eventType, enrichedData);
+        } catch (error) {
+            console.warn('[App] Error tracking event:', error);
+        }
+    }
+
+    trackPageChange(pageName) {
+        this.trackEvent('page_change', {
+            page: pageName,
+            previousPage: this.currentPage
+        });
+    }
+
+    trackError(errorType, errorData) {
+        if (!window.analyticsManager || typeof window.analyticsManager.onError !== 'function') {
+            return;
+        }
+        
+        try {
+            window.analyticsManager.onError(errorType, {
+                ...errorData,
+                userEmail: this.user?.email || this.user?.mail || 'anonymous',
+                provider: this.activeProvider || 'unknown'
+            });
+            console.log('[App] ✅ Error tracked:', errorType, errorData);
+        } catch (error) {
+            console.warn('[App] Error tracking error:', error);
+        }
+    }
+
+    // [Les autres méthodes restent identiques...]
+
+    async ensureMailServiceReady() {
+        console.log('[App] Ensuring MailService is ready...');
+        
+        if (window.mailService && typeof window.mailService.getEmails === 'function') {
+            console.log('[App] ✅ MailService already ready');
+            return true;
+        }
+        
+        // Attendre le chargement du service
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while ((!window.mailService || typeof window.mailService.getEmails !== 'function') && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.mailService || typeof window.mailService.getEmails !== 'function') {
+            console.warn('[App] MailService not ready, creating fallback...');
+            this.createMailServiceFallback();
+            return false;
+        }
+        
+        console.log('[App] ✅ MailService ready');
+        return true;
+    }
+
+    createMailServiceFallback() {
+        console.log('[App] Creating MailService fallback...');
+        
+        if (!window.mailService) {
+            window.mailService = {};
+        }
+        
+        // Créer des méthodes fallback sécurisées
+        const fallbackMethods = {
+            getEmails: async () => {
+                console.warn('[MailService] Fallback: getEmails called - returning empty array');
+                return [];
             },
-            microsoft: {
-                name: 'Outlook',
-                icon: 'fab fa-microsoft',
-                color: '#0078d4',
-                gradient: 'linear-gradient(135deg, #0078d4, #106ebe)'
+            
+            getFolders: async () => {
+                console.warn('[MailService] Fallback: getFolders called - returning default folders');
+                return [
+                    { id: 'inbox', displayName: 'Boîte de réception', totalItemCount: 0 },
+                    { id: 'sent', displayName: 'Éléments envoyés', totalItemCount: 0 }
+                ];
+            },
+            
+            getEmailCount: async () => {
+                console.warn('[MailService] Fallback: getEmailCount called - returning 0');
+                return 0;
+            },
+            
+            searchEmails: async () => {
+                console.warn('[MailService] Fallback: searchEmails called - returning empty array');
+                return [];
+            },
+            
+            moveToFolder: async () => {
+                console.warn('[MailService] Fallback: moveToFolder called - operation skipped');
+                return true;
+            },
+            
+            markAsRead: async () => {
+                console.warn('[MailService] Fallback: markAsRead called - operation skipped');
+                return true;
+            },
+            
+            deleteEmail: async () => {
+                console.warn('[MailService] Fallback: deleteEmail called - operation skipped');
+                return true;
             }
         };
         
-        // Bind des méthodes
-        this.init = this.init.bind(this);
-        this.checkAuthentication = this.checkAuthentication.bind(this);
-        this.handleNavigation = this.handleNavigation.bind(this);
-        this.checkScrollNeeded = this.checkScrollNeeded.bind(this);
+        // Ajouter les méthodes manquantes
+        Object.keys(fallbackMethods).forEach(method => {
+            if (typeof window.mailService[method] !== 'function') {
+                window.mailService[method] = fallbackMethods[method];
+            }
+        });
         
-        // Initialiser immédiatement
-        this.startInitialization();
+        console.log('[App] ✅ MailService fallback created');
     }
-    
-    // =====================================
-    // INITIALISATION PRINCIPALE
-    // =====================================
-    async startInitialization() {
-        try {
-            // Afficher l'écran de chargement
-            this.showLoadingScreen();
+
+    // [Méthodes de vérification des modules identiques...]
+
+    async ensureTaskManagerReady() {
+        console.log('[App] Ensuring TaskManager is ready...');
+        
+        if (window.taskManager && window.taskManager.initialized) {
+            console.log('[App] ✅ TaskManager already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while ((!window.taskManager || !window.taskManager.initialized) && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.taskManager || !window.taskManager.initialized) {
+            console.error('[App] TaskManager not ready after 5 seconds');
+            return false;
+        }
+        
+        const essentialMethods = ['createTaskFromEmail', 'createTask', 'updateTask', 'deleteTask', 'getStats'];
+        for (const method of essentialMethods) {
+            if (typeof window.taskManager[method] !== 'function') {
+                console.error(`[App] TaskManager missing essential method: ${method}`);
+                return false;
+            }
+        }
+        
+        console.log('[App] ✅ TaskManager ready with', window.taskManager.getAllTasks().length, 'tasks');
+        return true;
+    }
+
+    async ensurePageManagerReady() {
+        console.log('[App] Ensuring PageManager is ready...');
+        
+        if (window.pageManager) {
+            console.log('[App] ✅ PageManager already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.pageManager && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.pageManager) {
+            console.error('[App] PageManager not ready after 3 seconds');
+            return false;
+        }
+        
+        console.log('[App] ✅ PageManager ready');
+        return true;
+    }
+
+    async ensureTasksViewReady() {
+        console.log('[App] Ensuring TasksView is ready...');
+        
+        if (window.tasksView) {
+            console.log('[App] ✅ TasksView already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.tasksView && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.tasksView) {
+            console.warn('[App] TasksView not ready after 3 seconds - will work without it');
+            return false;
+        }
+        
+        console.log('[App] ✅ TasksView ready');
+        return true;
+    }
+
+    async ensureDashboardModuleReady() {
+        console.log('[App] Ensuring DashboardModule is ready...');
+        
+        if (window.dashboardModule) {
+            console.log('[App] ✅ DashboardModule already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.dashboardModule && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.dashboardModule) {
+            console.error('[App] DashboardModule not ready after 3 seconds');
+            return false;
+        }
+        
+        console.log('[App] ✅ DashboardModule ready');
+        return true;
+    }
+
+    async ensureScanModulesReady() {
+        console.log('[App] Ensuring scan modules are ready...');
+        
+        // Vérifier minimalScanModule
+        if (window.minimalScanModule) {
+            console.log('[App] ✅ MinimalScanModule available');
             
-            // Attendre que le DOM soit prêt
-            await this.waitForDOM();
-            
-            // Configurer les écouteurs d'événements d'authentification
-            this.setupAuthListeners();
-            
-            // Vérifier l'authentification rapide
-            const quickAuth = this.quickAuthCheck();
-            if (quickAuth.authenticated) {
-                console.log('[App] ✅ Authentification rapide détectée:', quickAuth.provider);
-                this.currentProvider = quickAuth.provider;
-                this.isAuthenticated = true;
+            // Vérifier que les méthodes essentielles existent
+            if (typeof window.minimalScanModule.render !== 'function') {
+                console.warn('[App] MinimalScanModule.render not available, creating fallback...');
+                this.createScanModuleFallback();
+            }
+        } else {
+            console.warn('[App] MinimalScanModule not available, creating fallback...');
+            this.createScanModuleFallback();
+        }
+        
+        // Vérifier emailScanner
+        if (!window.emailScanner) {
+            console.warn('[App] EmailScanner not available, creating fallback...');
+            this.createEmailScannerFallback();
+        }
+        
+        console.log('[App] ✅ Scan modules ready');
+    }
+
+    createScanModuleFallback() {
+        console.log('[App] Creating scan module fallback...');
+        
+        window.minimalScanModule = {
+            render: () => {
+                console.log('[ScanFallback] Rendering fallback scanner...');
                 
-                // Afficher l'interface immédiatement
-                this.showAppInterface();
+                const pageContent = document.getElementById('pageContent');
+                if (!pageContent) {
+                    console.error('[ScanFallback] pageContent not found');
+                    return;
+                }
                 
-                // Continuer l'initialisation en arrière-plan
-                this.backgroundInit();
-            } else {
-                // Initialisation complète
-                await this.init();
-            }
+                pageContent.innerHTML = `
+                    <div class="page-container">
+                        <div class="page-header">
+                            <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
+                            <p>Service de scan temporairement indisponible</p>
+                        </div>
+                        <div class="fallback-content">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <div>
+                                    <h3>Service temporairement indisponible</h3>
+                                    <p>Le scanner d'emails n'est pas disponible pour le moment. Veuillez réessayer plus tard.</p>
+                                    <button onclick="window.pageManager.loadPage('dashboard')" class="btn btn-primary">
+                                        <i class="fas fa-home"></i> Retour au tableau de bord
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                console.log('[ScanFallback] Fallback scanner rendered');
+            },
             
-        } catch (error) {
-            console.error('[App] ❌ Erreur d\'initialisation:', error);
-            this.showError('Erreur d\'initialisation: ' + error.message);
-        }
-    }
-    
-    async init() {
-        if (this.initPromise) {
-            return this.initPromise;
-        }
+            initialize: () => {
+                console.log('[ScanFallback] Initialize called');
+                return Promise.resolve();
+            }
+        };
         
-        this.initPromise = this._doInit();
-        return this.initPromise;
+        console.log('[App] ✅ Scan module fallback created');
     }
-    
-    async _doInit() {
-        console.log('[App] Initialisation complète...');
+
+    createEmailScannerFallback() {
+        console.log('[App] Creating email scanner fallback...');
         
-        try {
-            // 1. Vérifier les prérequis
-            if (!this.checkPrerequisites()) {
-                throw new Error('Prérequis manquants');
+        window.emailScanner = {
+            scanEmails: async () => {
+                console.warn('[EmailScanner] Fallback: scanEmails called');
+                return {
+                    success: false,
+                    message: 'Service de scan temporairement indisponible',
+                    emails: []
+                };
+            },
+            
+            analyzeEmails: async () => {
+                console.warn('[EmailScanner] Fallback: analyzeEmails called');
+                return {
+                    categories: [],
+                    stats: { total: 0, analyzed: 0 }
+                };
             }
-            
-            // 2. Attendre que les services soient chargés
-            await this.waitForServices();
-            
-            // 3. Initialiser les services d'authentification
-            await this.initializeAuthServices();
-            
-            // 4. Vérifier l'authentification
-            const isAuthenticated = await this.checkAuthentication();
-            
-            if (isAuthenticated) {
-                console.log('[App] ✅ Utilisateur authentifié avec', this.currentProvider);
-                this.showAppInterface();
-                await this.initializeAppComponents();
-                await this.updateUserDisplay();
-                this.loadInitialPage();
-            } else {
-                console.log('[App] Utilisateur non authentifié');
-                this.showLoginPage();
-            }
-            
-            // 5. Configurer les gestionnaires d'événements
-            this.setupEventHandlers();
-            
-            // 6. Initialiser le gestionnaire de scroll
-            this.initializeScrollManager();
-            
-            // 7. Initialiser les analytics
-            this.initializeAnalytics();
-            
-            this.isInitialized = true;
-            console.log('[App] ✅ Initialisation terminée');
-            
-        } catch (error) {
-            console.error('[App] ❌ Erreur d\'initialisation:', error);
-            this.handleInitializationError(error);
-        }
+        };
+        
+        console.log('[App] ✅ Email scanner fallback created');
     }
-    
+
     // =====================================
-    // AUTHENTIFICATION
+    // GESTION INTELLIGENTE DU SCROLL AMELIOREE
     // =====================================
-    setupAuthListeners() {
-        // Écouter les événements Google
-        window.addEventListener('googleAuthReady', (event) => {
-            console.log('[App] Google Auth Ready:', event.detail);
-            if (event.detail.authenticated && !this.currentProvider) {
-                this.handleAuthSuccess('google', event.detail.user);
+    initializeScrollManager() {
+        console.log('[App] Initializing scroll manager...');
+        
+        // Variables pour éviter les boucles infinies
+        let scrollCheckInProgress = false;
+        let lastScrollState = null;
+        let lastContentHeight = 0;
+        let lastViewportHeight = 0;
+        
+        // Fonction pour vérifier si le scroll est nécessaire
+        this.checkScrollNeeded = () => {
+            if (scrollCheckInProgress) {
+                return;
             }
-        });
-        
-        window.addEventListener('googleAuthSuccess', (event) => {
-            console.log('[App] Google Auth Success:', event.detail);
-            this.handleAuthSuccess('google', event.detail.user);
-        });
-        
-        // Écouter les événements Microsoft
-        window.addEventListener('msalAuthSuccess', (event) => {
-            console.log('[App] Microsoft Auth Success:', event.detail);
-            this.handleAuthSuccess('microsoft', event.detail.user);
-        });
-    }
-    
-    handleAuthSuccess(provider, user) {
-        this.currentProvider = provider;
-        this.isAuthenticated = true;
-        this.user = user;
-        sessionStorage.setItem('lastAuthProvider', provider);
-        
-        if (!document.body.classList.contains('app-active')) {
-            this.showAppInterface();
-            this.backgroundInit();
-        }
-    }
-    
-    quickAuthCheck() {
-        try {
-            const lastProvider = sessionStorage.getItem('lastAuthProvider');
             
-            // Vérifier Google
-            const googleToken = localStorage.getItem('google_token_emailsortpro');
-            if (googleToken) {
+            scrollCheckInProgress = true;
+            
+            setTimeout(() => {
                 try {
-                    const tokenData = JSON.parse(googleToken);
-                    if (tokenData.access_token && tokenData.expires_at > Date.now()) {
-                        return { authenticated: true, provider: 'google' };
+                    const body = document.body;
+                    const contentHeight = document.documentElement.scrollHeight;
+                    const viewportHeight = window.innerHeight;
+                    const currentPage = this.currentPage || 'dashboard';
+                    
+                    // Vérifier si les dimensions ont réellement changé
+                    const dimensionsChanged = 
+                        Math.abs(contentHeight - lastContentHeight) > 10 || 
+                        Math.abs(viewportHeight - lastViewportHeight) > 10;
+                    
+                    lastContentHeight = contentHeight;
+                    lastViewportHeight = viewportHeight;
+                    
+                    // Dashboard: JAMAIS de scroll
+                    if (currentPage === 'dashboard') {
+                        const newState = 'dashboard-no-scroll';
+                        if (lastScrollState !== newState) {
+                            body.classList.remove('needs-scroll');
+                            body.style.overflow = 'hidden';
+                            body.style.overflowY = 'hidden';
+                            body.style.overflowX = 'hidden';
+                            lastScrollState = newState;
+                        }
+                        scrollCheckInProgress = false;
+                        return;
                     }
-                } catch (e) {}
+                    
+                    // Autres pages: scroll seulement si vraiment nécessaire
+                    const threshold = 100;
+                    const needsScroll = contentHeight > viewportHeight + threshold;
+                    const newState = needsScroll ? 'scroll-enabled' : 'scroll-disabled';
+                    
+                    if (lastScrollState !== newState || dimensionsChanged) {
+                        if (needsScroll) {
+                            body.classList.add('needs-scroll');
+                            body.style.overflow = '';
+                            body.style.overflowY = '';
+                            body.style.overflowX = '';
+                        } else {
+                            body.classList.remove('needs-scroll');
+                            body.style.overflow = 'hidden';
+                            body.style.overflowY = 'hidden';
+                            body.style.overflowX = 'hidden';
+                        }
+                        lastScrollState = newState;
+                    }
+                    
+                } catch (error) {
+                    console.error('[SCROLL_MANAGER] Error checking scroll:', error);
+                } finally {
+                    scrollCheckInProgress = false;
+                }
+            }, 150);
+        };
+
+        // Fonction pour définir le mode de page avec analytics
+        window.setPageMode = (pageName) => {
+            if (!pageName || this.currentPage === pageName) {
+                return;
             }
             
-            // Vérifier Microsoft
-            const msalKeys = localStorage.getItem('msal.account.keys');
-            if (msalKeys && lastProvider === 'microsoft') {
-                return { authenticated: true, provider: 'microsoft' };
+            const body = document.body;
+            
+            // Mettre à jour la page actuelle et tracker le changement
+            const previousPage = this.currentPage;
+            this.currentPage = pageName;
+            
+            // ANALYTICS: Track page change
+            this.trackPageChange(pageName);
+            
+            console.log(`[App] Page mode changed: ${previousPage} → ${pageName}`);
+            
+            // Nettoyer les anciennes classes de page
+            body.classList.remove(
+                'page-dashboard', 'page-scanner', 'page-emails', 
+                'page-tasks', 'page-ranger', 'page-settings', 
+                'needs-scroll', 'login-mode'
+            );
+            
+            // Ajouter la nouvelle classe de page
+            body.classList.add(`page-${pageName}`);
+            
+            // Réinitialiser l'état du scroll
+            lastScrollState = null;
+            lastContentHeight = 0;
+            lastViewportHeight = 0;
+            
+            // Dashboard: configuration immédiate
+            if (pageName === 'dashboard') {
+                body.style.overflow = 'hidden';
+                body.style.overflowY = 'hidden';
+                body.style.overflowX = 'hidden';
+                lastScrollState = 'dashboard-no-scroll';
+                return;
+            }
+            
+            // Autres pages: vérifier après stabilisation du contenu
+            setTimeout(() => {
+                if (this.currentPage === pageName) {
+                    this.checkScrollNeeded();
+                }
+            }, 300);
+        };
+
+        // Observer pour les changements de contenu avec gestion d'erreurs
+        if (window.MutationObserver) {
+            let observerTimeout;
+            let pendingMutations = false;
+            
+            const contentObserver = new MutationObserver((mutations) => {
+                try {
+                    if (this.currentPage === 'dashboard') {
+                        return;
+                    }
+                    
+                    const significantChanges = mutations.some(mutation => {
+                        try {
+                            if (mutation.type === 'attributes') {
+                                const attrName = mutation.attributeName;
+                                const target = mutation.target;
+                                
+                                if (attrName === 'style' && target === document.body) {
+                                    return false;
+                                }
+                                if (attrName === 'class' && target === document.body) {
+                                    return false;
+                                }
+                            }
+                            
+                            if (mutation.type === 'childList') {
+                                return mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0;
+                            }
+                            
+                            return false;
+                        } catch (error) {
+                            console.warn('[ScrollManager] Error processing mutation:', error);
+                            return false;
+                        }
+                    });
+                    
+                    if (significantChanges && !pendingMutations) {
+                        pendingMutations = true;
+                        clearTimeout(observerTimeout);
+                        
+                        observerTimeout = setTimeout(() => {
+                            if (this.currentPage !== 'dashboard' && !scrollCheckInProgress) {
+                                this.checkScrollNeeded();
+                            }
+                            pendingMutations = false;
+                        }, 250);
+                    }
+                } catch (error) {
+                    console.error('[ScrollManager] Observer error:', error);
+                }
+            });
+
+            try {
+                contentObserver.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                    attributes: true,
+                    attributeFilter: ['style', 'class'],
+                    attributeOldValue: false
+                });
+                console.log('[App] ✅ Content observer initialized');
+            } catch (error) {
+                console.warn('[App] Could not initialize content observer:', error);
+            }
+        }
+
+        // Gestionnaire de redimensionnement
+        let resizeTimeout;
+        let lastWindowSize = { width: window.innerWidth, height: window.innerHeight };
+        
+        window.addEventListener('resize', () => {
+            try {
+                const currentSize = { width: window.innerWidth, height: window.innerHeight };
+                
+                const sizeChanged = 
+                    Math.abs(currentSize.width - lastWindowSize.width) > 10 ||
+                    Math.abs(currentSize.height - lastWindowSize.height) > 10;
+                
+                if (!sizeChanged || this.currentPage === 'dashboard') {
+                    return;
+                }
+                
+                lastWindowSize = currentSize;
+                
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    if (this.currentPage !== 'dashboard' && !scrollCheckInProgress) {
+                        this.checkScrollNeeded();
+                    }
+                }, 300);
+            } catch (error) {
+                console.error('[ScrollManager] Resize error:', error);
+            }
+        });
+
+        console.log('[App] ✅ Scroll manager initialized');
+    }
+
+    bindModuleMethods() {
+        // Bind TaskManager methods
+        if (window.taskManager) {
+            try {
+                Object.getOwnPropertyNames(Object.getPrototypeOf(window.taskManager)).forEach(name => {
+                    if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
+                        window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
+                    }
+                });
+                console.log('[App] ✅ TaskManager methods bound');
+            } catch (error) {
+                console.warn('[App] Error binding TaskManager methods:', error);
+            }
+        }
+        
+        // Bind autres modules...
+        if (window.pageManager) {
+            try {
+                Object.getOwnPropertyNames(Object.getPrototypeOf(window.pageManager)).forEach(name => {
+                    if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
+                        window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
+                    }
+                });
+                console.log('[App] ✅ PageManager methods bound');
+            } catch (error) {
+                console.warn('[App] Error binding PageManager methods:', error);
+            }
+        }
+    }
+
+    checkPrerequisites() {
+        // Vérification spéciale pour Netlify
+        if (this.isNetlifyEnv) {
+            console.log('[App] Running in Netlify environment, adjusting checks...');
+        }
+
+        if (typeof msal === 'undefined') {
+            console.error('[App] MSAL library not loaded');
+            this.showError('MSAL library not loaded. Please refresh the page.');
+            return false;
+        }
+
+        if (!window.AppConfig) {
+            console.error('[App] Configuration not loaded');
+            this.showError('Configuration not loaded. Please refresh the page.');
+            return false;
+        }
+
+        const validation = window.AppConfig.validate();
+        if (!validation.valid) {
+            console.error('[App] Configuration invalid:', validation.issues);
+            this.showConfigurationError(validation.issues);
+            return false;
+        }
+
+        if (!window.authService && !window.googleAuthService) {
+            console.error('[App] No authentication service available');
+            this.showError('Authentication service not available. Please refresh the page.');
+            return false;
+        }
+
+        return true;
+    }
+
+    // =====================================
+    // GESTION DU CALLBACK GOOGLE OAuth2
+    // =====================================
+    async handleGoogleCallback() {
+        console.log('[App] Handling Google OAuth2 callback...');
+        
+        try {
+            // Vérifier s'il y a des données de callback Google
+            const callbackDataStr = sessionStorage.getItem('google_callback_data');
+            if (!callbackDataStr) {
+                console.log('[App] No Google callback data found');
+                return false;
+            }
+            
+            const callbackData = JSON.parse(callbackDataStr);
+            console.log('[App] Found Google callback data:', callbackData);
+            
+            // Nettoyer les données de callback
+            sessionStorage.removeItem('google_callback_data');
+            
+            // Traiter le callback avec le service Google
+            const urlParams = new URLSearchParams();
+            urlParams.set('code', callbackData.code);
+            urlParams.set('state', callbackData.state);
+            
+            const success = await window.googleAuthService.handleOAuthCallback(urlParams);
+            
+            if (success) {
+                console.log('[App] ✅ Google callback handled successfully');
+                
+                // Obtenir les informations utilisateur
+                this.user = await window.googleAuthService.getUserInfo();
+                this.user.provider = 'google';
+                this.isAuthenticated = true;
+                this.activeProvider = 'google';
+                
+                // ANALYTICS: Track authentication
+                this.trackUserAuthentication(this.user);
+                
+                console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
+                return true;
+            } else {
+                throw new Error('Google callback processing failed');
             }
             
         } catch (error) {
-            console.warn('[App] Erreur vérification rapide:', error);
+            console.error('[App] ❌ Error handling Google callback:', error);
+            
+            // ANALYTICS: Track error
+            this.trackError('google_callback_error', {
+                message: error.message
+            });
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(
+                    'Erreur de traitement Google: ' + error.message,
+                    'error',
+                    8000
+                );
+            }
+            
+            return false;
         }
-        
-        return { authenticated: false, provider: null };
     }
-    
-    async checkAuthentication() {
-        console.log('[App] Vérification de l\'authentification...');
+
+    async handleInitializationError(error) {
+        console.error('[App] Initialization error:', error);
         
-        const lastProvider = sessionStorage.getItem('lastAuthProvider');
+        // ANALYTICS: Track initialization error
+        this.trackError('app_init_error', {
+            message: error.message,
+            attempt: this.initializationAttempts
+        });
         
-        // Vérifier Google
-        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-            this.currentProvider = 'google';
-            this.isAuthenticated = true;
-            this.user = await window.googleAuthService.getUserInfo();
-            this.user.provider = 'google';
-            console.log('[App] ✅ Authentifié avec Google');
-            return true;
+        if (error.message.includes('unauthorized_client')) {
+            this.showConfigurationError([
+                'Configuration Azure incorrecte',
+                'Vérifiez votre Client ID dans la configuration',
+                'Consultez la documentation Azure App Registration'
+            ]);
+            return;
         }
         
-        // Vérifier Microsoft
-        if (window.authService && window.authService.isAuthenticated()) {
-            this.currentProvider = 'microsoft';
-            this.isAuthenticated = true;
-            this.user = await window.authService.getUserInfo();
-            this.user.provider = 'microsoft';
-            console.log('[App] ✅ Authentifié avec Microsoft');
-            return true;
+        if (error.message.includes('Configuration invalid')) {
+            this.showConfigurationError(['Configuration invalide - vérifiez la configuration']);
+            return;
         }
         
-        console.log('[App] ❌ Non authentifié');
-        return false;
+        if (this.initializationAttempts < this.maxInitAttempts && 
+            (error.message.includes('timeout') || error.message.includes('network'))) {
+            console.log(`[App] Retrying initialization (${this.initializationAttempts}/${this.maxInitAttempts})...`);
+            this.isInitializing = false;
+            this.initializationPromise = null;
+            setTimeout(() => this.init(), 3000);
+            return;
+        }
+        
+        this.showError('Failed to initialize the application. Please check the configuration and refresh the page.');
     }
-    
+
+    setupEventListeners() {
+        console.log('[App] Setting up event listeners...');
+        
+        // NAVIGATION CORRIGÉE AVEC ANALYTICS
+        document.querySelectorAll('.nav-item').forEach(item => {
+            const newItem = item.cloneNode(true);
+            item.parentNode.replaceChild(newItem, item);
+            
+            newItem.addEventListener('click', (e) => {
+                try {
+                    const page = e.currentTarget.dataset.page;
+                    if (page && window.pageManager) {
+                        this.currentPage = page;
+                        
+                        if (window.setPageMode) {
+                            window.setPageMode(page);
+                        }
+                        
+                        // Vérification robuste avant le chargement de page
+                        if (typeof window.pageManager.loadPage === 'function') {
+                            window.pageManager.loadPage(page);
+                        } else {
+                            console.error('[App] PageManager.loadPage is not a function');
+                            if (window.uiManager) {
+                                window.uiManager.showToast('Erreur de navigation', 'error');
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('[App] Navigation error:', error);
+                    
+                    // ANALYTICS: Track navigation error
+                    this.trackError('navigation_error', {
+                        message: error.message,
+                        targetPage: e.currentTarget.dataset.page
+                    });
+                    
+                    if (window.uiManager) {
+                        window.uiManager.showToast('Erreur de navigation: ' + error.message, 'error');
+                    }
+                }
+            });
+        });
+
+        // Gestion globale des erreurs avec analytics
+        window.addEventListener('error', (event) => {
+            console.error('[App] Global error:', event.error);
+            
+            // ANALYTICS: Track global error
+            this.trackError('global_error', {
+                message: event.error?.message || 'Unknown error',
+                filename: event.filename,
+                lineno: event.lineno
+            });
+            
+            if (event.error && event.error.message) {
+                const message = event.error.message;
+                
+                // Erreurs spécifiques
+                if (message.includes('unauthorized_client')) {
+                    if (window.uiManager) {
+                        window.uiManager.showToast(
+                            'Erreur de configuration Azure. Vérifiez votre Client ID.',
+                            'error',
+                            10000
+                        );
+                    }
+                } else if (message.includes('Cannot set properties of undefined')) {
+                    console.error('[App] DOM manipulation error detected:', message);
+                    
+                    // Essayer de diagnostiquer l'erreur
+                    if (message.includes('innerHTML')) {
+                        console.error('[App] innerHTML error - element may not exist');
+                        if (window.uiManager) {
+                            window.uiManager.showToast(
+                                'Erreur d\'affichage. Rechargement recommandé.',
+                                'warning',
+                                5000
+                            );
+                        }
+                    }
+                } else if (message.includes('is not a function')) {
+                    console.error('[App] Function call error:', message);
+                    
+                    if (message.includes('getEmails')) {
+                        console.error('[App] MailService error detected - creating fallback');
+                        this.createMailServiceFallback();
+                    }
+                }
+            }
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('[App] Unhandled promise rejection:', event.reason);
+            
+            // ANALYTICS: Track promise rejection
+            this.trackError('promise_rejection', {
+                reason: event.reason?.message || event.reason || 'Unknown rejection'
+            });
+            
+            if (event.reason && event.reason.message) {
+                const message = event.reason.message;
+                
+                if (message.includes('Cannot read properties of undefined')) {
+                    if (message.includes('createTaskFromEmail')) {
+                        console.error('[App] TaskManager createTaskFromEmail error detected');
+                        
+                        if (window.uiManager) {
+                            window.uiManager.showToast(
+                                'Erreur du gestionnaire de tâches. Veuillez actualiser la page.',
+                                'warning'
+                            );
+                        }
+                    } else if (message.includes('getEmails')) {
+                        console.error('[App] MailService getEmails error detected');
+                        this.createMailServiceFallback();
+                        
+                        if (window.uiManager) {
+                            window.uiManager.showToast(
+                                'Service de messagerie indisponible. Mode dégradé activé.',
+                                'info'
+                            );
+                        }
+                    }
+                } else if (message.includes('render')) {
+                    console.error('[App] Render error detected');
+                    
+                    if (window.uiManager) {
+                        window.uiManager.showToast(
+                            'Erreur d\'affichage détectée',
+                            'warning'
+                        );
+                    }
+                }
+            }
+            
+            if (event.reason && event.reason.errorCode) {
+                console.log('[App] MSAL promise rejection:', event.reason.errorCode);
+            }
+        });
+
+        console.log('[App] ✅ Event listeners set up with error handling and analytics');
+    }
+
     // =====================================
-    // INTERFACE UTILISATEUR
+    // MÉTHODES DE CONNEXION AVEC ANALYTICS
     // =====================================
-    showLoadingScreen() {
-        const loadingHTML = `
-            <div id="appLoadingScreen" class="app-loading-screen">
-                <div class="loading-content">
-                    <div class="logo-animation">
-                        <i class="fas fa-envelope-open-text"></i>
-                    </div>
-                    <h1>EmailSortPro</h1>
-                    <div class="loading-progress">
-                        <div class="progress-bar"></div>
-                    </div>
-                    <p class="loading-text">Chargement de l'application...</p>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('afterbegin', loadingHTML);
+
+    // Méthode de connexion unifiée (backward compatibility)
+    async login() {
+        console.log('[App] Unified login attempted - defaulting to Microsoft...');
+        return this.loginMicrosoft();
     }
-    
-    hideLoadingScreen() {
-        const loadingScreen = document.getElementById('appLoadingScreen');
-        if (loadingScreen) {
-            loadingScreen.classList.add('fade-out');
-            setTimeout(() => loadingScreen.remove(), 300);
+
+    // Connexion Microsoft spécifique avec analytics
+    async loginMicrosoft() {
+        console.log('[App] Microsoft login attempted...');
+        
+        // ANALYTICS: Track login attempt
+        this.trackEvent('login_attempt', { provider: 'microsoft' });
+        
+        try {
+            this.showModernLoading('Connexion à Outlook...');
+            
+            if (!window.authService) {
+                throw new Error('Microsoft AuthService not available');
+            }
+            
+            if (!window.authService.isInitialized) {
+                console.log('[App] Microsoft AuthService not initialized, initializing...');
+                await window.authService.initialize();
+            }
+            
+            await window.authService.login();
+            
+        } catch (error) {
+            console.error('[App] Microsoft login error:', error);
+            
+            // ANALYTICS: Track login error
+            this.trackError('microsoft_login_error', {
+                message: error.message,
+                errorCode: error.errorCode
+            });
+            
+            this.hideModernLoading();
+            
+            let errorMessage = 'Échec de la connexion Microsoft. Veuillez réessayer.';
+            
+            if (error.errorCode) {
+                const errorCode = error.errorCode;
+                if (window.AppConfig.errors && window.AppConfig.errors[errorCode]) {
+                    errorMessage = window.AppConfig.errors[errorCode];
+                } else {
+                    switch (errorCode) {
+                        case 'popup_window_error':
+                            errorMessage = 'Popup bloqué. Autorisez les popups pour Outlook et réessayez.';
+                            break;
+                        case 'user_cancelled':
+                            errorMessage = 'Connexion Outlook annulée.';
+                            break;
+                        case 'network_error':
+                            errorMessage = 'Erreur réseau. Vérifiez votre connexion.';
+                            break;
+                        case 'unauthorized_client':
+                            errorMessage = 'Configuration incorrecte. Vérifiez votre Azure Client ID.';
+                            break;
+                        default:
+                            errorMessage = `Erreur Microsoft: ${errorCode}`;
+                    }
+                }
+            } else if (error.message.includes('unauthorized_client')) {
+                errorMessage = 'Configuration Azure incorrecte. Vérifiez votre Client ID.';
+            } else if (error.message.includes('not available')) {
+                errorMessage = 'Service Microsoft temporairement indisponible.';
+            }
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(errorMessage, 'error', 8000);
+            }
+            
+            throw error;
         }
     }
-    
-    showLoginPage() {
-        console.log('[App] Affichage de la page de connexion');
+
+    async logout() {
+        console.log('[App] Logout attempted...');
         
-        this.hideLoadingScreen();
+        // ANALYTICS: Track logout attempt
+        this.trackEvent('logout_attempt', { provider: this.activeProvider });
+        
+        try {
+            const confirmed = confirm('Êtes-vous sûr de vouloir vous déconnecter ?');
+            if (!confirmed) return;
+            
+            this.showModernLoading('Déconnexion...');
+            
+            // Déconnexion selon le provider actif
+            if (this.activeProvider === 'microsoft' && window.authService) {
+                await window.authService.logout();
+            } else if (this.activeProvider === 'google' && window.googleAuthService) {
+                await window.googleAuthService.logout();
+            } else {
+                // Fallback: essayer les deux
+                if (window.authService) {
+                    try { await window.authService.logout(); } catch (e) {
+                        console.warn('[App] Microsoft logout error:', e);
+                    }
+                }
+                if (window.googleAuthService) {
+                    try { await window.googleAuthService.logout(); } catch (e) {
+                        console.warn('[App] Google logout error:', e);
+                    }
+                }
+                this.forceCleanup();
+            }
+            
+        } catch (error) {
+            console.error('[App] Logout error:', error);
+            
+            // ANALYTICS: Track logout error
+            this.trackError('logout_error', {
+                message: error.message,
+                provider: this.activeProvider
+            });
+            
+            this.hideModernLoading();
+            if (window.uiManager) {
+                window.uiManager.showToast('Erreur de déconnexion. Nettoyage forcé...', 'warning');
+            }
+            this.forceCleanup();
+        }
+    }
+
+    forceCleanup() {
+        console.log('[App] Force cleanup dual provider...');
+        
+        // ANALYTICS: Track cleanup
+        this.trackEvent('force_cleanup', { provider: this.activeProvider });
+        
+        this.user = null;
+        this.isAuthenticated = false;
+        this.activeProvider = null;
+        this.isInitializing = false;
+        this.initializationPromise = null;
+        this.currentPage = 'dashboard';
+        
+        // Nettoyer les deux services d'authentification
+        if (window.authService && typeof window.authService.forceCleanup === 'function') {
+            window.authService.forceCleanup();
+        }
+        
+        if (window.googleAuthService && typeof window.googleAuthService.forceCleanup === 'function') {
+            window.googleAuthService.forceCleanup();
+        }
+        
+        // Nettoyer le localStorage sélectivement
+        const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
+        const allKeys = Object.keys(localStorage);
+        
+        allKeys.forEach(key => {
+            if (!keysToKeep.includes(key)) {
+                try {
+                    localStorage.removeItem(key);
+                } catch (e) {
+                    console.warn('[App] Error removing key:', key);
+                }
+            }
+        });
+        
+        // Nettoyer sessionStorage aussi
+        try {
+            sessionStorage.removeItem('google_callback_data');
+            sessionStorage.removeItem('google_oauth_state');
+            sessionStorage.removeItem('direct_token_data');
+        } catch (e) {
+            console.warn('[App] Error cleaning sessionStorage:', e);
+        }
+        
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    }
+
+    showLogin() {
+        console.log('[App] Showing login page');
+        
         document.body.classList.add('login-mode');
         document.body.classList.remove('app-active');
         
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.style.display = 'flex';
-            this.enhanceLoginPage();
+        } else {
+            console.error('[App] Login page element not found');
+        }
+        
+        this.hideModernLoading();
+        
+        if (window.uiManager) {
+            window.uiManager.updateAuthStatus(null);
         }
     }
-    
-    enhanceLoginPage() {
-        const loginPage = document.getElementById('loginPage');
-        if (!loginPage) return;
+
+    showAppWithTransition() {
+        console.log('[App] Showing application with transition - Provider:', this.activeProvider);
         
-        loginPage.innerHTML = `
-            <div class="login-container animated fadeIn">
-                <div class="login-card">
-                    <div class="login-header">
-                        <div class="app-logo">
-                            <i class="fas fa-envelope-open-text"></i>
-                        </div>
-                        <h1>EmailSortPro</h1>
-                        <p>Gérez vos emails intelligemment</p>
-                    </div>
-                    
-                    <div class="login-body">
-                        <h2>Choisissez votre service de messagerie</h2>
-                        
-                        <div class="login-options">
-                            <button class="login-button google" onclick="window.app.loginGoogle()">
-                                <i class="fab fa-google"></i>
-                                <span>Continuer avec Gmail</span>
-                            </button>
-                            
-                            <button class="login-button microsoft" onclick="window.app.loginMicrosoft()">
-                                <i class="fab fa-microsoft"></i>
-                                <span>Continuer avec Outlook</span>
-                            </button>
-                        </div>
-                        
-                        <div class="login-features">
-                            <div class="feature">
-                                <i class="fas fa-shield-alt"></i>
-                                <span>Connexion sécurisée</span>
-                            </div>
-                            <div class="feature">
-                                <i class="fas fa-lock"></i>
-                                <span>Vos données restent privées</span>
-                            </div>
-                            <div class="feature">
-                                <i class="fas fa-sync"></i>
-                                <span>Synchronisation en temps réel</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="login-footer">
-                        <p>En vous connectant, vous acceptez nos <a href="#">conditions d'utilisation</a></p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    showAppInterface() {
-        console.log('[App] Affichage de l\'interface principale');
+        // ANALYTICS: Track app display
+        this.trackEvent('app_displayed', {
+            provider: this.activeProvider,
+            userEmail: this.user?.email || this.user?.mail
+        });
         
-        this.hideLoadingScreen();
+        this.hideModernLoading();
+        
+        // Retirer le mode login et activer le mode app
         document.body.classList.remove('login-mode');
         document.body.classList.add('app-active');
+        console.log('[App] App mode activated');
         
-        // Masquer la page de connexion
+        // Afficher les éléments avec vérification de leur existence
         const loginPage = document.getElementById('loginPage');
+        const appHeader = document.querySelector('.app-header');
+        const appNav = document.querySelector('.app-nav');
+        const pageContent = document.getElementById('pageContent');
+        
         if (loginPage) {
             loginPage.style.display = 'none';
-        }
-        
-        // Afficher les éléments de l'application
-        this.showElement('.app-header');
-        this.showElement('.app-nav');
-        this.showElement('#pageContent');
-        
-        // Ajouter la classe du provider
-        document.body.classList.add(`provider-${this.currentProvider}`);
-        
-        // Forcer l'affichage
-        this.forceAppDisplay();
-    }
-    
-    showElement(selector) {
-        const element = document.querySelector(selector);
-        if (element) {
-            element.style.display = 'block';
-            element.style.opacity = '1';
-            element.style.visibility = 'visible';
-        }
-    }
-    
-    forceAppDisplay() {
-        const style = document.createElement('style');
-        style.textContent = `
-            body.app-active #loginPage { display: none !important; }
-            body.app-active .app-header { display: block !important; opacity: 1 !important; }
-            body.app-active .app-nav { display: block !important; opacity: 1 !important; }
-            body.app-active #pageContent { display: block !important; opacity: 1 !important; }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    // =====================================
-    // GESTION DES PAGES
-    // =====================================
-    loadInitialPage() {
-        console.log('[App] Chargement de la page initiale');
-        
-        this.currentPage = 'dashboard';
-        this.setPageMode('dashboard');
-        
-        // Charger le dashboard
-        if (window.dashboardModule && typeof window.dashboardModule.render === 'function') {
-            setTimeout(() => {
-                window.dashboardModule.render();
-            }, 100);
+            console.log('[App] Login page hidden');
         } else {
-            this.showFallbackDashboard();
+            console.warn('[App] Login page element not found');
         }
-    }
-    
-    handleNavigation(event) {
-        event.preventDefault();
         
-        const page = event.currentTarget.dataset.page;
-        if (!page || page === this.currentPage) return;
-        
-        console.log('[App] Navigation vers:', page);
-        
-        // Mettre à jour la navigation
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        event.currentTarget.classList.add('active');
-        
-        // Changer de page
-        this.currentPage = page;
-        this.setPageMode(page);
-        
-        // Charger la page
-        if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
-            window.pageManager.loadPage(page);
+        if (appHeader) {
+            appHeader.style.display = 'block';
+            appHeader.style.opacity = '1';
+            appHeader.style.visibility = 'visible';
+            console.log('[App] Header displayed');
         } else {
-            this.loadPageFallback(page);
+            console.warn('[App] Header element not found');
         }
         
-        // Analytics
-        if (window.analyticsManager) {
-            window.analyticsManager.trackEvent('page_view', { page });
-        }
-    }
-    
-    setPageMode(pageName) {
-        const body = document.body;
-        
-        // Nettoyer les classes de page
-        body.classList.remove(
-            'page-dashboard', 'page-scanner', 'page-emails', 
-            'page-tasks', 'page-ranger', 'page-settings'
-        );
-        
-        // Ajouter la nouvelle classe
-        body.classList.add(`page-${pageName}`);
-        
-        // Gérer le scroll selon la page
-        if (pageName === 'dashboard') {
-            body.style.overflow = 'hidden';
+        if (appNav) {
+            appNav.style.display = 'block';
+            appNav.style.opacity = '1';
+            appNav.style.visibility = 'visible';
+            console.log('[App] Navigation displayed');
         } else {
-            body.style.overflow = '';
-            setTimeout(() => this.checkScrollNeeded(), 300);
+            console.warn('[App] Navigation element not found');
         }
         
-        // Exposer globalement
-        window.currentPage = pageName;
-    }
-    
-    loadPageFallback(page) {
-        console.log('[App] Chargement de la page en mode fallback:', page);
-        
-        const pageContent = document.getElementById('pageContent');
-        if (!pageContent) return;
-        
-        const pages = {
-            dashboard: this.getDashboardHTML(),
-            scanner: this.getScannerHTML(),
-            emails: this.getEmailsHTML(),
-            tasks: this.getTasksHTML(),
-            ranger: this.getRangerHTML(),
-            settings: this.getSettingsHTML()
-        };
-        
-        pageContent.innerHTML = pages[page] || '<div class="page-container"><h1>Page non trouvée</h1></div>';
-        
-        // Initialiser les composants de la page
-        this.initializePageComponents(page);
-    }
-    
-    // =====================================
-    // CONTENU DES PAGES
-    // =====================================
-    getDashboardHTML() {
-        return `
-            <div class="dashboard-container">
-                <div class="dashboard-header">
-                    <h1><i class="fas fa-tachometer-alt"></i> Tableau de bord</h1>
-                    <div class="dashboard-date">${new Date().toLocaleDateString('fr-FR', { 
-                        weekday: 'long', 
-                        year: 'numeric', 
-                        month: 'long', 
-                        day: 'numeric' 
-                    })}</div>
-                </div>
-                
-                <div class="dashboard-welcome">
-                    <h2>Bienvenue, ${this.user?.displayName || this.user?.name || 'Utilisateur'} !</h2>
-                    <p>Voici un aperçu de votre activité EmailSortPro</p>
-                </div>
-                
-                <div class="dashboard-stats">
-                    <div class="stat-card emails">
-                        <div class="stat-icon"><i class="fas fa-envelope"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-value">0</div>
-                            <div class="stat-label">Emails non lus</div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card tasks">
-                        <div class="stat-icon"><i class="fas fa-tasks"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-value">0</div>
-                            <div class="stat-label">Tâches actives</div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card scanned">
-                        <div class="stat-icon"><i class="fas fa-search"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-value">0</div>
-                            <div class="stat-label">Emails scannés</div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card organized">
-                        <div class="stat-icon"><i class="fas fa-folder"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-value">0</div>
-                            <div class="stat-label">Emails organisés</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="dashboard-actions">
-                    <h3>Actions rapides</h3>
-                    <div class="action-grid">
-                        <button class="action-card" onclick="window.app.navigateToPage('scanner')">
-                            <i class="fas fa-search"></i>
-                            <span>Scanner les emails</span>
-                        </button>
-                        
-                        <button class="action-card" onclick="window.app.navigateToPage('tasks')">
-                            <i class="fas fa-plus-circle"></i>
-                            <span>Créer une tâche</span>
-                        </button>
-                        
-                        <button class="action-card" onclick="window.app.navigateToPage('emails')">
-                            <i class="fas fa-inbox"></i>
-                            <span>Voir les emails</span>
-                        </button>
-                        
-                        <button class="action-card" onclick="window.app.navigateToPage('ranger')">
-                            <i class="fas fa-archive"></i>
-                            <span>Ranger les emails</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="dashboard-recent">
-                    <h3>Activité récente</h3>
-                    <div class="activity-list">
-                        <div class="activity-empty">
-                            <i class="fas fa-clock"></i>
-                            <p>Aucune activité récente</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    getScannerHTML() {
-        return `
-            <div class="scanner-container">
-                <div class="page-header">
-                    <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
-                    <p>Analysez vos emails pour identifier les actions importantes</p>
-                </div>
-                
-                <div class="scanner-controls">
-                    <div class="control-group">
-                        <label>Période à scanner</label>
-                        <select id="scanPeriod" class="form-control">
-                            <option value="today">Aujourd'hui</option>
-                            <option value="week">Cette semaine</option>
-                            <option value="month">Ce mois</option>
-                            <option value="all">Tous les emails</option>
-                        </select>
-                    </div>
-                    
-                    <div class="control-group">
-                        <label>Type d'analyse</label>
-                        <select id="scanType" class="form-control">
-                            <option value="all">Analyse complète</option>
-                            <option value="urgent">Urgents uniquement</option>
-                            <option value="tasks">Tâches potentielles</option>
-                            <option value="follow">À suivre</option>
-                        </select>
-                    </div>
-                    
-                    <button class="btn btn-primary btn-scan" onclick="window.app.startScan()">
-                        <i class="fas fa-play"></i> Lancer le scan
-                    </button>
-                </div>
-                
-                <div class="scanner-progress" style="display: none;">
-                    <div class="progress-bar-container">
-                        <div class="progress-bar"></div>
-                    </div>
-                    <div class="progress-text">Analyse en cours...</div>
-                </div>
-                
-                <div class="scanner-results">
-                    <div class="results-empty">
-                        <i class="fas fa-inbox"></i>
-                        <h3>Aucun scan effectué</h3>
-                        <p>Lancez un scan pour analyser vos emails</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    getEmailsHTML() {
-        return `
-            <div class="emails-container">
-                <div class="page-header">
-                    <h1><i class="fas fa-envelope"></i> Emails</h1>
-                    <div class="header-actions">
-                        <button class="btn btn-secondary" onclick="window.app.refreshEmails()">
-                            <i class="fas fa-sync"></i> Actualiser
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="emails-filters">
-                    <div class="filter-group">
-                        <button class="filter-btn active" data-filter="all">
-                            Tous <span class="count">0</span>
-                        </button>
-                        <button class="filter-btn" data-filter="unread">
-                            Non lus <span class="count">0</span>
-                        </button>
-                        <button class="filter-btn" data-filter="flagged">
-                            Importants <span class="count">0</span>
-                        </button>
-                        <button class="filter-btn" data-filter="attachments">
-                            Avec pièces jointes <span class="count">0</span>
-                        </button>
-                    </div>
-                    
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Rechercher dans les emails..." id="emailSearch">
-                    </div>
-                </div>
-                
-                <div class="emails-list">
-                    <div class="emails-loading">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Chargement des emails...</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    getTasksHTML() {
-        return `
-            <div class="tasks-container">
-                <div class="page-header">
-                    <h1><i class="fas fa-tasks"></i> Tâches</h1>
-                    <div class="header-actions">
-                        <button class="btn btn-primary" onclick="window.app.createNewTask()">
-                            <i class="fas fa-plus"></i> Nouvelle tâche
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="tasks-filters">
-                    <button class="filter-btn active" data-filter="all">Toutes</button>
-                    <button class="filter-btn" data-filter="todo">À faire</button>
-                    <button class="filter-btn" data-filter="inprogress">En cours</button>
-                    <button class="filter-btn" data-filter="completed">Terminées</button>
-                    <button class="filter-btn" data-filter="overdue">En retard</button>
-                </div>
-                
-                <div class="tasks-board">
-                    <div class="task-column" data-status="todo">
-                        <div class="column-header">
-                            <h3>À faire</h3>
-                            <span class="task-count">0</span>
-                        </div>
-                        <div class="task-list"></div>
-                    </div>
-                    
-                    <div class="task-column" data-status="inprogress">
-                        <div class="column-header">
-                            <h3>En cours</h3>
-                            <span class="task-count">0</span>
-                        </div>
-                        <div class="task-list"></div>
-                    </div>
-                    
-                    <div class="task-column" data-status="completed">
-                        <div class="column-header">
-                            <h3>Terminées</h3>
-                            <span class="task-count">0</span>
-                        </div>
-                        <div class="task-list"></div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    getRangerHTML() {
-        return `
-            <div class="ranger-container">
-                <div class="page-header">
-                    <h1><i class="fas fa-archive"></i> Ranger les emails</h1>
-                    <p>Organisez automatiquement vos emails par catégories</p>
-                </div>
-                
-                <div class="ranger-stats">
-                    <div class="stat-box">
-                        <i class="fas fa-envelope"></i>
-                        <div class="stat-info">
-                            <div class="stat-value">0</div>
-                            <div class="stat-label">Emails à ranger</div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-box">
-                        <i class="fas fa-folder"></i>
-                        <div class="stat-info">
-                            <div class="stat-value">0</div>
-                            <div class="stat-label">Catégories actives</div>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-box">
-                        <i class="fas fa-check-circle"></i>
-                        <div class="stat-info">
-                            <div class="stat-value">0</div>
-                            <div class="stat-label">Emails rangés</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="ranger-actions">
-                    <button class="btn btn-primary" onclick="window.app.startAutoRanger()">
-                        <i class="fas fa-magic"></i> Ranger automatiquement
-                    </button>
-                    
-                    <button class="btn btn-secondary" onclick="window.app.configureFolders()">
-                        <i class="fas fa-cog"></i> Configurer les dossiers
-                    </button>
-                </div>
-                
-                <div class="ranger-preview">
-                    <h3>Aperçu du rangement</h3>
-                    <div class="preview-empty">
-                        <i class="fas fa-folder-open"></i>
-                        <p>Lancez le rangement automatique pour voir l'aperçu</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    getSettingsHTML() {
-        return `
-            <div class="settings-container">
-                <div class="page-header">
-                    <h1><i class="fas fa-cog"></i> Paramètres</h1>
-                </div>
-                
-                <div class="settings-sections">
-                    <div class="settings-section">
-                        <h2><i class="fas fa-user"></i> Compte</h2>
-                        <div class="settings-content">
-                            <div class="setting-item">
-                                <label>Email connecté</label>
-                                <div class="setting-value">${this.user?.email || this.user?.mail || 'Non disponible'}</div>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <label>Fournisseur</label>
-                                <div class="setting-value">
-                                    <span class="provider-badge ${this.currentProvider}">
-                                        <i class="${this.providers[this.currentProvider].icon}"></i>
-                                        ${this.providers[this.currentProvider].name}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <button class="btn btn-danger" onclick="window.app.logout()">
-                                <i class="fas fa-sign-out-alt"></i> Se déconnecter
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h2><i class="fas fa-bell"></i> Notifications</h2>
-                        <div class="settings-content">
-                            <div class="setting-toggle">
-                                <label>
-                                    <input type="checkbox" id="notifEmails" checked>
-                                    <span>Notifications pour les nouveaux emails</span>
-                                </label>
-                            </div>
-                            
-                            <div class="setting-toggle">
-                                <label>
-                                    <input type="checkbox" id="notifTasks" checked>
-                                    <span>Rappels de tâches</span>
-                                </label>
-                            </div>
-                            
-                            <div class="setting-toggle">
-                                <label>
-                                    <input type="checkbox" id="notifUrgent" checked>
-                                    <span>Alertes emails urgents</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h2><i class="fas fa-palette"></i> Apparence</h2>
-                        <div class="settings-content">
-                            <div class="setting-item">
-                                <label>Thème</label>
-                                <select class="form-control" id="themeSelect">
-                                    <option value="light">Clair</option>
-                                    <option value="dark">Sombre</option>
-                                    <option value="auto">Automatique</option>
-                                </select>
-                            </div>
-                            
-                            <div class="setting-item">
-                                <label>Taille du texte</label>
-                                <select class="form-control" id="fontSizeSelect">
-                                    <option value="small">Petit</option>
-                                    <option value="medium" selected>Moyen</option>
-                                    <option value="large">Grand</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="settings-section">
-                        <h2><i class="fas fa-database"></i> Données</h2>
-                        <div class="settings-content">
-                            <button class="btn btn-secondary" onclick="window.app.exportData()">
-                                <i class="fas fa-download"></i> Exporter les données
-                            </button>
-                            
-                            <button class="btn btn-secondary" onclick="window.app.clearCache()">
-                                <i class="fas fa-trash"></i> Vider le cache
-                            </button>
-                            
-                            <button class="btn btn-warning" onclick="window.app.resetApp()">
-                                <i class="fas fa-undo"></i> Réinitialiser l'application
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    // =====================================
-    // GESTION DU SCROLL
-    // =====================================
-    initializeScrollManager() {
-        console.log('[App] Initialisation du gestionnaire de scroll');
-        
-        this.checkScrollNeeded = () => {
-            const contentHeight = document.documentElement.scrollHeight;
-            const viewportHeight = window.innerHeight;
-            const currentPage = this.currentPage;
-            
-            // Dashboard: jamais de scroll
-            if (currentPage === 'dashboard') {
-                document.body.style.overflow = 'hidden';
-                return;
-            }
-            
-            // Autres pages: scroll si nécessaire
-            if (contentHeight > viewportHeight + 50) {
-                document.body.style.overflow = 'auto';
-            } else {
-                document.body.style.overflow = 'hidden';
-            }
-        };
-        
-        // Observer les changements de contenu
-        if (window.MutationObserver) {
-            this.contentObserver = new MutationObserver(() => {
-                if (this.currentPage !== 'dashboard') {
-                    setTimeout(() => this.checkScrollNeeded(), 100);
-                }
-            });
-            
-            this.contentObserver.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
+        if (pageContent) {
+            pageContent.style.display = 'block';
+            pageContent.style.opacity = '1';
+            pageContent.style.visibility = 'visible';
+            console.log('[App] Page content displayed');
+        } else {
+            console.warn('[App] Page content element not found');
         }
         
-        // Écouter le redimensionnement
-        window.addEventListener('resize', () => {
-            if (this.currentPage !== 'dashboard') {
-                this.checkScrollNeeded();
-            }
-        });
-        
-        // Exposer globalement
-        window.checkScrollNeeded = this.checkScrollNeeded;
-        window.setPageMode = (page) => this.setPageMode(page);
-    }
-    
-    // =====================================
-    // MÉTHODES UTILITAIRES
-    // =====================================
-    async waitForDOM() {
-        if (document.readyState === 'loading') {
-            await new Promise(resolve => {
-                document.addEventListener('DOMContentLoaded', resolve);
-            });
-        }
-    }
-    
-    async waitForServices() {
-        console.log('[App] Attente des services...');
-        
-        const requiredServices = ['uiManager'];
-        const authServices = ['authService', 'googleAuthService'];
-        let attempts = 0;
-        const maxAttempts = 50;
-        
-        while (attempts < maxAttempts) {
-            // Vérifier les services requis
-            const hasRequired = requiredServices.every(service => window[service]);
-            const hasAuth = authServices.some(service => window[service]);
-            
-            if (hasRequired && hasAuth) {
-                console.log('[App] ✅ Services chargés');
-                return;
-            }
-            
-            attempts++;
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        console.warn('[App] Timeout en attendant les services');
-    }
-    
-    async initializeAuthServices() {
-        console.log('[App] Initialisation des services d\'authentification...');
-        
-        const promises = [];
-        
-        if (window.googleAuthService) {
-            promises.push(
-                window.googleAuthService.initialize()
-                    .then(() => console.log('[App] ✅ Google Auth initialisé'))
-                    .catch(err => console.warn('[App] ⚠️ Google Auth:', err.message))
-            );
-        }
-        
-        if (window.authService) {
-            promises.push(
-                window.authService.initialize()
-                    .then(() => console.log('[App] ✅ Microsoft Auth initialisé'))
-                    .catch(err => console.warn('[App] ⚠️ Microsoft Auth:', err.message))
-            );
-        }
-        
-        await Promise.allSettled(promises);
-    }
-    
-    async initializeAppComponents() {
-        console.log('[App] Initialisation des composants...');
-        
-        const components = [
-            { name: 'mailService', init: 'initialize' },
-            { name: 'taskManager', init: 'initialize' },
-            { name: 'categoryManager', init: 'initialize' }
-        ];
-        
-        for (const component of components) {
-            if (window[component.name] && typeof window[component.name][component.init] === 'function') {
-                try {
-                    await window[component.name][component.init]();
-                    console.log(`[App] ✅ ${component.name} initialisé`);
-                } catch (error) {
-                    console.warn(`[App] ⚠️ Erreur ${component.name}:`, error.message);
-                }
-            }
-        }
-    }
-    
-    async updateUserDisplay() {
-        console.log('[App] Mise à jour de l\'affichage utilisateur');
-        
-        if (window.uiManager && this.user) {
+        // Mettre à jour l'interface utilisateur avec le provider
+        if (window.uiManager && typeof window.uiManager.updateAuthStatus === 'function') {
             window.uiManager.updateAuthStatus(this.user);
         }
         
-        // Ajouter le badge du provider
-        const userInfo = document.querySelector('.user-info');
-        if (userInfo && this.currentProvider) {
-            const badge = document.createElement('span');
-            badge.className = `provider-indicator ${this.currentProvider}`;
-            badge.innerHTML = `<i class="${this.providers[this.currentProvider].icon}"></i>`;
-            userInfo.appendChild(badge);
+        // Mettre à jour l'affichage utilisateur avec badge provider
+        if (window.updateUserDisplay && typeof window.updateUserDisplay === 'function') {
+            window.updateUserDisplay(this.user);
         }
-    }
-    
-    setupEventHandlers() {
-        console.log('[App] Configuration des gestionnaires d\'événements');
         
-        // Navigation
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', this.handleNavigation);
-        });
-        
-        // Gestion des erreurs
-        window.addEventListener('error', (event) => {
-            console.error('[App] Erreur globale:', event.error);
-            this.handleGlobalError(event.error);
-        });
-        
-        window.addEventListener('unhandledrejection', (event) => {
-            console.error('[App] Promise rejetée:', event.reason);
-            this.handlePromiseRejection(event.reason);
-        });
-    }
-    
-    // =====================================
-    // MÉTHODES D'AUTHENTIFICATION
-    // =====================================
-    async loginGoogle() {
-        console.log('[App] Connexion Google...');
-        
-        try {
-            this.showLoadingModal('Connexion à Gmail...');
-            
-            if (!window.googleAuthService) {
-                throw new Error('Service Google non disponible');
-            }
-            
-            await window.googleAuthService.login();
-            
-        } catch (error) {
-            console.error('[App] Erreur connexion Google:', error);
-            this.hideLoadingModal();
-            this.showToast('Erreur de connexion Google: ' + error.message, 'error');
-        }
-    }
-    
-    async loginMicrosoft() {
-        console.log('[App] Connexion Microsoft...');
-        
-        try {
-            this.showLoadingModal('Connexion à Outlook...');
-            
-            if (!window.authService) {
-                throw new Error('Service Microsoft non disponible');
-            }
-            
-            await window.authService.login();
-            
-        } catch (error) {
-            console.error('[App] Erreur connexion Microsoft:', error);
-            this.hideLoadingModal();
-            this.showToast('Erreur de connexion Microsoft: ' + error.message, 'error');
-        }
-    }
-    
-    async logout() {
-        console.log('[App] Déconnexion...');
-        
-        const confirmed = confirm('Êtes-vous sûr de vouloir vous déconnecter ?');
-        if (!confirmed) return;
-        
-        try {
-            this.showLoadingModal('Déconnexion...');
-            
-            if (this.currentProvider === 'google' && window.googleAuthService) {
-                await window.googleAuthService.logout();
-            } else if (this.currentProvider === 'microsoft' && window.authService) {
-                await window.authService.logout();
-            }
-            
-            this.cleanup();
-            
-        } catch (error) {
-            console.error('[App] Erreur déconnexion:', error);
-            this.cleanup();
-        }
-    }
-    
-    cleanup() {
-        console.log('[App] Nettoyage...');
-        
-        // Réinitialiser l'état
-        this.currentProvider = null;
-        this.isAuthenticated = false;
-        this.user = null;
+        // INITIALISATION DASHBOARD VIA MODULE
         this.currentPage = 'dashboard';
-        
-        // Nettoyer le stockage
-        sessionStorage.clear();
-        
-        // Recharger
-        setTimeout(() => {
-            window.location.reload();
-        }, 500);
-    }
-    
-    // =====================================
-    // MÉTHODES D'ACTION
-    // =====================================
-    navigateToPage(page) {
-        const navItem = document.querySelector(`.nav-item[data-page="${page}"]`);
-        if (navItem) {
-            navItem.click();
-        }
-    }
-    
-    async startScan() {
-        console.log('[App] Démarrage du scan...');
-        
-        const scannerProgress = document.querySelector('.scanner-progress');
-        const scannerResults = document.querySelector('.scanner-results');
-        
-        if (scannerProgress) {
-            scannerProgress.style.display = 'block';
+        if (window.setPageMode) {
+            window.setPageMode('dashboard');
         }
         
-        if (scannerResults) {
-            scannerResults.innerHTML = '<div class="scanning-animation"><i class="fas fa-spinner fa-spin"></i> Analyse en cours...</div>';
-        }
+        // Forcer immédiatement pas de scroll pour le dashboard
+        document.body.style.overflow = 'hidden';
+        document.body.style.overflowY = 'hidden';
+        console.log('[App] Dashboard scroll forcé à hidden');
         
-        // Simuler un scan
-        setTimeout(() => {
-            if (scannerProgress) {
-                scannerProgress.style.display = 'none';
-            }
-            
-            if (scannerResults) {
-                scannerResults.innerHTML = `
-                    <div class="scan-complete">
-                        <i class="fas fa-check-circle"></i>
-                        <h3>Scan terminé</h3>
-                        <p>12 emails importants identifiés</p>
-                    </div>
-                `;
-            }
-            
-            this.showToast('Scan terminé avec succès', 'success');
-        }, 3000);
-    }
-    
-    async refreshEmails() {
-        console.log('[App] Actualisation des emails...');
-        this.showToast('Actualisation en cours...', 'info');
-        
-        // Actualiser via le service mail
-        if (window.mailService && typeof window.mailService.refreshEmails === 'function') {
-            try {
-                await window.mailService.refreshEmails();
-                this.showToast('Emails actualisés', 'success');
-            } catch (error) {
-                this.showToast('Erreur d\'actualisation', 'error');
-            }
-        }
-    }
-    
-    createNewTask() {
-        console.log('[App] Création d\'une nouvelle tâche...');
-        
-        // Ouvrir le modal de création
-        if (window.taskManager && typeof window.taskManager.showCreateModal === 'function') {
-            window.taskManager.showCreateModal();
-        } else {
-            this.showToast('Gestionnaire de tâches non disponible', 'warning');
-        }
-    }
-    
-    // =====================================
-    // MÉTHODES UI
-    // =====================================
-    showLoadingModal(message = 'Chargement...') {
-        const modal = document.createElement('div');
-        modal.id = 'loadingModal';
-        modal.className = 'loading-modal';
-        modal.innerHTML = `
-            <div class="loading-modal-content">
-                <div class="loading-spinner"></div>
-                <p>${message}</p>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-    
-    hideLoadingModal() {
-        const modal = document.getElementById('loadingModal');
-        if (modal) {
-            modal.remove();
-        }
-    }
-    
-    showToast(message, type = 'info', duration = 3000) {
-        if (window.uiManager && typeof window.uiManager.showToast === 'function') {
-            window.uiManager.showToast(message, type, duration);
-        } else {
-            // Fallback
-            console.log(`[Toast ${type}] ${message}`);
-        }
-    }
-    
-    showError(message) {
-        console.error('[App] Erreur:', message);
-        
-        const errorContainer = document.createElement('div');
-        errorContainer.className = 'app-error-container';
-        errorContainer.innerHTML = `
-            <div class="error-content">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h2>Erreur d'application</h2>
-                <p>${message}</p>
-                <button onclick="location.reload()" class="btn btn-primary">
-                    Recharger l'application
-                </button>
-            </div>
-        `;
-        
-        document.body.innerHTML = '';
-        document.body.appendChild(errorContainer);
-    }
-    
-    // =====================================
-    // INITIALISATION DES COMPOSANTS DE PAGE
-    // =====================================
-    initializePageComponents(page) {
-        switch (page) {
-            case 'emails':
-                this.initializeEmailsPage();
-                break;
-            case 'tasks':
-                this.initializeTasksPage();
-                break;
-            case 'settings':
-                this.initializeSettingsPage();
-                break;
-        }
-    }
-    
-    initializeEmailsPage() {
-        // Filtres
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                // Appliquer le filtre
-            });
-        });
-        
-        // Recherche
-        const searchInput = document.getElementById('emailSearch');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                // Implémenter la recherche
-                console.log('Recherche:', e.target.value);
-            });
-        }
-    }
-    
-    initializeTasksPage() {
-        // Filtres de tâches
-        document.querySelectorAll('.tasks-filters .filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.tasks-filters .filter-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                // Filtrer les tâches
-            });
-        });
-    }
-    
-    initializeSettingsPage() {
-        // Thème
-        const themeSelect = document.getElementById('themeSelect');
-        if (themeSelect) {
-            themeSelect.addEventListener('change', (e) => {
-                this.applyTheme(e.target.value);
-            });
-        }
-        
-        // Taille de police
-        const fontSizeSelect = document.getElementById('fontSizeSelect');
-        if (fontSizeSelect) {
-            fontSizeSelect.addEventListener('change', (e) => {
-                document.body.className = document.body.className.replace(/font-\w+/, '');
-                document.body.classList.add(`font-${e.target.value}`);
-            });
-        }
-    }
-    
-    applyTheme(theme) {
-        document.body.classList.remove('theme-light', 'theme-dark');
-        
-        if (theme === 'auto') {
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            theme = prefersDark ? 'dark' : 'light';
-        }
-        
-        document.body.classList.add(`theme-${theme}`);
-        localStorage.setItem('emailsortpro_theme', theme);
-    }
-    
-    // =====================================
-    // ANALYTICS
-    // =====================================
-    initializeAnalytics() {
-        if (window.analyticsManager) {
-            try {
-                window.analyticsManager.onPageLoad('app');
-                
-                if (this.user) {
-                    window.analyticsManager.trackAuthentication(this.currentProvider, this.user);
+        // CHARGER LE DASHBOARD VIA LE MODULE avec vérification robuste
+        if (window.dashboardModule && typeof window.dashboardModule.render === 'function') {
+            console.log('[App] Loading dashboard via dashboardModule...');
+            setTimeout(() => {
+                try {
+                    window.dashboardModule.render();
+                    console.log('[App] Dashboard loaded via module for provider:', this.activeProvider);
+                } catch (error) {
+                    console.error('[App] Dashboard render error:', error);
+                    this.showDashboardFallback();
                 }
-                
-                console.log('[App] ✅ Analytics initialisées');
-            } catch (error) {
-                console.warn('[App] Erreur analytics:', error);
-            }
-        }
-    }
-    
-    // =====================================
-    // GESTION DES ERREURS
-    // =====================================
-    handleGlobalError(error) {
-        if (window.analyticsManager) {
-            window.analyticsManager.onError('global_error', {
-                message: error?.message || 'Unknown error',
-                stack: error?.stack
-            });
-        }
-    }
-    
-    handlePromiseRejection(reason) {
-        if (window.analyticsManager) {
-            window.analyticsManager.onError('promise_rejection', {
-                reason: reason?.message || reason || 'Unknown rejection'
-            });
-        }
-    }
-    
-    handleInitializationError(error) {
-        console.error('[App] Erreur d\'initialisation:', error);
-        
-        if (error.message.includes('Prérequis')) {
-            this.showConfigurationError();
+            }, 100);
         } else {
-            this.showError('Impossible d\'initialiser l\'application: ' + error.message);
-        }
-    }
-    
-    showConfigurationError() {
-        const errorContainer = document.createElement('div');
-        errorContainer.className = 'config-error-container';
-        errorContainer.innerHTML = `
-            <div class="error-content">
-                <i class="fas fa-cog"></i>
-                <h2>Configuration requise</h2>
-                <p>L'application nécessite une configuration initiale</p>
-                <a href="setup.html" class="btn btn-primary">
-                    Configurer l'application
-                </a>
-            </div>
-        `;
-        
-        document.body.innerHTML = '';
-        document.body.appendChild(errorContainer);
-    }
-    
-    // =====================================
-    // MÉTHODES SUPPLÉMENTAIRES
-    // =====================================
-    async backgroundInit() {
-        console.log('[App] Initialisation en arrière-plan...');
-        
-        try {
-            await this.waitForServices();
-            await this.initializeAuthServices();
-            await this.initializeAppComponents();
-            await this.updateUserDisplay();
-            this.loadInitialPage();
-            this.setupEventHandlers();
-            this.initializeScrollManager();
-            this.initializeAnalytics();
-            
-            this.isInitialized = true;
-            console.log('[App] ✅ Initialisation arrière-plan terminée');
-        } catch (error) {
-            console.error('[App] Erreur initialisation arrière-plan:', error);
-        }
-    }
-    
-    checkPrerequisites() {
-        if (!window.AppConfig) {
-            console.error('[App] Configuration manquante');
-            return false;
+            console.warn('[App] Dashboard module not available, creating fallback...');
+            setTimeout(() => {
+                if (window.dashboardModule && typeof window.dashboardModule.render === 'function') {
+                    try {
+                        window.dashboardModule.render();
+                    } catch (error) {
+                        console.error('[App] Dashboard render error:', error);
+                        this.showDashboardFallback();
+                    }
+                } else {
+                    this.showDashboardFallback();
+                }
+            }, 500);
         }
         
-        const validation = window.AppConfig.validate();
-        if (!validation.valid) {
-            console.error('[App] Configuration invalide:', validation.issues);
-            return false;
-        }
+        // Forcer l'affichage avec CSS
+        this.forceAppDisplay();
         
-        return true;
+        setTimeout(() => {
+            window.checkScrollNeeded();
+        }, 1000);
+        
+        console.log(`[App] ✅ Application fully displayed with ${this.activeProvider} provider`);
     }
-    
-    showFallbackDashboard() {
+
+    showDashboardFallback() {
+        console.log('[App] Showing dashboard fallback...');
+        
         const pageContent = document.getElementById('pageContent');
-        if (pageContent) {
-            pageContent.innerHTML = this.getDashboardHTML();
+        if (!pageContent) {
+            console.error('[App] Cannot show dashboard fallback - pageContent not found');
+            return;
         }
-    }
-    
-    // =====================================
-    // MÉTHODES DE PARAMÈTRES
-    // =====================================
-    async exportData() {
-        console.log('[App] Export des données...');
-        this.showToast('Export en cours...', 'info');
         
-        try {
-            const data = {
-                user: this.user,
-                provider: this.currentProvider,
-                tasks: window.taskManager ? window.taskManager.getAllTasks() : [],
-                categories: window.categoryManager ? window.categoryManager.getAllCategories() : [],
-                exportDate: new Date().toISOString()
-            };
-            
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `emailsortpro-export-${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            this.showToast('Export terminé', 'success');
-        } catch (error) {
-            console.error('[App] Erreur export:', error);
-            this.showToast('Erreur lors de l\'export', 'error');
-        }
-    }
-    
-    clearCache() {
-        console.log('[App] Vidage du cache...');
-        
-        if (confirm('Êtes-vous sûr de vouloir vider le cache ?')) {
-            // Vider le cache spécifique
-            const keysToKeep = ['emailsortpro_client_id', 'emailsortpro_theme'];
-            const allKeys = Object.keys(localStorage);
-            
-            allKeys.forEach(key => {
-                if (!keysToKeep.includes(key) && key.startsWith('emailsortpro_cache_')) {
-                    localStorage.removeItem(key);
-                }
-            });
-            
-            this.showToast('Cache vidé', 'success');
-        }
-    }
-    
-    resetApp() {
-        console.log('[App] Réinitialisation de l\'application...');
-        
-        if (confirm('⚠️ Cette action supprimera toutes vos données locales. Continuer ?')) {
-            this.cleanup();
-        }
-    }
-    
-    // =====================================
-    // MÉTHODES RANGER
-    // =====================================
-    async startAutoRanger() {
-        console.log('[App] Démarrage du rangement automatique...');
-        this.showToast('Analyse des emails en cours...', 'info');
-        
-        // Simuler le rangement
-        setTimeout(() => {
-            const preview = document.querySelector('.ranger-preview');
-            if (preview) {
-                preview.innerHTML = `
-                    <h3>Aperçu du rangement</h3>
-                    <div class="ranger-results">
-                        <div class="ranger-category">
-                            <i class="fas fa-briefcase"></i>
-                            <span>Professionnel</span>
-                            <span class="count">23 emails</span>
+        pageContent.innerHTML = `
+            <div class="dashboard-fallback">
+                <div class="dashboard-header">
+                    <h1><i class="fas fa-tachometer-alt"></i> Tableau de bord</h1>
+                    <p>Bienvenue dans EmailSortPro</p>
+                </div>
+                <div class="dashboard-content">
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card">
+                            <div class="card-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3>Scanner d'emails</h3>
+                                <p>Analysez et triez vos emails automatiquement</p>
+                                <button onclick="window.pageManager?.loadPage('scanner')" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Accéder au scanner
+                                </button>
+                            </div>
                         </div>
-                        <div class="ranger-category">
-                            <i class="fas fa-shopping-cart"></i>
-                            <span>Achats</span>
-                            <span class="count">12 emails</span>
-                        </div>
-                        <div class="ranger-category">
-                            <i class="fas fa-bell"></i>
-                            <span>Notifications</span>
-                            <span class="count">45 emails</span>
+                        <div class="dashboard-card">
+                            <div class="card-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3>Gestionnaire de tâches</h3>
+                                <p>Organisez vos tâches et suivez vos projets</p>
+                                <button onclick="window.pageManager?.loadPage('tasks')" class="btn btn-primary">
+                                    <i class="fas fa-list"></i> Voir les tâches
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <button class="btn btn-success" onclick="window.app.confirmRanger()">
-                        <i class="fas fa-check"></i> Confirmer le rangement
-                    </button>
-                `;
-            }
-            
-            this.showToast('Analyse terminée', 'success');
-        }, 2000);
-    }
-    
-    confirmRanger() {
-        console.log('[App] Confirmation du rangement...');
-        this.showToast('Rangement en cours...', 'info');
-        
-        setTimeout(() => {
-            this.showToast('80 emails ont été rangés avec succès', 'success');
-            
-            // Mettre à jour les stats
-            const statsValue = document.querySelector('.ranger-stats .stat-box:last-child .stat-value');
-            if (statsValue) {
-                statsValue.textContent = '80';
-            }
-            
-            // Réinitialiser l'aperçu
-            const preview = document.querySelector('.ranger-preview');
-            if (preview) {
-                preview.innerHTML = `
-                    <h3>Aperçu du rangement</h3>
-                    <div class="preview-empty">
-                        <i class="fas fa-check-circle" style="color: #10b981;"></i>
-                        <p>Rangement terminé avec succès</p>
+                    <div class="provider-info">
+                        <div class="provider-badge ${this.activeProvider}">
+                            <i class="fas fa-${this.activeProvider === 'microsoft' ? 'envelope' : 'envelope'}"></i>
+                            Connecté via ${this.activeProvider === 'microsoft' ? 'Microsoft Outlook' : 'Google Gmail'}
+                        </div>
                     </div>
+                </div>
+            </div>
+        `;
+        
+        console.log('[App] Dashboard fallback displayed');
+    }
+
+    forceAppDisplay() {
+        const forceDisplayStyle = document.createElement('style');
+        forceDisplayStyle.id = 'force-app-display';
+        forceDisplayStyle.textContent = `
+            body.app-active #loginPage {
+                display: none !important;
+            }
+            body.app-active .app-header {
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            body.app-active .app-nav {
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            body.app-active #pageContent {
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            .dashboard-fallback {
+                padding: 2rem;
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            .dashboard-header {
+                text-align: center;
+                margin-bottom: 3rem;
+            }
+            .dashboard-header h1 {
+                font-size: 2.5rem;
+                color: #1f2937;
+                margin-bottom: 0.5rem;
+            }
+            .dashboard-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 2rem;
+                margin-bottom: 2rem;
+            }
+            .dashboard-card {
+                background: white;
+                border-radius: 12px;
+                padding: 2rem;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                text-align: center;
+            }
+            .card-icon {
+                font-size: 3rem;
+                color: #3b82f6;
+                margin-bottom: 1rem;
+            }
+            .provider-info {
+                text-align: center;
+                margin-top: 2rem;
+            }
+            .provider-badge {
+                display: inline-block;
+                padding: 0.75rem 1.5rem;
+                border-radius: 25px;
+                font-weight: 600;
+                color: white;
+            }
+            .provider-badge.microsoft {
+                background: linear-gradient(135deg, #0078d4, #106ebe);
+            }
+            .provider-badge.google {
+                background: linear-gradient(135deg, #4285f4, #34a853);
+            }
+        `;
+        
+        const oldStyle = document.getElementById('force-app-display');
+        if (oldStyle) {
+            oldStyle.remove();
+        }
+        
+        document.head.appendChild(forceDisplayStyle);
+        console.log('[App] Force display CSS injected');
+    }
+
+    showModernLoading(message = 'Chargement...') {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            const loadingText = loadingOverlay.querySelector('.login-loading-text');
+            if (loadingText) {
+                loadingText.innerHTML = `
+                    <div>${message}</div>
+                    <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">Authentification en cours</div>
                 `;
             }
-        }, 1500);
+            loadingOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
     }
-    
-    configureFolders() {
-        console.log('[App] Configuration des dossiers...');
-        this.showToast('Configuration des dossiers à venir...', 'info');
+
+    hideModernLoading() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+        }
+        document.body.style.overflow = '';
     }
-    
+
+    showError(message) {
+        console.error('[App] Showing error:', message);
+        
+        // ANALYTICS: Track error display
+        this.trackError('app_error_display', { message: message });
+        
+        const loginPage = document.getElementById('loginPage');
+        if (loginPage) {
+            loginPage.innerHTML = `
+                <div class="login-container">
+                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: #1f2937;">
+                        <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
+                            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+                        </div>
+                        <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Erreur d'application</h1>
+                        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 30px; border-radius: 20px; margin: 30px 0;">
+                            <p style="font-size: 1.2rem; line-height: 1.6; color: #1f2937;">${message}</p>
+                            ${this.isNetlifyEnv ? `
+                                <div style="margin-top: 20px; padding: 15px; background: rgba(59, 130, 246, 0.1); border-radius: 10px;">
+                                    <p style="font-size: 1rem; color: #1e40af;">
+                                        <i class="fas fa-info-circle"></i>
+                                        Environnement Netlify détecté: ${this.netlifyDomain}
+                                    </p>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="location.reload()" class="login-button">
+                                <i class="fas fa-refresh"></i>
+                                Actualiser la page
+                            </button>
+                            <button onclick="window.app.forceCleanup()" class="login-button" style="background: rgba(107, 114, 128, 0.2); color: #374151; border: 1px solid rgba(107, 114, 128, 0.3);">
+                                <i class="fas fa-undo"></i>
+                                Réinitialiser
+                            </button>
+                            ${this.isNetlifyEnv ? `
+                                <button onclick="window.diagnoseApp()" class="login-button" style="background: rgba(59, 130, 246, 0.2); color: #1e40af; border: 1px solid rgba(59, 130, 246, 0.3);">
+                                    <i class="fas fa-stethoscope"></i>
+                                    Diagnostic
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            loginPage.style.display = 'flex';
+        }
+        
+        this.hideModernLoading();
+    }
+
+    showConfigurationError(issues) {
+        console.error('[App] Configuration error:', issues);
+        
+        // ANALYTICS: Track configuration error
+        this.trackError('config_error', { issues: issues });
+        
+        const loginPage = document.getElementById('loginPage');
+        if (loginPage) {
+            loginPage.innerHTML = `
+                <div class="login-container">
+                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: #1f2937;">
+                        <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
+                            <i class="fas fa-exclamation-triangle" style="color: #fbbf24;"></i>
+                        </div>
+                        <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: #1f2937;">Configuration requise</h1>
+                        <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); padding: 30px; border-radius: 20px; margin: 30px 0; text-align: left;">
+                            <h3 style="color: #fbbf24; margin-bottom: 15px;">Problèmes détectés :</h3>
+                            <ul style="margin-left: 20px;">
+                                ${issues.map(issue => `<li style="margin: 8px 0;">${issue}</li>`).join('')}
+                            </ul>
+                            ${this.isNetlifyEnv ? `
+                                <div style="margin-top: 20px; padding: 15px; background: rgba(59, 130, 246, 0.05); border-radius: 10px;">
+                                    <h4 style="color: #1e40af; margin-bottom: 10px;">
+                                        <i class="fas fa-cloud"></i> Environnement Netlify
+                                    </h4>
+                                    <p style="font-size: 0.9rem; color: #1e40af;">
+                                        Domaine: ${this.netlifyDomain}<br>
+                                        Vérifiez que les URLs de redirection sont configurées pour ce domaine.
+                                    </p>
+                                </div>
+                            ` : ''}
+                            <div style="margin-top: 20px; padding: 20px; background: rgba(251, 191, 36, 0.05); border-radius: 10px;">
+                                <h4 style="margin-bottom: 10px;">Pour résoudre :</h4>
+                                <ol style="margin-left: 20px;">
+                                    <li>Cliquez sur "Configurer l'application"</li>
+                                    <li>Suivez l'assistant de configuration</li>
+                                    <li>Entrez vos Client IDs Azure et Google</li>
+                                    ${this.isNetlifyEnv ? '<li>Configurez les URLs de redirection pour Netlify</li>' : ''}
+                                </ol>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <a href="setup.html" class="login-button" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
+                                <i class="fas fa-cog"></i>
+                                Configurer l'application
+                            </a>
+                            <button onclick="location.reload()" class="login-button" style="background: rgba(107, 114, 128, 0.2); color: #374151; border: 1px solid rgba(107, 114, 128, 0.3);">
+                                <i class="fas fa-refresh"></i>
+                                Actualiser
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        this.hideModernLoading();
+    }
+
     // =====================================
-    // MÉTHODES DE DIAGNOSTIC
+    // DIAGNOSTIC ET INFORMATIONS AVEC ANALYTICS
     // =====================================
-    getDebugInfo() {
+    getDiagnosticInfo() {
         return {
-            version: this.version,
-            isInitialized: this.isInitialized,
-            currentProvider: this.currentProvider,
-            isAuthenticated: this.isAuthenticated,
-            currentPage: this.currentPage,
+            environment: {
+                isNetlify: this.isNetlifyEnv,
+                domain: window.location.hostname,
+                netlifyDomain: this.netlifyDomain,
+                userAgent: navigator.userAgent.substring(0, 100)
+            },
+            app: {
+                isAuthenticated: this.isAuthenticated,
+                activeProvider: this.activeProvider,
+                currentPage: this.currentPage,
+                isInitialized: !this.isInitializing,
+                initAttempts: this.initializationAttempts
+            },
             user: this.user ? {
-                email: this.user.email || this.user.mail,
-                name: this.user.displayName || this.user.name
+                name: this.user.displayName || this.user.name,
+                email: this.user.mail || this.user.email,
+                provider: this.user.provider
             } : null,
+            analytics: {
+                available: !!window.analyticsManager,
+                tracking: !!window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function',
+                lastSession: window.analyticsManager ? window.analyticsManager.currentSession : null
+            },
             services: {
-                authService: !!window.authService,
-                googleAuthService: !!window.googleAuthService,
-                mailService: !!window.mailService,
-                uiManager: !!window.uiManager,
-                taskManager: !!window.taskManager,
-                pageManager: !!window.pageManager,
-                dashboardModule: !!window.dashboardModule,
-                analyticsManager: !!window.analyticsManager
+                microsoftAuth: window.authService ? {
+                    available: true,
+                    isInitialized: window.authService.isInitialized,
+                    isAuthenticated: window.authService.isAuthenticated()
+                } : { available: false },
+                googleAuth: window.googleAuthService ? {
+                    available: true,
+                    isInitialized: window.googleAuthService.isInitialized,
+                    isAuthenticated: window.googleAuthService.isAuthenticated(),
+                    method: 'Direct OAuth2 (sans iframe)',
+                    avoidsiFrameError: true
+                } : { available: false },
+                mailService: window.mailService ? {
+                    available: true,
+                    hasGetEmails: typeof window.mailService.getEmails === 'function',
+                    isFallback: window.mailService._isFallback || false
+                } : { available: false },
+                pageManager: window.pageManager ? {
+                    available: true,
+                    hasLoadPage: typeof window.pageManager.loadPage === 'function'
+                } : { available: false },
+                taskManager: window.taskManager ? {
+                    available: true,
+                    isInitialized: window.taskManager.initialized,
+                    taskCount: window.taskManager.getAllTasks ? window.taskManager.getAllTasks().length : 'unknown'
+                } : { available: false },
+                dashboardModule: window.dashboardModule ? {
+                    available: true,
+                    hasRender: typeof window.dashboardModule.render === 'function'
+                } : { available: false },
+                scanModule: window.minimalScanModule ? {
+                    available: true,
+                    hasRender: typeof window.minimalScanModule.render === 'function',
+                    isFallback: window.minimalScanModule._isFallback || false
+                } : { available: false },
+                uiManager: window.uiManager ? {
+                    available: true,
+                    hasUpdateAuthStatus: typeof window.uiManager.updateAuthStatus === 'function'
+                } : { available: false },
+                analyticsManager: window.analyticsManager ? {
+                    available: true,
+                    hasTrackEvent: typeof window.analyticsManager.trackEvent === 'function',
+                    hasTrackAuth: typeof window.analyticsManager.trackAuthentication === 'function',
+                    hasOnError: typeof window.analyticsManager.onError === 'function'
+                } : { available: false }
+            },
+            dom: {
+                loginPage: !!document.getElementById('loginPage'),
+                pageContent: !!document.getElementById('pageContent'),
+                appHeader: !!document.querySelector('.app-header'),
+                appNav: !!document.querySelector('.app-nav'),
+                loadingOverlay: !!document.getElementById('loadingOverlay')
+            },
+            sessionData: {
+                googleCallback: !!sessionStorage.getItem('google_callback_data'),
+                googleToken: !!localStorage.getItem('google_token_emailsortpro'),
+                directToken: !!sessionStorage.getItem('direct_token_data'),
+                googleOAuthState: !!sessionStorage.getItem('google_oauth_state')
+            },
+            errors: {
+                lastGlobalError: window.lastGlobalError || null,
+                lastPromiseRejection: window.lastPromiseRejection || null
             }
         };
+    }
+
+    // Méthode de test pour vérifier les services critiques avec analytics
+    testCriticalServices() {
+        console.group('🧪 Test des services critiques avec analytics');
+        
+        const tests = [];
+        
+        // Test MailService
+        try {
+            if (window.mailService && typeof window.mailService.getEmails === 'function') {
+                tests.push({ service: 'MailService', status: '✅ OK', details: 'getEmails disponible' });
+            } else {
+                tests.push({ service: 'MailService', status: '⚠️ FALLBACK', details: 'Service en mode dégradé' });
+            }
+        } catch (error) {
+            tests.push({ service: 'MailService', status: '❌ ERROR', details: error.message });
+        }
+        
+        // Test PageManager
+        try {
+            if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                tests.push({ service: 'PageManager', status: '✅ OK', details: 'loadPage disponible' });
+            } else {
+                tests.push({ service: 'PageManager', status: '❌ ERROR', details: 'loadPage non disponible' });
+            }
+        } catch (error) {
+            tests.push({ service: 'PageManager', status: '❌ ERROR', details: error.message });
+        }
+        
+        // Test TaskManager
+        try {
+            if (window.taskManager && window.taskManager.initialized) {
+                tests.push({ service: 'TaskManager', status: '✅ OK', details: `${window.taskManager.getAllTasks().length} tâches` });
+            } else {
+                tests.push({ service: 'TaskManager', status: '❌ ERROR', details: 'Non initialisé' });
+            }
+        } catch (error) {
+            tests.push({ service: 'TaskManager', status: '❌ ERROR', details: error.message });
+        }
+        
+        // Test Auth Services
+        try {
+            if (window.authService && window.authService.isInitialized) {
+                tests.push({ service: 'Microsoft Auth', status: '✅ OK', details: 'Initialisé' });
+            } else {
+                tests.push({ service: 'Microsoft Auth', status: '⚠️ WARNING', details: 'Non initialisé' });
+            }
+        } catch (error) {
+            tests.push({ service: 'Microsoft Auth', status: '❌ ERROR', details: error.message });
+        }
+        
+        try {
+            if (window.googleAuthService && window.googleAuthService.isInitialized) {
+                tests.push({ service: 'Google Auth', status: '✅ OK', details: 'Initialisé' });
+            } else {
+                tests.push({ service: 'Google Auth', status: '⚠️ WARNING', details: 'Non initialisé' });
+            }
+        } catch (error) {
+            tests.push({ service: 'Google Auth', status: '❌ ERROR', details: error.message });
+        }
+        
+        // Test Analytics Manager
+        try {
+            if (window.analyticsManager && typeof window.analyticsManager.trackEvent === 'function') {
+                tests.push({ service: 'Analytics Manager', status: '✅ OK', details: 'Tracking disponible' });
+            } else {
+                tests.push({ service: 'Analytics Manager', status: '⚠️ WARNING', details: 'Non disponible' });
+            }
+        } catch (error) {
+            tests.push({ service: 'Analytics Manager', status: '❌ ERROR', details: error.message });
+        }
+        
+        tests.forEach(test => {
+            console.log(`${test.status} ${test.service}: ${test.details}`);
+        });
+        
+        console.groupEnd();
+        return tests;
     }
 }
 
 // =====================================
-// INSTANCE GLOBALE
+// FONCTIONS GLOBALES D'URGENCE AVEC ANALYTICS
 // =====================================
-window.app = null;
+
+window.emergencyReset = function() {
+    console.log('[App] Emergency reset triggered for dual provider');
+    
+    // ANALYTICS: Track emergency reset
+    if (window.app && window.app.trackEvent) {
+        window.app.trackEvent('emergency_reset', { trigger: 'manual' });
+    }
+    
+    const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id', 'emailsortpro_analytics'];
+    const allKeys = Object.keys(localStorage);
+    
+    allKeys.forEach(key => {
+        if (!keysToKeep.includes(key)) {
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {
+                console.warn('[Emergency] Error removing key:', key);
+            }
+        }
+    });
+    
+    // Nettoyer sessionStorage
+    try {
+        sessionStorage.clear();
+    } catch (e) {
+        console.warn('[Emergency] Error clearing sessionStorage:', e);
+    }
+    
+    window.location.reload();
+};
+
+window.forceShowApp = function() {
+    console.log('[Global] Force show app triggered');
+    if (window.app && typeof window.app.showAppWithTransition === 'function') {
+        window.app.showAppWithTransition();
+    } else {
+        document.body.classList.add('app-active');
+        document.body.classList.remove('login-mode');
+        const loginPage = document.getElementById('loginPage');
+        if (loginPage) loginPage.style.display = 'none';
+        
+        if (window.setPageMode) {
+            window.setPageMode('dashboard');
+        }
+        
+        if (window.dashboardModule && typeof window.dashboardModule.render === 'function') {
+            try {
+                window.dashboardModule.render();
+            } catch (error) {
+                console.error('[Global] Dashboard render error:', error);
+            }
+        }
+    }
+};
+
+window.testServices = function() {
+    console.log('[Global] Testing services...');
+    if (window.app && typeof window.app.testCriticalServices === 'function') {
+        return window.app.testCriticalServices();
+    } else {
+        console.error('[Global] App instance not available for testing');
+        return [];
+    }
+};
+
+window.repairMailService = function() {
+    console.log('[Global] Repairing MailService...');
+    if (window.app && typeof window.app.createMailServiceFallback === 'function') {
+        window.app.createMailServiceFallback();
+        console.log('[Global] MailService fallback created');
+        return true;
+    } else {
+        console.error('[Global] Cannot repair MailService - App instance not available');
+        return false;
+    }
+};
+
+window.repairScanModule = function() {
+    console.log('[Global] Repairing scan module...');
+    if (window.app && typeof window.app.createScanModuleFallback === 'function') {
+        window.app.createScanModuleFallback();
+        console.log('[Global] Scan module fallback created');
+        return true;
+    } else {
+        console.error('[Global] Cannot repair scan module - App instance not available');
+        return false;
+    }
+};
 
 // =====================================
-// INITIALISATION AU CHARGEMENT
+// VÉRIFICATION DES SERVICES AVEC ANALYTICS
 // =====================================
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[App] DOM chargé, initialisation de EmailSortPro v5.0...');
+function checkServicesReady() {
+    const requiredServices = ['uiManager'];
+    const authServices = ['authService', 'googleAuthService'];
+    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'analyticsManager'];
     
     try {
-        // Injecter les styles
-        document.head.insertAdjacentHTML('beforeend', appStyles);
+        const missingRequired = requiredServices.filter(service => !window[service]);
+        const availableAuthServices = authServices.filter(service => window[service]);
+        const missingOptional = optionalServices.filter(service => !window[service]);
         
-        // Créer l'instance de l'application
-        window.app = new EmailSortProApp();
+        if (missingRequired.length > 0) {
+            console.error('[App] Missing REQUIRED services:', missingRequired);
+            return false;
+        }
         
-        // Exposer les méthodes globales
-        window.checkScrollNeeded = () => window.app.checkScrollNeeded();
-        window.setPageMode = (page) => window.app.setPageMode(page);
+        if (availableAuthServices.length === 0) {
+            console.error('[App] No authentication services available:', authServices);
+            return false;
+        }
         
+        if (missingOptional.length > 0) {
+            console.warn('[App] Missing optional services:', missingOptional);
+        }
+        
+        if (!window.AppConfig) {
+            console.error('[App] Missing AppConfig');
+            return false;
+        }
+        
+        console.log('[App] Available auth services:', availableAuthServices);
+        console.log('[App] Analytics available:', !!window.analyticsManager);
+        return true;
     } catch (error) {
-        console.error('[App] Erreur critique lors de l\'initialisation:', error);
+        console.error('[App] Error checking services:', error);
+        return false;
+    }
+}
+
+window.checkServices = function() {
+    const services = {
+        required: ['uiManager', 'AppConfig'],
+        auth: ['authService', 'googleAuthService'],
+        optional: ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule', 'pageManager', 'taskManager'],
+        analytics: ['analyticsManager']
+    };
+    
+    const result = {
+        ready: true,
+        available: {},
+        missing: {},
+        errors: {}
+    };
+    
+    Object.keys(services).forEach(category => {
+        result.available[category] = [];
+        result.missing[category] = [];
+        
+        services[category].forEach(service => {
+            try {
+                if (window[service]) {
+                    result.available[category].push(service);
+                } else {
+                    result.missing[category].push(service);
+                    if (category === 'required') {
+                        result.ready = false;
+                    }
+                }
+            } catch (error) {
+                result.errors[service] = error.message;
+                result.missing[category].push(service);
+                if (category === 'required') {
+                    result.ready = false;
+                }
+            }
+        });
+    });
+    
+    // Vérification spéciale pour les services d'auth
+    if (result.available.auth.length === 0) {
+        result.ready = false;
+    }
+    
+    return result;
+};
+
+// =====================================
+// GESTION DES ERREURS GLOBALES AVEC ANALYTICS
+// =====================================
+window.addEventListener('error', (event) => {
+    window.lastGlobalError = {
+        message: event.error?.message || 'Unknown error',
+        stack: event.error?.stack || 'No stack trace',
+        filename: event.filename,
+        lineno: event.lineno,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Track dans analytics si disponible
+    if (window.app && window.app.trackError) {
+        window.app.trackError('global_window_error', window.lastGlobalError);
+    }
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+    window.lastPromiseRejection = {
+        reason: event.reason?.message || event.reason || 'Unknown rejection',
+        stack: event.reason?.stack || 'No stack trace',
+        timestamp: new Date().toISOString()
+    };
+    
+    // Track dans analytics si disponible
+    if (window.app && window.app.trackError) {
+        window.app.trackError('unhandled_promise_rejection', window.lastPromiseRejection);
+    }
+});
+
+// =====================================
+// INITIALISATION PRINCIPALE AVEC ANALYTICS
+// =====================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[App] DOM loaded, creating dual provider app instance with analytics...');
+    
+    try {
+        document.body.classList.add('login-mode');
+        
+        window.app = new App();
+        
+        const waitForServices = (attempts = 0) => {
+            const maxAttempts = 50;
+            
+            try {
+                if (checkServicesReady()) {
+                    console.log('[App] All required services ready, initializing dual provider app with analytics...');
+                    
+                    setTimeout(() => {
+                        try {
+                            window.app.init();
+                        } catch (initError) {
+                            console.error('[App] Error during app initialization:', initError);
+                            if (window.app) {
+                                window.app.showError('Erreur lors de l\'initialisation: ' + initError.message);
+                            }
+                        }
+                    }, 100);
+                } else if (attempts < maxAttempts) {
+                    console.log(`[App] Waiting for services... (${attempts + 1}/${maxAttempts})`);
+                    setTimeout(() => waitForServices(attempts + 1), 100);
+                } else {
+                    console.error('[App] Timeout waiting for services, initializing anyway...');
+                    setTimeout(() => {
+                        try {
+                            window.app.init();
+                        } catch (fallbackError) {
+                            console.error('[App] Fallback initialization failed:', fallbackError);
+                            if (window.app) {
+                                window.app.showError('Échec de l\'initialisation de secours: ' + fallbackError.message);
+                            }
+                        }
+                    }, 100);
+                }
+            } catch (serviceCheckError) {
+                console.error('[App] Error checking services:', serviceCheckError);
+                setTimeout(() => waitForServices(attempts + 1), 200);
+            }
+        };
+        
+        waitForServices();
+        
+    } catch (domError) {
+        console.error('[App] Critical error during DOM initialization:', domError);
+        
+        // Track error si analytics disponible
+        if (window.analyticsManager && window.analyticsManager.onError) {
+            try {
+                window.analyticsManager.onError('dom_init_error', {
+                    message: domError.message,
+                    stack: domError.stack
+                });
+            } catch (analyticsError) {
+                console.warn('[App] Analytics error during DOM error tracking:', analyticsError);
+            }
+        }
+        
+        // Affichage d'erreur d'urgence
         document.body.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                <div style="background: white; padding: 3rem; border-radius: 20px; text-align: center; max-width: 500px;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #ef4444; margin-bottom: 1rem;"></i>
+            <div style="display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-family: system-ui;">
+                <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 20px 25px rgba(0,0,0,0.1); text-align: center; max-width: 500px;">
+                    <div style="font-size: 3rem; color: #ef4444; margin-bottom: 1rem;">⚠️</div>
                     <h1 style="color: #1f2937; margin-bottom: 1rem;">Erreur critique</h1>
-                    <p style="color: #6b7280; margin-bottom: 2rem;">${error.message}</p>
-                    <button onclick="location.reload()" style="background: #667eea; color: white; border: none; padding: 0.75rem 2rem; border-radius: 8px; cursor: pointer;">
+                    <p style="color: #6b7280; margin-bottom: 2rem;">Une erreur critique s'est produite lors du chargement de l'application.</p>
+                    <button onclick="location.reload()" style="background: #3b82f6; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 1rem;">
                         Recharger la page
                     </button>
                 </div>
@@ -1620,1015 +2209,310 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// =====================================
-// FONCTIONS GLOBALES D'URGENCE
-// =====================================
-window.emergencyReset = function() {
-    console.log('[App] Réinitialisation d\'urgence...');
-    
-    if (window.analyticsManager) {
-        window.analyticsManager.trackEvent('emergency_reset', { trigger: 'manual' });
-    }
-    
-    const keysToKeep = ['emailsortpro_client_id', 'emailsortpro_theme'];
-    const allKeys = Object.keys(localStorage);
-    
-    allKeys.forEach(key => {
-        if (!keysToKeep.includes(key)) {
-            localStorage.removeItem(key);
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        try {
+            if (!window.app) {
+                console.error('[App] App instance not created, creating fallback...');
+                document.body.classList.add('login-mode');
+                window.app = new App();
+                window.app.init();
+            } else if (!window.app.isAuthenticated && !window.app.isInitializing) {
+                console.log('[App] Fallback initialization check...');
+                
+                const loginPage = document.getElementById('loginPage');
+                if (loginPage && loginPage.style.display === 'none') {
+                    loginPage.style.display = 'flex';
+                    document.body.classList.add('login-mode');
+                }
+            }
+        } catch (loadError) {
+            console.error('[App] Error during load event:', loadError);
+            
+            // Track error si analytics disponible
+            if (window.app && window.app.trackError) {
+                window.app.trackError('load_event_error', {
+                    message: loadError.message
+                });
+            }
         }
-    });
+    }, 5000);
+});
+
+// =====================================
+// DIAGNOSTIC GLOBAL AVEC ANALYTICS
+// =====================================
+window.diagnoseApp = function() {
+    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS - EmailSortPro v4.2');
     
-    sessionStorage.clear();
-    window.location.reload();
+    try {
+        if (window.app) {
+            const appDiag = window.app.getDiagnosticInfo();
+            
+            console.log('🌐 Environment:', appDiag.environment);
+            console.log('📱 App Status:', appDiag.app);
+            console.log('👤 User:', appDiag.user);
+            console.log('📊 Analytics:', appDiag.analytics);
+            console.log('🛠️ Services:', appDiag.services);
+            console.log('🏗️ DOM Elements:', appDiag.dom);
+            console.log('💾 Session Data:', appDiag.sessionData);
+            
+            if (appDiag.errors.lastGlobalError || appDiag.errors.lastPromiseRejection) {
+                console.log('❌ Recent Errors:', appDiag.errors);
+            }
+            
+            // Test des services critiques
+            const serviceTests = window.app.testCriticalServices();
+            console.log('🧪 Service Tests:', serviceTests);
+            
+            // Diagnostic analytics spécifique
+            if (window.analyticsManager) {
+                console.log('📈 Analytics Data:', window.analyticsManager.getGlobalStats());
+                console.log('👥 User Stats:', window.analyticsManager.getAllUsers().length + ' utilisateurs');
+                console.log('🏢 Company Stats:', window.analyticsManager.getAllCompanies().length + ' sociétés');
+            }
+            
+            return appDiag;
+        } else {
+            console.log('❌ App instance not available');
+            
+            // Diagnostic de base sans instance app
+            const basicDiag = {
+                error: 'App instance not available',
+                services: window.checkServices ? window.checkServices() : 'checkServices not available',
+                analytics: {
+                    available: !!window.analyticsManager,
+                    hasData: window.analyticsManager ? !!window.analyticsManager.getGlobalStats : false
+                },
+                dom: {
+                    loginPage: !!document.getElementById('loginPage'),
+                    pageContent: !!document.getElementById('pageContent')
+                },
+                environment: {
+                    isNetlify: window.location.hostname.includes('netlify.app'),
+                    domain: window.location.hostname,
+                    userAgent: navigator.userAgent.substring(0, 100)
+                }
+            };
+            
+            console.log('📊 Basic Diagnostic:', basicDiag);
+            return basicDiag;
+        }
+    } catch (error) {
+        console.error('❌ Diagnostic error:', error);
+        return { error: error.message, stack: error.stack };
+    } finally {
+        console.groupEnd();
+    }
 };
 
-window.appDiagnostic = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION');
+// =====================================
+// FONCTIONS D'AIDE POUR NETLIFY AVEC ANALYTICS
+// =====================================
+window.netlifyHelpers = {
+    checkDomain: () => {
+        const isNetlify = window.location.hostname.includes('netlify.app');
+        const domain = window.location.hostname;
+        console.log(`Environment: ${isNetlify ? 'Netlify' : 'Other'} (${domain})`);
+        return { isNetlify, domain };
+    },
     
-    if (window.app) {
-        const info = window.app.getDebugInfo();
-        console.log('📱 État de l\'application:', info);
-        
-        // Test des services
-        console.log('\n🧪 Test des services:');
-        Object.entries(info.services).forEach(([service, available]) => {
-            console.log(`${available ? '✅' : '❌'} ${service}`);
-        });
-        
-        // Informations utilisateur
-        if (info.user) {
-            console.log('\n👤 Utilisateur connecté:');
-            console.log(`Email: ${info.user.email}`);
-            console.log(`Nom: ${info.user.name}`);
-            console.log(`Provider: ${info.currentProvider}`);
+    validateConfig: () => {
+        if (!window.AppConfig) {
+            console.error('AppConfig not loaded');
+            return false;
         }
         
-        return info;
-    } else {
-        console.log('❌ Instance de l\'application non disponible');
-        return null;
-    }
+        const validation = window.AppConfig.validate();
+        console.log('Config validation:', validation);
+        return validation.valid;
+    },
     
-    console.groupEnd();
+    testAuth: async () => {
+        const results = {};
+        
+        if (window.authService) {
+            try {
+                results.microsoft = {
+                    available: true,
+                    initialized: window.authService.isInitialized,
+                    authenticated: window.authService.isAuthenticated()
+                };
+            } catch (error) {
+                results.microsoft = { error: error.message };
+            }
+        }
+        
+        if (window.googleAuthService) {
+            try {
+                results.google = {
+                    available: true,
+                    initialized: window.googleAuthService.isInitialized,
+                    authenticated: window.googleAuthService.isAuthenticated()
+                };
+            } catch (error) {
+                results.google = { error: error.message };
+            }
+        }
+        
+        console.log('Auth test results:', results);
+        return results;
+    },
+    
+    testAnalytics: () => {
+        const results = {
+            available: !!window.analyticsManager,
+            methods: {}
+        };
+        
+        if (window.analyticsManager) {
+            const methods = ['trackEvent', 'trackAuthentication', 'onError', 'getGlobalStats', 'getAllUsers', 'getAllCompanies'];
+            methods.forEach(method => {
+                results.methods[method] = typeof window.analyticsManager[method] === 'function';
+            });
+            
+            try {
+                results.stats = window.analyticsManager.getGlobalStats();
+                results.users = window.analyticsManager.getAllUsers().length;
+                results.companies = window.analyticsManager.getAllCompanies().length;
+            } catch (error) {
+                results.error = error.message;
+            }
+        }
+        
+        console.log('Analytics test results:', results);
+        return results;
+    }
 };
 
 // =====================================
-// STYLES CSS INTÉGRÉS
+// FONCTIONS ANALYTICS GLOBALES
 // =====================================
-const appStyles = `
-<style>
-/* Loading Screen */
-.app-loading-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    transition: opacity 0.3s ease;
-}
-
-.app-loading-screen.fade-out {
-    opacity: 0;
-    pointer-events: none;
-}
-
-.loading-content {
-    text-align: center;
-    color: white;
-}
-
-.logo-animation {
-    font-size: 5rem;
-    margin-bottom: 2rem;
-    animation: pulse 2s infinite;
-}
-
-.loading-progress {
-    width: 200px;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
-    margin: 2rem auto;
-    overflow: hidden;
-}
-
-.progress-bar {
-    height: 100%;
-    background: white;
-    width: 30%;
-    animation: loading 2s infinite;
-}
-
-@keyframes loading {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(400%); }
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.1); opacity: 0.8; }
-}
-
-/* Login Page Enhanced */
-.login-container {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.login-card {
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    max-width: 500px;
-    width: 100%;
-    overflow: hidden;
-}
-
-.login-header {
-    text-align: center;
-    padding: 3rem 2rem;
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-}
-
-.app-logo {
-    font-size: 4rem;
-    color: #667eea;
-    margin-bottom: 1rem;
-}
-
-.login-body {
-    padding: 3rem 2rem;
-}
-
-.login-options {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin: 2rem 0;
-}
-
-.login-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    padding: 1rem 2rem;
-    border: none;
-    border-radius: 12px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.login-button.google {
-    background: #4285f4;
-    color: white;
-}
-
-.login-button.google:hover {
-    background: #357ae8;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
-}
-
-.login-button.microsoft {
-    background: #0078d4;
-    color: white;
-}
-
-.login-button.microsoft:hover {
-    background: #106ebe;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 120, 212, 0.3);
-}
-
-.login-features {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    margin-top: 3rem;
-}
-
-.feature {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #6b7280;
-    font-size: 0.9rem;
-}
-
-/* Provider Badges */
-.provider-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: white;
-}
-
-.provider-badge.google {
-    background: linear-gradient(135deg, #4285f4, #34a853);
-}
-
-.provider-badge.microsoft {
-    background: linear-gradient(135deg, #0078d4, #106ebe);
-}
-
-.provider-indicator {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 0.8rem;
-    margin-left: 0.5rem;
-}
-
-.provider-indicator.google {
-    background: #4285f4;
-}
-
-.provider-indicator.microsoft {
-    background: #0078d4;
-}
-
-/* Dashboard Styles */
-.dashboard-container {
-    padding: 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
-.dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
-
-.dashboard-date {
-    color: #6b7280;
-    font-size: 1rem;
-}
-
-.dashboard-welcome {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 2rem;
-    border-radius: 16px;
-    margin-bottom: 3rem;
-}
-
-.dashboard-welcome h2 {
-    margin: 0 0 0.5rem 0;
-    font-size: 2rem;
-}
-
-.dashboard-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-}
-
-.stat-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-}
-
-.stat-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-}
-
-.stat-card.emails .stat-icon {
-    background: rgba(59, 130, 246, 0.1);
-    color: #3b82f6;
-}
-
-.stat-card.tasks .stat-icon {
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
-}
-
-.stat-card.scanned .stat-icon {
-    background: rgba(251, 146, 60, 0.1);
-    color: #fb923c;
-}
-
-.stat-card.organized .stat-icon {
-    background: rgba(139, 92, 246, 0.1);
-    color: #8b5cf6;
-}
-
-.stat-value {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #1f2937;
-    line-height: 1;
-}
-
-.stat-label {
-    color: #6b7280;
-    font-size: 0.9rem;
-    margin-top: 0.5rem;
-}
-
-.dashboard-actions {
-    margin-bottom: 3rem;
-}
-
-.action-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.action-card {
-    background: white;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.action-card:hover {
-    border-color: #667eea;
-    background: rgba(102, 126, 234, 0.05);
-    transform: translateY(-2px);
-}
-
-.action-card i {
-    font-size: 2rem;
-    color: #667eea;
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-.action-card span {
-    color: #4b5563;
-    font-weight: 600;
-}
-
-.activity-list {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.activity-empty {
-    text-align: center;
-    color: #9ca3af;
-    padding: 3rem;
-}
-
-.activity-empty i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-}
-
-/* Scanner Page */
-.scanner-container {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.scanner-controls {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    display: flex;
-    gap: 2rem;
-    align-items: flex-end;
-    margin-bottom: 2rem;
-}
-
-.control-group {
-    flex: 1;
-}
-
-.control-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    color: #4b5563;
-    font-weight: 600;
-}
-
-.form-control {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
-}
-
-.form-control:focus {
-    outline: none;
-    border-color: #667eea;
-}
-
-.btn-scan {
-    padding: 0.75rem 2rem;
-    font-size: 1.1rem;
-}
-
-.scanner-progress {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    margin-bottom: 2rem;
-}
-
-.progress-bar-container {
-    height: 8px;
-    background: #e5e7eb;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.scanner-results {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    min-height: 300px;
-}
-
-.results-empty, .scan-complete {
-    text-align: center;
-    padding: 3rem;
-}
-
-.results-empty i, .scan-complete i {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-}
-
-.results-empty i {
-    color: #9ca3af;
-}
-
-.scan-complete i {
-    color: #10b981;
-}
-
-/* Emails Page */
-.emails-container {
-    padding: 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
-.header-actions {
-    display: flex;
-    gap: 1rem;
-}
-
-.emails-filters {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    margin-bottom: 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 2rem;
-}
-
-.filter-group {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.filter-btn {
-    padding: 0.5rem 1rem;
-    border: 2px solid #e5e7eb;
-    background: white;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.filter-btn:hover {
-    border-color: #667eea;
-}
-
-.filter-btn.active {
-    background: #667eea;
-    color: white;
-    border-color: #667eea;
-}
-
-.filter-btn .count {
-    background: rgba(0, 0, 0, 0.1);
-    padding: 0.1rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-}
-
-.search-box {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: #f3f4f6;
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    flex: 1;
-    max-width: 400px;
-}
-
-.search-box input {
-    border: none;
-    background: none;
-    outline: none;
-    flex: 1;
-    font-size: 1rem;
-}
-
-.emails-list {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    min-height: 400px;
-}
-
-.emails-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem;
-    color: #6b7280;
-}
-
-.emails-loading i {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-}
-
-/* Tasks Page */
-.tasks-container {
-    padding: 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
-.tasks-filters {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 2rem;
-}
-
-.tasks-board {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-}
-
-.task-column {
-    background: #f3f4f6;
-    border-radius: 12px;
-    padding: 1rem;
-    min-height: 500px;
-}
-
-.column-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding: 0.5rem;
-}
-
-.column-header h3 {
-    margin: 0;
-    font-size: 1.1rem;
-    color: #4b5563;
-}
-
-.task-count {
-    background: #e5e7eb;
-    color: #6b7280;
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-}
-
-.task-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-/* Ranger Page */
-.ranger-container {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.ranger-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.stat-box {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.stat-box i {
-    font-size: 2.5rem;
-    color: #667eea;
-}
-
-.ranger-actions {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.ranger-preview {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.preview-empty {
-    text-align: center;
-    padding: 3rem;
-    color: #9ca3af;
-}
-
-.ranger-results {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin: 2rem 0;
-}
-
-.ranger-category {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    background: #f3f4f6;
-    border-radius: 8px;
-}
-
-.ranger-category i {
-    font-size: 1.5rem;
-    color: #667eea;
-}
-
-.ranger-category span:first-of-type {
-    flex: 1;
-    font-weight: 600;
-}
-
-.ranger-category .count {
-    color: #6b7280;
-}
-
-/* Settings Page */
-.settings-container {
-    padding: 2rem;
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.settings-sections {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
-
-.settings-section {
-    background: white;
-    border-radius: 12px;
-    padding: 2rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.settings-section h2 {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    color: #1f2937;
-}
-
-.settings-content {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.setting-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.setting-item label {
-    font-weight: 600;
-    color: #4b5563;
-}
-
-.setting-value {
-    color: #1f2937;
-}
-
-.setting-toggle {
-    display: flex;
-    align-items: center;
-}
-
-.setting-toggle label {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    cursor: pointer;
-}
-
-.setting-toggle input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-}
-
-/* Utility Classes */
-.btn {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.btn-primary {
-    background: #667eea;
-    color: white;
-}
-
-.btn-primary:hover {
-    background: #5a67d8;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.btn-secondary {
-    background: #6b7280;
-    color: white;
-}
-
-.btn-secondary:hover {
-    background: #4b5563;
-}
-
-.btn-success {
-    background: #10b981;
-    color: white;
-}
-
-.btn-success:hover {
-    background: #059669;
-}
-
-.btn-danger {
-    background: #ef4444;
-    color: white;
-}
-
-.btn-danger:hover {
-    background: #dc2626;
-}
-
-.btn-warning {
-    background: #f59e0b;
-    color: white;
-}
-
-.btn-warning:hover {
-    background: #d97706;
-}
-
-/* Loading Modal */
-.loading-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-}
-
-.loading-modal-content {
-    background: white;
-    padding: 2rem 3rem;
-    border-radius: 12px;
-    text-align: center;
-}
-
-.loading-spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid #e5e7eb;
-    border-top-color: #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* Error Container */
-.app-error-container, .config-error-container {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.error-content {
-    background: white;
-    padding: 3rem;
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    max-width: 500px;
-}
-
-.error-content i {
-    font-size: 4rem;
-    color: #ef4444;
-    margin-bottom: 1rem;
-}
-
-.config-error-container .error-content i {
-    color: #f59e0b;
-}
-
-/* Animations */
-.animated {
-    animation-duration: 0.5s;
-    animation-fill-mode: both;
-}
-
-.fadeIn {
-    animation-name: fadeIn;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .dashboard-stats {
-        grid-template-columns: 1fr;
-    }
+window.analyticsHelpers = {
+    // Fonction pour accéder aux analytics depuis analytics.html
+    getAnalyticsData: () => {
+        if (!window.analyticsManager) {
+            console.warn('[Analytics] Analytics manager not available');
+            return null;
+        }
+        
+        try {
+            return window.analyticsManager.getAnalyticsData();
+        } catch (error) {
+            console.error('[Analytics] Error getting analytics data:', error);
+            return null;
+        }
+    },
     
-    .action-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+    // Fonction pour filtrer les utilisateurs par domaine
+    getUsersByDomain: (domain) => {
+        if (!window.analyticsManager) {
+            console.warn('[Analytics] Analytics manager not available');
+            return [];
+        }
+        
+        try {
+            const allUsers = window.analyticsManager.getAllUsers();
+            return allUsers.filter(user => {
+                const userDomain = user.email ? user.email.split('@')[1] : '';
+                return userDomain.toLowerCase().includes(domain.toLowerCase());
+            });
+        } catch (error) {
+            console.error('[Analytics] Error filtering users by domain:', error);
+            return [];
+        }
+    },
     
-    .tasks-board {
-        grid-template-columns: 1fr;
-    }
+    // Fonction pour filtrer les utilisateurs par email
+    getUserByEmail: (email) => {
+        if (!window.analyticsManager) {
+            console.warn('[Analytics] Analytics manager not available');
+            return null;
+        }
+        
+        try {
+            const allUsers = window.analyticsManager.getAllUsers();
+            return allUsers.find(user => 
+                user.email && user.email.toLowerCase() === email.toLowerCase()
+            );
+        } catch (error) {
+            console.error('[Analytics] Error finding user by email:', error);
+            return null;
+        }
+    },
     
-    .emails-filters {
-        flex-direction: column;
-    }
+    // Fonction pour obtenir les statistiques par société
+    getCompanyStats: (companyName) => {
+        if (!window.analyticsManager) {
+            console.warn('[Analytics] Analytics manager not available');
+            return null;
+        }
+        
+        try {
+            const companies = window.analyticsManager.getAllCompanies();
+            return companies.find(company => 
+                company.name && company.name.toLowerCase() === companyName.toLowerCase()
+            );
+        } catch (error) {
+            console.error('[Analytics] Error getting company stats:', error);
+            return null;
+        }
+    },
     
-    .filter-group {
-        flex-wrap: wrap;
+    // Fonction pour exporter les données filtrées
+    exportFilteredData: (filter = {}) => {
+        if (!window.analyticsManager) {
+            console.warn('[Analytics] Analytics manager not available');
+            return;
+        }
+        
+        try {
+            let data = window.analyticsManager.getAnalyticsData();
+            
+            // Appliquer les filtres
+            if (filter.domain) {
+                const filteredUsers = {};
+                Object.keys(data.users).forEach(email => {
+                    const userDomain = email.split('@')[1];
+                    if (userDomain && userDomain.toLowerCase().includes(filter.domain.toLowerCase())) {
+                        filteredUsers[email] = data.users[email];
+                    }
+                });
+                data.users = filteredUsers;
+            }
+            
+            if (filter.company) {
+                const filteredCompanies = {};
+                Object.keys(data.companies).forEach(companyName => {
+                    if (companyName.toLowerCase().includes(filter.company.toLowerCase())) {
+                        filteredCompanies[companyName] = data.companies[companyName];
+                    }
+                });
+                data.companies = filteredCompanies;
+            }
+            
+            // Exporter
+            const blob = new Blob([JSON.stringify(data, null, 2)], {
+                type: 'application/json'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `emailsortpro-analytics-filtered-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            
+            console.log('[Analytics] Filtered data exported successfully');
+        } catch (error) {
+            console.error('[Analytics] Error exporting filtered data:', error);
+        }
     }
-    
-    .scanner-controls {
-        flex-direction: column;
-    }
-}
+};
 
-/* Page Specific Body Classes */
-body.page-dashboard {
-    overflow: hidden;
-}
-
-body.page-scanner,
-body.page-emails,
-body.page-tasks,
-body.page-ranger,
-body.page-settings {
-    overflow: auto;
-}
-
-/* Theme Support */
-body.theme-dark {
-    background: #1f2937;
-    color: #e5e7eb;
-}
-
-body.theme-dark .dashboard-container,
-body.theme-dark .scanner-container,
-body.theme-dark .emails-container,
-body.theme-dark .tasks-container,
-body.theme-dark .ranger-container,
-body.theme-dark .settings-container {
-    color: #e5e7eb;
-}
-
-body.theme-dark .stat-card,
-body.theme-dark .action-card,
-body.theme-dark .scanner-controls,
-body.theme-dark .scanner-results,
-body.theme-dark .emails-filters,
-body.theme-dark .emails-list,
-body.theme-dark .settings-section,
-body.theme-dark .ranger-preview {
-    background: #374151;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-}
-
-body.theme-dark .form-control,
-body.theme-dark .filter-btn {
-    background: #4b5563;
-    border-color: #6b7280;
-    color: #e5e7eb;
-}
-
-body.theme-dark .task-column {
-    background: #374151;
-}
-
-/* Font Size Support */
-body.font-small { font-size: 14px; }
-body.font-medium { font-size: 16px; }
-body.font-large { font-size: 18px; }
-</style>
-`;
+console.log('✅ App v4.2 loaded - DUAL PROVIDER (Microsoft + Google) + ANALYTICS INTEGRATION');
+console.log('🔧 Fonctions globales disponibles: window.diagnoseApp(), window.testServices(), window.repairMailService(), window.repairScanModule()');
+console.log('🌐 Helpers Netlify: window.netlifyHelpers');
+console.log('📊 Helpers Analytics: window.analyticsHelpers');
+console.log('📈 Analytics tracking: Email en clair, filtrage par domaine et par société');
