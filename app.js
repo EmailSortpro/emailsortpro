@@ -1,5 +1,5 @@
-// app.js - Application EmailSortPro avec intégration de licence v5.0
-// Blocage des licences expirées après connexion
+// app.js - Application EmailSortPro avec intégration de licence v5.1
+// Correction du chargement de startscan.js pour Gmail
 
 class App {
     constructor() {
@@ -18,7 +18,7 @@ class App {
         this.licenseStatus = null;
         this.isLicenseChecked = false;
         
-        console.log('[App] Constructor - EmailSortPro v5.0 with license integration...');
+        console.log('[App] Constructor - EmailSortPro v5.1 with proper scanner loading...');
         console.log('[App] Environment:', this.isNetlifyEnv ? 'Netlify' : 'Local');
         console.log('[App] Domain:', window.location.hostname);
         
@@ -602,7 +602,7 @@ class App {
     }
 
     // =====================================
-    // INITIALISATION DES MODULES CRITIQUES
+    // INITIALISATION DES MODULES CRITIQUES (CORRIGÉE)
     // =====================================
     async initializeCriticalModules() {
         console.log('[App] Initializing critical modules...');
@@ -622,8 +622,8 @@ class App {
         // 5. Vérifier MailService avec fallback
         await this.ensureMailServiceReady();
         
-        // 6. Vérifier les modules de scan
-        await this.ensureScanModulesReady();
+        // 6. NE PAS CRÉER DE FALLBACK POUR SCAN - Laisser startscan.js se charger
+        console.log('[App] Skipping scan module fallback - letting startscan.js handle it');
         
         // 7. Bind methods
         this.bindModuleMethods();
@@ -922,103 +922,6 @@ class App {
         
         console.log('[App] ✅ DashboardModule ready');
         return true;
-    }
-
-    async ensureScanModulesReady() {
-        console.log('[App] Ensuring scan modules are ready...');
-        
-        // Vérifier minimalScanModule
-        if (window.minimalScanModule) {
-            console.log('[App] ✅ MinimalScanModule available');
-            
-            // Vérifier que les méthodes essentielles existent
-            if (typeof window.minimalScanModule.render !== 'function') {
-                console.warn('[App] MinimalScanModule.render not available, creating fallback...');
-                this.createScanModuleFallback();
-            }
-        } else {
-            console.warn('[App] MinimalScanModule not available, creating fallback...');
-            this.createScanModuleFallback();
-        }
-        
-        // Vérifier emailScanner
-        if (!window.emailScanner) {
-            console.warn('[App] EmailScanner not available, creating fallback...');
-            this.createEmailScannerFallback();
-        }
-        
-        console.log('[App] ✅ Scan modules ready');
-    }
-
-    createScanModuleFallback() {
-        console.log('[App] Creating scan module fallback...');
-        
-        window.minimalScanModule = {
-            render: () => {
-                console.log('[ScanFallback] Rendering fallback scanner...');
-                
-                const pageContent = document.getElementById('pageContent');
-                if (!pageContent) {
-                    console.error('[ScanFallback] pageContent not found');
-                    return;
-                }
-                
-                pageContent.innerHTML = `
-                    <div class="page-container">
-                        <div class="page-header">
-                            <h1><i class="fas fa-search"></i> Scanner d'emails</h1>
-                            <p>Service de scan temporairement indisponible</p>
-                        </div>
-                        <div class="fallback-content">
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                <div>
-                                    <h3>Service temporairement indisponible</h3>
-                                    <p>Le scanner d'emails n'est pas disponible pour le moment. Veuillez réessayer plus tard.</p>
-                                    <button onclick="window.pageManager.loadPage('dashboard')" class="btn btn-primary">
-                                        <i class="fas fa-home"></i> Retour au tableau de bord
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                console.log('[ScanFallback] Fallback scanner rendered');
-            },
-            
-            initialize: () => {
-                console.log('[ScanFallback] Initialize called');
-                return Promise.resolve();
-            }
-        };
-        
-        console.log('[App] ✅ Scan module fallback created');
-    }
-
-    createEmailScannerFallback() {
-        console.log('[App] Creating email scanner fallback...');
-        
-        window.emailScanner = {
-            scanEmails: async () => {
-                console.warn('[EmailScanner] Fallback: scanEmails called');
-                return {
-                    success: false,
-                    message: 'Service de scan temporairement indisponible',
-                    emails: []
-                };
-            },
-            
-            analyzeEmails: async () => {
-                console.warn('[EmailScanner] Fallback: analyzeEmails called');
-                return {
-                    categories: [],
-                    stats: { total: 0, analyzed: 0 }
-                };
-            }
-        };
-        
-        console.log('[App] ✅ Email scanner fallback created');
     }
 
     // =====================================
@@ -1474,11 +1377,7 @@ class App {
             console.error('[App] Global error:', event.error);
             
             // ANALYTICS: Track global error
-            this.trackError('global_error', {
-                message: event.error?.message || 'Unknown error',
-                filename: event.filename,
-                lineno: event.lineno
-            });
+            this.trackError('global_window_error', window.lastGlobalError);
             
             if (event.error && event.error.message) {
                 const message = event.error.message;
@@ -1640,6 +1539,54 @@ class App {
                 errorMessage = 'Configuration Azure incorrecte. Vérifiez votre Client ID.';
             } else if (error.message.includes('not available')) {
                 errorMessage = 'Service Microsoft temporairement indisponible.';
+            }
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(errorMessage, 'error', 8000);
+            }
+            
+            throw error;
+        }
+    }
+
+    // Connexion Google spécifique
+    async loginGoogle() {
+        console.log('[App] Google login attempted...');
+        
+        // ANALYTICS: Track login attempt
+        this.trackEvent('login_attempt', { provider: 'google' });
+        
+        try {
+            this.showModernLoading('Connexion à Gmail...');
+            
+            if (!window.googleAuthService) {
+                throw new Error('Google AuthService not available');
+            }
+            
+            if (!window.googleAuthService.isInitialized) {
+                console.log('[App] Google AuthService not initialized, initializing...');
+                await window.googleAuthService.initialize();
+            }
+            
+            await window.googleAuthService.login();
+            // La vérification de licence se fera dans checkAuthenticationStatus après le callback
+            
+        } catch (error) {
+            console.error('[App] Google login error:', error);
+            
+            // ANALYTICS: Track login error
+            this.trackError('google_login_error', {
+                message: error.message
+            });
+            
+            this.hideModernLoading();
+            
+            let errorMessage = 'Échec de la connexion Google. Veuillez réessayer.';
+            
+            if (error.message.includes('popup_blocked')) {
+                errorMessage = 'Popup bloqué. Autorisez les popups pour Gmail et réessayez.';
+            } else if (error.message.includes('user_cancelled')) {
+                errorMessage = 'Connexion Gmail annulée.';
             }
             
             if (window.uiManager) {
@@ -2541,18 +2488,6 @@ window.repairMailService = function() {
     }
 };
 
-window.repairScanModule = function() {
-    console.log('[Global] Repairing scan module...');
-    if (window.app && typeof window.app.createScanModuleFallback === 'function') {
-        window.app.createScanModuleFallback();
-        console.log('[Global] Scan module fallback created');
-        return true;
-    } else {
-        console.error('[Global] Cannot repair scan module - App instance not available');
-        return false;
-    }
-};
-
 // Fonction pour tester la licence manuellement
 window.testLicense = async function(email) {
     console.log('[Global] Testing license for:', email);
@@ -2811,7 +2746,7 @@ window.addEventListener('load', () => {
 // DIAGNOSTIC GLOBAL AVEC ANALYTICS ET LICENCE
 // =====================================
 window.diagnoseApp = function() {
-    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS + LICENSE - EmailSortPro v5.0');
+    console.group('🔍 DIAGNOSTIC APPLICATION DUAL PROVIDER + ANALYTICS + LICENSE - EmailSortPro v5.1');
     
     try {
         if (window.app) {
@@ -3112,8 +3047,9 @@ window.analyticsHelpers = {
     }
 };
 
-console.log('✅ App v5.0 loaded - DUAL PROVIDER (Microsoft + Google) + ANALYTICS + LICENSE INTEGRATION');
-console.log('🔧 Fonctions globales disponibles: window.diagnoseApp(), window.testServices(), window.repairMailService(), window.repairScanModule(), window.testLicense()');
+console.log('✅ App v5.1 loaded - DUAL PROVIDER (Microsoft + Google) + ANALYTICS + LICENSE INTEGRATION');
+console.log('🔧 Fonctions globales disponibles: window.diagnoseApp(), window.testServices(), window.repairMailService(), window.testLicense()');
 console.log('🌐 Helpers Netlify: window.netlifyHelpers');
 console.log('📊 Helpers Analytics: window.analyticsHelpers');
 console.log('🔑 Système de licence: Blocage automatique des licences expirées avec accès admin préservé');
+console.log('🔍 Scanner: Module startscan.js chargé SANS fallback pour permettre le chargement natif');
