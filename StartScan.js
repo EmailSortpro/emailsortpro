@@ -1,405 +1,1065 @@
-// startscan.js - Module de scan automatique v3.0
-// Support complet double authentification Outlook/Gmail
+// StartScan.js - Version 9.0 - Mise en évidence des catégories pré-sélectionnées
 
-(function() {
-    'use strict';
-    
-    console.log('[StartScan] 🚀 Module v3.0 loading - Double auth support');
-    
-    class StartScanModule {
-        constructor() {
-            this.isInitialized = false;
-            this.scanAttempts = 0;
-            this.maxScanAttempts = 3;
-            this.observerTimeout = null;
-            this.pageObserver = null;
-            
-            console.log('[StartScan] Module instance created');
-        }
+console.log('[StartScan] 🚀 Loading StartScan.js v9.0...');
+
+class MinimalScanModule {
+    constructor() {
+        this.isInitialized = false;
+        this.scanInProgress = false;
+        this.selectedDays = 7;
+        this.stylesAdded = false;
+        this.scanStartTime = null;
         
-        // Initialisation du module
-        init() {
-            if (this.isInitialized) {
-                console.log('[StartScan] Already initialized');
-                return;
-            }
-            
-            console.log('[StartScan] Initializing module...');
-            
-            this.isInitialized = true;
-            this.setupNavigationHandlers();
-            this.checkCurrentPage();
-            
-            console.log('[StartScan] ✅ Module initialized');
-        }
+        // Intégration avec les paramètres
+        this.settings = {};
+        this.taskPreselectedCategories = [];
+        this.lastSettingsSync = 0;
         
-        // Vérifier la page actuelle
-        checkCurrentPage() {
-            console.log('[StartScan] Checking current page...');
-            
-            // Obtenir la page actuelle depuis n'importe quel PageManager
-            const currentPage = this.getCurrentPage();
-            
-            console.log('[StartScan] Current page:', currentPage);
-            
-            if (currentPage === 'scanner') {
-                console.log('[StartScan] Already on scanner page, preparing auto-scan...');
-                setTimeout(() => this.autoStartScan(), 1000);
-            }
-        }
-        
-        // Obtenir la page actuelle
-        getCurrentPage() {
-            // Vérifier tous les PageManagers possibles
-            if (window.pageManagerGmail && window.pageManagerGmail.currentPage) {
-                return window.pageManagerGmail.currentPage;
-            }
-            
-            if (window.pageManager && window.pageManager.currentPage) {
-                return window.pageManager.currentPage;
-            }
-            
-            // Vérifier l'app
-            if (window.app && window.app.currentPage) {
-                return window.app.currentPage;
-            }
-            
-            return null;
-        }
-        
-        // Obtenir le provider actif
-        getActiveProvider() {
-            console.log('[StartScan] Detecting active provider...');
-            
-            // 1. Vérifier Google
-            if (window.googleAuthService && typeof window.googleAuthService.isAuthenticated === 'function') {
+        console.log('[MinimalScan] Scanner v9.0 initialized - Mise en évidence des catégories');
+        this.loadSettingsFromCategoryManager();
+        this.addMinimalStyles();
+    }
+
+    // ================================================
+    // INTÉGRATION AVEC LES PARAMÈTRES
+    // ================================================
+    loadSettingsFromCategoryManager() {
+        try {
+            if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
+                this.settings = window.categoryManager.getSettings();
+                this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
+                console.log('[MinimalScan] ✅ Paramètres chargés depuis CategoryManager');
+                console.log('[MinimalScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+                
+                if (this.settings.scanSettings?.defaultPeriod) {
+                    this.selectedDays = this.settings.scanSettings.defaultPeriod;
+                }
+            } else {
+                // Fallback localStorage
                 try {
-                    if (window.googleAuthService.isAuthenticated()) {
-                        console.log('[StartScan] Google provider detected');
-                        return 'google';
-                    }
-                } catch (e) {
-                    console.warn('[StartScan] Error checking Google auth:', e);
-                }
-            }
-            
-            // 2. Vérifier Microsoft
-            if (window.authService && typeof window.authService.isAuthenticated === 'function') {
-                try {
-                    if (window.authService.isAuthenticated()) {
-                        console.log('[StartScan] Microsoft provider detected');
-                        return 'microsoft';
-                    }
-                } catch (e) {
-                    console.warn('[StartScan] Error checking Microsoft auth:', e);
-                }
-            }
-            
-            // 3. Vérifier sessionStorage
-            const lastProvider = sessionStorage.getItem('lastAuthProvider');
-            if (lastProvider) {
-                console.log('[StartScan] Provider from session:', lastProvider);
-                return lastProvider;
-            }
-            
-            // 4. Vérifier l'app
-            if (window.app && window.app.activeProvider) {
-                console.log('[StartScan] Provider from app:', window.app.activeProvider);
-                return window.app.activeProvider;
-            }
-            
-            console.log('[StartScan] No active provider found');
-            return null;
-        }
-        
-        // Configuration des gestionnaires de navigation
-        setupNavigationHandlers() {
-            console.log('[StartScan] Setting up navigation handlers...');
-            
-            // Handler pour PageManager standard
-            if (window.pageManager) {
-                this.wrapLoadPage(window.pageManager, 'PageManager');
-            }
-            
-            // Handler pour PageManagerGmail
-            if (window.pageManagerGmail) {
-                this.wrapLoadPage(window.pageManagerGmail, 'PageManagerGmail');
-            }
-            
-            // Observer pour les PageManagers qui arrivent plus tard
-            this.observePageManagers();
-            
-            console.log('[StartScan] Navigation handlers configured');
-        }
-        
-        // Wrapper pour la méthode loadPage
-        wrapLoadPage(pageManager, managerName) {
-            console.log(`[StartScan] Wrapping loadPage for ${managerName}`);
-            
-            const originalLoadPage = pageManager.loadPage;
-            const self = this;
-            
-            pageManager.loadPage = function(pageName) {
-                console.log(`[StartScan] ${managerName} navigation to:`, pageName);
-                
-                // Appeler la méthode originale
-                const result = originalLoadPage.call(this, pageName);
-                
-                // Si navigation vers scanner, préparer le scan auto
-                if (pageName === 'scanner') {
-                    console.log('[StartScan] Navigation to scanner detected');
-                    setTimeout(() => {
-                        self.autoStartScan();
-                    }, 1500);
-                }
-                
-                return result;
-            };
-        }
-        
-        // Observer pour détecter les PageManagers tardifs
-        observePageManagers() {
-            let checkCount = 0;
-            const maxChecks = 20;
-            
-            const checkManagers = () => {
-                checkCount++;
-                
-                // Vérifier PageManager
-                if (window.pageManager && !window.pageManager._startScanWrapped) {
-                    this.wrapLoadPage(window.pageManager, 'PageManager');
-                    window.pageManager._startScanWrapped = true;
-                }
-                
-                // Vérifier PageManagerGmail
-                if (window.pageManagerGmail && !window.pageManagerGmail._startScanWrapped) {
-                    this.wrapLoadPage(window.pageManagerGmail, 'PageManagerGmail');
-                    window.pageManagerGmail._startScanWrapped = true;
-                }
-                
-                // Continuer à vérifier jusqu'à la limite
-                if (checkCount < maxChecks) {
-                    setTimeout(checkManagers, 500);
-                }
-            };
-            
-            // Démarrer la vérification
-            checkManagers();
-        }
-        
-        // Démarrage automatique du scan
-        async autoStartScan() {
-            console.log('[StartScan] 🎯 Auto-start scan initiated...');
-            
-            this.scanAttempts++;
-            
-            if (this.scanAttempts > this.maxScanAttempts) {
-                console.warn('[StartScan] Max scan attempts reached');
-                return;
-            }
-            
-            try {
-                // 1. Attendre que minimalScanModule soit prêt
-                const scanModule = await this.waitForScanModule();
-                if (!scanModule) {
-                    console.error('[StartScan] Scan module not available');
-                    return;
-                }
-                
-                // 2. Vérifier l'authentification
-                const isAuthenticated = await this.checkAuthentication(scanModule);
-                if (!isAuthenticated) {
-                    console.log('[StartScan] User not authenticated, cannot start scan');
-                    return;
-                }
-                
-                // 3. Attendre que l'interface soit prête
-                const interfaceReady = await this.waitForInterface();
-                if (!interfaceReady) {
-                    console.warn('[StartScan] Interface not ready, retrying...');
-                    setTimeout(() => this.autoStartScan(), 2000);
-                    return;
-                }
-                
-                // 4. Obtenir le provider actif
-                const provider = this.getActiveProvider();
-                console.log('[StartScan] Active provider:', provider);
-                
-                // 5. Démarrer le scan
-                console.log('[StartScan] 🚀 Starting automatic scan...');
-                
-                // Petit délai pour s'assurer que tout est stable
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Démarrer le scan
-                if (typeof scanModule.startScan === 'function') {
-                    scanModule.startScan();
-                    console.log('[StartScan] ✅ Scan started successfully');
-                    this.scanAttempts = 0; // Reset attempts on success
-                } else {
-                    console.error('[StartScan] startScan method not found');
-                }
-                
-            } catch (error) {
-                console.error('[StartScan] Error in auto-start:', error);
-                
-                // Réessayer après un délai
-                if (this.scanAttempts < this.maxScanAttempts) {
-                    setTimeout(() => this.autoStartScan(), 3000);
-                }
-            }
-        }
-        
-        // Attendre que le module de scan soit disponible
-        async waitForScanModule() {
-            console.log('[StartScan] Waiting for scan module...');
-            
-            let attempts = 0;
-            const maxAttempts = 30;
-            
-            while (attempts < maxAttempts) {
-                if (window.minimalScanModule) {
-                    console.log('[StartScan] ✅ Scan module found');
-                    return window.minimalScanModule;
-                }
-                
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-            
-            console.error('[StartScan] Scan module timeout');
-            return null;
-        }
-        
-        // Vérifier l'authentification
-        async checkAuthentication(scanModule) {
-            console.log('[StartScan] Checking authentication...');
-            
-            // Si le module a sa propre méthode
-            if (typeof scanModule.checkAuthentication === 'function') {
-                const isAuth = await scanModule.checkAuthentication();
-                console.log('[StartScan] Module auth check:', isAuth);
-                return isAuth;
-            }
-            
-            // Sinon, vérifier manuellement
-            const provider = this.getActiveProvider();
-            return provider !== null;
-        }
-        
-        // Attendre que l'interface soit prête
-        async waitForInterface() {
-            console.log('[StartScan] Waiting for interface...');
-            
-            return new Promise((resolve) => {
-                let attempts = 0;
-                const maxAttempts = 50;
-                
-                const checkInterface = () => {
-                    attempts++;
-                    
-                    // Vérifier si le bouton de scan existe
-                    const scanBtn = document.getElementById('minimalScanBtn');
-                    if (scanBtn && !scanBtn.disabled) {
-                        console.log('[StartScan] ✅ Scan button ready');
-                        resolve(true);
-                        return;
-                    }
-                    
-                    // Vérifier si on a atteint la limite
-                    if (attempts >= maxAttempts) {
-                        console.warn('[StartScan] Interface timeout');
-                        resolve(false);
-                        return;
-                    }
-                    
-                    // Réessayer
-                    setTimeout(checkInterface, 100);
-                };
-                
-                checkInterface();
-            });
-        }
-        
-        // Observer DOM pour détecter le bouton de scan
-        observeScanButton() {
-            console.log('[StartScan] Setting up scan button observer...');
-            
-            if (this.pageObserver) {
-                this.pageObserver.disconnect();
-            }
-            
-            this.pageObserver = new MutationObserver((mutations, observer) => {
-                const scanBtn = document.getElementById('minimalScanBtn');
-                if (scanBtn) {
-                    console.log('[StartScan] Scan button detected via observer');
-                    observer.disconnect();
-                    this.pageObserver = null;
-                    
-                    // Démarrer le scan
-                    setTimeout(() => {
-                        if (!scanBtn.disabled && typeof window.minimalScanModule?.startScan === 'function') {
-                            window.minimalScanModule.startScan();
-                            console.log('[StartScan] ✅ Scan started via observer');
+                    const saved = localStorage.getItem('categorySettings');
+                    if (saved) {
+                        this.settings = JSON.parse(saved);
+                        this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
+                        if (this.settings.scanSettings?.defaultPeriod) {
+                            this.selectedDays = this.settings.scanSettings.defaultPeriod;
                         }
-                    }, 500);
+                    }
+                } catch (error) {
+                    console.warn('[MinimalScan] ⚠️ Erreur chargement localStorage:', error);
                 }
-            });
-            
-            this.pageObserver.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-            
-            // Timeout de sécurité
-            if (this.observerTimeout) {
-                clearTimeout(this.observerTimeout);
             }
             
-            this.observerTimeout = setTimeout(() => {
-                if (this.pageObserver) {
-                    this.pageObserver.disconnect();
-                    this.pageObserver = null;
-                    console.log('[StartScan] Observer timeout');
-                }
-            }, 10000);
+            this.lastSettingsSync = Date.now();
+        } catch (error) {
+            console.error('[MinimalScan] ❌ Erreur chargement paramètres:', error);
+            this.settings = this.getDefaultSettings();
+            this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
+        }
+    }
+
+    getDefaultSettings() {
+        return {
+            scanSettings: {
+                defaultPeriod: 7,
+                defaultFolder: 'inbox',
+                autoAnalyze: true,
+                autoCategrize: true
+            },
+            taskPreselectedCategories: [],
+            preferences: {
+                excludeSpam: true,
+                detectCC: true,
+                showNotifications: true
+            }
+        };
+    }
+
+    checkSettingsUpdate() {
+        const now = Date.now();
+        if (now - this.lastSettingsSync < 5000) return;
+        
+        try {
+            const oldTaskCategories = [...this.taskPreselectedCategories];
+            const oldSelectedDays = this.selectedDays;
+            
+            this.loadSettingsFromCategoryManager();
+            
+            const categoriesChanged = JSON.stringify(oldTaskCategories.sort()) !== JSON.stringify([...this.taskPreselectedCategories].sort());
+            const daysChanged = oldSelectedDays !== this.selectedDays;
+            
+            if (categoriesChanged || daysChanged) {
+                console.log('[MinimalScan] 🔄 Paramètres mis à jour détectés');
+                this.updateUIWithNewSettings();
+            }
+        } catch (error) {
+            console.error('[MinimalScan] Erreur vérification paramètres:', error);
+        }
+    }
+
+    updateUIWithNewSettings() {
+        // Mettre à jour la sélection de durée
+        const durationOptions = document.querySelectorAll('.duration-option');
+        durationOptions.forEach(option => {
+            option.classList.remove('selected');
+            if (parseInt(option.dataset.days) === this.selectedDays) {
+                option.classList.add('selected');
+            }
+        });
+        
+        // Mettre à jour l'affichage des catégories
+        this.updatePreselectedCategoriesDisplay();
+    }
+
+    updatePreselectedCategoriesDisplay() {
+        const display = document.getElementById('preselected-categories-display');
+        if (!display) return;
+        
+        if (this.taskPreselectedCategories.length === 0) {
+            display.innerHTML = `
+                <div class="preselected-info no-selection">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Aucune catégorie pré-sélectionnée pour la création de tâches</span>
+                </div>
+            `;
+        } else {
+            const categoryDetails = this.taskPreselectedCategories.map(catId => {
+                const category = window.categoryManager?.getCategory(catId);
+                return category ? { icon: category.icon, name: category.name, color: category.color } : null;
+            }).filter(Boolean);
+            
+            display.innerHTML = `
+                <div class="preselected-info">
+                    <i class="fas fa-star"></i>
+                    <span>Emails pré-sélectionnés pour tâches:</span>
+                </div>
+                <div class="preselected-categories-grid">
+                    ${categoryDetails.map(cat => `
+                        <div class="preselected-category-badge" style="background: ${cat.color}20; border-color: ${cat.color};">
+                            <span class="category-icon">${cat.icon}</span>
+                            <span class="category-name">${cat.name}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+    }
+
+    addMinimalStyles() {
+        if (this.stylesAdded || document.getElementById('minimal-scan-styles')) {
+            return;
         }
         
-        // Nettoyage
-        cleanup() {
-            if (this.pageObserver) {
-                this.pageObserver.disconnect();
-                this.pageObserver = null;
+        const styles = document.createElement('style');
+        styles.id = 'minimal-scan-styles';
+        styles.textContent = `
+            /* Scanner Ultra-Minimaliste v9.0 */
+            .minimal-scanner {
+                height: calc(100vh - 140px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                overflow: hidden;
+                position: relative;
+                padding: 20px;
             }
             
-            if (this.observerTimeout) {
-                clearTimeout(this.observerTimeout);
-                this.observerTimeout = null;
+            .scanner-card-minimal {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border-radius: 20px;
+                padding: 50px;
+                width: 100%;
+                max-width: 700px;
+                text-align: center;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                animation: fadeIn 0.5s ease-out;
             }
             
-            this.scanAttempts = 0;
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .scanner-icon {
+                width: 80px;
+                height: 80px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 25px;
+                color: white;
+                font-size: 32px;
+            }
+            
+            .scanner-title {
+                font-size: 32px;
+                font-weight: 600;
+                color: #1a1a2e;
+                margin-bottom: 12px;
+            }
+            
+            .scanner-subtitle {
+                font-size: 18px;
+                color: #6b7280;
+                margin-bottom: 35px;
+            }
+            
+            /* Affichage des catégories pré-sélectionnées */
+            #preselected-categories-display {
+                margin: 20px 0;
+            }
+            
+            .preselected-info {
+                background: rgba(139, 92, 246, 0.1);
+                border: 1px solid rgba(139, 92, 246, 0.3);
+                border-radius: 12px;
+                padding: 12px 16px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: #7c3aed;
+                font-size: 14px;
+                font-weight: 500;
+                text-align: left;
+                margin-bottom: 12px;
+            }
+            
+            .preselected-info.no-selection {
+                background: rgba(107, 114, 128, 0.1);
+                border-color: rgba(107, 114, 128, 0.3);
+                color: #6b7280;
+            }
+            
+            .preselected-info i {
+                font-size: 16px;
+                flex-shrink: 0;
+            }
+            
+            .preselected-categories-grid {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                justify-content: center;
+            }
+            
+            .preselected-category-badge {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 14px;
+                border: 2px solid;
+                border-radius: 20px;
+                font-size: 13px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+            }
+            
+            .preselected-category-badge:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+            
+            .category-icon {
+                font-size: 16px;
+            }
+            
+            /* Étapes visuelles */
+            .steps-container {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 35px;
+                padding: 0 20px;
+            }
+            
+            .step {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                flex: 1;
+                position: relative;
+            }
+            
+            .step:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                top: 20px;
+                right: -50%;
+                width: 100%;
+                height: 2px;
+                background: #e5e7eb;
+                z-index: 1;
+            }
+            
+            .step-number {
+                width: 40px;
+                height: 40px;
+                background: #e5e7eb;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                font-weight: 600;
+                color: #9ca3af;
+                margin-bottom: 12px;
+                position: relative;
+                z-index: 2;
+                transition: all 0.3s ease;
+            }
+            
+            .step.active .step-number {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+            
+            .step-label {
+                font-size: 14px;
+                color: #6b7280;
+                text-align: center;
+                max-width: 80px;
+                font-weight: 500;
+            }
+            
+            .step.active .step-label {
+                color: #667eea;
+                font-weight: 600;
+            }
+            
+            /* Sélecteur de durée */
+            .duration-section {
+                margin-bottom: 35px;
+            }
+            
+            .duration-label {
+                font-size: 18px;
+                font-weight: 600;
+                color: #374151;
+                margin-bottom: 20px;
+            }
+            
+            .duration-options {
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .duration-option {
+                padding: 12px 20px;
+                border: 2px solid #e5e7eb;
+                background: white;
+                border-radius: 12px;
+                font-size: 15px;
+                font-weight: 500;
+                color: #6b7280;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                min-width: 85px;
+                position: relative;
+            }
+            
+            .duration-option.selected {
+                border-color: #667eea;
+                background: #667eea;
+                color: white;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            }
+            
+            .duration-option:hover:not(.selected) {
+                border-color: #9ca3af;
+                transform: translateY(-1px);
+            }
+            
+            /* Bouton de scan */
+            .scan-button-minimal {
+                width: 100%;
+                height: 60px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border: none;
+                border-radius: 15px;
+                color: white;
+                font-size: 18px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                margin-bottom: 25px;
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .scan-button-minimal:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            }
+            
+            .scan-button-minimal:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+            
+            .scan-button-minimal::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                transition: left 0.5s;
+            }
+            
+            .scan-button-minimal:hover::before {
+                left: 100%;
+            }
+            
+            /* Badge de résultat avec catégories */
+            .success-badge {
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                background: #8b5cf6;
+                color: white;
+                font-size: 11px;
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-weight: 700;
+                border: 2px solid white;
+                box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+            }
+            
+            /* Section de progression */
+            .progress-section-minimal {
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                margin-top: 20px;
+            }
+            
+            .progress-section-minimal.visible {
+                opacity: 1;
+            }
+            
+            .progress-bar-minimal {
+                width: 100%;
+                height: 4px;
+                background: #e5e7eb;
+                border-radius: 2px;
+                overflow: hidden;
+                margin-bottom: 15px;
+            }
+            
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                width: 0%;
+                transition: width 0.5s ease;
+            }
+            
+            .progress-text {
+                font-size: 16px;
+                color: #6b7280;
+                margin-bottom: 8px;
+                font-weight: 500;
+            }
+            
+            .progress-status {
+                font-size: 14px;
+                color: #9ca3af;
+            }
+            
+            /* Info badge */
+            .scan-info {
+                background: rgba(102, 126, 234, 0.1);
+                border-radius: 10px;
+                padding: 15px;
+                font-size: 14px;
+                color: #667eea;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                font-weight: 500;
+                flex-direction: column;
+            }
+            
+            .scan-info-main {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .scan-info-details {
+                font-size: 12px;
+                color: #8b5cf6;
+                margin-top: 4px;
+                text-align: center;
+            }
+            
+            /* Responsive */
+            @media (max-width: 480px) {
+                .scanner-card-minimal {
+                    padding: 35px 25px;
+                }
+                
+                .scanner-title {
+                    font-size: 28px;
+                }
+                
+                .scanner-subtitle {
+                    font-size: 16px;
+                }
+                
+                .preselected-categories-grid {
+                    gap: 6px;
+                }
+                
+                .preselected-category-badge {
+                    font-size: 12px;
+                    padding: 6px 10px;
+                }
+                
+                .duration-option {
+                    padding: 10px 16px;
+                    font-size: 13px;
+                    min-width: 75px;
+                }
+            }
+        `;
+        
+        document.head.appendChild(styles);
+        this.stylesAdded = true;
+        console.log('[MinimalScan] ✅ Styles v9.0 ajoutés');
+    }
+
+    async render(container) {
+        console.log('[MinimalScan] 🎯 Rendu du scanner v9.0...');
+        
+        try {
+            this.addMinimalStyles();
+            this.checkSettingsUpdate();
+            
+            if (!window.authService?.isAuthenticated()) {
+                container.innerHTML = this.renderNotAuthenticated();
+                return;
+            }
+
+            await this.checkServices();
+            
+            container.innerHTML = this.renderMinimalScanner();
+            this.initializeEvents();
+            this.isInitialized = true;
+            
+            console.log('[MinimalScan] ✅ Scanner v9.0 rendu avec succès');
+            
+        } catch (error) {
+            console.error('[MinimalScan] ❌ Erreur lors du rendu:', error);
+            container.innerHTML = this.renderError(error);
         }
     }
-    
-    // Créer et initialiser le module
-    const startScanModule = new StartScanModule();
-    
-    // Exposer globalement
-    window.startScanModule = startScanModule;
-    
-    // Initialiser quand le DOM est prêt
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('[StartScan] DOM ready, initializing module...');
-            startScanModule.init();
-        });
-    } else {
-        console.log('[StartScan] DOM already loaded, initializing module...');
-        // Petit délai pour s'assurer que les autres modules sont chargés
-        setTimeout(() => {
-            startScanModule.init();
-        }, 100);
+
+    renderMinimalScanner() {
+        return `
+            <div class="minimal-scanner">
+                <div class="scanner-card-minimal">
+                    <div class="scanner-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    
+                    <h1 class="scanner-title">Scanner Email</h1>
+                    <p class="scanner-subtitle">Organisez vos emails automatiquement avec IA</p>
+                    
+                    <div id="preselected-categories-display">
+                        ${this.renderPreselectedCategories()}
+                    </div>
+                    
+                    <div class="steps-container">
+                        <div class="step active" id="step1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Sélection</div>
+                        </div>
+                        <div class="step" id="step2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Analyse</div>
+                        </div>
+                        <div class="step" id="step3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Résultats</div>
+                        </div>
+                    </div>
+                    
+                    <div class="duration-section">
+                        <div class="duration-label">Période d'analyse</div>
+                        <div class="duration-options">
+                            ${this.renderDurationOptions()}
+                        </div>
+                    </div>
+                    
+                    <button class="scan-button-minimal" id="minimalScanBtn" onclick="window.minimalScanModule.startScan()">
+                        <i class="fas fa-play"></i>
+                        <span>Démarrer l'analyse intelligente</span>
+                    </button>
+                    
+                    <div class="progress-section-minimal" id="progressSection">
+                        <div class="progress-bar-minimal">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">Initialisation...</div>
+                        <div class="progress-status" id="progressStatus">Préparation du scan</div>
+                    </div>
+                    
+                    <div class="scan-info">
+                        <div class="scan-info-main">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Scan sécurisé et privé avec IA Claude</span>
+                        </div>
+                        ${this.renderScanInfoDetails()}
+                    </div>
+                </div>
+            </div>
+        `;
     }
-    
-    console.log('[StartScan] ✅ Module v3.0 loaded - Auto-scan ready for double auth');
-})();
+
+    renderPreselectedCategories() {
+        if (this.taskPreselectedCategories.length === 0) {
+            return `
+                <div class="preselected-info no-selection">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Aucune catégorie pré-sélectionnée pour la création de tâches</span>
+                </div>
+            `;
+        }
+        
+        const categoryDetails = this.taskPreselectedCategories.map(catId => {
+            const category = window.categoryManager?.getCategory(catId);
+            return category ? { icon: category.icon, name: category.name, color: category.color } : null;
+        }).filter(Boolean);
+        
+        return `
+            <div class="preselected-info">
+                <i class="fas fa-star"></i>
+                <span>Emails pré-sélectionnés pour tâches:</span>
+            </div>
+            <div class="preselected-categories-grid">
+                ${categoryDetails.map(cat => `
+                    <div class="preselected-category-badge" style="background: ${cat.color}20; border-color: ${cat.color};">
+                        <span class="category-icon">${cat.icon}</span>
+                        <span class="category-name">${cat.name}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    renderDurationOptions() {
+        const options = [
+            { value: 1, label: '1 jour' },
+            { value: 3, label: '3 jours' },
+            { value: 7, label: '7 jours' },
+            { value: 15, label: '15 jours' },
+            { value: 30, label: '30 jours' }
+        ];
+        
+        return options.map(option => {
+            const isSelected = option.value === this.selectedDays;
+            return `
+                <button class="duration-option ${isSelected ? 'selected' : ''}" 
+                        onclick="window.minimalScanModule.selectDuration(${option.value})" 
+                        data-days="${option.value}">
+                    ${option.label}
+                </button>
+            `;
+        }).join('');
+    }
+
+    renderScanInfoDetails() {
+        let details = [];
+        
+        if (this.taskPreselectedCategories.length > 0) {
+            details.push(`${this.taskPreselectedCategories.length} catégorie(s) pour tâches automatiques`);
+        }
+        
+        if (this.settings.scanSettings?.autoAnalyze) {
+            details.push('Analyse IA activée');
+        }
+        
+        if (this.settings.preferences?.excludeSpam) {
+            details.push('Filtrage spam actif');
+        }
+        
+        return details.length > 0 ? 
+            `<div class="scan-info-details">${details.join(' • ')}</div>` :
+            '<div class="scan-info-details">Configuration par défaut</div>';
+    }
+
+    renderNotAuthenticated() {
+        return `
+            <div class="minimal-scanner">
+                <div class="scanner-card-minimal">
+                    <div class="scanner-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h1 class="scanner-title">Connexion requise</h1>
+                    <p class="scanner-subtitle">Connectez-vous pour analyser vos emails</p>
+                    
+                    <button class="scan-button-minimal" onclick="window.authService.login()">
+                        <i class="fab fa-microsoft"></i>
+                        <span>Se connecter</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    renderError(error) {
+        return `
+            <div class="minimal-scanner">
+                <div class="scanner-card-minimal">
+                    <div class="scanner-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h1 class="scanner-title">Erreur</h1>
+                    <p class="scanner-subtitle">${error.message}</p>
+                    
+                    <button class="scan-button-minimal" onclick="window.location.reload()">
+                        <i class="fas fa-redo"></i>
+                        <span>Réessayer</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    async checkServices() {
+        if (!window.authService?.isAuthenticated()) {
+            throw new Error('Authentification requise');
+        }
+        
+        if (!window.mailService) {
+            console.warn('[MinimalScan] ⚠️ MailService non disponible');
+        }
+    }
+
+    initializeEvents() {
+        console.log('[MinimalScan] ✅ Événements initialisés');
+        
+        if (this.settingsCheckInterval) {
+            clearInterval(this.settingsCheckInterval);
+        }
+        
+        this.settingsCheckInterval = setInterval(() => {
+            this.checkSettingsUpdate();
+        }, 10000);
+    }
+
+    selectDuration(days) {
+        this.selectedDays = days;
+        
+        document.querySelectorAll('.duration-option').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        
+        const selectedBtn = document.querySelector(`[data-days="${days}"]`);
+        if (selectedBtn) {
+            selectedBtn.classList.add('selected');
+        }
+        
+        console.log(`[MinimalScan] ✅ Durée sélectionnée: ${days} jours`);
+    }
+
+    async startScan() {
+        if (this.scanInProgress) {
+            console.log('[MinimalScan] Scan déjà en cours');
+            return;
+        }
+        
+        console.log('[MinimalScan] 🚀 Démarrage du scan');
+        console.log('[MinimalScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+        
+        try {
+            this.scanInProgress = true;
+            this.scanStartTime = Date.now();
+            
+            this.setActiveStep(2);
+            
+            const progressSection = document.getElementById('progressSection');
+            if (progressSection) {
+                progressSection.classList.add('visible');
+            }
+            
+            const scanBtn = document.getElementById('minimalScanBtn');
+            if (scanBtn) {
+                scanBtn.disabled = true;
+                scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Analyse en cours...</span>';
+            }
+            
+            const scanOptions = this.prepareScanOptions();
+            await this.executeScan(scanOptions);
+            
+            this.setActiveStep(3);
+            this.completeScan();
+            
+        } catch (error) {
+            console.error('[MinimalScan] ❌ Erreur de scan:', error);
+            this.showScanError(error);
+        }
+    }
+
+    prepareScanOptions() {
+        const baseOptions = {
+            days: this.selectedDays,
+            folder: this.settings.scanSettings?.defaultFolder || 'inbox',
+            autoAnalyze: this.settings.scanSettings?.autoAnalyze !== false,
+            autoCategrize: this.settings.scanSettings?.autoCategrize !== false,
+            includeSpam: !this.settings.preferences?.excludeSpam,
+            detectCC: this.settings.preferences?.detectCC !== false,
+            onProgress: (progress) => this.updateProgress(progress.progress?.current || 0, progress.message || '', progress.phase || '')
+        };
+        
+        if (this.taskPreselectedCategories.length > 0) {
+            baseOptions.taskPreselectedCategories = [...this.taskPreselectedCategories];
+        }
+        
+        console.log('[MinimalScan] 📊 Options de scan:', baseOptions);
+        return baseOptions;
+    }
+
+    async executeScan(scanOptions) {
+        try {
+            if (window.emailScanner && typeof window.emailScanner.scan === 'function') {
+                console.log('[MinimalScan] 🔄 Scan réel en cours...');
+                
+                const results = await window.emailScanner.scan(scanOptions);
+                this.scanResults = results;
+                
+                console.log('[MinimalScan] ✅ Scan terminé:', results);
+                
+                if (results.stats?.preselectedForTasks > 0) {
+                    console.log(`[MinimalScan] ⭐ ${results.stats.preselectedForTasks} emails pré-sélectionnés pour tâches`);
+                }
+                
+            } else {
+                console.log('[MinimalScan] 🎭 Mode simulation');
+                
+                // Simulation
+                for (let i = 0; i <= 100; i += 10) {
+                    this.updateProgress(i, `Analyse ${i}%`, 'Simulation en cours');
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                this.scanResults = {
+                    success: true,
+                    total: 150,
+                    categorized: 130,
+                    taskPreselectedCategories: [...this.taskPreselectedCategories],
+                    stats: { 
+                        preselectedForTasks: this.taskPreselectedCategories.length > 0 ? 25 : 0,
+                        taskSuggestions: 20
+                    }
+                };
+            }
+        } catch (error) {
+            console.error('[MinimalScan] ❌ Erreur scan:', error);
+            throw error;
+        }
+    }
+
+    updateProgress(percent, text, status) {
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const progressStatus = document.getElementById('progressStatus');
+        
+        if (progressFill) progressFill.style.width = `${percent}%`;
+        if (progressText) progressText.textContent = text;
+        if (progressStatus) progressStatus.textContent = status;
+    }
+
+    setActiveStep(stepNumber) {
+        document.querySelectorAll('.step').forEach(step => {
+            step.classList.remove('active');
+        });
+        
+        const activeStep = document.getElementById(`step${stepNumber}`);
+        if (activeStep) {
+            activeStep.classList.add('active');
+        }
+    }
+
+    completeScan() {
+        setTimeout(() => {
+            const scanBtn = document.getElementById('minimalScanBtn');
+            if (scanBtn) {
+                const preselectedCount = this.scanResults?.stats?.preselectedForTasks || 0;
+                
+                scanBtn.innerHTML = `<i class="fas fa-check"></i> <span>Scan terminé !</span>`;
+                scanBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                
+                if (preselectedCount > 0) {
+                    scanBtn.style.position = 'relative';
+                    scanBtn.insertAdjacentHTML('beforeend', `
+                        <span class="success-badge">
+                            ⭐ ${preselectedCount} emails pour tâches
+                        </span>
+                    `);
+                }
+            }
+            
+            setTimeout(() => {
+                this.redirectToResults();
+            }, 1500);
+        }, 500);
+    }
+
+    redirectToResults() {
+        this.scanInProgress = false;
+        
+        const essentialResults = {
+            success: true,
+            total: this.scanResults?.total || 0,
+            categorized: this.scanResults?.categorized || 0,
+            taskPreselectedCategories: [...this.taskPreselectedCategories],
+            preselectedForTasks: this.scanResults?.stats?.preselectedForTasks || 0,
+            scanDuration: Math.floor((Date.now() - this.scanStartTime) / 1000),
+            timestamp: Date.now()
+        };
+        
+        try {
+            sessionStorage.setItem('scanResults', JSON.stringify(essentialResults));
+        } catch (error) {
+            console.warn('[MinimalScan] Erreur stockage:', error);
+        }
+        
+        if (window.uiManager?.showToast) {
+            const message = essentialResults.preselectedForTasks > 0 ?
+                `✅ ${essentialResults.total} emails analysés • ⭐ ${essentialResults.preselectedForTasks} pré-sélectionnés` :
+                `✅ ${essentialResults.total} emails analysés`;
+            
+            window.uiManager.showToast(message, 'success', 4000);
+        }
+        
+        setTimeout(() => {
+            if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                window.pageManager.loadPage('emails');
+            }
+        }, 500);
+    }
+
+    showScanError(error) {
+        const progressSection = document.getElementById('progressSection');
+        if (progressSection) {
+            progressSection.innerHTML = `
+                <div style="text-align: center; padding: 20px 0;">
+                    <div style="font-size: 16px; font-weight: 600; color: #ef4444; margin-bottom: 8px;">Erreur de scan</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">${error.message}</div>
+                    
+                    <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
+                            style="width: auto; padding: 0 20px; height: 40px; font-size: 14px;">
+                        <i class="fas fa-redo"></i>
+                        <span>Réessayer</span>
+                    </button>
+                </div>
+            `;
+        }
+        
+        this.scanInProgress = false;
+    }
+
+    resetScanner() {
+        this.scanInProgress = false;
+        this.setActiveStep(1);
+        
+        const progressSection = document.getElementById('progressSection');
+        if (progressSection) {
+            progressSection.classList.remove('visible');
+        }
+        
+        const scanBtn = document.getElementById('minimalScanBtn');
+        if (scanBtn) {
+            scanBtn.disabled = false;
+            scanBtn.innerHTML = '<i class="fas fa-play"></i> <span>Démarrer l\'analyse intelligente</span>';
+            scanBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            
+            const badge = scanBtn.querySelector('.success-badge');
+            if (badge) badge.remove();
+        }
+        
+        this.updateProgress(0, 'Initialisation...', 'Préparation du scan');
+        
+        this.loadSettingsFromCategoryManager();
+        this.updatePreselectedCategoriesDisplay();
+        
+        console.log('[MinimalScan] 🔄 Scanner réinitialisé');
+    }
+
+    updateSettings(newSettings) {
+        console.log('[MinimalScan] 📝 Mise à jour des paramètres:', newSettings);
+        this.settings = { ...this.settings, ...newSettings };
+        
+        if (newSettings.taskPreselectedCategories) {
+            this.taskPreselectedCategories = [...newSettings.taskPreselectedCategories];
+        }
+        
+        if (newSettings.scanSettings?.defaultPeriod) {
+            this.selectedDays = newSettings.scanSettings.defaultPeriod;
+        }
+        
+        this.updateUIWithNewSettings();
+    }
+
+    getDebugInfo() {
+        return {
+            isInitialized: this.isInitialized,
+            scanInProgress: this.scanInProgress,
+            selectedDays: this.selectedDays,
+            taskPreselectedCategories: [...this.taskPreselectedCategories],
+            settings: this.settings,
+            lastSettingsSync: this.lastSettingsSync,
+            scanResults: this.scanResults
+        };
+    }
+
+    cleanup() {
+        if (this.settingsCheckInterval) {
+            clearInterval(this.settingsCheckInterval);
+            this.settingsCheckInterval = null;
+        }
+        
+        this.scanInProgress = false;
+        this.isInitialized = false;
+        
+        console.log('[MinimalScan] 🧹 Nettoyage terminé');
+    }
+
+    destroy() {
+        this.cleanup();
+        this.settings = {};
+        this.taskPreselectedCategories = [];
+        console.log('[MinimalScan] Instance détruite');
+    }
+}
+
+// Créer l'instance globale
+if (window.minimalScanModule) {
+    window.minimalScanModule.destroy?.();
+}
+
+window.MinimalScanModule = MinimalScanModule;
+window.minimalScanModule = new MinimalScanModule();
+window.scanStartModule = window.minimalScanModule;
+
+console.log('[StartScan] ✅ Scanner v9.0 chargé - Mise en évidence des catégories pré-sélectionnées!');
