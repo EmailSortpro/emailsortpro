@@ -3455,11 +3455,11 @@ class PageManager {
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: 0;
-                padding: 8px 12px;
+                padding: 16px;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 position: relative;
-                min-height: 52px;
+                min-height: 80px;
                 border-bottom: none;
             }
 
@@ -3480,53 +3480,53 @@ class PageManager {
             }
 
             .email-card:hover {
-                background: #fafbfc;
-                transform: translateY(-0.5px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+                background: #f8fafc;
+                transform: translateY(-1px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
                 border-color: rgba(99, 102, 241, 0.2);
-                border-left: 2px solid #6366f1;
+                border-left: 3px solid #6366f1;
                 z-index: 2;
             }
 
             .email-card.selected {
-                background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
-                border-left: 3px solid #3b82f6;
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border-left: 4px solid #3b82f6;
                 border-color: #3b82f6;
-                transform: translateY(-0.5px);
-                box-shadow: 0 3px 10px rgba(59, 130, 246, 0.12);
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
                 z-index: 3;
             }
 
             .email-card.has-task {
-                background: linear-gradient(135deg, #f0fdf4 0%, #ecfccb 100%);
-                border-left: 2px solid #22c55e;
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                border-left: 3px solid #22c55e;
             }
 
             .email-card.preselected {
                 background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
-                border-left: 2px solid #8b5cf6;
+                border-left: 3px solid #8b5cf6;
                 border-color: rgba(139, 92, 246, 0.3);
             }
 
             .email-card.preselected:hover {
-                border-left: 3px solid #8b5cf6;
-                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.12);
+                border-left: 4px solid #8b5cf6;
+                box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
                 border-color: rgba(139, 92, 246, 0.4);
             }
 
             .email-card.preselected.selected {
                 background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
-                border-left: 3px solid #8b5cf6;
+                border-left: 4px solid #8b5cf6;
                 border-color: #8b5cf6;
-                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+                box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
             }
 
             .email-checkbox {
-                margin-right: 8px;
+                margin-right: 12px;
                 cursor: pointer;
-                width: 18px;
-                height: 18px;
-                border-radius: 4px;
+                width: 20px;
+                height: 20px;
+                border-radius: 6px;
                 border: 2px solid #d1d5db;
                 background: white;
                 transition: all 0.2s ease;
@@ -3546,7 +3546,7 @@ class PageManager {
             .email-checkbox:checked::after {
                 content: '✓';
                 color: white;
-                font-size: 11px;
+                font-size: 12px;
                 font-weight: 700;
             }
 
@@ -3556,10 +3556,10 @@ class PageManager {
             }
 
             .priority-bar {
-                width: 3px;
-                height: 40px;
+                width: 4px;
+                height: 60px;
                 border-radius: 2px;
-                margin-right: 8px;
+                margin-right: 12px;
                 transition: all 0.3s ease;
                 flex-shrink: 0;
             }
@@ -3570,7 +3570,7 @@ class PageManager {
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
-                gap: 2px;
+                gap: 4px;
                 height: 100%;
             }
 
@@ -3578,16 +3578,16 @@ class PageManager {
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
-                gap: 8px;
-                margin-bottom: 2px;
+                gap: 12px;
+                margin-bottom: 4px;
             }
 
             .email-title {
-                font-weight: 600;
+                font-weight: 700;
                 color: #1f2937;
-                font-size: 14px;
+                font-size: 15px;
                 margin: 0;
-                line-height: 1.2;
+                line-height: 1.3;
                 flex: 1;
                 min-width: 0;
                 overflow: hidden;
@@ -3598,7 +3598,7 @@ class PageManager {
             .email-meta {
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 8px;
                 flex-shrink: 0;
                 flex-wrap: wrap;
             }
@@ -3607,12 +3607,12 @@ class PageManager {
             .email-date {
                 display: flex;
                 align-items: center;
-                gap: 2px;
+                gap: 3px;
                 background: #f8fafc;
                 color: #64748b;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
                 font-weight: 600;
                 border: 1px solid #e2e8f0;
                 white-space: nowrap;
@@ -3621,16 +3621,16 @@ class PageManager {
             .preselected-badge {
                 display: flex;
                 align-items: center;
-                gap: 2px;
+                gap: 3px;
                 background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
                 color: white;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
                 font-weight: 700;
                 border: none;
                 white-space: nowrap;
-                box-shadow: 0 1px 3px rgba(139, 92, 246, 0.3);
+                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
             }
 
             .sync-badge {
@@ -3638,13 +3638,13 @@ class PageManager {
                 color: white;
                 border: none;
                 font-weight: 700;
-                box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
+                box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
                 display: flex;
                 align-items: center;
-                gap: 2px;
+                gap: 3px;
                 white-space: nowrap;
             }
 
@@ -3652,9 +3652,9 @@ class PageManager {
                 background: rgba(16, 185, 129, 0.1);
                 color: #059669;
                 border-color: #bbf7d0;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
                 font-weight: 600;
                 border: 1px solid #bbf7d0;
                 white-space: nowrap;
@@ -3663,11 +3663,11 @@ class PageManager {
             .email-sender {
                 display: flex;
                 align-items: center;
-                gap: 4px;
+                gap: 6px;
                 color: #6b7280;
-                font-size: 11px;
+                font-size: 12px;
                 font-weight: 500;
-                line-height: 1.1;
+                line-height: 1.2;
             }
 
             .sender-name {
@@ -3678,35 +3678,35 @@ class PageManager {
             .attachment-indicator {
                 color: #dc2626;
                 font-weight: 600;
-                font-size: 9px;
+                font-size: 10px;
             }
 
             .category-badge {
-                padding: 1px 4px;
-                border-radius: 3px;
-                font-size: 9px;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 10px;
                 font-weight: 600;
                 display: flex;
                 align-items: center;
-                gap: 2px;
+                gap: 3px;
                 transition: all 0.2s ease;
             }
 
             .email-actions {
                 display: flex;
                 align-items: center;
-                gap: 2px;
-                margin-left: 8px;
+                gap: 4px;
+                margin-left: 12px;
                 flex-shrink: 0;
                 z-index: 10;
                 position: relative;
             }
 
             .action-btn {
-                width: 28px;
-                height: 28px;
-                border: 1px solid transparent;
-                border-radius: 6px;
+                width: 36px;
+                height: 36px;
+                border: 2px solid transparent;
+                border-radius: 8px;
                 background: rgba(255, 255, 255, 0.9);
                 color: #6b7280;
                 cursor: pointer;
@@ -3714,15 +3714,15 @@ class PageManager {
                 align-items: center;
                 justify-content: center;
                 transition: all 0.3s ease;
-                font-size: 11px;
+                font-size: 13px;
                 backdrop-filter: blur(10px);
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
             }
 
             .action-btn:hover {
                 background: white;
                 transform: translateY(-1px);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             }
 
             .action-btn.create-task {
@@ -3787,13 +3787,13 @@ class PageManager {
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: 0;
-                padding: 10px 12px;
+                padding: 16px;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 position: relative;
-                min-height: 56px;
+                min-height: 80px;
                 border-bottom: none;
-                gap: 8px;
+                gap: 12px;
             }
 
             .group-header:first-child {
@@ -3807,17 +3807,17 @@ class PageManager {
             }
 
             .group-avatar {
-                width: 32px;
-                height: 32px;
-                border-radius: 8px;
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
                 font-weight: 700;
-                font-size: 14px;
+                font-size: 16px;
                 flex-shrink: 0;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             }
 
             .group-info {
@@ -3826,16 +3826,16 @@ class PageManager {
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
-                gap: 2px;
+                gap: 4px;
                 height: 100%;
             }
 
             .group-name {
-                font-weight: 600;
+                font-weight: 700;
                 color: #1f2937;
-                font-size: 14px;
+                font-size: 15px;
                 margin: 0;
-                line-height: 1.2;
+                line-height: 1.3;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -3843,16 +3843,16 @@ class PageManager {
 
             .group-meta {
                 color: #6b7280;
-                font-size: 11px;
+                font-size: 12px;
                 font-weight: 500;
-                line-height: 1.1;
+                line-height: 1.2;
             }
 
             .group-expand {
-                width: 28px;
-                height: 28px;
-                border: 1px solid transparent;
-                border-radius: 6px;
+                width: 36px;
+                height: 36px;
+                border: 2px solid transparent;
+                border-radius: 8px;
                 background: rgba(255, 255, 255, 0.9);
                 color: #6b7280;
                 cursor: pointer;
@@ -3860,9 +3860,9 @@ class PageManager {
                 align-items: center;
                 justify-content: center;
                 transition: all 0.3s ease;
-                font-size: 11px;
+                font-size: 13px;
                 backdrop-filter: blur(10px);
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
                 flex-shrink: 0;
             }
 
