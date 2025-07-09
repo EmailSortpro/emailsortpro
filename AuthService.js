@@ -1,4 +1,4 @@
-// authService.js - Microsoft Authentication Service v4.4
+// authService.js - Microsoft Authentication Service v4.5
 // Service dédié à l'authentification Microsoft/Outlook avec support dual-provider
 
 class MicrosoftAuthService {
@@ -12,46 +12,10 @@ class MicrosoftAuthService {
         this.configWaitAttempts = 0;
         this.maxConfigWaitAttempts = 50;
         
-        console.log('[MicrosoftAuthService] Constructor called v4.4 - Dual provider support');
-        
-        // Vérifier si Google est le provider principal
-        if (this.isGooglePrimaryProvider()) {
-            console.log('[MicrosoftAuthService] Google is primary provider, Microsoft in standby');
-            return;
-        }
+        console.log('[MicrosoftAuthService] Constructor called v4.5 - Dual provider support');
         
         this.verifyDomain();
         this.waitForConfig();
-    }
-
-    isGooglePrimaryProvider() {
-        // Vérifier multiple indicateurs pour savoir si Google est actif
-        const googleToken = localStorage.getItem('google_token_emailsortpro');
-        const lastProvider = sessionStorage.getItem('lastAuthProvider');
-        const googleUser = localStorage.getItem('google_user_info');
-        
-        // Si Google a un token valide ET est marqué comme dernier provider
-        if (googleToken && lastProvider === 'google') {
-            try {
-                const tokenData = JSON.parse(googleToken);
-                if (tokenData.access_token && tokenData.expires_at > Date.now()) {
-                    return true;
-                }
-            } catch (e) {
-                // Ignorer les erreurs de parsing
-            }
-        }
-        
-        // Si Google auth service est actif et authentifié
-        if (window.googleAuthService && typeof window.googleAuthService.isAuthenticated === 'function') {
-            try {
-                return window.googleAuthService.isAuthenticated();
-            } catch (e) {
-                // Ignorer les erreurs
-            }
-        }
-        
-        return false;
     }
 
     verifyDomain() {
@@ -66,8 +30,6 @@ class MicrosoftAuthService {
     }
 
     waitForConfig() {
-        if (this.isGooglePrimaryProvider()) return;
-        
         console.log('[MicrosoftAuthService] Waiting for configuration...');
         
         if (!window.AppConfig) {
@@ -91,11 +53,6 @@ class MicrosoftAuthService {
     }
 
     async initialize() {
-        if (this.isGooglePrimaryProvider()) {
-            console.log('[MicrosoftAuthService] Skipping init - Google is active');
-            return Promise.resolve();
-        }
-        
         if (this.initializationPromise) {
             return this.initializationPromise;
         }
@@ -169,11 +126,6 @@ class MicrosoftAuthService {
     }
 
     isAuthenticated() {
-        // Si Google est actif, Microsoft n'est pas authentifié
-        if (this.isGooglePrimaryProvider()) {
-            return false;
-        }
-        
         return this.account !== null && this.isInitialized;
     }
 
@@ -317,7 +269,6 @@ class MicrosoftAuthService {
             isInitialized: this.isInitialized,
             hasAccount: !!this.account,
             accountUsername: this.account?.username,
-            googleActive: this.isGooglePrimaryProvider(),
             currentDomain: window.location.hostname,
             expectedDomain: this.expectedDomain
         };
@@ -327,4 +278,4 @@ class MicrosoftAuthService {
 // Créer l'instance globale
 window.authService = new MicrosoftAuthService();
 
-console.log('[MicrosoftAuthService] ✅ Service loaded and ready - v4.4');
+console.log('[MicrosoftAuthService] ✅ Service loaded and ready - v4.5');
