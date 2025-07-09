@@ -1,9 +1,9 @@
-// app.js - Application principale EmailSortPro v3.7
-// CORRECTION: Détection correcte de l'authentification Gmail et Microsoft
+// app.js - Application principale EmailSortPro v3.7.1
+// CORRECTION MINIMALE: Support PageManagerGmail sans changement de structure
 
 class EmailSortProApp {
     constructor() {
-        this.version = '3.7';
+        this.version = '3.7.1';
         this.isInitialized = false;
         this.initPromise = null;
         this.currentProvider = null;
@@ -425,7 +425,7 @@ class EmailSortProApp {
         });
         event.currentTarget.classList.add('active');
         
-        // Charger la page via le bon PageManager
+        // CORRECTION MINIMALE: Utiliser le bon PageManager selon le provider
         if (this.currentProvider === 'google' && window.pageManagerGmail) {
             window.pageManagerGmail.loadPage(page);
         } else if (window.pageManager) {
@@ -549,4 +549,4 @@ window.app = new EmailSortProApp();
 // Exposer des méthodes globales
 window.checkScrollNeeded = () => window.app.checkScrollNeeded();
 
-console.log('[App] ✅ EmailSortPro v3.7 loaded');
+console.log('[App] ✅ EmailSortPro v3.7.1 loaded');
