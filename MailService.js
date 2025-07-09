@@ -1,4 +1,5 @@
-// MailService.js - Service unifié de récupération des emails Microsoft Graph et Gmail API v4.1
+// MailService.js - Service unifié de récupération des emails Microsoft Graph et Gmail API v4.2
+// CORRECTION: Ajout de la méthode isAuthenticated pour vérifier l'authentification
 
 class MailService {
     constructor() {
@@ -13,39 +14,45 @@ class MailService {
             'sentitems': 'sentitems',
             'drafts': 'drafts',
             'archive': 'archive'
-        }
-
-// Créer l'instance globale
-try {
-    window.mailService = new MailService();
-    console.log('[MailService] ✅ Global unified instance created successfully');
-} catch (error) {
-    console.error('[MailService] ❌ Failed to create global instance:', error);
-    
-    window.mailService = {
-        isInitialized: false,
-        getEmailsFromFolder: async () => {
-            throw new Error('MailService not available - Check console for errors');
-        },
-        getEmails: async () => {
-            throw new Error('MailService not available - Check console for errors');
-        },
-        initialize: async () => {
-            throw new Error('MailService failed to initialize - Check AuthService');
-        },
-        getDebugInfo: () => ({ 
-            error: 'MailService failed to create',
-            microsoftAuthServiceAvailable: !!window.authService,
-            googleAuthServiceAvailable: !!window.googleAuthService,
-            userAuthenticated: (window.authService ? window.authService.isAuthenticated() : false) || 
-                              (window.googleAuthService ? window.googleAuthService.isAuthenticated() : false)
-        })
-    };
-}
-
-console.log('✅ MailService v4.1 loaded - Unified Outlook/Gmail support with improved auth handling');;
+        };
         
-        console.log('[MailService] Constructor - Service unifié Outlook/Gmail v4.1');
+        console.log('[MailService] Constructor - Service unifié Outlook/Gmail v4.2');
+    }
+
+    // NOUVELLE MÉTHODE: Vérifier si l'utilisateur est authentifié
+    isAuthenticated() {
+        if (this.provider === 'microsoft' && window.authService) {
+            return window.authService.isAuthenticated();
+        } else if (this.provider === 'google' && window.googleAuthService) {
+            return window.googleAuthService.isAuthenticated();
+        }
+        
+        // Si pas de provider défini, vérifier les deux
+        if (window.authService && window.authService.isAuthenticated()) {
+            return true;
+        }
+        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    // NOUVELLE MÉTHODE: Obtenir le provider actif
+    getActiveProvider() {
+        if (this.provider) {
+            return this.provider;
+        }
+        
+        // Détection automatique
+        if (window.authService && window.authService.isAuthenticated()) {
+            return 'microsoft';
+        }
+        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            return 'google';
+        }
+        
+        return null;
     }
 
     async initialize() {
@@ -1021,3 +1028,35 @@ console.log('✅ MailService v4.1 loaded - Unified Outlook/Gmail support with im
         };
     }
 }
+
+// Créer l'instance globale
+try {
+    window.mailService = new MailService();
+    console.log('[MailService] ✅ Global unified instance created successfully');
+} catch (error) {
+    console.error('[MailService] ❌ Failed to create global instance:', error);
+    
+    window.mailService = {
+        isInitialized: false,
+        isAuthenticated: () => false,
+        getActiveProvider: () => null,
+        getEmailsFromFolder: async () => {
+            throw new Error('MailService not available - Check console for errors');
+        },
+        getEmails: async () => {
+            throw new Error('MailService not available - Check console for errors');
+        },
+        initialize: async () => {
+            throw new Error('MailService failed to initialize - Check AuthService');
+        },
+        getDebugInfo: () => ({ 
+            error: 'MailService failed to create',
+            microsoftAuthServiceAvailable: !!window.authService,
+            googleAuthServiceAvailable: !!window.googleAuthService,
+            userAuthenticated: (window.authService ? window.authService.isAuthenticated() : false) || 
+                              (window.googleAuthService ? window.googleAuthService.isAuthenticated() : false)
+        })
+    };
+}
+
+console.log('✅ MailService v4.2 loaded - Unified Outlook/Gmail support with authentication check');
