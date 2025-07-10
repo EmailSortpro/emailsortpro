@@ -58,18 +58,6 @@ class PageManagerGmail {
             // Charger les emails depuis le sessionStorage si disponibles
             this.loadEmailsFromStorage();
             
-            // Écouter les événements d'authentification Google
-            window.addEventListener('googleAuthReady', (e) => {
-                console.log('[PageManagerGmail] 🔐 Google Auth Ready:', e.detail);
-                if (e.detail && e.detail.authenticated) {
-                    this.syncState.provider = 'gmail';
-                    // Recharger la page si on est sur une page nécessitant l'auth
-                    if (this.currentPage && this.requiresAuthentication(this.currentPage)) {
-                        setTimeout(() => this.loadPage(this.currentPage), 500);
-                    }
-                }
-            });
-            
             this.isInitialized = true;
             console.log('[PageManagerGmail] ✅ Version 19.0 - Corrigé et Optimisé');
         } catch (error) {
@@ -141,37 +129,13 @@ class PageManagerGmail {
             'scanCompleted': (e) => this.handleScanCompleted(e.detail),
             'emailScannerSynced': (e) => this.handleEmailScannerSynced(e.detail),
             'emailsRecategorized': () => this.currentPage === 'emails' && this.refreshEmailsView(),
-            'googleAuthReady': (e) => {
-                console.log('[PageManagerGmail] 🔐 Google Auth Ready event:', e.detail);
-                if (e.detail && e.detail.authenticated) {
-                    this.syncState.provider = 'gmail';
-                    // Propager l'info à PageManager standard si nécessaire
-                    if (window.pageManager && window.pageManager !== this) {
-                        window.pageManager.googleAuthReady = true;
-                    }
-                }
-            },
+            'googleAuthReady': (e) => e.detail.authenticated && (this.syncState.provider = 'gmail'),
             'mailServiceReady': (e) => this.handleMailServiceReady(e.detail)
         };
         
         Object.entries(handlers).forEach(([event, handler]) => {
             window.addEventListener(event, handler);
         });
-        
-        // Écouter aussi les changements d'auth Google
-        if (window.googleAuthService) {
-            const originalIsAuthenticated = window.googleAuthService.isAuthenticated;
-            if (originalIsAuthenticated) {
-                window.googleAuthService.isAuthenticated = async function() {
-                    const result = await originalIsAuthenticated.call(this);
-                    // Propager à PageManager standard
-                    if (window.pageManager && result && result.authenticated) {
-                        window.pageManager.googleAuthReady = true;
-                    }
-                    return result;
-                };
-            }
-        }
     }
 
     handleScanCompleted(scanData) {
@@ -362,12 +326,7 @@ class PageManagerGmail {
             container.innerHTML = '';
             
             if (this.requiresAuthentication(pageName)) {
-                // Attendre un peu que GoogleAuthService soit prêt
-                await this.waitForAuth();
-                
                 const authStatus = await this.checkAuthenticationStatus();
-                console.log('[PageManagerGmail] Auth status for', pageName, ':', authStatus);
-                
                 if (!authStatus.isAuthenticated) {
                     this.hideLoading();
                     container.innerHTML = this.renderAuthRequired();
@@ -386,101 +345,29 @@ class PageManagerGmail {
         }
     }
 
-    async waitForAuth() {
-        // Attendre que GoogleAuthService soit complètement initialisé
-        let attempts = 0;
-        while (attempts < 10) {
-            if (window.googleAuthService && window.googleAuthService.initialized) {
-                console.log('[PageManagerGmail] GoogleAuthService prêt');
-                return;
-            }
-            
-            // Vérifier aussi si on a déjà un user
-            if (window.googleAuthService && window.googleAuthService.user) {
-                console.log('[PageManagerGmail] GoogleAuthService a un user');
-                return;
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, 200));
-            attempts++;
-        }
-        console.log('[PageManagerGmail] Timeout attente GoogleAuthService');
-    }
-
     requiresAuthentication(pageName) {
-        // Pour Gmail, on vérifie toujours l'authentification Google
         return ['emails', 'tasks', 'scanner'].includes(pageName);
     }
 
     async checkAuthenticationStatus() {
         try {
             let isAuthenticated = false;
-            let provider = 'gmail';
             
-            // Vérifier GoogleAuthService pour Gmail
-            if (window.googleAuthService) {
-                console.log('[PageManagerGmail] Vérification GoogleAuthService...');
-                
-                // Vérifier si la méthode isAuthenticated existe
-                if (typeof window.googleAuthService.isAuthenticated === 'function') {
-                    try {
-                        const authResult = await window.googleAuthService.isAuthenticated();
-                        console.log('[PageManagerGmail] GoogleAuth result:', authResult);
-                        
-                        // GoogleAuthService retourne un objet {authenticated: boolean}
-                        if (authResult && typeof authResult === 'object') {
-                            isAuthenticated = authResult.authenticated === true;
-                        } else {
-                            isAuthenticated = authResult === true;
-                        }
-                    } catch (e) {
-                        console.warn('[PageManagerGmail] Erreur isAuthenticated:', e);
-                    }
-                }
-                
-                // Si pas encore authentifié, vérifier le token
-                if (!isAuthenticated && typeof window.googleAuthService.getAccessToken === 'function') {
-                    try {
-                        const token = await window.googleAuthService.getAccessToken();
-                        isAuthenticated = !!token;
-                        console.log('[PageManagerGmail] Token check:', !!token);
-                    } catch (e) {
-                        console.warn('[PageManagerGmail] Erreur getAccessToken:', e);
-                    }
-                }
-                
-                // Vérifier aussi l'utilisateur
-                if (!isAuthenticated && window.googleAuthService.user) {
-                    isAuthenticated = true;
-                    console.log('[PageManagerGmail] User found:', window.googleAuthService.user);
-                }
+            if (window.googleAuthService?.isAuthenticated) {
+                isAuthenticated = await window.googleAuthService.isAuthenticated();
             }
             
-            // Vérifier aussi dans le localStorage
-            if (!isAuthenticated) {
+            if (!isAuthenticated && window.googleAuthService?.getAccessToken) {
                 try {
-                    const authData = localStorage.getItem('googleAuthData');
-                    if (authData) {
-                        const parsed = JSON.parse(authData);
-                        if (parsed.access_token && parsed.expiry_date > Date.now()) {
-                            isAuthenticated = true;
-                            console.log('[PageManagerGmail] Auth trouvée dans localStorage');
-                        }
-                    }
+                    const token = await window.googleAuthService.getAccessToken();
+                    isAuthenticated = !!token;
                 } catch (e) {}
             }
             
-            console.log('[PageManagerGmail] Final auth status:', { isAuthenticated, provider });
-            
-            return { 
-                isAuthenticated, 
-                provider,
-                source: isAuthenticated ? 'googleAuthService' : 'none'
-            };
+            return { isAuthenticated, provider: 'gmail' };
             
         } catch (error) {
-            console.error('[PageManagerGmail] Erreur vérification auth:', error);
-            return { isAuthenticated: false, provider: 'gmail' };
+            return { isAuthenticated: false };
         }
     }
 
@@ -1022,43 +909,9 @@ class PageManagerGmail {
         
         temp.querySelectorAll('script, link[rel="stylesheet"], style').forEach(el => el.remove());
         
-        // Améliorer la détection des liens de désabonnement
         temp.querySelectorAll('a').forEach(link => {
             link.setAttribute('target', '_blank');
             link.setAttribute('rel', 'noopener noreferrer');
-            
-            // Détecter les liens de désabonnement et les styliser
-            const linkText = link.textContent.toLowerCase();
-            const linkHref = link.href?.toLowerCase() || '';
-            
-            if (linkText.includes('désabonner') || linkText.includes('unsubscribe') || 
-                linkText.includes('se désabonner') || linkText.includes('stop') ||
-                linkHref.includes('unsubscribe') || linkHref.includes('optout') || 
-                linkHref.includes('stop') || linkHref.includes('preferences')) {
-                
-                link.style.cssText = `
-                    display: inline-block;
-                    padding: 6px 12px;
-                    margin: 4px 0;
-                    background: #f8f9fa;
-                    color: #5f6368;
-                    text-decoration: none;
-                    border-radius: 4px;
-                    font-size: 12px;
-                    border: 1px solid #dadce0;
-                    transition: all 0.2s;
-                `;
-                
-                link.onmouseover = function() {
-                    this.style.background = '#e8eaed';
-                    this.style.borderColor = '#5f6368';
-                };
-                
-                link.onmouseout = function() {
-                    this.style.background = '#f8f9fa';
-                    this.style.borderColor = '#dadce0';
-                };
-            }
         });
         
         temp.querySelectorAll('img').forEach(img => {
@@ -1618,22 +1471,21 @@ class PageManagerGmail {
         const styles = document.createElement('style');
         styles.id = 'emailsPageStylesGmail';
         styles.textContent = `
-            /* Base styles - Moderne comme PageManager */
+            /* Base styles */
             .emails-page-gmail {
-                background: #f8fafc;
+                background: #f8f9fa;
                 min-height: 100vh;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-                padding: 16px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             }
 
-            /* Header moderne */
+            /* Header */
             .email-page-header {
                 background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 12px;
-                margin-bottom: 16px;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-                overflow: hidden;
+                border-bottom: 1px solid #e0e0e0;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             }
 
             .header-top {
@@ -1646,8 +1498,8 @@ class PageManagerGmail {
 
             .page-title {
                 font-size: 24px;
-                font-weight: 700;
-                color: #1f2937;
+                font-weight: 400;
+                color: #202124;
                 margin: 0;
                 display: flex;
                 align-items: center;
@@ -1655,30 +1507,26 @@ class PageManagerGmail {
             }
 
             .page-title i {
-                background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
+                color: #4285f4;
                 font-size: 28px;
             }
 
             .email-count {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                color: white;
+                background: #e8f0fe;
+                color: #1967d2;
                 padding: 4px 12px;
                 border-radius: 16px;
                 font-size: 14px;
-                font-weight: 700;
-                box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+                font-weight: 500;
             }
 
-            /* View mode selector moderne */
+            /* View mode selector */
             .view-mode-selector {
                 display: flex;
-                gap: 2px;
-                background: #f8fafc;
+                gap: 4px;
+                background: #f1f3f4;
                 padding: 4px;
                 border-radius: 8px;
-                border: 1px solid #e2e8f0;
             }
 
             .view-mode-btn {
@@ -1686,30 +1534,29 @@ class PageManagerGmail {
                 height: 36px;
                 border: none;
                 background: transparent;
-                color: #6b7280;
+                color: #5f6368;
                 border-radius: 6px;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.2s ease;
+                transition: all 0.2s;
             }
 
             .view-mode-btn:hover {
-                background: rgba(255, 255, 255, 0.8);
-                color: #374151;
+                background: rgba(0,0,0,0.05);
             }
 
             .view-mode-btn.active {
                 background: white;
-                color: #1f2937;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                color: #1a73e8;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.12);
             }
 
-            /* Search bar moderne */
+            /* Search bar */
             .search-bar-container {
                 padding: 16px 24px;
-                background: #f8fafc;
+                background: #f8f9fa;
             }
 
             .search-wrapper {
@@ -1723,26 +1570,24 @@ class PageManagerGmail {
                 left: 16px;
                 top: 50%;
                 transform: translateY(-50%);
-                color: #6b7280;
-                font-size: 16px;
+                color: #5f6368;
+                font-size: 18px;
             }
 
             .search-input {
                 width: 100%;
-                height: 44px;
-                padding: 0 48px;
-                border: 2px solid #e5e7eb;
-                border-radius: 12px;
-                font-size: 14px;
-                background: #f9fafb;
-                transition: all 0.2s ease;
+                padding: 12px 48px;
+                border: none;
+                border-radius: 8px;
+                background: white;
+                font-size: 16px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+                transition: box-shadow 0.2s;
             }
 
             .search-input:focus {
-                border-color: #3b82f6;
-                background: white;
-                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
                 outline: none;
+                box-shadow: 0 1px 6px rgba(0,0,0,0.2);
             }
 
             .clear-search {
@@ -1750,29 +1595,28 @@ class PageManagerGmail {
                 right: 12px;
                 top: 50%;
                 transform: translateY(-50%);
-                width: 28px;
-                height: 28px;
+                width: 32px;
+                height: 32px;
                 border: none;
-                background: #ef4444;
-                color: white;
+                background: transparent;
+                color: #5f6368;
                 cursor: pointer;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.2s;
-                font-size: 12px;
+                transition: background 0.2s;
             }
 
             .clear-search:hover {
-                background: #dc2626;
-                transform: translateY(-50%) scale(1.1);
+                background: rgba(0,0,0,0.05);
             }
 
-            /* Category tabs modernes */
+            /* Category tabs */
             .category-tabs-container {
                 padding: 16px 24px;
                 background: white;
+                border-bottom: 1px solid #e0e0e0;
             }
 
             .category-filters-wrapper {
@@ -1783,64 +1627,51 @@ class PageManagerGmail {
             .category-filters {
                 display: flex;
                 flex-direction: column;
-                gap: 6px;
+                gap: 8px;
             }
 
             .category-row {
-                display: grid;
-                grid-template-columns: repeat(6, 1fr);
-                gap: 6px;
+                display: flex;
+                gap: 8px;
+                justify-content: center;
             }
 
             .category-tab {
-                height: 56px;
-                padding: 0;
+                flex: 1;
+                max-width: 160px;
+                min-width: 120px;
+                height: 48px;
+                padding: 0 16px;
                 background: white;
                 border: 2px solid #e5e7eb;
-                border-radius: 8px;
+                border-radius: 24px;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 position: relative;
                 overflow: hidden;
                 display: flex;
-                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 2px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-                font-size: 12px;
+                gap: 8px;
             }
 
             .category-tab .tab-icon {
-                font-size: 18px;
-                line-height: 1;
+                font-size: 16px;
             }
 
             .category-tab .tab-name {
-                font-size: 12px;
-                font-weight: 700;
-                color: #1f2937;
-                text-align: center;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 90%;
-                padding: 0 4px;
+                font-size: 13px;
+                font-weight: 600;
+                color: #5f6368;
             }
 
             .category-tab .tab-count {
-                position: absolute;
-                top: 3px;
-                right: 3px;
-                background: #3b82f6;
-                color: white;
-                font-size: 10px;
-                font-weight: 700;
-                padding: 1px 5px;
-                border-radius: 8px;
-                min-width: 18px;
-                text-align: center;
-                line-height: 1.2;
+                background: #f1f3f4;
+                color: #5f6368;
+                font-size: 12px;
+                font-weight: 600;
+                padding: 2px 8px;
+                border-radius: 12px;
             }
 
             .category-tab.preselected {
@@ -1848,22 +1679,26 @@ class PageManagerGmail {
                 background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
             }
 
+            .category-tab.preselected .tab-name {
+                color: #7c3aed;
+            }
+
             .category-tab.preselected .tab-count {
                 background: #8b5cf6;
+                color: white;
             }
 
             .category-tab:hover {
-                border-color: #3b82f6;
-                background: #f0f9ff;
-                transform: translateY(-1px);
-                box-shadow: 0 3px 8px rgba(59, 130, 246, 0.15);
+                border-color: #1a73e8;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
             }
 
             .category-tab.active {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                border-color: #3b82f6;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+                background: #1a73e8;
+                border-color: #1a73e8;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(26, 115, 232, 0.25);
             }
 
             .category-tab.active .tab-name,
@@ -1873,14 +1708,15 @@ class PageManagerGmail {
 
             .category-tab.active .tab-count {
                 background: rgba(255, 255, 255, 0.2);
+                color: white;
             }
 
             .preselected-star {
                 position: absolute;
-                top: -5px;
-                right: -5px;
-                width: 18px;
-                height: 18px;
+                top: -4px;
+                right: -4px;
+                width: 20px;
+                height: 20px;
                 background: #8b5cf6;
                 color: white;
                 border-radius: 50%;
@@ -1892,10 +1728,11 @@ class PageManagerGmail {
                 box-shadow: 0 2px 4px rgba(139, 92, 246, 0.4);
             }
 
-            /* Action bar moderne */
+            /* Action bar */
             .action-bar {
                 padding: 12px 24px;
                 background: white;
+                border-top: 1px solid #f0f0f0;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -1903,15 +1740,12 @@ class PageManagerGmail {
 
             .selection-info {
                 font-size: 14px;
-                color: #6b7280;
-                font-weight: 500;
+                color: #5f6368;
             }
 
             .selected-count {
-                font-weight: 700;
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
+                font-weight: 500;
+                color: #1a73e8;
             }
 
             .action-buttons {
@@ -1920,27 +1754,24 @@ class PageManagerGmail {
             }
 
             .btn-action {
-                height: 44px;
-                padding: 0 16px;
-                border: 1px solid #e5e7eb;
+                padding: 8px 16px;
+                border: 1px solid #dadce0;
                 background: white;
-                border-radius: 8px;
-                font-size: 13px;
-                font-weight: 600;
-                color: #374151;
+                border-radius: 4px;
+                font-size: 14px;
+                font-weight: 500;
+                color: #5f6368;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                transition: all 0.2s ease;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                transition: all 0.2s;
             }
 
             .btn-action:hover:not(.disabled) {
-                background: #f9fafb;
-                border-color: #6366f1;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                background: #f8f9fa;
+                border-color: #1a73e8;
+                color: #1a73e8;
             }
 
             .btn-action.disabled {
@@ -1949,106 +1780,61 @@ class PageManagerGmail {
             }
 
             .btn-create-tasks {
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                background: #1a73e8;
                 color: white;
-                border: none;
-                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+                border-color: #1a73e8;
             }
 
             .btn-create-tasks:hover:not(.disabled) {
-                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+                background: #1557b0;
+                border-color: #1557b0;
             }
 
-            .btn-clear-selection {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-            }
-
-            .btn-clear-selection:hover {
-                background: #fee2e2;
-                border-color: #ef4444;
-            }
-
-            /* Emails list moderne */
+            /* Emails list */
             .emails-list-container {
-                padding: 0;
+                padding: 16px 24px;
+                max-width: 1400px;
+                margin: 0 auto;
             }
 
             .emails-list {
-                background: transparent;
-                border-radius: 0;
-                overflow: visible;
-                box-shadow: none;
-                display: flex;
-                flex-direction: column;
-                gap: 0;
+                background: white;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             }
 
-            /* Email card moderne */
+            /* Email card */
             .email-card {
                 display: flex;
                 align-items: center;
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 0;
-                padding: 16px;
+                padding: 16px 24px;
+                border-bottom: 1px solid #f0f0f0;
                 cursor: pointer;
-                transition: all 0.3s ease;
+                transition: background 0.2s;
                 position: relative;
-                min-height: 80px;
-                border-bottom: none;
-            }
-
-            .email-card:first-child {
-                border-top-left-radius: 12px;
-                border-top-right-radius: 12px;
-            }
-
-            .email-card:last-child {
-                border-bottom-left-radius: 12px;
-                border-bottom-right-radius: 12px;
-                border-bottom: 1px solid #e5e7eb;
-            }
-
-            .email-card + .email-card {
-                border-top: 1px solid #e5e7eb;
             }
 
             .email-card:hover {
-                background: #f8fafc;
-                transform: translateY(-1px);
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-                border-color: rgba(99, 102, 241, 0.2);
-                border-left: 3px solid #6366f1;
-                z-index: 2;
+                background: #f8f9fa;
             }
 
             .email-card.selected {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border-left: 4px solid #3b82f6;
-                border-color: #3b82f6;
-                transform: translateY(-1px);
-                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
-                z-index: 3;
+                background: #e8f0fe;
             }
 
             .email-card.has-task {
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-                border-left: 3px solid #22c55e;
+                opacity: 0.7;
             }
 
             .email-card.preselected {
-                background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
-                border-left: 3px solid #8b5cf6;
-                border-color: rgba(139, 92, 246, 0.3);
+                border-left: 4px solid #7c3aed;
+                padding-left: 20px;
             }
 
-            /* Checkbox moderne */
+            /* Checkbox */
             .email-checkbox-wrapper {
-                margin-right: 12px;
+                margin-right: 16px;
                 position: relative;
             }
 
@@ -2061,34 +1847,34 @@ class PageManagerGmail {
             .checkbox-label {
                 width: 20px;
                 height: 20px;
-                border: 2px solid #d1d5db;
-                border-radius: 6px;
+                border: 2px solid #dadce0;
+                border-radius: 3px;
                 display: block;
                 position: relative;
                 cursor: pointer;
-                transition: all 0.2s ease;
-                background: white;
+                transition: all 0.2s;
             }
 
             .email-checkbox:checked + .checkbox-label {
-                background: #6366f1;
-                border-color: #6366f1;
+                background: #1a73e8;
+                border-color: #1a73e8;
             }
 
             .email-checkbox:checked + .checkbox-label::after {
-                content: '✓';
+                content: '';
                 position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                color: white;
-                font-size: 12px;
-                font-weight: 700;
+                left: 7px;
+                top: 3px;
+                width: 4px;
+                height: 9px;
+                border: solid white;
+                border-width: 0 2px 2px 0;
+                transform: rotate(45deg);
             }
 
-            .email-card.preselected .email-checkbox:checked + .checkbox-label {
-                background: #8b5cf6;
-                border-color: #8b5cf6;
+            .email-checkbox:disabled + .checkbox-label {
+                opacity: 0.5;
+                cursor: not-allowed;
             }
 
             /* Email main content */
@@ -2100,7 +1886,7 @@ class PageManagerGmail {
                 min-width: 0;
             }
 
-            /* Sender section moderne */
+            /* Sender section */
             .email-sender-section {
                 display: flex;
                 align-items: center;
@@ -2112,15 +1898,14 @@ class PageManagerGmail {
             .sender-avatar {
                 width: 40px;
                 height: 40px;
-                border-radius: 10px;
+                border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
-                font-weight: 700;
+                font-weight: 500;
                 font-size: 16px;
                 flex-shrink: 0;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             }
 
             .sender-info {
@@ -2129,8 +1914,8 @@ class PageManagerGmail {
             }
 
             .sender-name {
-                font-weight: 700;
-                color: #1f2937;
+                font-weight: 500;
+                color: #202124;
                 font-size: 14px;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -2139,7 +1924,7 @@ class PageManagerGmail {
 
             .sender-email {
                 font-size: 12px;
-                color: #6b7280;
+                color: #5f6368;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -2152,8 +1937,8 @@ class PageManagerGmail {
             }
 
             .email-subject {
-                font-weight: 700;
-                color: #1f2937;
+                font-weight: 500;
+                color: #202124;
                 margin-bottom: 4px;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -2161,75 +1946,61 @@ class PageManagerGmail {
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                font-size: 15px;
             }
 
             .attachment-icon {
-                color: #ef4444;
+                color: #5f6368;
                 font-size: 14px;
                 flex-shrink: 0;
             }
 
             .email-preview {
-                font-size: 13px;
-                color: #6b7280;
+                font-size: 14px;
+                color: #5f6368;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 margin-bottom: 4px;
-                font-weight: 500;
             }
 
             .email-meta {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                font-size: 11px;
-                color: #6b7280;
-                flex-wrap: wrap;
+                gap: 12px;
+                font-size: 12px;
+                color: #5f6368;
             }
 
             .email-date {
                 display: flex;
                 align-items: center;
-                gap: 3px;
-                background: #f8fafc;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-weight: 600;
-                border: 1px solid #e2e8f0;
+                gap: 4px;
             }
 
             .email-category {
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-weight: 600;
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-weight: 500;
                 display: flex;
                 align-items: center;
                 gap: 4px;
-                transition: all 0.2s ease;
             }
 
             .preselected-badge {
-                background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-                color: white;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-weight: 700;
+                color: #7c3aed;
+                font-weight: 500;
                 display: flex;
                 align-items: center;
                 gap: 4px;
-                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
             }
 
-            /* Email actions modernes */
+            /* Email actions */
             .email-actions {
                 display: flex;
                 gap: 4px;
-                margin-left: 12px;
+                margin-left: 16px;
                 opacity: 0;
                 transition: opacity 0.2s;
-                flex-shrink: 0;
             }
 
             .email-card:hover .email-actions {
@@ -2237,88 +2008,64 @@ class PageManagerGmail {
             }
 
             .email-action-btn {
-                width: 36px;
-                height: 36px;
-                border: 2px solid transparent;
-                border-radius: 8px;
-                background: rgba(255, 255, 255, 0.9);
-                color: #6b7280;
+                width: 32px;
+                height: 32px;
+                border: none;
+                background: transparent;
+                color: #5f6368;
+                border-radius: 50%;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.3s ease;
-                font-size: 14px;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+                transition: all 0.2s;
             }
 
             .email-action-btn:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                background: rgba(0,0,0,0.08);
             }
 
             .email-action-btn.create-task {
-                color: #3b82f6;
-            }
-
-            .email-action-btn.create-task:hover {
-                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                border-color: #3b82f6;
-                color: #2563eb;
+                color: #1a73e8;
             }
 
             .email-action-btn.task-created {
-                color: #16a34a;
-                background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+                color: #0d652d;
             }
 
-            .email-action-btn.view-email {
-                color: #6366f1;
-            }
-
-            .email-action-btn.view-email:hover {
-                background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-                border-color: #6366f1;
-                color: #4338ca;
-            }
-
-            /* Grouped view moderne */
+            /* Grouped view */
             .email-group {
                 margin-bottom: 16px;
                 background: white;
-                border-radius: 12px;
+                border-radius: 8px;
                 overflow: hidden;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-                border: 1px solid #e5e7eb;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             }
 
             .group-header {
                 padding: 16px 24px;
-                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                background: #f8f9fa;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                transition: all 0.3s ease;
+                transition: background 0.2s;
             }
 
             .group-header:hover {
-                background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+                background: #f0f1f3;
             }
 
             .group-avatar {
-                width: 48px;
-                height: 48px;
-                border-radius: 12px;
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
-                font-weight: 700;
-                font-size: 18px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                font-weight: 500;
+                font-size: 16px;
             }
 
             .group-info {
@@ -2326,80 +2073,59 @@ class PageManagerGmail {
             }
 
             .group-name {
-                font-weight: 700;
-                color: #1f2937;
+                font-weight: 500;
+                color: #202124;
                 margin-bottom: 2px;
-                font-size: 16px;
             }
 
             .group-meta {
                 font-size: 13px;
-                color: #6b7280;
-                font-weight: 500;
+                color: #5f6368;
             }
 
             .group-toggle {
-                width: 36px;
-                height: 36px;
-                border-radius: 8px;
-                background: white;
-                border: 2px solid #e5e7eb;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #6b7280;
-                transition: all 0.3s ease;
-            }
-
-            .group-header:hover .group-toggle {
-                border-color: #6366f1;
-                color: #6366f1;
+                color: #5f6368;
+                transition: transform 0.2s;
             }
 
             .group-emails {
                 border-top: 1px solid #f0f0f0;
             }
 
-            /* Empty states moderne */
+            /* Empty states */
             .no-emails-message,
             .empty-state {
                 text-align: center;
                 padding: 60px 20px;
-                color: #6b7280;
-                background: white;
-                border-radius: 12px;
-                border: 1px solid #e5e7eb;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                color: #5f6368;
             }
 
             .no-emails-message i,
             .empty-state-icon {
                 font-size: 48px;
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
+                color: #dadce0;
                 margin-bottom: 16px;
             }
 
             .empty-state {
+                background: white;
+                border-radius: 8px;
                 margin: 20px auto;
                 max-width: 400px;
             }
 
             .empty-state h3 {
-                font-size: 20px;
-                font-weight: 700;
-                color: #1f2937;
+                font-size: 18px;
+                font-weight: 500;
+                color: #202124;
                 margin-bottom: 8px;
             }
 
             .empty-state p {
                 margin-bottom: 20px;
-                color: #6b7280;
-                font-weight: 500;
             }
 
-            /* Modal styles modernes */
+            /* Modal styles */
             .email-modal-overlay,
             .task-modal-overlay {
                 position: fixed;
@@ -2407,31 +2133,30 @@ class PageManagerGmail {
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0,0,0,0.75);
+                background: rgba(0,0,0,0.5);
                 z-index: 1000;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 padding: 20px;
-                backdrop-filter: blur(4px);
             }
 
             .email-modal,
             .task-modal {
                 background: white;
-                border-radius: 16px;
+                border-radius: 8px;
                 max-width: 800px;
                 width: 100%;
                 max-height: 90vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 24px 48px rgba(0,0,0,0.3);
+                box-shadow: 0 24px 48px rgba(0,0,0,0.15);
             }
 
             .email-modal-header,
             .task-modal-header {
                 padding: 24px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid #e0e0e0;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -2440,31 +2165,27 @@ class PageManagerGmail {
             .email-modal-header h2,
             .task-modal-header h2 {
                 margin: 0;
-                font-size: 24px;
-                font-weight: 700;
-                color: #1f2937;
-                display: flex;
-                align-items: center;
-                gap: 8px;
+                font-size: 20px;
+                font-weight: 500;
+                color: #202124;
             }
 
             .modal-close {
-                width: 32px;
-                height: 32px;
+                width: 40px;
+                height: 40px;
                 border: none;
-                background: none;
-                color: #6b7280;
-                border-radius: 6px;
+                background: transparent;
+                color: #5f6368;
+                border-radius: 50%;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.2s;
-                font-size: 24px;
+                transition: background 0.2s;
             }
 
             .modal-close:hover {
-                background: #f3f4f6;
+                background: rgba(0,0,0,0.05);
             }
 
             .email-modal-content,
@@ -2484,288 +2205,13 @@ class PageManagerGmail {
             }
 
             .detail-label {
-                font-weight: 600;
-                color: #374151;
+                font-weight: 500;
+                color: #5f6368;
                 margin-right: 12px;
                 min-width: 80px;
             }
 
             .detail-value {
-                color: #6b7280;
-                flex: 1;
-            }
-
-            .category-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 12px;
-                font-weight: 600;
-            }
-
-            .email-body {
-                background: #f9fafb;
-                border: 1px solid #e5e7eb;
-                border-radius: 12px;
-                padding: 20px;
-                line-height: 1.6;
-                color: #374151;
-            }
-
-            .email-content-wrapper {
-                max-width: 100%;
-                overflow-x: auto;
-            }
-
-            .email-content-wrapper img {
-                max-width: 100%;
-                height: auto;
-                border-radius: 8px;
-                margin: 8px 0;
-            }
-
-            .email-modal-footer,
-            .task-modal-footer {
-                padding: 24px;
-                border-top: 1px solid #e5e7eb;
-                display: flex;
-                justify-content: flex-end;
-                gap: 12px;
-            }
-
-            /* Forms modernes */
-            .ai-badge {
-                background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
-                border: 1px solid #0ea5e9;
-                border-radius: 12px;
-                padding: 16px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                margin-bottom: 20px;
-                color: #0c4a6e;
-                font-weight: 600;
-            }
-
-            .form-group {
-                margin-bottom: 20px;
-            }
-
-            .form-group label {
-                display: block;
-                font-weight: 600;
-                color: #374151;
-                margin-bottom: 8px;
-                font-size: 14px;
-            }
-
-            .form-group input,
-            .form-group textarea,
-            .form-group select {
-                width: 100%;
-                padding: 12px 16px;
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 14px;
-                font-family: inherit;
-                transition: all 0.2s;
-                background: #f9fafb;
-            }
-
-            .form-group input:focus,
-            .form-group textarea:focus,
-            .form-group select:focus {
-                outline: none;
-                border-color: #3b82f6;
-                background: white;
-                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-            }
-
-            .form-row {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 16px;
-            }
-
-            /* Buttons modernes */
-            .btn {
-                padding: 12px 20px;
-                border: 1px solid #d1d5db;
-                background: white;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: 600;
-                color: #374151;
-                cursor: pointer;
-                transition: all 0.2s;
-            }
-
-            .btn:hover {
-                background: #f3f4f6;
-            }
-
-            .btn-primary {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                color: white;
-                border: none;
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-            }
-
-            .btn-primary:hover {
-                background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-                transform: translateY(-1px);
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
-            }
-
-            .btn-secondary {
-                background: #f3f4f6;
-                color: #4b5563;
-                border: 1px solid #d1d5db;
-            }
-
-            .btn-secondary:hover {
-                background: #e5e7eb;
-            }
-
-            /* Notification moderne */
-            .explanation-notice {
-                background: rgba(59, 130, 246, 0.1);
-                border: 1px solid rgba(59, 130, 246, 0.2);
-                border-radius: 8px;
-                padding: 10px 14px;
-                margin: 0 0 12px 0;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                color: #1e40af;
-                font-size: 13px;
-                font-weight: 500;
-            }
-
-            .explanation-close {
-                margin-left: auto;
-                background: rgba(59, 130, 246, 0.1);
-                border: 1px solid rgba(59, 130, 246, 0.2);
-                color: #3b82f6;
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                transition: all 0.2s;
-            }
-
-            .explanation-close:hover {
-                background: rgba(59, 130, 246, 0.2);
-                transform: scale(1.1);
-            }
-
-            /* Auth state moderne */
-            .auth-required-state {
-                text-align: center;
-                padding: 60px 30px;
-                background: white;
-                border-radius: 16px;
-                margin: 20px auto;
-                max-width: 400px;
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-                border: 1px solid #e5e7eb;
-            }
-
-            .auth-icon {
-                font-size: 48px;
-                margin-bottom: 20px;
-                background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-
-            .auth-required-state h3 {
-                font-size: 24px;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 12px;
-            }
-
-            .auth-required-state p {
-                font-size: 16px;
-                color: #6b7280;
-                margin-bottom: 24px;
-                font-weight: 500;
-            }
-
-            /* Responsive */
-            @media (max-width: 1200px) {
-                .category-row {
-                    grid-template-columns: repeat(4, 1fr);
-                }
-            }
-
-            @media (max-width: 768px) {
-                .email-sender-section {
-                    width: auto;
-                    flex: 0 0 auto;
-                }
-
-                .sender-info {
-                    display: none;
-                }
-
-                .email-main {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 8px;
-                }
-
-                .email-content-section {
-                    width: 100%;
-                }
-
-                .email-actions {
-                    opacity: 1;
-                }
-
-                .form-row {
-                    grid-template-columns: 1fr;
-                }
-                
-                .category-row {
-                    grid-template-columns: repeat(3, 1fr);
-                }
-            }
-
-            @media (max-width: 480px) {
-                .header-top {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 12px;
-                }
-
-                .page-title {
-                    font-size: 20px;
-                }
-
-                .category-row {
-                    grid-template-columns: repeat(2, 1fr);
-                }
-
-                .action-buttons {
-                    flex-wrap: wrap;
-                }
-
-                .email-card {
-                    padding: 12px 16px;
-                }
-            }
-        `;
-        
-        document.head.appendChild(styles);
-    }
                 color: #202124;
                 flex: 1;
             }
@@ -3057,28 +2503,25 @@ class PageManagerGmail {
 // ================================================
 // INITIALISATION GLOBALE
 // ================================================
-(function() {
-    // Nettoyer l'ancienne instance si elle existe
-    if (window.pageManagerGmail) {
-        window.pageManagerGmail.cleanup?.();
+if (window.pageManagerGmail) {
+    window.pageManagerGmail.cleanup?.();
+}
+
+window.pageManagerGmail = new PageManagerGmail();
+
+// Bind des méthodes
+Object.getOwnPropertyNames(PageManagerGmail.prototype).forEach(name => {
+    if (name !== 'constructor' && typeof window.pageManagerGmail[name] === 'function') {
+        window.pageManagerGmail[name] = window.pageManagerGmail[name].bind(window.pageManagerGmail);
     }
+});
 
-    window.pageManagerGmail = new PageManagerGmail();
+// Fonction de debug globale
+window.debugPageManagerGmail = function() {
+    console.group('🔍 Debug PageManagerGmail');
+    console.log(window.pageManagerGmail.getDebugInfo());
+    console.groupEnd();
+};
 
-    // Bind des méthodes
-    Object.getOwnPropertyNames(PageManagerGmail.prototype).forEach(name => {
-        if (name !== 'constructor' && typeof window.pageManagerGmail[name] === 'function') {
-            window.pageManagerGmail[name] = window.pageManagerGmail[name].bind(window.pageManagerGmail);
-        }
-    });
-
-    // Fonction de debug globale
-    window.debugPageManagerGmail = function() {
-        console.group('🔍 Debug PageManagerGmail');
-        console.log(window.pageManagerGmail.getDebugInfo());
-        console.groupEnd();
-    };
-
-    console.log('✅ PageManagerGmail v19.0 loaded - Corrigé et Optimisé');
-    console.log('💡 Utilisez window.debugPageManagerGmail() pour déboguer');
-})();
+console.log('✅ PageManagerGmail v19.0 loaded - Corrigé et Optimisé');
+console.log('💡 Utilisez window.debugPageManagerGmail() pour déboguer');
