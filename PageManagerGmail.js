@@ -1,4 +1,4 @@
-// PageManagerGmail.js - Version 18.1 - Corrigé avec synchronisation emails
+// PageManagerGmail.js - Version 18.2 - Design corrigé avec liste d'emails
 
 class PageManagerGmail {
     constructor() {
@@ -13,7 +13,7 @@ class PageManagerGmail {
         this.isInitialized = false;
         
         // Vue modes pour les emails
-        this.currentViewMode = 'grouped-domain';
+        this.currentViewMode = 'flat'; // Par défaut en liste
         this.currentCategory = null;
         
         // État de synchronisation Gmail
@@ -59,7 +59,7 @@ class PageManagerGmail {
             this.loadEmailsFromStorage();
             
             this.isInitialized = true;
-            console.log('[PageManagerGmail] ✅ Version 18.1 Gmail - Synchronisation corrigée');
+            console.log('[PageManagerGmail] ✅ Version 18.2 Gmail - Design corrigé');
         } catch (error) {
             console.error('[PageManagerGmail] Erreur initialisation:', error);
         }
@@ -397,13 +397,70 @@ class PageManagerGmail {
         const selectedCount = this.selectedEmails.size;
         
         container.innerHTML = `
-            <div class="emails-page-modern">
+            <div class="emails-page-gmail">
                 ${!this.hideExplanation ? this.renderExplanationNotice() : ''}
-                <div class="fixed-header-wrapper">
-                    ${this.renderControlsBar(selectedCount)}
-                    ${this.renderCategoryTabs(categoryCounts, emails.length, categories)}
+                <div class="email-page-header">
+                    <div class="header-top">
+                        <h1 class="page-title">
+                            <i class="fab fa-google"></i>
+                            <span>Emails Gmail</span>
+                            <span class="email-count">${emails.length}</span>
+                        </h1>
+                        <div class="header-actions">
+                            ${this.renderViewModeButtons()}
+                        </div>
+                    </div>
+                    
+                    <div class="search-bar-container">
+                        <div class="search-wrapper">
+                            <i class="fas fa-search"></i>
+                            <input type="text" 
+                                   class="search-input" 
+                                   id="emailSearchInput"
+                                   placeholder="Rechercher dans vos emails Gmail..." 
+                                   value="${this.searchTerm}">
+                            ${this.searchTerm ? `
+                                <button class="clear-search" onclick="pageManagerGmail.clearSearch()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="category-tabs-container">
+                        ${this.renderCategoryTabs(categoryCounts, emails.length, categories)}
+                    </div>
+                    
+                    <div class="action-bar">
+                        <div class="selection-info">
+                            ${selectedCount > 0 ? `
+                                <span class="selected-count">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
+                            ` : ''}
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn-action btn-create-tasks ${selectedCount === 0 ? 'disabled' : ''}" 
+                                    onclick="pageManagerGmail.createTasksFromSelection()"
+                                    ${selectedCount === 0 ? 'disabled' : ''}>
+                                <i class="fas fa-tasks"></i>
+                                <span>Créer des tâches</span>
+                            </button>
+                            
+                            <button class="btn-action btn-refresh" onclick="pageManagerGmail.refreshEmails()">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Actualiser</span>
+                            </button>
+                            
+                            ${selectedCount > 0 ? `
+                                <button class="btn-action btn-clear-selection" onclick="pageManagerGmail.clearSelection()">
+                                    <i class="fas fa-times"></i>
+                                    <span>Effacer</span>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
                 </div>
-                <div class="emails-container">
+                
+                <div class="emails-list-container">
                     ${this.renderEmailsList()}
                 </div>
             </div>
@@ -455,76 +512,22 @@ class PageManagerGmail {
         `;
     }
 
-    renderControlsBar(selectedCount) {
-        return `
-            <div class="controls-bar">
-                <div class="search-section">
-                    <div class="search-box">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" 
-                               class="search-input" 
-                               id="emailSearchInput"
-                               placeholder="Rechercher dans Gmail..." 
-                               value="${this.searchTerm}">
-                        ${this.searchTerm ? `
-                            <button class="search-clear" onclick="pageManagerGmail.clearSearch()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        ` : ''}
-                    </div>
-                </div>
-                
-                <div class="actions-section">
-                    ${this.renderViewModes()}
-                    ${this.renderActionButtons(selectedCount)}
-                </div>
-            </div>
-        `;
-    }
-
-    renderViewModes() {
+    renderViewModeButtons() {
         const modes = [
+            { id: 'flat', icon: 'fa-list', label: 'Liste' },
             { id: 'grouped-domain', icon: 'fa-globe', label: 'Domaine' },
-            { id: 'grouped-sender', icon: 'fa-user', label: 'Expéditeur' },
-            { id: 'flat', icon: 'fa-list', label: 'Liste' }
+            { id: 'grouped-sender', icon: 'fa-user', label: 'Expéditeur' }
         ];
         
         return `
-            <div class="view-modes">
+            <div class="view-mode-selector">
                 ${modes.map(mode => `
-                    <button class="view-mode ${this.currentViewMode === mode.id ? 'active' : ''}" 
+                    <button class="view-mode-btn ${this.currentViewMode === mode.id ? 'active' : ''}" 
                             onclick="pageManagerGmail.changeViewMode('${mode.id}')"
-                            title="Par ${mode.label.toLowerCase()}">
+                            title="Vue par ${mode.label.toLowerCase()}">
                         <i class="fas ${mode.icon}"></i>
-                        <span>${mode.label}</span>
                     </button>
                 `).join('')}
-            </div>
-        `;
-    }
-
-    renderActionButtons(selectedCount) {
-        return `
-            <div class="action-buttons">
-                <button class="btn btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
-                        onclick="pageManagerGmail.createTasksFromSelection()"
-                        ${selectedCount === 0 ? 'disabled' : ''}>
-                    <i class="fas fa-tasks"></i>
-                    <span>Créer tâche${selectedCount > 1 ? 's' : ''}</span>
-                    ${selectedCount > 0 ? `<span class="count-badge">${selectedCount}</span>` : ''}
-                </button>
-                
-                <button class="btn btn-secondary" onclick="pageManagerGmail.refreshEmails()">
-                    <i class="fas fa-sync-alt"></i>
-                    <span>Actualiser</span>
-                </button>
-                
-                ${selectedCount > 0 ? `
-                    <button class="btn btn-clear" onclick="pageManagerGmail.clearSelection()">
-                        <i class="fas fa-times"></i>
-                        <span>Effacer (${selectedCount})</span>
-                    </button>
-                ` : ''}
             </div>
         `;
     }
@@ -539,6 +542,7 @@ class PageManagerGmail {
                     id,
                     name: cat.name,
                     icon: cat.icon,
+                    color: cat.color,
                     count: categoryCounts[id],
                     isPreselected: preselected.includes(id)
                 });
@@ -546,20 +550,21 @@ class PageManagerGmail {
         });
         
         if (categoryCounts.other > 0) {
-            tabs.push({ id: 'other', name: 'Autre', icon: '📌', count: categoryCounts.other });
+            tabs.push({ id: 'other', name: 'Autre', icon: '📌', color: '#64748b', count: categoryCounts.other });
         }
         
         return `
-            <div class="category-filters-wrapper">
-                <div class="category-filters">
+            <div class="category-tabs-wrapper">
+                <div class="category-tabs">
                     ${tabs.map(tab => `
                         <button class="category-tab ${this.currentCategory === tab.id ? 'active' : ''} ${tab.isPreselected ? 'preselected' : ''}" 
                                 onclick="pageManagerGmail.filterByCategory('${tab.id}')"
-                                data-category-id="${tab.id}">
+                                data-category-id="${tab.id}"
+                                style="${tab.color && tab.id !== 'all' ? `--category-color: ${tab.color};` : ''}">
                             <span class="tab-icon">${tab.icon}</span>
                             <span class="tab-name">${tab.name}</span>
                             <span class="tab-count">${tab.count}</span>
-                            ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
+                            ${tab.isPreselected ? '<i class="fas fa-star preselected-indicator"></i>' : ''}
                         </button>
                     `).join('')}
                 </div>
@@ -574,12 +579,17 @@ class PageManagerGmail {
         const emails = this.getFilteredEmails();
         
         if (emails.length === 0) {
-            return this.renderEmptyState();
+            return `
+                <div class="no-emails-message">
+                    <i class="fas fa-inbox"></i>
+                    <p>Aucun email dans cette catégorie</p>
+                </div>
+            `;
         }
 
         if (this.currentViewMode === 'flat') {
             return `
-                <div class="emails-list">
+                <div class="emails-list flat-view">
                     ${emails.map(email => this.renderEmailCard(email)).join('')}
                 </div>
             `;
@@ -617,10 +627,12 @@ class PageManagerGmail {
     renderEmailCard(email) {
         const hasTask = this.createdTasks.has(email.id);
         const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
         const isPreselected = this.getTaskPreselectedCategories().includes(email.category);
-        const isSelected = this.selectedEmails.has(email.id) || isPreselected;
+        const isSelected = this.selectedEmails.has(email.id);
         
-        if (isPreselected && !this.selectedEmails.has(email.id)) {
+        // Auto-sélectionner les emails pré-sélectionnés au premier rendu
+        if (isPreselected && !this.selectedEmails.has(email.id) && !hasTask) {
             this.selectedEmails.add(email.id);
         }
         
@@ -628,68 +640,63 @@ class PageManagerGmail {
             <div class="email-card ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''} ${isPreselected ? 'preselected' : ''}" 
                  data-email-id="${email.id}">
                 
-                <input type="checkbox" 
-                       class="email-checkbox" 
-                       ${isSelected ? 'checked' : ''}
-                       onchange="event.stopPropagation(); pageManagerGmail.toggleEmailSelection('${email.id}')">
+                <div class="email-checkbox-wrapper">
+                    <input type="checkbox" 
+                           class="email-checkbox" 
+                           id="checkbox-${email.id}"
+                           ${isSelected ? 'checked' : ''}
+                           ${hasTask ? 'disabled' : ''}
+                           onchange="event.stopPropagation(); pageManagerGmail.toggleEmailSelection('${email.id}')">
+                    <label for="checkbox-${email.id}" class="checkbox-label"></label>
+                </div>
                 
-                <div class="priority-bar" style="background-color: ${isPreselected ? '#8b5cf6' : '#3b82f6'}"></div>
-                
-                <div class="email-content" onclick="pageManagerGmail.handleEmailClick(event, '${email.id}')">
-                    <div class="email-header">
-                        <h3 class="email-title">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
-                        <div class="email-meta">
-                            <span class="email-type gmail-badge">
-                                <i class="fab fa-google"></i> Gmail
-                            </span>
-                            <span class="email-date">
-                                📅 ${this.formatDate(email.receivedDateTime)}
-                            </span>
-                            ${isPreselected ? '<span class="preselected-badge">⭐ Pré-sélectionné</span>' : ''}
+                <div class="email-main" onclick="pageManagerGmail.handleEmailClick(event, '${email.id}')">
+                    <div class="email-sender-section">
+                        <div class="sender-avatar" style="background: ${this.generateAvatarColor(senderEmail)}">
+                            ${senderName.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="sender-info">
+                            <div class="sender-name">${this.escapeHtml(senderName)}</div>
+                            <div class="sender-email">${this.escapeHtml(senderEmail)}</div>
                         </div>
                     </div>
                     
-                    <div class="email-sender">
-                        <i class="fas fa-envelope"></i>
-                        <span class="sender-name">${this.escapeHtml(senderName)}</span>
-                        ${email.hasAttachments ? '<span class="attachment-indicator">📎</span>' : ''}
-                        ${email.category && email.category !== 'other' ? `
-                            <span class="category-badge" style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}">
-                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                    <div class="email-content-section">
+                        <div class="email-subject">
+                            ${this.escapeHtml(email.subject || 'Sans sujet')}
+                            ${email.hasAttachments ? '<i class="fas fa-paperclip attachment-icon"></i>' : ''}
+                        </div>
+                        <div class="email-preview">${this.escapeHtml(email.bodyPreview || '')}</div>
+                        <div class="email-meta">
+                            <span class="email-date">
+                                <i class="far fa-clock"></i>
+                                ${this.formatDate(email.receivedDateTime)}
                             </span>
-                        ` : ''}
+                            ${email.category && email.category !== 'other' ? `
+                                <span class="email-category" style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}">
+                                    ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                                </span>
+                            ` : ''}
+                            ${isPreselected ? '<span class="preselected-badge"><i class="fas fa-star"></i> Pré-sélectionné</span>' : ''}
+                        </div>
                     </div>
                 </div>
                 
                 <div class="email-actions">
-                    ${this.renderEmailActions(email, hasTask)}
+                    ${hasTask ? `
+                        <button class="email-action-btn task-created" onclick="event.stopPropagation(); pageManagerGmail.openCreatedTask('${email.id}')" title="Voir la tâche">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                    ` : `
+                        <button class="email-action-btn create-task" onclick="event.stopPropagation(); pageManagerGmail.showTaskCreationModal('${email.id}')" title="Créer une tâche">
+                            <i class="fas fa-plus-circle"></i>
+                        </button>
+                    `}
+                    <button class="email-action-btn view-email" onclick="event.stopPropagation(); pageManagerGmail.showEmailModal('${email.id}')" title="Voir l'email">
+                        <i class="fas fa-envelope-open"></i>
+                    </button>
                 </div>
             </div>
-        `;
-    }
-
-    renderEmailActions(email, hasTask) {
-        if (hasTask) {
-            return `
-                <button class="action-btn view-task" onclick="event.stopPropagation(); pageManagerGmail.openCreatedTask('${email.id}')" title="Voir la tâche">
-                    <i class="fas fa-check-circle"></i>
-                </button>
-                <button class="action-btn details" onclick="event.stopPropagation(); pageManagerGmail.showEmailModal('${email.id}')" title="Voir l'email">
-                    <i class="fas fa-eye"></i>
-                </button>
-            `;
-        }
-        
-        return `
-            <button class="action-btn create-task" onclick="event.stopPropagation(); pageManagerGmail.showTaskCreationModal('${email.id}')" title="Créer une tâche">
-                <i class="fas fa-tasks"></i>
-            </button>
-            <button class="action-btn calendar" onclick="event.stopPropagation(); pageManagerGmail.openGoogleCalendar('${email.id}')" title="Google Calendar">
-                <i class="fab fa-google"></i>
-            </button>
-            <button class="action-btn details" onclick="event.stopPropagation(); pageManagerGmail.showEmailModal('${email.id}')" title="Voir l'email">
-                <i class="fas fa-eye"></i>
-            </button>
         `;
     }
 
@@ -697,7 +704,7 @@ class PageManagerGmail {
         const groups = this.createEmailGroups(emails);
         
         return `
-            <div class="emails-grouped">
+            <div class="emails-list grouped-view">
                 ${groups.map(group => `
                     <div class="email-group" data-group-key="${group.key}">
                         <div class="group-header" onclick="pageManagerGmail.toggleGroup('${group.key}')">
@@ -711,11 +718,9 @@ class PageManagerGmail {
                                 <div class="group-name">${group.name}</div>
                                 <div class="group-meta">${group.count} emails • ${this.formatDate(group.latestDate)}</div>
                             </div>
-                            <div class="group-expand">
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
+                            <i class="fas fa-chevron-down group-toggle"></i>
                         </div>
-                        <div class="group-content" style="display: none;">
+                        <div class="group-emails" style="display: none;">
                             ${group.emails.map(email => this.renderEmailCard(email)).join('')}
                         </div>
                     </div>
@@ -830,16 +835,10 @@ class PageManagerGmail {
             content = email.body.content;
         } else if (email.uniqueBody?.content) {
             content = email.uniqueBody.content;
-        } else if (window.mailService && email.id) {
-            // Essayer de récupérer le contenu complet via MailService
-            try {
-                const fullEmail = await this.fetchFullEmailContent(email.id);
-                if (fullEmail && fullEmail.body) {
-                    content = fullEmail.body;
-                }
-            } catch (error) {
-                console.warn('[PageManagerGmail] Impossible de récupérer le contenu complet:', error);
-            }
+        } else if (email.bodyHtml) {
+            content = email.bodyHtml;
+        } else if (email.bodyText) {
+            content = `<pre>${this.escapeHtml(email.bodyText)}</pre>`;
         }
         
         // Nettoyer et sécuriser le contenu HTML
@@ -951,54 +950,49 @@ class PageManagerGmail {
         } else {
             this.selectedEmails.add(emailId);
         }
-        this.updateControlsOnly();
+        this.updateSelectionInfo();
     }
 
-    updateControlsOnly() {
+    updateSelectionInfo() {
         const count = this.selectedEmails.size;
+        const selectionInfo = document.querySelector('.selection-info');
+        const createBtn = document.querySelector('.btn-create-tasks');
+        const clearBtn = document.querySelector('.btn-clear-selection');
         
-        // Mettre à jour le bouton de création
-        const createBtn = document.querySelector('.btn-primary[onclick*="createTasksFromSelection"]');
-        if (createBtn) {
-            createBtn.disabled = count === 0;
-            createBtn.classList.toggle('disabled', count === 0);
-            const span = createBtn.querySelector('span');
-            if (span) span.textContent = `Créer tâche${count > 1 ? 's' : ''}`;
-            const badge = createBtn.querySelector('.count-badge');
-            if (badge) badge.textContent = count;
+        if (selectionInfo) {
+            selectionInfo.innerHTML = count > 0 ? 
+                `<span class="selected-count">${count} sélectionné${count > 1 ? 's' : ''}</span>` : '';
         }
         
-        // Gérer le bouton d'effacement
-        const clearBtn = document.querySelector('.btn-clear');
-        if (count > 0 && !clearBtn) {
-            const actionsContainer = document.querySelector('.action-buttons');
-            if (actionsContainer) {
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-clear';
-                btn.onclick = () => this.clearSelection();
-                btn.innerHTML = `<i class="fas fa-times"></i><span>Effacer (${count})</span>`;
-                actionsContainer.appendChild(btn);
-            }
-        } else if (count === 0 && clearBtn) {
-            clearBtn.remove();
-        } else if (clearBtn) {
-            clearBtn.querySelector('span').textContent = `Effacer (${count})`;
+        if (createBtn) {
+            createBtn.classList.toggle('disabled', count === 0);
+            createBtn.disabled = count === 0;
+        }
+        
+        if (clearBtn) {
+            clearBtn.style.display = count > 0 ? 'flex' : 'none';
         }
     }
 
     clearSelection() {
         this.selectedEmails.clear();
-        this.refreshEmailsView();
+        document.querySelectorAll('.email-checkbox:checked').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        document.querySelectorAll('.email-card.selected').forEach(card => {
+            card.classList.remove('selected');
+        });
+        this.updateSelectionInfo();
         this.showToast('Sélection effacée', 'info');
     }
 
     refreshEmailsView() {
         console.log('[PageManagerGmail] 🔄 Rafraîchissement de la vue emails...');
-        const container = document.querySelector('.emails-container');
+        const container = document.querySelector('.emails-list-container');
         if (container) {
             container.innerHTML = this.renderEmailsList();
         }
-        this.updateControlsOnly();
+        this.updateSelectionInfo();
     }
 
     async refreshEmails() {
@@ -1056,6 +1050,7 @@ class PageManagerGmail {
             window.taskManager?.saveTasks?.();
             this.showToast(`${created} tâche${created > 1 ? 's créées' : ' créée'}`, 'success');
             this.clearSelection();
+            this.refreshEmailsView();
         }
     }
 
@@ -1225,7 +1220,9 @@ class PageManagerGmail {
     // MÉTHODES UTILITAIRES
     // ================================================
     handleEmailClick(event, emailId) {
-        if (event.target.closest('.email-actions') || event.target.type === 'checkbox') {
+        if (event.target.closest('.email-actions') || 
+            event.target.closest('.email-checkbox-wrapper') ||
+            event.target.type === 'checkbox') {
             return;
         }
         this.showEmailModal(emailId);
@@ -1235,8 +1232,8 @@ class PageManagerGmail {
         const group = document.querySelector(`[data-group-key="${groupKey}"]`);
         if (!group) return;
         
-        const content = group.querySelector('.group-content');
-        const icon = group.querySelector('.group-expand i');
+        const content = group.querySelector('.group-emails');
+        const icon = group.querySelector('.group-toggle');
         
         if (content.style.display === 'none') {
             content.style.display = 'block';
@@ -1258,6 +1255,10 @@ class PageManagerGmail {
 
     changeViewMode(mode) {
         this.currentViewMode = mode;
+        document.querySelectorAll('.view-mode-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`.view-mode-btn[onclick*="${mode}"]`)?.classList.add('active');
         this.refreshEmailsView();
     }
 
@@ -1345,6 +1346,15 @@ class PageManagerGmail {
         }
         const hue = Math.abs(hash) % 360;
         return `linear-gradient(135deg, hsl(${hue}, 65%, 45%), hsl(${(hue + 30) % 360}, 65%, 55%))`;
+    }
+
+    generateAvatarColor(email) {
+        let hash = 0;
+        for (let i = 0; i < email.length; i++) {
+            hash = email.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const hue = Math.abs(hash) % 360;
+        return `linear-gradient(135deg, hsl(${hue}, 70%, 50%), hsl(${(hue + 30) % 360}, 70%, 60%))`;
     }
 
     formatDate(dateString) {
@@ -1451,7 +1461,7 @@ class PageManagerGmail {
     }
 
     // ================================================
-    // STYLES CSS (Consolidé et optimisé)
+    // STYLES CSS (Design moderne Gmail)
     // ================================================
     addEmailsStyles() {
         if (document.getElementById('emailsPageStylesGmail')) return;
@@ -1460,612 +1470,637 @@ class PageManagerGmail {
         styles.id = 'emailsPageStylesGmail';
         styles.textContent = `
             /* Base styles */
-            .emails-page-modern {
-                padding: 16px;
-                background: #f8fafc;
+            .emails-page-gmail {
+                background: #f8f9fa;
                 min-height: 100vh;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             }
 
-            /* Header fixe */
-            .fixed-header-wrapper {
+            /* Header */
+            .email-page-header {
+                background: white;
+                border-bottom: 1px solid #e0e0e0;
                 position: sticky;
                 top: 0;
-                z-index: 1000;
-                background: rgba(248, 250, 252, 0.98);
-                backdrop-filter: blur(20px);
-                padding: 12px 20px 8px;
-                border-bottom: 2px solid #e5e7eb;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+                z-index: 100;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             }
 
-            /* Controls */
-            .controls-bar {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 12px;
-                padding: 12px;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            .header-top {
+                padding: 20px 24px;
                 display: flex;
-                flex-direction: column;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .page-title {
+                font-size: 24px;
+                font-weight: 400;
+                color: #202124;
+                margin: 0;
+                display: flex;
+                align-items: center;
                 gap: 12px;
-                margin-bottom: 8px;
             }
 
-            /* Search */
-            .search-box {
-                position: relative;
-                max-width: 600px;
-                margin: 0 auto;
+            .page-title i {
+                color: #4285f4;
+                font-size: 28px;
             }
 
-            .search-input {
-                width: 100%;
-                height: 44px;
-                padding: 0 16px 0 48px;
-                border: 2px solid #e5e7eb;
-                border-radius: 12px;
+            .email-count {
+                background: #e8f0fe;
+                color: #1967d2;
+                padding: 4px 12px;
+                border-radius: 16px;
                 font-size: 14px;
-                background: #f9fafb;
-                transition: all 0.2s;
+                font-weight: 500;
             }
 
-            .search-input:focus {
-                border-color: #4285f4;
-                background: white;
-                box-shadow: 0 0 0 4px rgba(66, 133, 244, 0.1);
+            /* View mode selector */
+            .view-mode-selector {
+                display: flex;
+                gap: 4px;
+                background: #f1f3f4;
+                padding: 4px;
+                border-radius: 8px;
             }
 
-            .search-icon {
-                position: absolute;
-                left: 16px;
-                top: 50%;
-                transform: translateY(-50%);
-                color: #6b7280;
-            }
-
-            .search-clear {
-                position: absolute;
-                right: 12px;
-                top: 50%;
-                transform: translateY(-50%);
-                background: #ef4444;
-                color: white;
+            .view-mode-btn {
+                width: 36px;
+                height: 36px;
                 border: none;
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
+                background: transparent;
+                color: #5f6368;
+                border-radius: 6px;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                transition: all 0.2s;
             }
 
-            /* Actions */
-            .actions-section {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 16px;
-                flex-wrap: wrap;
+            .view-mode-btn:hover {
+                background: rgba(0,0,0,0.05);
             }
 
-            .view-modes {
-                display: flex;
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
+            .view-mode-btn.active {
+                background: white;
+                color: #1a73e8;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            }
+
+            /* Search bar */
+            .search-bar-container {
+                padding: 16px 24px;
+                background: #f8f9fa;
+            }
+
+            .search-wrapper {
+                position: relative;
+                max-width: 720px;
+                margin: 0 auto;
+            }
+
+            .search-wrapper i {
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #5f6368;
+                font-size: 18px;
+            }
+
+            .search-input {
+                width: 100%;
+                padding: 12px 48px;
+                border: none;
                 border-radius: 8px;
-                padding: 4px;
-                gap: 2px;
+                background: white;
+                font-size: 16px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+                transition: box-shadow 0.2s;
             }
 
-            .view-mode {
-                padding: 8px 12px;
+            .search-input:focus {
+                outline: none;
+                box-shadow: 0 1px 6px rgba(0,0,0,0.2);
+            }
+
+            .clear-search {
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 32px;
+                height: 32px;
                 border: none;
                 background: transparent;
-                color: #6b7280;
-                border-radius: 6px;
+                color: #5f6368;
                 cursor: pointer;
-                transition: all 0.2s;
-                font-size: 13px;
-                font-weight: 600;
+                border-radius: 50%;
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                justify-content: center;
+                transition: background 0.2s;
             }
 
-            .view-mode:hover:not(.selected) {
-                background: rgba(255, 255, 255, 0.8);
-                color: #374151;
+            .clear-search:hover {
+                background: rgba(0,0,0,0.05);
             }
 
-            .view-mode.active {
+            /* Category tabs */
+            .category-tabs-container {
+                padding: 0 24px 16px;
                 background: white;
-                color: #1f2937;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
 
-            /* Buttons */
-            .btn {
-                height: 44px;
-                background: white;
-                color: #374151;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 0 16px;
-                font-size: 13px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s;
-                display: flex;
-                align-items: center;
+            .category-tabs-wrapper {
+                display: inline-block;
+                min-width: 100%;
+            }
+
+            .category-tabs {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
                 gap: 8px;
-                position: relative;
-            }
-
-            .btn:hover:not(:disabled) {
-                background: #f9fafb;
-                border-color: #4285f4;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-
-            .btn.disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-                pointer-events: none;
-            }
-
-            .btn-primary {
-                background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
-                color: white;
-                border: none;
-                box-shadow: 0 4px 12px rgba(66, 133, 244, 0.25);
-            }
-
-            .btn-primary:hover {
-                background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(66, 133, 244, 0.35);
-            }
-
-            .btn-clear {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
-            }
-
-            .count-badge {
-                position: absolute;
-                top: -6px;
-                right: -6px;
-                background: #ef4444;
-                color: white;
-                font-size: 10px;
-                font-weight: 700;
-                padding: 2px 6px;
-                border-radius: 10px;
-                min-width: 16px;
-                text-align: center;
-                border: 2px solid white;
-            }
-
-            /* Categories */
-            .category-filters {
-                display: flex;
-                gap: 6px;
-                flex-wrap: wrap;
                 max-width: 1200px;
                 margin: 0 auto;
             }
 
             .category-tab {
-                height: 56px;
+                height: 48px;
                 padding: 0 16px;
                 background: white;
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
+                border: 1px solid #dadce0;
+                border-radius: 24px;
                 cursor: pointer;
-                transition: all 0.3s;
-                position: relative;
                 display: flex;
                 align-items: center;
+                justify-content: center;
                 gap: 8px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-                font-size: 12px;
+                transition: all 0.2s;
+                font-size: 14px;
+                font-weight: 500;
+                color: #5f6368;
+                position: relative;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .category-tab:hover {
-                border-color: #4285f4;
-                background: #f0f9ff;
-                transform: translateY(-1px);
-                box-shadow: 0 3px 8px rgba(66, 133, 244, 0.15);
+                background: #f8f9fa;
+                border-color: #1a73e8;
             }
 
             .category-tab.active {
-                background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
-                border-color: #4285f4;
-                color: white;
+                background: #e8f0fe;
+                border-color: #1a73e8;
+                color: #1967d2;
             }
 
             .category-tab.preselected {
-                border-color: #8b5cf6;
-                background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
+                border-color: #7c3aed;
+                background: #f3e8ff;
+            }
+
+            .category-tab.preselected.active {
+                background: #7c3aed;
+                border-color: #7c3aed;
+                color: white;
             }
 
             .tab-icon {
-                font-size: 18px;
+                font-size: 16px;
+                flex-shrink: 0;
             }
 
             .tab-name {
-                font-weight: 600;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .tab-count {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 2px 6px;
-                border-radius: 10px;
-                font-size: 11px;
-                font-weight: 700;
+                background: rgba(0,0,0,0.08);
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                margin-left: 4px;
+                flex-shrink: 0;
             }
 
-            .preselected-star {
-                position: absolute;
-                top: -5px;
-                right: -5px;
-                width: 18px;
-                height: 18px;
-                background: #8b5cf6;
+            .preselected-indicator {
+                font-size: 12px;
+                color: #7c3aed;
+                margin-left: 4px;
+            }
+
+            .category-tab.active .preselected-indicator {
                 color: white;
+            }
+
+            /* Action bar */
+            .action-bar {
+                padding: 12px 24px;
+                background: white;
+                border-top: 1px solid #f0f0f0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .selection-info {
+                font-size: 14px;
+                color: #5f6368;
+            }
+
+            .selected-count {
+                font-weight: 500;
+                color: #1a73e8;
+            }
+
+            .action-buttons {
+                display: flex;
+                gap: 8px;
+            }
+
+            .btn-action {
+                padding: 8px 16px;
+                border: 1px solid #dadce0;
+                background: white;
+                border-radius: 4px;
+                font-size: 14px;
+                font-weight: 500;
+                color: #5f6368;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.2s;
+            }
+
+            .btn-action:hover:not(.disabled) {
+                background: #f8f9fa;
+                border-color: #1a73e8;
+                color: #1a73e8;
+            }
+
+            .btn-action.disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .btn-create-tasks {
+                background: #1a73e8;
+                color: white;
+                border-color: #1a73e8;
+            }
+
+            .btn-create-tasks:hover:not(.disabled) {
+                background: #1557b0;
+                border-color: #1557b0;
+            }
+
+            /* Emails list */
+            .emails-list-container {
+                padding: 16px 24px;
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            .emails-list {
+                background: white;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            }
+
+            /* Email card */
+            .email-card {
+                display: flex;
+                align-items: center;
+                padding: 16px 24px;
+                border-bottom: 1px solid #f0f0f0;
+                cursor: pointer;
+                transition: background 0.2s;
+                position: relative;
+            }
+
+            .email-card:hover {
+                background: #f8f9fa;
+            }
+
+            .email-card.selected {
+                background: #e8f0fe;
+            }
+
+            .email-card.has-task {
+                opacity: 0.7;
+            }
+
+            .email-card.preselected {
+                border-left: 4px solid #7c3aed;
+                padding-left: 20px;
+            }
+
+            /* Checkbox */
+            .email-checkbox-wrapper {
+                margin-right: 16px;
+                position: relative;
+            }
+
+            .email-checkbox {
+                position: absolute;
+                opacity: 0;
+                cursor: pointer;
+            }
+
+            .checkbox-label {
+                width: 20px;
+                height: 20px;
+                border: 2px solid #dadce0;
+                border-radius: 3px;
+                display: block;
+                position: relative;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .email-checkbox:checked + .checkbox-label {
+                background: #1a73e8;
+                border-color: #1a73e8;
+            }
+
+            .email-checkbox:checked + .checkbox-label::after {
+                content: '';
+                position: absolute;
+                left: 7px;
+                top: 3px;
+                width: 4px;
+                height: 9px;
+                border: solid white;
+                border-width: 0 2px 2px 0;
+                transform: rotate(45deg);
+            }
+
+            .email-checkbox:disabled + .checkbox-label {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            /* Email main content */
+            .email-main {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                min-width: 0;
+            }
+
+            /* Sender section */
+            .email-sender-section {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-shrink: 0;
+                width: 240px;
+            }
+
+            .sender-avatar {
+                width: 40px;
+                height: 40px;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 10px;
-                border: 2px solid white;
-                box-shadow: 0 2px 4px rgba(139, 92, 246, 0.4);
-            }
-
-            /* Emails */
-            .emails-container {
-                margin: 0 16px;
-                padding-top: 16px;
-            }
-
-            .emails-list,
-            .emails-grouped {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-            }
-
-            .email-card,
-            .group-header {
-                display: flex;
-                align-items: center;
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 0;
-                padding: 16px;
-                cursor: pointer;
-                transition: all 0.3s;
-                position: relative;
-                min-height: 80px;
-                border-bottom: none;
-                border-left: 3px solid transparent;
-            }
-
-            .email-card:first-child,
-            .group-header:first-child {
-                border-top-left-radius: 12px;
-                border-top-right-radius: 12px;
-                border-top: 1px solid #e5e7eb;
-            }
-
-            .email-card:last-child {
-                border-bottom-left-radius: 12px;
-                border-bottom-right-radius: 12px;
-                border-bottom: 1px solid #e5e7eb;
-            }
-
-            .email-card + .email-card,
-            .group-header + .group-header {
-                border-top: 1px solid #e5e7eb;
-            }
-
-            .email-card:hover {
-                background: #f8fafc;
-                transform: translateY(-1px);
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-                border-left-color: #4285f4;
-                z-index: 2;
-            }
-
-            .email-card.selected {
-                background: linear-gradient(135deg, #e8f0fe 0%, #c2e1ff 100%);
-                border-left: 4px solid #4285f4;
-                border-color: #4285f4;
-            }
-
-            .email-card.has-task {
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-                border-left-color: #22c55e;
-            }
-
-            .email-card.preselected {
-                background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
-                border-left-color: #8b5cf6;
-            }
-
-            .email-checkbox {
-                margin-right: 12px;
-                width: 20px;
-                height: 20px;
-                border-radius: 6px;
-                border: 2px solid #d1d5db;
-                background: white;
-                cursor: pointer;
-                appearance: none;
-                position: relative;
-            }
-
-            .email-checkbox:checked {
-                background: #4285f4;
-                border-color: #4285f4;
-            }
-
-            .email-checkbox:checked::after {
-                content: '✓';
                 color: white;
-                font-size: 12px;
-                font-weight: 700;
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-            }
-
-            .priority-bar {
-                width: 4px;
-                height: 60px;
-                border-radius: 2px;
-                margin-right: 12px;
+                font-weight: 500;
+                font-size: 16px;
                 flex-shrink: 0;
             }
 
-            .email-content {
-                flex: 1;
+            .sender-info {
                 min-width: 0;
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-
-            .email-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                gap: 12px;
-            }
-
-            .email-title {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 15px;
-                margin: 0;
-                line-height: 1.3;
                 flex: 1;
+            }
+
+            .sender-name {
+                font-weight: 500;
+                color: #202124;
+                font-size: 14px;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+            }
+
+            .sender-email {
+                font-size: 12px;
+                color: #5f6368;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            /* Email content section */
+            .email-content-section {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .email-subject {
+                font-weight: 500;
+                color: #202124;
+                margin-bottom: 4px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .attachment-icon {
+                color: #5f6368;
+                font-size: 14px;
+                flex-shrink: 0;
+            }
+
+            .email-preview {
+                font-size: 14px;
+                color: #5f6368;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                margin-bottom: 4px;
             }
 
             .email-meta {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                flex-shrink: 0;
-            }
-
-            .email-type,
-            .email-date,
-            .preselected-badge {
-                display: flex;
-                align-items: center;
-                gap: 3px;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 11px;
-                font-weight: 600;
-                white-space: nowrap;
-            }
-
-            .gmail-badge {
-                background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
-                color: white !important;
-            }
-
-            .preselected-badge {
-                background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-                color: white;
-                font-weight: 700;
-            }
-
-            .email-sender {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                color: #6b7280;
+                gap: 12px;
                 font-size: 12px;
+                color: #5f6368;
             }
 
-            .sender-name {
-                font-weight: 600;
-                color: #374151;
-            }
-
-            .attachment-indicator {
-                color: #dc2626;
-                font-weight: 600;
-            }
-
-            .category-badge {
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                gap: 3px;
-            }
-
-            .email-actions {
+            .email-date {
                 display: flex;
                 align-items: center;
                 gap: 4px;
-                margin-left: 12px;
-                flex-shrink: 0;
             }
 
-            .action-btn {
-                width: 36px;
-                height: 36px;
-                border: 2px solid transparent;
-                border-radius: 8px;
-                background: rgba(255, 255, 255, 0.9);
-                color: #6b7280;
+            .email-category {
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .preselected-badge {
+                color: #7c3aed;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            /* Email actions */
+            .email-actions {
+                display: flex;
+                gap: 4px;
+                margin-left: 16px;
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+
+            .email-card:hover .email-actions {
+                opacity: 1;
+            }
+
+            .email-action-btn {
+                width: 32px;
+                height: 32px;
+                border: none;
+                background: transparent;
+                color: #5f6368;
+                border-radius: 50%;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.3s;
-                font-size: 13px;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+                transition: all 0.2s;
             }
 
-            .action-btn:hover {
+            .email-action-btn:hover {
+                background: rgba(0,0,0,0.08);
+            }
+
+            .email-action-btn.create-task {
+                color: #1a73e8;
+            }
+
+            .email-action-btn.task-created {
+                color: #0d652d;
+            }
+
+            /* Grouped view */
+            .email-group {
+                margin-bottom: 16px;
                 background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             }
 
-            .action-btn.create-task {
-                color: #3b82f6;
+            .group-header {
+                padding: 16px 24px;
+                background: #f8f9fa;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                transition: background 0.2s;
             }
 
-            .action-btn.create-task:hover {
-                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                border-color: #3b82f6;
+            .group-header:hover {
+                background: #f0f1f3;
             }
 
-            .action-btn.view-task {
-                color: #16a34a;
-                background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-            }
-
-            .action-btn.calendar {
-                color: #4285f4;
-            }
-
-            .action-btn.calendar:hover {
-                background: linear-gradient(135deg, #e8f0fe 0%, #c2e1ff 100%);
-                border-color: #4285f4;
-            }
-
-            /* Groups */
             .group-avatar {
                 width: 40px;
                 height: 40px;
-                border-radius: 10px;
+                border-radius: 8px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
-                font-weight: 700;
+                font-weight: 500;
                 font-size: 16px;
-                flex-shrink: 0;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             }
 
             .group-info {
                 flex: 1;
-                min-width: 0;
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
             }
 
             .group-name {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 15px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+                font-weight: 500;
+                color: #202124;
+                margin-bottom: 2px;
             }
 
             .group-meta {
-                color: #6b7280;
-                font-size: 12px;
+                font-size: 13px;
+                color: #5f6368;
             }
 
-            .group-expand {
-                width: 36px;
-                height: 36px;
-                border-radius: 8px;
-                background: rgba(255, 255, 255, 0.9);
-                color: #6b7280;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s;
+            .group-toggle {
+                color: #5f6368;
+                transition: transform 0.2s;
             }
 
-            .group-content {
-                background: transparent;
+            .group-emails {
+                border-top: 1px solid #f0f0f0;
             }
 
-            .group-content .email-card:last-child {
-                border-bottom-left-radius: 12px;
-                border-bottom-right-radius: 12px;
-                border-bottom: 1px solid #e5e7eb;
-            }
-
-            /* Empty state */
+            /* Empty states */
+            .no-emails-message,
             .empty-state {
                 text-align: center;
-                padding: 60px 30px;
-                background: white;
-                border-radius: 12px;
-                border: 1px solid #e5e7eb;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
+                padding: 60px 20px;
+                color: #5f6368;
             }
 
+            .no-emails-message i,
             .empty-state-icon {
                 font-size: 48px;
-                margin-bottom: 20px;
-                color: #4285f4;
+                color: #dadce0;
+                margin-bottom: 16px;
+            }
+
+            .empty-state {
+                background: white;
+                border-radius: 8px;
+                margin: 20px auto;
+                max-width: 400px;
             }
 
             .empty-state h3 {
-                font-size: 22px;
-                font-weight: 700;
-                color: #374151;
-                margin-bottom: 12px;
+                font-size: 18px;
+                font-weight: 500;
+                color: #202124;
+                margin-bottom: 8px;
             }
 
             .empty-state p {
-                font-size: 15px;
-                margin-bottom: 24px;
-                color: #6b7280;
+                margin-bottom: 20px;
             }
 
-            /* Modals */
+            /* Modal styles */
             .email-modal-overlay,
             .task-modal-overlay {
                 position: fixed;
@@ -2073,8 +2108,8 @@ class PageManagerGmail {
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.75);
-                z-index: 99999;
+                background: rgba(0,0,0,0.5);
+                z-index: 1000;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -2084,19 +2119,19 @@ class PageManagerGmail {
             .email-modal,
             .task-modal {
                 background: white;
-                border-radius: 16px;
-                max-width: 900px;
+                border-radius: 8px;
+                max-width: 800px;
                 width: 100%;
                 max-height: 90vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                box-shadow: 0 24px 48px rgba(0,0,0,0.15);
             }
 
             .email-modal-header,
             .task-modal-header {
                 padding: 24px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid #e0e0e0;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -2105,27 +2140,27 @@ class PageManagerGmail {
             .email-modal-header h2,
             .task-modal-header h2 {
                 margin: 0;
-                font-size: 24px;
-                font-weight: 700;
-                color: #1f2937;
+                font-size: 20px;
+                font-weight: 500;
+                color: #202124;
             }
 
             .modal-close {
-                background: none;
+                width: 40px;
+                height: 40px;
                 border: none;
-                font-size: 24px;
+                background: transparent;
+                color: #5f6368;
+                border-radius: 50%;
                 cursor: pointer;
-                color: #6b7280;
-                width: 32px;
-                height: 32px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                border-radius: 6px;
+                transition: background 0.2s;
             }
 
             .modal-close:hover {
-                background: #f3f4f6;
+                background: rgba(0,0,0,0.05);
             }
 
             .email-modal-content,
@@ -2136,95 +2171,54 @@ class PageManagerGmail {
             }
 
             .email-details {
-                margin-bottom: 20px;
+                margin-bottom: 24px;
             }
 
             .detail-row {
                 display: flex;
-                align-items: flex-start;
                 margin-bottom: 12px;
             }
 
             .detail-label {
-                font-weight: 600;
-                color: #374151;
-                margin-right: 8px;
+                font-weight: 500;
+                color: #5f6368;
+                margin-right: 12px;
                 min-width: 80px;
             }
 
             .detail-value {
-                color: #6b7280;
+                color: #202124;
                 flex: 1;
             }
 
             .email-body {
-                background: #f9fafb;
-                border: 1px solid #e5e7eb;
+                background: #f8f9fa;
                 border-radius: 8px;
                 padding: 20px;
                 line-height: 1.6;
-                color: #374151;
-                overflow-x: auto;
-            }
-
-            /* Contenu email avec images */
-            .email-content-wrapper {
-                max-width: 100%;
-                overflow-x: auto;
-            }
-
-            .email-content-wrapper img,
-            .email-image {
-                max-width: 100%;
-                height: auto;
-                display: block;
-                margin: 10px 0;
-                border-radius: 8px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            }
-
-            .email-content-wrapper a {
-                color: #3b82f6;
-                text-decoration: underline;
-            }
-
-            .email-content-wrapper a:hover {
-                color: #2563eb;
-            }
-
-            .email-content-wrapper table {
-                max-width: 100%;
-                border-collapse: collapse;
-                margin: 10px 0;
-            }
-
-            .email-content-wrapper td,
-            .email-content-wrapper th {
-                padding: 8px;
-                border: 1px solid #e5e7eb;
+                color: #202124;
             }
 
             .email-modal-footer,
             .task-modal-footer {
-                padding: 24px;
-                border-top: 1px solid #e5e7eb;
+                padding: 16px 24px;
+                border-top: 1px solid #e0e0e0;
                 display: flex;
                 justify-content: flex-end;
-                gap: 12px;
+                gap: 8px;
             }
 
-            /* Task modal specific */
+            /* Forms */
             .ai-badge {
-                background: #f0f9ff;
-                border: 1px solid #0ea5e9;
-                border-radius: 12px;
-                padding: 16px;
+                background: #e3f2fd;
+                border-radius: 8px;
+                padding: 12px 16px;
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 8px;
                 margin-bottom: 20px;
-                color: #0c4a6e;
-                font-weight: 600;
+                color: #1565c0;
+                font-size: 14px;
             }
 
             .form-group {
@@ -2233,27 +2227,29 @@ class PageManagerGmail {
 
             .form-group label {
                 display: block;
-                font-weight: 600;
-                color: #374151;
+                font-weight: 500;
+                color: #202124;
                 margin-bottom: 8px;
+                font-size: 14px;
             }
 
             .form-group input,
             .form-group textarea,
             .form-group select {
                 width: 100%;
-                padding: 12px 16px;
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
+                padding: 8px 12px;
+                border: 1px solid #dadce0;
+                border-radius: 4px;
                 font-size: 14px;
+                font-family: inherit;
+                transition: border-color 0.2s;
             }
 
             .form-group input:focus,
             .form-group textarea:focus,
             .form-group select:focus {
                 outline: none;
-                border-color: #3b82f6;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                border-color: #1a73e8;
             }
 
             .form-row {
@@ -2262,14 +2258,80 @@ class PageManagerGmail {
                 gap: 16px;
             }
 
+            /* Buttons */
+            .btn {
+                padding: 8px 24px;
+                border: 1px solid #dadce0;
+                background: white;
+                border-radius: 4px;
+                font-size: 14px;
+                font-weight: 500;
+                color: #1a73e8;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .btn:hover {
+                background: #f8f9fa;
+            }
+
+            .btn-primary {
+                background: #1a73e8;
+                color: white;
+                border-color: #1a73e8;
+            }
+
+            .btn-primary:hover {
+                background: #1557b0;
+                border-color: #1557b0;
+            }
+
+            .btn-secondary {
+                color: #5f6368;
+            }
+
+            /* Notification */
+            .explanation-notice {
+                background: #e8f0fe;
+                border: 1px solid #d2e2fc;
+                border-radius: 8px;
+                padding: 12px 16px;
+                margin: 16px 24px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 14px;
+                color: #1967d2;
+            }
+
+            .explanation-close {
+                margin-left: auto;
+                width: 28px;
+                height: 28px;
+                border: none;
+                background: transparent;
+                color: #1967d2;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.2s;
+            }
+
+            .explanation-close:hover {
+                background: rgba(0,0,0,0.05);
+            }
+
             /* Auth state */
             .auth-required-state {
                 text-align: center;
                 padding: 60px 30px;
                 background: white;
-                border-radius: 12px;
-                margin: 20px;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                margin: 20px auto;
+                max-width: 400px;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.12);
             }
 
             .auth-icon {
@@ -2280,507 +2342,82 @@ class PageManagerGmail {
 
             .auth-required-state h3 {
                 font-size: 24px;
-                font-weight: 700;
-                color: #1f2937;
+                font-weight: 400;
+                color: #202124;
                 margin-bottom: 12px;
             }
 
             .auth-required-state p {
                 font-size: 16px;
-                color: #6b7280;
+                color: #5f6368;
                 margin-bottom: 24px;
             }
 
-            /* Notifications */
-            .explanation-notice {
-                background: rgba(66, 133, 244, 0.1);
-                border: 1px solid rgba(66, 133, 244, 0.2);
-                border-radius: 8px;
-                padding: 10px 14px;
-                margin: 0 16px 12px 16px;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                color: #1a73e8;
-                font-size: 13px;
-                font-weight: 500;
-            }
-            
-            .explanation-close {
-                margin-left: auto;
-                background: rgba(66, 133, 244, 0.1);
-                border: 1px solid rgba(66, 133, 244, 0.2);
-                color: #4285f4;
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                transition: all 0.2s ease;
-            }
-
-            .explanation-close:hover {
-                background: rgba(66, 133, 244, 0.2);
-                transform: scale(1.1);
-            }
-
-            /* Loading states */
-            .loading-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(255, 255, 255, 0.9);
-                z-index: 100000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                backdrop-filter: blur(5px);
-            }
-
-            .loading-content {
-                text-align: center;
-            }
-
-            .loading-spinner {
-                width: 48px;
-                height: 48px;
-                border: 4px solid #e5e7eb;
-                border-top-color: #4285f4;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-                margin: 0 auto 16px;
-            }
-
-            @keyframes spin {
-                to { transform: rotate(360deg); }
-            }
-
-            .loading-text {
-                font-size: 16px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-
-            /* Toast notifications */
-            .toast {
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: white;
-                border-radius: 8px;
-                padding: 16px 20px;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                max-width: 400px;
-                z-index: 100001;
-                animation: slideIn 0.3s ease-out;
-            }
-
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
+            /* Responsive */
+            @media (max-width: 1200px) {
+                .category-tabs {
+                    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
                 }
             }
 
-            .toast.success {
-                border-left: 4px solid #10b981;
-            }
-
-            .toast.error {
-                border-left: 4px solid #ef4444;
-            }
-
-            .toast.warning {
-                border-left: 4px solid #f59e0b;
-            }
-
-            .toast.info {
-                border-left: 4px solid #3b82f6;
-            }
-
-            .toast-icon {
-                font-size: 20px;
-            }
-
-            .toast.success .toast-icon { color: #10b981; }
-            .toast.error .toast-icon { color: #ef4444; }
-            .toast.warning .toast-icon { color: #f59e0b; }
-            .toast.info .toast-icon { color: #3b82f6; }
-
-            .toast-message {
-                flex: 1;
-                font-size: 14px;
-                color: #374151;
-                font-weight: 500;
-            }
-
-            .toast-close {
-                background: none;
-                border: none;
-                color: #6b7280;
-                cursor: pointer;
-                font-size: 18px;
-                padding: 0;
-                width: 24px;
-                height: 24px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 4px;
-                transition: all 0.2s ease;
-            }
-
-            .toast-close:hover {
-                background: #f3f4f6;
-                color: #374151;
-            }
-
-            /* Scrollbar styling */
-            .emails-container::-webkit-scrollbar,
-            .email-modal-content::-webkit-scrollbar,
-            .task-modal-content::-webkit-scrollbar {
-                width: 8px;
-            }
-
-            .emails-container::-webkit-scrollbar-track,
-            .email-modal-content::-webkit-scrollbar-track,
-            .task-modal-content::-webkit-scrollbar-track {
-                background: #f3f4f6;
-                border-radius: 4px;
-            }
-
-            .emails-container::-webkit-scrollbar-thumb,
-            .email-modal-content::-webkit-scrollbar-thumb,
-            .task-modal-content::-webkit-scrollbar-thumb {
-                background: #d1d5db;
-                border-radius: 4px;
-                transition: background 0.2s ease;
-            }
-
-            .emails-container::-webkit-scrollbar-thumb:hover,
-            .email-modal-content::-webkit-scrollbar-thumb:hover,
-            .task-modal-content::-webkit-scrollbar-thumb:hover {
-                background: #9ca3af;
-            }
-
-            /* Print styles */
-            @media print {
-                .fixed-header-wrapper,
-                .email-actions,
-                .group-expand,
-                .modal-close,
-                .explanation-notice {
-                    display: none !important;
-                }
-
-                .email-card {
-                    page-break-inside: avoid;
-                    border: 1px solid #e5e7eb !important;
-                    margin-bottom: 10px;
-                }
-
-                .email-modal {
-                    position: static;
-                    max-width: 100%;
-                    box-shadow: none;
-                }
-            }
-
-            /* Animations */
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-
-            @keyframes slideDown {
-                from {
-                    opacity: 0;
-                    transform: translateY(-10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-
-            @keyframes pulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.05); }
-                100% { transform: scale(1); }
-            }
-
-            .email-card {
-                animation: fadeIn 0.3s ease-out;
-            }
-
-            .group-content {
-                animation: slideDown 0.3s ease-out;
-            }
-
-            .preselected-star {
-                animation: pulse 2s infinite;
-            }
-
-            /* Accessibility */
-            .sr-only {
-                position: absolute;
-                width: 1px;
-                height: 1px;
-                padding: 0;
-                margin: -1px;
-                overflow: hidden;
-                clip: rect(0, 0, 0, 0);
-                white-space: nowrap;
-                border-width: 0;
-            }
-
-            /* Focus styles */
-            .btn:focus,
-            .action-btn:focus,
-            .category-tab:focus,
-            .email-checkbox:focus,
-            .modal-close:focus {
-                outline: 2px solid #4285f4;
-                outline-offset: 2px;
-            }
-
-            .search-input:focus,
-            .form-group input:focus,
-            .form-group textarea:focus,
-            .form-group select:focus {
-                outline: none;
-                border-color: #4285f4;
-                box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
-            }
-
-            /* High contrast mode */
-            @media (prefers-contrast: high) {
-                .email-card,
-                .group-header {
-                    border-width: 2px;
-                }
-
-                .btn {
-                    border-width: 2px;
-                }
-
-                .category-tab {
-                    border-width: 3px;
-                }
-            }
-
-            /* Reduced motion */
-            @media (prefers-reduced-motion: reduce) {
-                * {
-                    animation-duration: 0.01ms !important;
-                    animation-iteration-count: 1 !important;
-                    transition-duration: 0.01ms !important;
-                }
-            }
-
-            /* Dark mode support (future) */
-            @media (prefers-color-scheme: dark) {
-                /* Dark mode styles can be added here */
-            }
-
-            /* Responsive - Mobile optimizations */
             @media (max-width: 768px) {
-                .fixed-header-wrapper {
-                    padding: 8px 12px 4px;
+                .email-sender-section {
+                    width: auto;
+                    flex: 0 0 auto;
                 }
 
-                .controls-bar {
-                    padding: 8px;
-                }
-
-                .search-input {
-                    height: 40px;
-                    font-size: 16px; /* Prevent zoom on iOS */
-                }
-
-                .btn {
-                    height: 40px;
-                    padding: 0 12px;
-                    font-size: 12px;
-                }
-
-                .btn span {
+                .sender-info {
                     display: none;
                 }
 
-                .btn i {
-                    margin: 0;
-                }
-
-                .count-badge {
-                    position: static;
-                    margin-left: 4px;
-                }
-
-                .category-tab {
-                    height: 48px;
-                    padding: 0 12px;
-                    font-size: 11px;
-                }
-
-                .tab-icon {
-                    font-size: 16px;
-                }
-
-                .tab-name {
-                    font-size: 11px;
-                }
-
-                .email-card {
-                    padding: 12px;
-                }
-
-                .email-title {
-                    font-size: 14px;
-                }
-
-                .email-meta {
+                .email-main {
                     flex-direction: column;
                     align-items: flex-start;
-                    gap: 4px;
+                    gap: 8px;
+                }
+
+                .email-content-section {
+                    width: 100%;
                 }
 
                 .email-actions {
-                    flex-direction: column;
-                    gap: 4px;
-                }
-
-                .action-btn {
-                    width: 32px;
-                    height: 32px;
-                    font-size: 12px;
-                }
-
-                .email-modal,
-                .task-modal {
-                    margin: 10px;
-                    max-height: calc(100vh - 20px);
-                }
-
-                .email-modal-header,
-                .task-modal-header,
-                .email-modal-content,
-                .task-modal-content,
-                .email-modal-footer,
-                .task-modal-footer {
-                    padding: 16px;
+                    opacity: 1;
                 }
 
                 .form-row {
                     grid-template-columns: 1fr;
                 }
-
-                .empty-state {
-                    padding: 40px 20px;
-                }
-
-                .auth-required-state {
-                    padding: 40px 20px;
-                    margin: 10px;
-                }
             }
 
-            /* Responsive - Small phones */
             @media (max-width: 480px) {
-                .view-modes {
-                    width: 100%;
+                .header-top {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 12px;
                 }
 
-                .view-mode span {
-                    display: none;
+                .page-title {
+                    font-size: 20px;
                 }
 
-                .category-filters {
-                    gap: 4px;
+                .category-tabs {
+                    display: flex;
+                    overflow-x: auto;
+                    gap: 8px;
+                    padding-bottom: 8px;
                 }
 
                 .category-tab {
-                    flex: 1;
-                    min-width: 80px;
+                    flex: 0 0 auto;
+                    min-width: 100px;
+                }
+
+                .action-buttons {
+                    flex-wrap: wrap;
                 }
 
                 .email-card {
-                    padding: 10px;
-                    min-height: 70px;
-                }
-
-                .priority-bar {
-                    width: 3px;
-                    height: 50px;
-                    margin-right: 8px;
-                }
-
-                .email-checkbox {
-                    width: 18px;
-                    height: 18px;
-                    margin-right: 8px;
-                }
-
-                .group-avatar {
-                    width: 36px;
-                    height: 36px;
-                    font-size: 14px;
-                }
-
-                .toast {
-                    right: 10px;
-                    left: 10px;
-                    bottom: 10px;
-                    max-width: none;
-                }
-            }
-
-            /* Responsive - Large screens */
-            @media (min-width: 1440px) {
-                .emails-page-modern {
-                    max-width: 1400px;
-                    margin: 0 auto;
-                }
-
-                .category-filters {
-                    max-width: 1400px;
-                }
-
-                .email-modal,
-                .task-modal {
-                    max-width: 1000px;
-                }
-            }
-
-            /* Responsive - Extra large screens */
-            @media (min-width: 1920px) {
-                .emails-page-modern {
-                    max-width: 1600px;
-                }
-
-                .email-card {
-                    padding: 20px;
-                    min-height: 90px;
-                }
-
-                .email-title {
-                    font-size: 16px;
-                }
-
-                .email-sender {
-                    font-size: 13px;
+                    padding: 12px 16px;
                 }
             }
         `;
@@ -2806,7 +2443,7 @@ class PageManagerGmail {
     // ================================================
     getDebugInfo() {
         return {
-            version: '18.1',
+            version: '18.2',
             isInitialized: this.isInitialized,
             currentPage: this.currentPage,
             syncState: this.syncState,
@@ -2851,5 +2488,5 @@ window.debugPageManagerGmail = function() {
     console.groupEnd();
 };
 
-console.log('✅ PageManagerGmail v18.1 loaded - Synchronisation emails corrigée');
+console.log('✅ PageManagerGmail v18.2 loaded - Design Gmail moderne');
 console.log('💡 Utilisez window.debugPageManagerGmail() pour déboguer');
