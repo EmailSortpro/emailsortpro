@@ -1,4 +1,4 @@
-// MailService.js - Version 7.0 - Service de gestion des emails sans limitation
+// MailService.js - Version 8.0 - Service de gestion des emails avec gestion des erreurs 401
 
 class MailService {
     constructor() {
@@ -17,7 +17,11 @@ class MailService {
         this.fetchedEmailIds = new Set();
         this.pageTokens = new Map(); // Pour gérer la pagination Gmail
         
-        console.log('[MailService] Constructor v7.0 - Service emails sans limitation');
+        // Gestion des erreurs d'authentification
+        this.tokenRefreshAttempts = 0;
+        this.maxTokenRefreshAttempts = 3;
+        
+        console.log('[MailService] Constructor v8.0 - Service emails avec gestion erreurs 401');
     }
 
     async initialize() {
@@ -43,6 +47,8 @@ class MailService {
             if (!provider) {
                 console.log('[MailService] ⚠️ Aucun provider détecté, mode démo activé');
                 this.currentProvider = 'demo';
+                this.accessToken = 'demo-token';
+                this.setDefaultFolders();
                 this.initialized = true;
                 return true;
             }
@@ -52,6 +58,16 @@ class MailService {
             
             // Obtenir le token d'accès
             await this.obtainAccessToken();
+            
+            // Vérifier si on a bien un token valide
+            if (!this.accessToken || this.accessToken === 'demo-token') {
+                console.warn('[MailService] ⚠️ Token invalide, basculement en mode démo');
+                this.currentProvider = 'demo';
+                this.accessToken = 'demo-token';
+                this.setDefaultFolders();
+                this.initialized = true;
+                return true;
+            }
             
             // Charger les dossiers/labels selon le provider
             await this.loadFoldersOrLabels();
@@ -68,7 +84,10 @@ class MailService {
             
         } catch (error) {
             console.error('[MailService] ❌ Erreur initialisation:', error);
+            console.log('[MailService] 🔄 Basculement en mode démo suite à l\'erreur');
             this.currentProvider = 'demo';
+            this.accessToken = 'demo-token';
+            this.setDefaultFolders();
             this.initialized = true;
             return true;
         }
@@ -110,7 +129,7 @@ class MailService {
         }
         
         // 4. Fallback sur le dernier provider
-        const lastProvider = sessionStorage.getItem('lastAuthProvider');
+        const lastProvider = sessionStorage.getItem('lastAuthProvider') || sessionStorage.getItem('currentProvider');
         if (lastProvider === 'google' || lastProvider === 'microsoft') {
             console.log('[MailService] ⚠️ Utilisation du dernier provider:', lastProvider);
             return lastProvider;
@@ -120,16 +139,84 @@ class MailService {
         return null;
     }
 
-    async obtainAccessToken() {
-        console.log('[MailService] 🔑 Obtention du token d\'accès...');
+    async obtainAccessToken(forceRefresh = false) {
+        console.log('[MailService] 🔑 Obtention du token d\'accès...', forceRefresh ? '(Renouvellement forcé)' : '');
         
         try {
             if (this.currentProvider === 'google' && window.googleAuthService) {
+                // Forcer le renouvellement si demandé
+                if (forceRefresh) {
+                    console.log('[MailService] 🔄 Renouvellement du token Google...');
+                    
+                    // Essayer refreshToken si disponible
+                    if (typeof window.googleAuthService.refreshToken === 'function') {
+                        try {
+                            await window.googleAuthService.refreshToken();
+                        } catch (error) {
+                            console.warn('[MailService] ⚠️ Échec refreshToken:', error);
+                        }
+                    }
+                    
+                    // Sinon, essayer de se reconnecter
+                    if (typeof window.googleAuthService.login === 'function') {
+                        try {
+                            const isAuth = await window.googleAuthService.isAuthenticated();
+                            if (!isAuth) {
+                                console.log('[MailService] 🔄 Reconnexion Google...');
+                                await window.googleAuthService.login();
+                            }
+                        } catch (error) {
+                            console.warn('[MailService] ⚠️ Échec reconnexion:', error);
+                        }
+                    }
+                }
+                
                 this.accessToken = await window.googleAuthService.getAccessToken();
-                console.log('[MailService] ✅ Token Google obtenu');
+                
+                if (!this.accessToken) {
+                    console.warn('[MailService] ⚠️ Token Google vide');
+                    throw new Error('Token Google invalide');
+                }
+                
+                console.log('[MailService] ✅ Token Google obtenu:', this.accessToken ? 'Valide' : 'Invalide');
+                
             } else if (this.currentProvider === 'microsoft' && window.authService) {
+                // Forcer le renouvellement si demandé
+                if (forceRefresh) {
+                    console.log('[MailService] 🔄 Renouvellement du token Microsoft...');
+                    
+                    // Essayer refreshToken si disponible
+                    if (typeof window.authService.refreshToken === 'function') {
+                        try {
+                            await window.authService.refreshToken();
+                        } catch (error) {
+                            console.warn('[MailService] ⚠️ Échec refreshToken:', error);
+                        }
+                    }
+                    
+                    // Sinon, essayer de se reconnecter
+                    if (typeof window.authService.login === 'function') {
+                        try {
+                            const isAuth = await window.authService.isAuthenticated();
+                            if (!isAuth) {
+                                console.log('[MailService] 🔄 Reconnexion Microsoft...');
+                                await window.authService.login();
+                            }
+                        } catch (error) {
+                            console.warn('[MailService] ⚠️ Échec reconnexion:', error);
+                        }
+                    }
+                }
+                
                 this.accessToken = await window.authService.getAccessToken();
-                console.log('[MailService] ✅ Token Microsoft obtenu');
+                
+                if (!this.accessToken) {
+                    console.warn('[MailService] ⚠️ Token Microsoft vide');
+                    throw new Error('Token Microsoft invalide');
+                }
+                
+                console.log('[MailService] ✅ Token Microsoft obtenu:', this.accessToken ? 'Valide' : 'Invalide');
+                
             } else if (this.currentProvider === 'demo') {
                 this.accessToken = 'demo-token';
                 console.log('[MailService] ✅ Mode démo activé');
@@ -137,15 +224,23 @@ class MailService {
                 throw new Error(`Impossible d'obtenir le token pour ${this.currentProvider}`);
             }
             
-            if (!this.accessToken) {
-                throw new Error('Token d\'accès null ou invalide');
+            // Réinitialiser le compteur de tentatives si succès
+            if (this.accessToken && this.accessToken !== 'demo-token') {
+                this.tokenRefreshAttempts = 0;
             }
             
         } catch (error) {
             console.error('[MailService] ❌ Erreur obtention token:', error);
-            // En cas d'erreur, utiliser le mode démo
-            this.currentProvider = 'demo';
-            this.accessToken = 'demo-token';
+            this.tokenRefreshAttempts++;
+            
+            // Si trop de tentatives, basculer en mode démo
+            if (this.tokenRefreshAttempts >= this.maxTokenRefreshAttempts) {
+                console.warn('[MailService] ⚠️ Trop de tentatives échouées, basculement en mode démo');
+                this.currentProvider = 'demo';
+                this.accessToken = 'demo-token';
+            } else {
+                throw error; // Propager l'erreur pour retry
+            }
         }
     }
 
@@ -164,65 +259,113 @@ class MailService {
     async loadGmailLabels() {
         console.log('[MailService] 📧 Chargement des labels Gmail...');
         
-        try {
-            const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
-                headers: {
-                    'Authorization': `Bearer ${this.accessToken}`,
-                    'Content-Type': 'application/json'
+        let retryCount = 0;
+        const maxRetries = 2;
+        
+        while (retryCount <= maxRetries) {
+            try {
+                const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+                    headers: {
+                        'Authorization': `Bearer ${this.accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    // Si erreur 401, essayer de renouveler le token
+                    if (response.status === 401 && retryCount < maxRetries) {
+                        console.warn(`[MailService] ⚠️ Erreur 401 - Token expiré (tentative ${retryCount + 1}/${maxRetries})`);
+                        await this.obtainAccessToken(true); // Forcer le renouvellement
+                        retryCount++;
+                        continue; // Réessayer avec le nouveau token
+                    }
+                    
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-            });
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const data = await response.json();
+                this.labels = data.labels || [];
+                
+                // Mapper les labels Gmail vers un format unifié
+                this.folders = this.labels.map(label => ({
+                    id: label.id,
+                    name: label.name,
+                    displayName: this.getLocalizedLabelName(label.name),
+                    type: label.type,
+                    parentFolderId: null,
+                    childFolderCount: 0,
+                    unreadItemCount: label.messagesUnread || 0,
+                    totalItemCount: label.messagesTotal || 0,
+                    isGmailLabel: true
+                }));
+                
+                console.log(`[MailService] ✅ ${this.labels.length} labels Gmail chargés`);
+                return; // Succès, sortir de la boucle
+                
+            } catch (error) {
+                console.error(`[MailService] ❌ Erreur chargement labels Gmail (tentative ${retryCount + 1}/${maxRetries + 1}):`, error);
+                
+                if (retryCount >= maxRetries) {
+                    console.warn('[MailService] ⚠️ Échec après toutes les tentatives, utilisation des labels par défaut');
+                    this.setDefaultLabels();
+                    return;
+                }
+                
+                retryCount++;
+                
+                // Petite pause avant de réessayer
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
-
-            const data = await response.json();
-            this.labels = data.labels || [];
-            
-            // Mapper les labels Gmail vers un format unifié
-            this.folders = this.labels.map(label => ({
-                id: label.id,
-                name: label.name,
-                displayName: this.getLocalizedLabelName(label.name),
-                type: label.type,
-                parentFolderId: null,
-                childFolderCount: 0,
-                unreadItemCount: label.messagesUnread || 0,
-                totalItemCount: label.messagesTotal || 0,
-                isGmailLabel: true
-            }));
-            
-            console.log(`[MailService] ✅ ${this.labels.length} labels Gmail chargés`);
-            
-        } catch (error) {
-            console.error('[MailService] ❌ Erreur chargement labels Gmail:', error);
-            this.setDefaultLabels();
         }
     }
 
     async loadOutlookFolders() {
         console.log('[MailService] 📂 Chargement des dossiers Outlook...');
         
-        try {
-            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
-                headers: {
-                    'Authorization': `Bearer ${this.accessToken}`,
-                    'Content-Type': 'application/json'
+        let retryCount = 0;
+        const maxRetries = 2;
+        
+        while (retryCount <= maxRetries) {
+            try {
+                const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
+                    headers: {
+                        'Authorization': `Bearer ${this.accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    // Si erreur 401, essayer de renouveler le token
+                    if (response.status === 401 && retryCount < maxRetries) {
+                        console.warn(`[MailService] ⚠️ Erreur 401 - Token expiré (tentative ${retryCount + 1}/${maxRetries})`);
+                        await this.obtainAccessToken(true); // Forcer le renouvellement
+                        retryCount++;
+                        continue; // Réessayer avec le nouveau token
+                    }
+                    
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-            });
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const data = await response.json();
+                this.folders = data.value || [];
+                
+                console.log(`[MailService] ✅ ${this.folders.length} dossiers Outlook chargés`);
+                return; // Succès, sortir de la boucle
+                
+            } catch (error) {
+                console.error(`[MailService] ❌ Erreur chargement dossiers Outlook (tentative ${retryCount + 1}/${maxRetries + 1}):`, error);
+                
+                if (retryCount >= maxRetries) {
+                    console.warn('[MailService] ⚠️ Échec après toutes les tentatives, utilisation des dossiers par défaut');
+                    this.setDefaultFolders();
+                    return;
+                }
+                
+                retryCount++;
+                
+                // Petite pause avant de réessayer
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
-
-            const data = await response.json();
-            this.folders = data.value || [];
-            
-            console.log(`[MailService] ✅ ${this.folders.length} dossiers Outlook chargés`);
-            
-        } catch (error) {
-            console.error('[MailService] ❌ Erreur chargement dossiers Outlook:', error);
-            this.setDefaultFolders();
         }
     }
 
@@ -266,6 +409,29 @@ class MailService {
             
         } catch (error) {
             console.error('[MailService] ❌ Erreur récupération messages:', error);
+            
+            // Si erreur d'authentification, essayer de réinitialiser
+            if (error.message && error.message.includes('401')) {
+                console.log('[MailService] 🔄 Erreur 401 détectée, tentative de réinitialisation...');
+                await this.reset();
+                await this.initialize();
+                
+                // Si toujours en mode démo après réinit, retourner des emails de démo
+                if (this.currentProvider === 'demo') {
+                    return this.generateDemoEmails(options);
+                }
+                
+                // Sinon, réessayer une fois
+                try {
+                    if (this.currentProvider === 'google') {
+                        return await this.getGmailMessages(folderId, options);
+                    } else if (this.currentProvider === 'microsoft') {
+                        return await this.getOutlookMessages(folderId, options);
+                    }
+                } catch (retryError) {
+                    console.error('[MailService] ❌ Échec après réinitialisation:', retryError);
+                }
+            }
             
             // Fallback vers emails de démonstration
             console.log('[MailService] 📧 Fallback vers emails de démonstration...');
@@ -390,6 +556,10 @@ class MailService {
             });
 
             if (!response.ok) {
+                // Si 401, on laisse remonter l'erreur pour gestion globale
+                if (response.status === 401) {
+                    throw new Error(`HTTP 401: Unauthorized`);
+                }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
@@ -428,6 +598,10 @@ class MailService {
             
         } catch (error) {
             console.error(`[MailService] ❌ Erreur récupération détails Gmail ${messageId}:`, error);
+            // Propager les erreurs 401 pour gestion globale
+            if (error.message && error.message.includes('401')) {
+                throw error;
+            }
             return null;
         }
     }
@@ -477,6 +651,10 @@ class MailService {
                 });
 
                 if (!response.ok) {
+                    // Si 401, on laisse remonter l'erreur pour gestion globale
+                    if (response.status === 401) {
+                        throw new Error(`HTTP 401: Unauthorized`);
+                    }
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
@@ -779,7 +957,8 @@ class MailService {
             foldersCount: this.folders.length,
             labelsCount: this.labels.length,
             fetchedEmailIds: this.fetchedEmailIds.size,
-            cacheSize: this.emailCache.size
+            cacheSize: this.emailCache.size,
+            tokenRefreshAttempts: this.tokenRefreshAttempts
         };
     }
 
@@ -810,7 +989,7 @@ class MailService {
         this.lastFetchTime = 0;
     }
 
-    reset() {
+    async reset() {
         console.log('[MailService] 🔄 Réinitialisation du service...');
         
         this.initialized = false;
@@ -820,6 +999,7 @@ class MailService {
         this.labels = [];
         this.currentFolder = 'inbox';
         this.initPromise = null;
+        this.tokenRefreshAttempts = 0;
         this.clearCache();
         
         console.log('[MailService] ✅ Service réinitialisé');
@@ -846,7 +1026,7 @@ window.mailService = new MailService();
 // FONCTIONS UTILITAIRES GLOBALES
 // ================================================
 window.testMailService = async function(options = {}) {
-    console.group('🧪 TEST MailService v7.0');
+    console.group('🧪 TEST MailService v8.0');
     
     try {
         console.log('1. Informations du service:');
@@ -903,6 +1083,20 @@ window.getAllEmails = async function() {
     return allEmails;
 };
 
-console.log('✅ MailService v7.0 loaded - Service complet sans limitation!');
+// Fonction pour forcer le renouvellement du token
+window.refreshMailToken = async function() {
+    console.log('🔄 Renouvellement forcé du token...');
+    try {
+        await window.mailService.obtainAccessToken(true);
+        console.log('✅ Token renouvelé avec succès');
+        return true;
+    } catch (error) {
+        console.error('❌ Échec du renouvellement:', error);
+        return false;
+    }
+};
+
+console.log('✅ MailService v8.0 loaded - Gestion améliorée des erreurs 401!');
 console.log('💡 Utilisez window.testMailService() pour tester');
 console.log('💡 Utilisez window.getAllEmails() pour récupérer tous les emails');
+console.log('💡 Utilisez window.refreshMailToken() pour renouveler le token');
