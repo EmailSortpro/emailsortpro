@@ -1,4 +1,4 @@
-// PageManagerGmail.js - Version 18.2 - Design corrigé avec liste d'emails
+// PageManagerGmail.js - Version 18.3 - Corrigé et Optimisé
 
 class PageManagerGmail {
     constructor() {
@@ -59,7 +59,7 @@ class PageManagerGmail {
             this.loadEmailsFromStorage();
             
             this.isInitialized = true;
-            console.log('[PageManagerGmail] ✅ Version 18.2 Gmail - Design corrigé');
+            console.log('[PageManagerGmail] ✅ Version 18.3 - Corrigé et Optimisé');
         } catch (error) {
             console.error('[PageManagerGmail] Erreur initialisation:', error);
         }
@@ -89,7 +89,7 @@ class PageManagerGmail {
     }
 
     // ================================================
-    // INTÉGRATION CATEGORYMANAGER (Optimisé)
+    // INTÉGRATION CATEGORYMANAGER
     // ================================================
     setupCategoryManagerIntegration() {
         if (window.categoryManager) {
@@ -116,7 +116,7 @@ class PageManagerGmail {
     }
 
     // ================================================
-    // LISTENERS (Consolidé)
+    // LISTENERS
     // ================================================
     setupEventListeners() {
         window.addEventListener('settingsChanged', (e) => {
@@ -312,7 +312,7 @@ class PageManagerGmail {
     }
 
     // ================================================
-    // CHARGEMENT DES PAGES (Simplifié)
+    // CHARGEMENT DES PAGES
     // ================================================
     async loadPage(pageName) {
         if (!this.isInitialized) return;
@@ -395,7 +395,7 @@ class PageManagerGmail {
     }
 
     // ================================================
-    // RENDU DE LA PAGE EMAILS (Optimisé)
+    // RENDU DE LA PAGE EMAILS
     // ================================================
     async renderEmails(container) {
         console.log('[PageManagerGmail] 🎨 Rendu de la page emails...');
@@ -560,26 +560,6 @@ class PageManagerGmail {
         `;
     }
 
-    renderViewModeButtons() {
-        const modes = [
-            { id: 'flat', icon: 'fa-list', label: 'Liste' },
-            { id: 'grouped-domain', icon: 'fa-globe', label: 'Domaine' },
-            { id: 'grouped-sender', icon: 'fa-user', label: 'Expéditeur' }
-        ];
-        
-        return `
-            <div class="view-mode-selector">
-                ${modes.map(mode => `
-                    <button class="view-mode-btn ${this.currentViewMode === mode.id ? 'active' : ''}" 
-                            onclick="pageManagerGmail.changeViewMode('${mode.id}')"
-                            title="Vue par ${mode.label.toLowerCase()}">
-                        <i class="fas ${mode.icon}"></i>
-                    </button>
-                `).join('')}
-            </div>
-        `;
-    }
-
     renderCategoryTabs(categoryCounts, totalEmails, categories) {
         const preselected = this.getTaskPreselectedCategories();
         console.log('[PageManagerGmail] 📌 Catégories pré-sélectionnées:', preselected);
@@ -660,7 +640,7 @@ class PageManagerGmail {
     }
 
     // ================================================
-    // RENDU DES EMAILS (Optimisé)
+    // RENDU DES EMAILS
     // ================================================
     renderEmailsList() {
         const emails = this.getFilteredEmails();
@@ -935,59 +915,6 @@ class PageManagerGmail {
         this.emailContentCache.set(email.id, content);
         
         return content;
-    }
-
-    async fetchFullEmailContent(emailId) {
-        if (!window.mailService || this.syncState.provider !== 'gmail') {
-            return null;
-        }
-        
-        try {
-            // Utiliser l'API Gmail pour récupérer le contenu complet
-            const accessToken = await window.googleAuthService?.getAccessToken();
-            if (!accessToken) return null;
-            
-            const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${emailId}`, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (!response.ok) return null;
-            
-            const message = await response.json();
-            
-            // Extraire le contenu HTML ou texte
-            let body = '';
-            
-            const extractBody = (parts) => {
-                if (!parts) return '';
-                
-                for (const part of parts) {
-                    if (part.mimeType === 'text/html' && part.body?.data) {
-                        return atob(part.body.data.replace(/-/g, '+').replace(/_/g, '/'));
-                    } else if (part.mimeType === 'text/plain' && part.body?.data && !body) {
-                        body = atob(part.body.data.replace(/-/g, '+').replace(/_/g, '/'));
-                    } else if (part.parts) {
-                        const nested = extractBody(part.parts);
-                        if (nested) return nested;
-                    }
-                }
-                
-                return body;
-            };
-            
-            if (message.payload) {
-                return extractBody([message.payload]);
-            }
-            
-            return null;
-            
-        } catch (error) {
-            console.error('[PageManagerGmail] Erreur récupération contenu email:', error);
-            return null;
-        }
     }
 
     sanitizeEmailContent(content) {
@@ -1716,76 +1643,65 @@ class PageManagerGmail {
             }
 
             /* Category tabs */
+            .category-tabs-container {
+                padding: 16px 24px;
+                background: white;
+                border-bottom: 1px solid #e0e0e0;
+            }
+
             .category-filters-wrapper {
-                padding: 0;
-                background: transparent;
-                overflow: visible;
+                max-width: 1200px;
+                margin: 0 auto;
             }
 
             .category-filters {
                 display: flex;
                 flex-direction: column;
-                gap: 6px;
-                max-width: 1200px;
-                margin: 0 auto;
+                gap: 8px;
             }
 
             .category-row {
-                display: grid;
-                grid-template-columns: repeat(6, 1fr);
-                gap: 6px;
-                width: 100%;
+                display: flex;
+                gap: 8px;
+                justify-content: center;
             }
 
             .category-tab {
-                height: 56px;
-                padding: 0;
+                flex: 1;
+                max-width: 160px;
+                min-width: 120px;
+                height: 48px;
+                padding: 0 16px;
                 background: white;
                 border: 2px solid #e5e7eb;
-                border-radius: 8px;
+                border-radius: 24px;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 position: relative;
                 overflow: hidden;
                 display: flex;
-                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 2px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-                font-size: 12px;
+                gap: 8px;
             }
 
             .category-tab .tab-icon {
-                font-size: 18px;
-                line-height: 1;
+                font-size: 16px;
             }
 
             .category-tab .tab-name {
-                font-size: 12px;
-                font-weight: 700;
-                color: #1f2937;
-                text-align: center;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 90%;
-                padding: 0 4px;
+                font-size: 13px;
+                font-weight: 600;
+                color: #5f6368;
             }
 
             .category-tab .tab-count {
-                position: absolute;
-                top: 3px;
-                right: 3px;
-                background: #3b82f6;
-                color: white;
-                font-size: 10px;
-                font-weight: 700;
-                padding: 1px 5px;
-                border-radius: 8px;
-                min-width: 18px;
-                text-align: center;
-                line-height: 1.2;
+                background: #f1f3f4;
+                color: #5f6368;
+                font-size: 12px;
+                font-weight: 600;
+                padding: 2px 8px;
+                border-radius: 12px;
             }
 
             .category-tab.preselected {
@@ -1793,38 +1709,44 @@ class PageManagerGmail {
                 background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
             }
 
+            .category-tab.preselected .tab-name {
+                color: #7c3aed;
+            }
+
             .category-tab.preselected .tab-count {
                 background: #8b5cf6;
+                color: white;
             }
 
             .category-tab:hover {
-                border-color: #3b82f6;
-                background: #f0f9ff;
-                transform: translateY(-1px);
-                box-shadow: 0 3px 8px rgba(59, 130, 246, 0.15);
+                border-color: #1a73e8;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
             }
 
             .category-tab.active {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                border-color: #3b82f6;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+                background: #1a73e8;
+                border-color: #1a73e8;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(26, 115, 232, 0.25);
             }
 
-            .category-tab.active .tab-name {
+            .category-tab.active .tab-name,
+            .category-tab.active .tab-icon {
                 color: white;
             }
 
             .category-tab.active .tab-count {
                 background: rgba(255, 255, 255, 0.2);
+                color: white;
             }
 
             .preselected-star {
                 position: absolute;
-                top: -5px;
-                right: -5px;
-                width: 18px;
-                height: 18px;
+                top: -4px;
+                right: -4px;
+                width: 20px;
+                height: 20px;
                 background: #8b5cf6;
                 color: white;
                 border-radius: 50%;
@@ -2332,6 +2254,16 @@ class PageManagerGmail {
                 color: #202124;
             }
 
+            .email-content-wrapper {
+                max-width: 100%;
+                overflow-x: auto;
+            }
+
+            .email-content-wrapper img {
+                max-width: 100%;
+                height: auto;
+            }
+
             .email-modal-footer,
             .task-modal-footer {
                 padding: 16px 24px;
@@ -2488,8 +2420,12 @@ class PageManagerGmail {
 
             /* Responsive */
             @media (max-width: 1200px) {
-                .category-tabs {
-                    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                .category-row {
+                    flex-wrap: wrap;
+                }
+                
+                .category-tab {
+                    min-width: calc(33.333% - 5.33px);
                 }
             }
 
@@ -2520,6 +2456,10 @@ class PageManagerGmail {
                 .form-row {
                     grid-template-columns: 1fr;
                 }
+                
+                .category-tab {
+                    min-width: calc(50% - 4px);
+                }
             }
 
             @media (max-width: 480px) {
@@ -2533,16 +2473,8 @@ class PageManagerGmail {
                     font-size: 20px;
                 }
 
-                .category-tabs {
-                    display: flex;
-                    overflow-x: auto;
-                    gap: 8px;
-                    padding-bottom: 8px;
-                }
-
                 .category-tab {
-                    flex: 0 0 auto;
-                    min-width: 100px;
+                    min-width: 100%;
                 }
 
                 .action-buttons {
@@ -2576,7 +2508,7 @@ class PageManagerGmail {
     // ================================================
     getDebugInfo() {
         return {
-            version: '18.2',
+            version: '18.3',
             isInitialized: this.isInitialized,
             currentPage: this.currentPage,
             syncState: this.syncState,
@@ -2621,5 +2553,5 @@ window.debugPageManagerGmail = function() {
     console.groupEnd();
 };
 
-console.log('✅ PageManagerGmail v18.2 loaded - Design Gmail moderne');
+console.log('✅ PageManagerGmail v18.3 loaded - Corrigé et Optimisé');
 console.log('💡 Utilisez window.debugPageManagerGmail() pour déboguer');
