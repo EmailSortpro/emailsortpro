@@ -909,9 +909,43 @@ class PageManagerGmail {
         
         temp.querySelectorAll('script, link[rel="stylesheet"], style').forEach(el => el.remove());
         
+        // Améliorer la détection des liens de désabonnement
         temp.querySelectorAll('a').forEach(link => {
             link.setAttribute('target', '_blank');
             link.setAttribute('rel', 'noopener noreferrer');
+            
+            // Détecter les liens de désabonnement et les styliser
+            const linkText = link.textContent.toLowerCase();
+            const linkHref = link.href?.toLowerCase() || '';
+            
+            if (linkText.includes('désabonner') || linkText.includes('unsubscribe') || 
+                linkText.includes('se désabonner') || linkText.includes('stop') ||
+                linkHref.includes('unsubscribe') || linkHref.includes('optout') || 
+                linkHref.includes('stop') || linkHref.includes('preferences')) {
+                
+                link.style.cssText = `
+                    display: inline-block;
+                    padding: 6px 12px;
+                    margin: 4px 0;
+                    background: #f8f9fa;
+                    color: #5f6368;
+                    text-decoration: none;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    border: 1px solid #dadce0;
+                    transition: all 0.2s;
+                `;
+                
+                link.onmouseover = function() {
+                    this.style.background = '#e8eaed';
+                    this.style.borderColor = '#5f6368';
+                };
+                
+                link.onmouseout = function() {
+                    this.style.background = '#f8f9fa';
+                    this.style.borderColor = '#dadce0';
+                };
+            }
         });
         
         temp.querySelectorAll('img').forEach(img => {
@@ -1471,21 +1505,22 @@ class PageManagerGmail {
         const styles = document.createElement('style');
         styles.id = 'emailsPageStylesGmail';
         styles.textContent = `
-            /* Base styles */
+            /* Base styles - Moderne comme PageManager */
             .emails-page-gmail {
-                background: #f8f9fa;
+                background: #f8fafc;
                 min-height: 100vh;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                padding: 16px;
             }
 
-            /* Header */
+            /* Header moderne */
             .email-page-header {
                 background: white;
-                border-bottom: 1px solid #e0e0e0;
-                position: sticky;
-                top: 0;
-                z-index: 100;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                margin-bottom: 16px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+                overflow: hidden;
             }
 
             .header-top {
@@ -1498,8 +1533,8 @@ class PageManagerGmail {
 
             .page-title {
                 font-size: 24px;
-                font-weight: 400;
-                color: #202124;
+                font-weight: 700;
+                color: #1f2937;
                 margin: 0;
                 display: flex;
                 align-items: center;
@@ -1507,26 +1542,30 @@ class PageManagerGmail {
             }
 
             .page-title i {
-                color: #4285f4;
+                background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
                 font-size: 28px;
             }
 
             .email-count {
-                background: #e8f0fe;
-                color: #1967d2;
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                color: white;
                 padding: 4px 12px;
                 border-radius: 16px;
                 font-size: 14px;
-                font-weight: 500;
+                font-weight: 700;
+                box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
             }
 
-            /* View mode selector */
+            /* View mode selector moderne */
             .view-mode-selector {
                 display: flex;
-                gap: 4px;
-                background: #f1f3f4;
+                gap: 2px;
+                background: #f8fafc;
                 padding: 4px;
                 border-radius: 8px;
+                border: 1px solid #e2e8f0;
             }
 
             .view-mode-btn {
@@ -1534,29 +1573,30 @@ class PageManagerGmail {
                 height: 36px;
                 border: none;
                 background: transparent;
-                color: #5f6368;
+                color: #6b7280;
                 border-radius: 6px;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.2s;
+                transition: all 0.2s ease;
             }
 
             .view-mode-btn:hover {
-                background: rgba(0,0,0,0.05);
+                background: rgba(255, 255, 255, 0.8);
+                color: #374151;
             }
 
             .view-mode-btn.active {
                 background: white;
-                color: #1a73e8;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+                color: #1f2937;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             }
 
-            /* Search bar */
+            /* Search bar moderne */
             .search-bar-container {
                 padding: 16px 24px;
-                background: #f8f9fa;
+                background: #f8fafc;
             }
 
             .search-wrapper {
@@ -1570,24 +1610,26 @@ class PageManagerGmail {
                 left: 16px;
                 top: 50%;
                 transform: translateY(-50%);
-                color: #5f6368;
-                font-size: 18px;
+                color: #6b7280;
+                font-size: 16px;
             }
 
             .search-input {
                 width: 100%;
-                padding: 12px 48px;
-                border: none;
-                border-radius: 8px;
-                background: white;
-                font-size: 16px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-                transition: box-shadow 0.2s;
+                height: 44px;
+                padding: 0 48px;
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
+                font-size: 14px;
+                background: #f9fafb;
+                transition: all 0.2s ease;
             }
 
             .search-input:focus {
+                border-color: #3b82f6;
+                background: white;
+                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
                 outline: none;
-                box-shadow: 0 1px 6px rgba(0,0,0,0.2);
             }
 
             .clear-search {
@@ -1595,28 +1637,29 @@ class PageManagerGmail {
                 right: 12px;
                 top: 50%;
                 transform: translateY(-50%);
-                width: 32px;
-                height: 32px;
+                width: 28px;
+                height: 28px;
                 border: none;
-                background: transparent;
-                color: #5f6368;
+                background: #ef4444;
+                color: white;
                 cursor: pointer;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: background 0.2s;
+                transition: all 0.2s;
+                font-size: 12px;
             }
 
             .clear-search:hover {
-                background: rgba(0,0,0,0.05);
+                background: #dc2626;
+                transform: translateY(-50%) scale(1.1);
             }
 
-            /* Category tabs */
+            /* Category tabs modernes */
             .category-tabs-container {
                 padding: 16px 24px;
                 background: white;
-                border-bottom: 1px solid #e0e0e0;
             }
 
             .category-filters-wrapper {
@@ -1627,51 +1670,64 @@ class PageManagerGmail {
             .category-filters {
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
+                gap: 6px;
             }
 
             .category-row {
-                display: flex;
-                gap: 8px;
-                justify-content: center;
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 6px;
             }
 
             .category-tab {
-                flex: 1;
-                max-width: 160px;
-                min-width: 120px;
-                height: 48px;
-                padding: 0 16px;
+                height: 56px;
+                padding: 0;
                 background: white;
                 border: 2px solid #e5e7eb;
-                border-radius: 24px;
+                border-radius: 8px;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 position: relative;
                 overflow: hidden;
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 8px;
+                gap: 2px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+                font-size: 12px;
             }
 
             .category-tab .tab-icon {
-                font-size: 16px;
+                font-size: 18px;
+                line-height: 1;
             }
 
             .category-tab .tab-name {
-                font-size: 13px;
-                font-weight: 600;
-                color: #5f6368;
+                font-size: 12px;
+                font-weight: 700;
+                color: #1f2937;
+                text-align: center;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 90%;
+                padding: 0 4px;
             }
 
             .category-tab .tab-count {
-                background: #f1f3f4;
-                color: #5f6368;
-                font-size: 12px;
-                font-weight: 600;
-                padding: 2px 8px;
-                border-radius: 12px;
+                position: absolute;
+                top: 3px;
+                right: 3px;
+                background: #3b82f6;
+                color: white;
+                font-size: 10px;
+                font-weight: 700;
+                padding: 1px 5px;
+                border-radius: 8px;
+                min-width: 18px;
+                text-align: center;
+                line-height: 1.2;
             }
 
             .category-tab.preselected {
@@ -1679,26 +1735,22 @@ class PageManagerGmail {
                 background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
             }
 
-            .category-tab.preselected .tab-name {
-                color: #7c3aed;
-            }
-
             .category-tab.preselected .tab-count {
                 background: #8b5cf6;
-                color: white;
             }
 
             .category-tab:hover {
-                border-color: #1a73e8;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(26, 115, 232, 0.15);
+                border-color: #3b82f6;
+                background: #f0f9ff;
+                transform: translateY(-1px);
+                box-shadow: 0 3px 8px rgba(59, 130, 246, 0.15);
             }
 
             .category-tab.active {
-                background: #1a73e8;
-                border-color: #1a73e8;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(26, 115, 232, 0.25);
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                border-color: #3b82f6;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
             }
 
             .category-tab.active .tab-name,
@@ -1708,15 +1760,14 @@ class PageManagerGmail {
 
             .category-tab.active .tab-count {
                 background: rgba(255, 255, 255, 0.2);
-                color: white;
             }
 
             .preselected-star {
                 position: absolute;
-                top: -4px;
-                right: -4px;
-                width: 20px;
-                height: 20px;
+                top: -5px;
+                right: -5px;
+                width: 18px;
+                height: 18px;
                 background: #8b5cf6;
                 color: white;
                 border-radius: 50%;
@@ -1728,11 +1779,10 @@ class PageManagerGmail {
                 box-shadow: 0 2px 4px rgba(139, 92, 246, 0.4);
             }
 
-            /* Action bar */
+            /* Action bar moderne */
             .action-bar {
                 padding: 12px 24px;
                 background: white;
-                border-top: 1px solid #f0f0f0;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -1740,12 +1790,15 @@ class PageManagerGmail {
 
             .selection-info {
                 font-size: 14px;
-                color: #5f6368;
+                color: #6b7280;
+                font-weight: 500;
             }
 
             .selected-count {
-                font-weight: 500;
-                color: #1a73e8;
+                font-weight: 700;
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
             }
 
             .action-buttons {
@@ -1754,24 +1807,27 @@ class PageManagerGmail {
             }
 
             .btn-action {
-                padding: 8px 16px;
-                border: 1px solid #dadce0;
+                height: 44px;
+                padding: 0 16px;
+                border: 1px solid #e5e7eb;
                 background: white;
-                border-radius: 4px;
-                font-size: 14px;
-                font-weight: 500;
-                color: #5f6368;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 600;
+                color: #374151;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                transition: all 0.2s;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             }
 
             .btn-action:hover:not(.disabled) {
-                background: #f8f9fa;
-                border-color: #1a73e8;
-                color: #1a73e8;
+                background: #f9fafb;
+                border-color: #6366f1;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             }
 
             .btn-action.disabled {
@@ -1780,61 +1836,106 @@ class PageManagerGmail {
             }
 
             .btn-create-tasks {
-                background: #1a73e8;
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
                 color: white;
-                border-color: #1a73e8;
+                border: none;
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
             }
 
             .btn-create-tasks:hover:not(.disabled) {
-                background: #1557b0;
-                border-color: #1557b0;
+                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
             }
 
-            /* Emails list */
+            .btn-clear-selection {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+
+            .btn-clear-selection:hover {
+                background: #fee2e2;
+                border-color: #ef4444;
+            }
+
+            /* Emails list moderne */
             .emails-list-container {
-                padding: 16px 24px;
-                max-width: 1400px;
-                margin: 0 auto;
+                padding: 0;
             }
 
             .emails-list {
-                background: white;
-                border-radius: 8px;
-                overflow: hidden;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+                background: transparent;
+                border-radius: 0;
+                overflow: visible;
+                box-shadow: none;
+                display: flex;
+                flex-direction: column;
+                gap: 0;
             }
 
-            /* Email card */
+            /* Email card moderne */
             .email-card {
                 display: flex;
                 align-items: center;
-                padding: 16px 24px;
-                border-bottom: 1px solid #f0f0f0;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 0;
+                padding: 16px;
                 cursor: pointer;
-                transition: background 0.2s;
+                transition: all 0.3s ease;
                 position: relative;
+                min-height: 80px;
+                border-bottom: none;
+            }
+
+            .email-card:first-child {
+                border-top-left-radius: 12px;
+                border-top-right-radius: 12px;
+            }
+
+            .email-card:last-child {
+                border-bottom-left-radius: 12px;
+                border-bottom-right-radius: 12px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .email-card + .email-card {
+                border-top: 1px solid #e5e7eb;
             }
 
             .email-card:hover {
-                background: #f8f9fa;
+                background: #f8fafc;
+                transform: translateY(-1px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+                border-color: rgba(99, 102, 241, 0.2);
+                border-left: 3px solid #6366f1;
+                z-index: 2;
             }
 
             .email-card.selected {
-                background: #e8f0fe;
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border-left: 4px solid #3b82f6;
+                border-color: #3b82f6;
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+                z-index: 3;
             }
 
             .email-card.has-task {
-                opacity: 0.7;
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                border-left: 3px solid #22c55e;
             }
 
             .email-card.preselected {
-                border-left: 4px solid #7c3aed;
-                padding-left: 20px;
+                background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
+                border-left: 3px solid #8b5cf6;
+                border-color: rgba(139, 92, 246, 0.3);
             }
 
-            /* Checkbox */
+            /* Checkbox moderne */
             .email-checkbox-wrapper {
-                margin-right: 16px;
+                margin-right: 12px;
                 position: relative;
             }
 
@@ -1847,34 +1948,34 @@ class PageManagerGmail {
             .checkbox-label {
                 width: 20px;
                 height: 20px;
-                border: 2px solid #dadce0;
-                border-radius: 3px;
+                border: 2px solid #d1d5db;
+                border-radius: 6px;
                 display: block;
                 position: relative;
                 cursor: pointer;
-                transition: all 0.2s;
+                transition: all 0.2s ease;
+                background: white;
             }
 
             .email-checkbox:checked + .checkbox-label {
-                background: #1a73e8;
-                border-color: #1a73e8;
+                background: #6366f1;
+                border-color: #6366f1;
             }
 
             .email-checkbox:checked + .checkbox-label::after {
-                content: '';
+                content: '✓';
                 position: absolute;
-                left: 7px;
-                top: 3px;
-                width: 4px;
-                height: 9px;
-                border: solid white;
-                border-width: 0 2px 2px 0;
-                transform: rotate(45deg);
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                font-size: 12px;
+                font-weight: 700;
             }
 
-            .email-checkbox:disabled + .checkbox-label {
-                opacity: 0.5;
-                cursor: not-allowed;
+            .email-card.preselected .email-checkbox:checked + .checkbox-label {
+                background: #8b5cf6;
+                border-color: #8b5cf6;
             }
 
             /* Email main content */
@@ -1886,7 +1987,7 @@ class PageManagerGmail {
                 min-width: 0;
             }
 
-            /* Sender section */
+            /* Sender section moderne */
             .email-sender-section {
                 display: flex;
                 align-items: center;
@@ -1898,14 +1999,15 @@ class PageManagerGmail {
             .sender-avatar {
                 width: 40px;
                 height: 40px;
-                border-radius: 50%;
+                border-radius: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
-                font-weight: 500;
+                font-weight: 700;
                 font-size: 16px;
                 flex-shrink: 0;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             }
 
             .sender-info {
@@ -1914,8 +2016,8 @@ class PageManagerGmail {
             }
 
             .sender-name {
-                font-weight: 500;
-                color: #202124;
+                font-weight: 700;
+                color: #1f2937;
                 font-size: 14px;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -1924,7 +2026,7 @@ class PageManagerGmail {
 
             .sender-email {
                 font-size: 12px;
-                color: #5f6368;
+                color: #6b7280;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -1937,8 +2039,8 @@ class PageManagerGmail {
             }
 
             .email-subject {
-                font-weight: 500;
-                color: #202124;
+                font-weight: 700;
+                color: #1f2937;
                 margin-bottom: 4px;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -1946,61 +2048,75 @@ class PageManagerGmail {
                 display: flex;
                 align-items: center;
                 gap: 8px;
+                font-size: 15px;
             }
 
             .attachment-icon {
-                color: #5f6368;
+                color: #ef4444;
                 font-size: 14px;
                 flex-shrink: 0;
             }
 
             .email-preview {
-                font-size: 14px;
-                color: #5f6368;
+                font-size: 13px;
+                color: #6b7280;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 margin-bottom: 4px;
+                font-weight: 500;
             }
 
             .email-meta {
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                font-size: 12px;
-                color: #5f6368;
+                gap: 8px;
+                font-size: 11px;
+                color: #6b7280;
+                flex-wrap: wrap;
             }
 
             .email-date {
                 display: flex;
                 align-items: center;
-                gap: 4px;
+                gap: 3px;
+                background: #f8fafc;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-weight: 600;
+                border: 1px solid #e2e8f0;
             }
 
             .email-category {
-                padding: 2px 8px;
-                border-radius: 12px;
-                font-weight: 500;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-weight: 600;
                 display: flex;
                 align-items: center;
                 gap: 4px;
+                transition: all 0.2s ease;
             }
 
             .preselected-badge {
-                color: #7c3aed;
-                font-weight: 500;
+                background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-weight: 700;
                 display: flex;
                 align-items: center;
                 gap: 4px;
+                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
             }
 
-            /* Email actions */
+            /* Email actions modernes */
             .email-actions {
                 display: flex;
                 gap: 4px;
-                margin-left: 16px;
+                margin-left: 12px;
                 opacity: 0;
                 transition: opacity 0.2s;
+                flex-shrink: 0;
             }
 
             .email-card:hover .email-actions {
@@ -2008,64 +2124,88 @@ class PageManagerGmail {
             }
 
             .email-action-btn {
-                width: 32px;
-                height: 32px;
-                border: none;
-                background: transparent;
-                color: #5f6368;
-                border-radius: 50%;
+                width: 36px;
+                height: 36px;
+                border: 2px solid transparent;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.9);
+                color: #6b7280;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.2s;
+                transition: all 0.3s ease;
+                font-size: 14px;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
             }
 
             .email-action-btn:hover {
-                background: rgba(0,0,0,0.08);
+                background: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             }
 
             .email-action-btn.create-task {
-                color: #1a73e8;
+                color: #3b82f6;
+            }
+
+            .email-action-btn.create-task:hover {
+                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                border-color: #3b82f6;
+                color: #2563eb;
             }
 
             .email-action-btn.task-created {
-                color: #0d652d;
+                color: #16a34a;
+                background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
             }
 
-            /* Grouped view */
+            .email-action-btn.view-email {
+                color: #6366f1;
+            }
+
+            .email-action-btn.view-email:hover {
+                background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+                border-color: #6366f1;
+                color: #4338ca;
+            }
+
+            /* Grouped view moderne */
             .email-group {
                 margin-bottom: 16px;
                 background: white;
-                border-radius: 8px;
+                border-radius: 12px;
                 overflow: hidden;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                border: 1px solid #e5e7eb;
             }
 
             .group-header {
                 padding: 16px 24px;
-                background: #f8f9fa;
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                transition: background 0.2s;
+                transition: all 0.3s ease;
             }
 
             .group-header:hover {
-                background: #f0f1f3;
+                background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
             }
 
             .group-avatar {
-                width: 40px;
-                height: 40px;
-                border-radius: 8px;
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
-                font-weight: 500;
-                font-size: 16px;
+                font-weight: 700;
+                font-size: 18px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             }
 
             .group-info {
@@ -2073,59 +2213,80 @@ class PageManagerGmail {
             }
 
             .group-name {
-                font-weight: 500;
-                color: #202124;
+                font-weight: 700;
+                color: #1f2937;
                 margin-bottom: 2px;
+                font-size: 16px;
             }
 
             .group-meta {
                 font-size: 13px;
-                color: #5f6368;
+                color: #6b7280;
+                font-weight: 500;
             }
 
             .group-toggle {
-                color: #5f6368;
-                transition: transform 0.2s;
+                width: 36px;
+                height: 36px;
+                border-radius: 8px;
+                background: white;
+                border: 2px solid #e5e7eb;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #6b7280;
+                transition: all 0.3s ease;
+            }
+
+            .group-header:hover .group-toggle {
+                border-color: #6366f1;
+                color: #6366f1;
             }
 
             .group-emails {
                 border-top: 1px solid #f0f0f0;
             }
 
-            /* Empty states */
+            /* Empty states moderne */
             .no-emails-message,
             .empty-state {
                 text-align: center;
                 padding: 60px 20px;
-                color: #5f6368;
+                color: #6b7280;
+                background: white;
+                border-radius: 12px;
+                border: 1px solid #e5e7eb;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             }
 
             .no-emails-message i,
             .empty-state-icon {
                 font-size: 48px;
-                color: #dadce0;
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
                 margin-bottom: 16px;
             }
 
             .empty-state {
-                background: white;
-                border-radius: 8px;
                 margin: 20px auto;
                 max-width: 400px;
             }
 
             .empty-state h3 {
-                font-size: 18px;
-                font-weight: 500;
-                color: #202124;
+                font-size: 20px;
+                font-weight: 700;
+                color: #1f2937;
                 margin-bottom: 8px;
             }
 
             .empty-state p {
                 margin-bottom: 20px;
+                color: #6b7280;
+                font-weight: 500;
             }
 
-            /* Modal styles */
+            /* Modal styles modernes */
             .email-modal-overlay,
             .task-modal-overlay {
                 position: fixed;
@@ -2133,30 +2294,31 @@ class PageManagerGmail {
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0,0,0,0.5);
+                background: rgba(0,0,0,0.75);
                 z-index: 1000;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 padding: 20px;
+                backdrop-filter: blur(4px);
             }
 
             .email-modal,
             .task-modal {
                 background: white;
-                border-radius: 8px;
+                border-radius: 16px;
                 max-width: 800px;
                 width: 100%;
                 max-height: 90vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 24px 48px rgba(0,0,0,0.15);
+                box-shadow: 0 24px 48px rgba(0,0,0,0.3);
             }
 
             .email-modal-header,
             .task-modal-header {
                 padding: 24px;
-                border-bottom: 1px solid #e0e0e0;
+                border-bottom: 1px solid #e5e7eb;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -2165,27 +2327,31 @@ class PageManagerGmail {
             .email-modal-header h2,
             .task-modal-header h2 {
                 margin: 0;
-                font-size: 20px;
-                font-weight: 500;
-                color: #202124;
+                font-size: 24px;
+                font-weight: 700;
+                color: #1f2937;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
 
             .modal-close {
-                width: 40px;
-                height: 40px;
+                width: 32px;
+                height: 32px;
                 border: none;
-                background: transparent;
-                color: #5f6368;
-                border-radius: 50%;
+                background: none;
+                color: #6b7280;
+                border-radius: 6px;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: background 0.2s;
+                transition: all 0.2s;
+                font-size: 24px;
             }
 
             .modal-close:hover {
-                background: rgba(0,0,0,0.05);
+                background: #f3f4f6;
             }
 
             .email-modal-content,
@@ -2205,13 +2371,288 @@ class PageManagerGmail {
             }
 
             .detail-label {
-                font-weight: 500;
-                color: #5f6368;
+                font-weight: 600;
+                color: #374151;
                 margin-right: 12px;
                 min-width: 80px;
             }
 
             .detail-value {
+                color: #6b7280;
+                flex: 1;
+            }
+
+            .category-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+
+            .email-body {
+                background: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 20px;
+                line-height: 1.6;
+                color: #374151;
+            }
+
+            .email-content-wrapper {
+                max-width: 100%;
+                overflow-x: auto;
+            }
+
+            .email-content-wrapper img {
+                max-width: 100%;
+                height: auto;
+                border-radius: 8px;
+                margin: 8px 0;
+            }
+
+            .email-modal-footer,
+            .task-modal-footer {
+                padding: 24px;
+                border-top: 1px solid #e5e7eb;
+                display: flex;
+                justify-content: flex-end;
+                gap: 12px;
+            }
+
+            /* Forms modernes */
+            .ai-badge {
+                background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+                border: 1px solid #0ea5e9;
+                border-radius: 12px;
+                padding: 16px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 20px;
+                color: #0c4a6e;
+                font-weight: 600;
+            }
+
+            .form-group {
+                margin-bottom: 20px;
+            }
+
+            .form-group label {
+                display: block;
+                font-weight: 600;
+                color: #374151;
+                margin-bottom: 8px;
+                font-size: 14px;
+            }
+
+            .form-group input,
+            .form-group textarea,
+            .form-group select {
+                width: 100%;
+                padding: 12px 16px;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 14px;
+                font-family: inherit;
+                transition: all 0.2s;
+                background: #f9fafb;
+            }
+
+            .form-group input:focus,
+            .form-group textarea:focus,
+            .form-group select:focus {
+                outline: none;
+                border-color: #3b82f6;
+                background: white;
+                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            }
+
+            .form-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+
+            /* Buttons modernes */
+            .btn {
+                padding: 12px 20px;
+                border: 1px solid #d1d5db;
+                background: white;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                color: #374151;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .btn:hover {
+                background: #f3f4f6;
+            }
+
+            .btn-primary {
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                color: white;
+                border: none;
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+            }
+
+            .btn-primary:hover {
+                background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+                transform: translateY(-1px);
+                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+            }
+
+            .btn-secondary {
+                background: #f3f4f6;
+                color: #4b5563;
+                border: 1px solid #d1d5db;
+            }
+
+            .btn-secondary:hover {
+                background: #e5e7eb;
+            }
+
+            /* Notification moderne */
+            .explanation-notice {
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                border-radius: 8px;
+                padding: 10px 14px;
+                margin: 0 0 12px 0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: #1e40af;
+                font-size: 13px;
+                font-weight: 500;
+            }
+
+            .explanation-close {
+                margin-left: auto;
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                color: #3b82f6;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                transition: all 0.2s;
+            }
+
+            .explanation-close:hover {
+                background: rgba(59, 130, 246, 0.2);
+                transform: scale(1.1);
+            }
+
+            /* Auth state moderne */
+            .auth-required-state {
+                text-align: center;
+                padding: 60px 30px;
+                background: white;
+                border-radius: 16px;
+                margin: 20px auto;
+                max-width: 400px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                border: 1px solid #e5e7eb;
+            }
+
+            .auth-icon {
+                font-size: 48px;
+                margin-bottom: 20px;
+                background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            .auth-required-state h3 {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 12px;
+            }
+
+            .auth-required-state p {
+                font-size: 16px;
+                color: #6b7280;
+                margin-bottom: 24px;
+                font-weight: 500;
+            }
+
+            /* Responsive */
+            @media (max-width: 1200px) {
+                .category-row {
+                    grid-template-columns: repeat(4, 1fr);
+                }
+            }
+
+            @media (max-width: 768px) {
+                .email-sender-section {
+                    width: auto;
+                    flex: 0 0 auto;
+                }
+
+                .sender-info {
+                    display: none;
+                }
+
+                .email-main {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 8px;
+                }
+
+                .email-content-section {
+                    width: 100%;
+                }
+
+                .email-actions {
+                    opacity: 1;
+                }
+
+                .form-row {
+                    grid-template-columns: 1fr;
+                }
+                
+                .category-row {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+
+            @media (max-width: 480px) {
+                .header-top {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 12px;
+                }
+
+                .page-title {
+                    font-size: 20px;
+                }
+
+                .category-row {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+
+                .action-buttons {
+                    flex-wrap: wrap;
+                }
+
+                .email-card {
+                    padding: 12px 16px;
+                }
+            }
+        `;
+        
+        document.head.appendChild(styles);
+    }
                 color: #202124;
                 flex: 1;
             }
