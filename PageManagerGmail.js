@@ -1,4 +1,4 @@
-// PageManagerGmail.js - Version 18.0 - Optimisé avec affichage complet des emails
+// PageManagerGmail.js - Version 18.1 - Corrigé avec synchronisation emails
 
 class PageManagerGmail {
     constructor() {
@@ -43,6 +43,9 @@ class PageManagerGmail {
         // Cache pour le contenu des emails
         this.emailContentCache = new Map();
         
+        // Cache local des emails
+        this.emailsCache = [];
+        
         this.init();
     }
 
@@ -51,10 +54,37 @@ class PageManagerGmail {
             this.setupEventListeners();
             this.setupSyncListeners();
             this.setupCategoryManagerIntegration();
+            
+            // Charger les emails depuis le sessionStorage si disponibles
+            this.loadEmailsFromStorage();
+            
             this.isInitialized = true;
-            console.log('[PageManagerGmail] ✅ Version 18.0 Gmail - Optimisé avec affichage complet');
+            console.log('[PageManagerGmail] ✅ Version 18.1 Gmail - Synchronisation corrigée');
         } catch (error) {
             console.error('[PageManagerGmail] Erreur initialisation:', error);
+        }
+    }
+
+    // ================================================
+    // CHARGEMENT DES EMAILS DEPUIS LE STORAGE
+    // ================================================
+    loadEmailsFromStorage() {
+        try {
+            // Essayer de récupérer les emails depuis le sessionStorage
+            const scanResults = sessionStorage.getItem('scanResults');
+            if (scanResults) {
+                const results = JSON.parse(scanResults);
+                console.log('[PageManagerGmail] 📥 Résultats de scan trouvés:', results);
+                
+                // Vérifier que c'est bien un scan Gmail
+                if (results.provider === 'google' || results.provider === 'gmail') {
+                    this.syncState.emailCount = results.total || 0;
+                    this.syncState.startScanSynced = true;
+                    this.syncState.lastSyncTimestamp = results.timestamp || Date.now();
+                }
+            }
+        } catch (error) {
+            console.warn('[PageManagerGmail] ⚠️ Erreur chargement depuis storage:', error);
         }
     }
 
@@ -80,8 +110,8 @@ class PageManagerGmail {
             }
         }
         
-        if (this.currentPage === 'emails' && window.emailScanner?.emails?.length > 0) {
-            setTimeout(() => window.emailScanner.recategorizeEmails?.(), 150);
+        if (this.currentPage === 'emails' && this.getAllEmails().length > 0) {
+            setTimeout(() => window.emailScanner?.recategorizeEmails?.(), 150);
         }
     }
 
@@ -101,7 +131,8 @@ class PageManagerGmail {
             'scanCompleted': (e) => this.handleScanCompleted(e.detail),
             'emailScannerSynced': (e) => this.handleEmailScannerSynced(e.detail),
             'emailsRecategorized': () => this.currentPage === 'emails' && this.refreshEmailsView(),
-            'googleAuthReady': (e) => e.detail.authenticated && (this.syncState.provider = 'gmail')
+            'googleAuthReady': (e) => e.detail.authenticated && (this.syncState.provider = 'gmail'),
+            'mailServiceReady': (e) => this.handleMailServiceReady(e.detail)
         };
         
         Object.entries(handlers).forEach(([event, handler]) => {
@@ -110,13 +141,23 @@ class PageManagerGmail {
     }
 
     handleScanCompleted(scanData) {
+        console.log('[PageManagerGmail] 📨 Scan terminé, traitement des données:', scanData);
+        
         this.syncState.startScanSynced = true;
         this.syncState.lastSyncTimestamp = scanData.timestamp || Date.now();
-        this.syncState.emailCount = scanData.results?.total || 0;
+        this.syncState.emailCount = scanData.results?.total || scanData.total || 0;
         this.lastScanData = scanData;
         
+        // Stocker les emails dans le cache local
+        if (scanData.emails && Array.isArray(scanData.emails)) {
+            this.emailsCache = scanData.emails;
+            console.log(`[PageManagerGmail] ✅ ${this.emailsCache.length} emails stockés dans le cache`);
+        }
+        
+        // Si on est déjà sur la page emails, rafraîchir
         if (this.currentPage === 'emails') {
-            setTimeout(() => this.loadPage('emails'), 500);
+            console.log('[PageManagerGmail] 🔄 Rafraîchissement de la vue emails...');
+            setTimeout(() => this.refreshEmailsView(), 500);
         }
     }
 
@@ -131,6 +172,13 @@ class PageManagerGmail {
         }
     }
 
+    handleMailServiceReady(detail) {
+        console.log('[PageManagerGmail] 📧 MailService prêt:', detail);
+        if (detail.provider === 'google' || detail.provider === 'gmail') {
+            this.syncState.provider = 'gmail';
+        }
+    }
+
     handleGenericSettingsChanged(changeData) {
         const { type, value } = changeData;
         
@@ -141,9 +189,94 @@ class PageManagerGmail {
             }
         }
         
-        if (window.emailScanner?.emails?.length > 0) {
-            setTimeout(() => window.emailScanner.recategorizeEmails?.(), 150);
+        if (this.getAllEmails().length > 0) {
+            setTimeout(() => window.emailScanner?.recategorizeEmails?.(), 150);
         }
+    }
+
+    // ================================================
+    // MÉTHODES POUR RÉCUPÉRER LES DONNÉES
+    // ================================================
+    getAllEmails() {
+        // Ordre de priorité pour récupérer les emails
+        let emails = [];
+        
+        // 1. Cache local en priorité
+        if (this.emailsCache && this.emailsCache.length > 0) {
+            console.log(`[PageManagerGmail] 📧 Utilisation du cache local: ${this.emailsCache.length} emails`);
+            emails = this.emailsCache;
+        }
+        // 2. EmailScanner avec méthode getAllEmails
+        else if (window.emailScanner?.getAllEmails && typeof window.emailScanner.getAllEmails === 'function') {
+            emails = window.emailScanner.getAllEmails();
+            console.log(`[PageManagerGmail] 📧 Emails depuis emailScanner.getAllEmails(): ${emails.length}`);
+        }
+        // 3. EmailScanner avec propriété emails
+        else if (window.emailScanner?.emails && Array.isArray(window.emailScanner.emails)) {
+            emails = window.emailScanner.emails;
+            console.log(`[PageManagerGmail] 📧 Emails depuis emailScanner.emails: ${emails.length}`);
+        }
+        // 4. Essayer de récupérer depuis MailService
+        else if (window.mailService && this.syncState.startScanSynced) {
+            console.log('[PageManagerGmail] 🔄 Tentative de récupération depuis MailService...');
+            this.fetchEmailsFromMailService();
+        }
+        
+        // Filtrer pour ne garder que les emails Gmail/Google
+        const gmailEmails = emails.filter(email => {
+            return !email.provider || email.provider === 'google' || email.provider === 'gmail';
+        });
+        
+        console.log(`[PageManagerGmail] 📊 Total emails Gmail: ${gmailEmails.length}/${emails.length}`);
+        return gmailEmails;
+    }
+
+    async fetchEmailsFromMailService() {
+        if (!window.mailService) return;
+        
+        try {
+            console.log('[PageManagerGmail] 🔄 Récupération des emails depuis MailService...');
+            const emails = await window.mailService.getMessages('inbox', { top: 1000 });
+            
+            if (emails && emails.length > 0) {
+                this.emailsCache = emails;
+                console.log(`[PageManagerGmail] ✅ ${emails.length} emails récupérés depuis MailService`);
+                
+                // Rafraîchir la vue
+                if (this.currentPage === 'emails') {
+                    this.refreshEmailsView();
+                }
+            }
+        } catch (error) {
+            console.error('[PageManagerGmail] ❌ Erreur récupération MailService:', error);
+        }
+    }
+
+    getCategories() {
+        return window.categoryManager?.getCategories?.() || 
+               window.emailScanner?.defaultWebCategories || 
+               { 'all': { name: 'Tous', icon: '📧', color: '#1e293b' } };
+    }
+
+    getTaskPreselectedCategories() {
+        const now = Date.now();
+        if (this._taskCategoriesCache && (now - this._taskCategoriesCacheTime) < 10000) {
+            return [...this._taskCategoriesCache];
+        }
+        
+        let categories = window.categoryManager?.getTaskPreselectedCategories?.() || 
+                        window.emailScanner?.getTaskPreselectedCategories?.() || 
+                        [];
+        
+        this._taskCategoriesCache = [...categories];
+        this._taskCategoriesCacheTime = now;
+        
+        return [...categories];
+    }
+
+    invalidateTaskCategoriesCache() {
+        this._taskCategoriesCache = null;
+        this._taskCategoriesCacheTime = 0;
     }
 
     // ================================================
@@ -195,7 +328,7 @@ class PageManagerGmail {
             let isAuthenticated = false;
             
             if (window.googleAuthService?.isAuthenticated) {
-                isAuthenticated = window.googleAuthService.isAuthenticated();
+                isAuthenticated = await window.googleAuthService.isAuthenticated();
             }
             
             if (!isAuthenticated && window.googleAuthService?.getAccessToken) {
@@ -230,49 +363,34 @@ class PageManagerGmail {
     }
 
     // ================================================
-    // MÉTHODES POUR RÉCUPÉRER LES DONNÉES
-    // ================================================
-    getAllEmails() {
-        return window.emailScanner?.getAllEmails?.() || window.emailScanner?.emails || [];
-    }
-
-    getCategories() {
-        return window.categoryManager?.getCategories?.() || 
-               window.emailScanner?.defaultWebCategories || 
-               { 'all': { name: 'Tous', icon: '📧', color: '#1e293b' } };
-    }
-
-    getTaskPreselectedCategories() {
-        const now = Date.now();
-        if (this._taskCategoriesCache && (now - this._taskCategoriesCacheTime) < 10000) {
-            return [...this._taskCategoriesCache];
-        }
-        
-        let categories = window.categoryManager?.getTaskPreselectedCategories?.() || 
-                        window.emailScanner?.getTaskPreselectedCategories?.() || 
-                        [];
-        
-        this._taskCategoriesCache = [...categories];
-        this._taskCategoriesCacheTime = now;
-        
-        return [...categories];
-    }
-
-    invalidateTaskCategoriesCache() {
-        this._taskCategoriesCache = null;
-        this._taskCategoriesCacheTime = 0;
-    }
-
-    // ================================================
     // RENDU DE LA PAGE EMAILS (Optimisé)
     // ================================================
     async renderEmails(container) {
+        console.log('[PageManagerGmail] 🎨 Rendu de la page emails...');
+        
         const emails = this.getAllEmails();
         const categories = this.getCategories();
         
+        console.log(`[PageManagerGmail] 📊 Emails à afficher: ${emails.length}`);
+        console.log(`[PageManagerGmail] 📊 Sync state:`, this.syncState);
+        
+        // Si pas d'emails et pas de sync, afficher l'état vide
         if (emails.length === 0 && !this.syncState.startScanSynced) {
+            console.log('[PageManagerGmail] ⚠️ Aucun email et pas de sync');
             container.innerHTML = this.renderEmptyState();
             return;
+        }
+        
+        // Si pas d'emails mais sync effectué, essayer de récupérer
+        if (emails.length === 0 && this.syncState.startScanSynced) {
+            console.log('[PageManagerGmail] 🔄 Sync effectué mais pas d\'emails, tentative de récupération...');
+            await this.fetchEmailsFromMailService();
+            const updatedEmails = this.getAllEmails();
+            
+            if (updatedEmails.length === 0) {
+                container.innerHTML = this.renderNoEmailsAfterScan();
+                return;
+            }
         }
 
         const categoryCounts = this.calculateCategoryCounts(emails);
@@ -304,6 +422,25 @@ class PageManagerGmail {
                 }
             }
         }
+    }
+
+    renderNoEmailsAfterScan() {
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon"><i class="fab fa-google"></i></div>
+                <h3>Scan terminé - Aucun email Gmail trouvé</h3>
+                <p>Le scan s'est terminé avec succès mais aucun email n'a été trouvé.</p>
+                <p>Cela peut arriver si :</p>
+                <ul style="text-align: left; display: inline-block;">
+                    <li>Votre boîte Gmail est vide</li>
+                    <li>Les filtres appliqués sont trop restrictifs</li>
+                    <li>Un problème de synchronisation s'est produit</li>
+                </ul>
+                <button class="btn btn-primary" onclick="pageManagerGmail.loadPage('scanner')">
+                    <i class="fas fa-sync-alt"></i> Relancer un scan
+                </button>
+            </div>
+        `;
     }
 
     renderExplanationNotice() {
@@ -856,6 +993,7 @@ class PageManagerGmail {
     }
 
     refreshEmailsView() {
+        console.log('[PageManagerGmail] 🔄 Rafraîchissement de la vue emails...');
         const container = document.querySelector('.emails-container');
         if (container) {
             container.innerHTML = this.renderEmailsList();
@@ -867,9 +1005,13 @@ class PageManagerGmail {
         this.showLoading('Actualisation...');
         
         try {
+            // Essayer de récupérer les derniers emails
+            await this.fetchEmailsFromMailService();
+            
             if (window.emailScanner?.recategorizeEmails) {
                 await window.emailScanner.recategorizeEmails();
             }
+            
             await this.loadPage('emails');
             this.showToast('Emails actualisés', 'success');
         } catch (error) {
@@ -1432,7 +1574,7 @@ class PageManagerGmail {
                 gap: 6px;
             }
 
-            .view-mode:hover {
+            .view-mode:hover:not(.selected) {
                 background: rgba(255, 255, 255, 0.8);
                 color: #374151;
             }
@@ -1461,7 +1603,7 @@ class PageManagerGmail {
                 position: relative;
             }
 
-            .btn:hover {
+            .btn:hover:not(:disabled) {
                 background: #f9fafb;
                 border-color: #4285f4;
                 transform: translateY(-1px);
@@ -2655,7 +2797,34 @@ class PageManagerGmail {
         this.aiAnalysisResults.clear();
         this.createdTasks.clear();
         this.emailContentCache.clear();
+        this.emailsCache = [];
         console.log('[PageManagerGmail] 🧹 Nettoyage effectué');
+    }
+
+    // ================================================
+    // DEBUG METHODS
+    // ================================================
+    getDebugInfo() {
+        return {
+            version: '18.1',
+            isInitialized: this.isInitialized,
+            currentPage: this.currentPage,
+            syncState: this.syncState,
+            emailsInCache: this.emailsCache.length,
+            emailsFromScanner: this.getAllEmails().length,
+            selectedEmails: this.selectedEmails.size,
+            createdTasks: this.createdTasks.size,
+            currentCategory: this.currentCategory,
+            currentViewMode: this.currentViewMode,
+            searchTerm: this.searchTerm,
+            providers: {
+                googleAuth: !!window.googleAuthService,
+                mailService: !!window.mailService,
+                emailScanner: !!window.emailScanner,
+                categoryManager: !!window.categoryManager,
+                taskManager: !!window.taskManager
+            }
+        };
     }
 }
 
@@ -2675,4 +2844,12 @@ Object.getOwnPropertyNames(PageManagerGmail.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManagerGmail v18.0 loaded - Optimisé avec affichage complet des emails');
+// Fonction de debug globale
+window.debugPageManagerGmail = function() {
+    console.group('🔍 Debug PageManagerGmail');
+    console.log(window.pageManagerGmail.getDebugInfo());
+    console.groupEnd();
+};
+
+console.log('✅ PageManagerGmail v18.1 loaded - Synchronisation emails corrigée');
+console.log('💡 Utilisez window.debugPageManagerGmail() pour déboguer');
