@@ -1,4 +1,4 @@
-// PageManagerGmail.js - Version 20.0 - Intégration complète avec CategoryManager
+// PageManagerGmail.js - Version 19.0 - Corrigé et Optimisé
 
 class PageManagerGmail {
     constructor() {
@@ -59,7 +59,7 @@ class PageManagerGmail {
             this.loadEmailsFromStorage();
             
             this.isInitialized = true;
-            console.log('[PageManagerGmail] ✅ Version 20.0 - Intégration CategoryManager complète');
+            console.log('[PageManagerGmail] ✅ Version 19.0 - Corrigé et Optimisé');
         } catch (error) {
             console.error('[PageManagerGmail] Erreur initialisation:', error);
         }
@@ -95,16 +95,12 @@ class PageManagerGmail {
             window.categoryManager.addChangeListener((type, value) => {
                 this.handleCategoryManagerChange(type, value);
             });
-            console.log('[PageManagerGmail] ✅ Intégration CategoryManager réussie');
         } else {
-            console.warn('[PageManagerGmail] ⚠️ CategoryManager non disponible, nouvelle tentative dans 2s');
             setTimeout(() => this.setupCategoryManagerIntegration(), 2000);
         }
     }
 
     handleCategoryManagerChange(type, value) {
-        console.log(`[PageManagerGmail] 📨 Changement CategoryManager: ${type}`, value);
-        
         if (type === 'taskPreselectedCategories') {
             this.invalidateTaskCategoriesCache();
             if (window.emailScanner?.updateTaskPreselectedCategories) {
@@ -2482,7 +2478,7 @@ class PageManagerGmail {
     // ================================================
     getDebugInfo() {
         return {
-            version: '20.0',
+            version: '19.0',
             isInitialized: this.isInitialized,
             currentPage: this.currentPage,
             syncState: this.syncState,
@@ -2527,5 +2523,5 @@ window.debugPageManagerGmail = function() {
     console.groupEnd();
 };
 
-console.log('✅ PageManagerGmail v20.0 loaded - Intégration CategoryManager complète');
+console.log('✅ PageManagerGmail v19.0 loaded - Corrigé et Optimisé');
 console.log('💡 Utilisez window.debugPageManagerGmail() pour déboguer');
