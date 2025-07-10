@@ -645,40 +645,32 @@ class PageManagerGmail {
     // MÉTHODES POUR RÉCUPÉRER LES DONNÉES
     // ================================================
     getAllEmails() {
-        let emails = [];
-        
         if (window.emailScanner && window.emailScanner.getAllEmails) {
-            emails = window.emailScanner.getAllEmails();
+            const emails = window.emailScanner.getAllEmails();
             console.log(`[PageManagerGmail] 📧 Récupération ${emails.length} emails depuis EmailScanner`);
-        } else if (window.emailScanner && window.emailScanner.emails) {
-            emails = window.emailScanner.emails;
-            console.log(`[PageManagerGmail] 📧 Récupération ${emails.length} emails directs`);
+            
+            // Filtrer uniquement les emails Gmail
+            const gmailEmails = emails.filter(email => 
+                !email.provider || email.provider === 'google' || email.provider === 'gmail'
+            );
+            
+            console.log(`[PageManagerGmail] 📧 ${gmailEmails.length} emails Gmail filtrés`);
+            return gmailEmails;
         }
         
-        // Filtrer uniquement les emails Gmail
-        const gmailEmails = emails.filter(email => 
-            !email.provider || email.provider === 'google' || email.provider === 'gmail'
-        );
-        
-        // Utiliser CategoryManager pour la catégorisation si disponible
-        if (window.categoryManager) {
-            gmailEmails.forEach(email => {
-                // Si l'email n'a pas de catégorie ou est "other", demander à CategoryManager
-                if (!email.category || email.category === 'other') {
-                    const analysis = window.categoryManager.analyzeEmail(email);
-                    if (analysis.category && analysis.category !== 'other') {
-                        email.category = analysis.category;
-                        email.categoryScore = analysis.score;
-                        email.categoryConfidence = analysis.confidence;
-                        email.categoryDetectionMethod = 'categoryManager';
-                        console.log(`[PageManagerGmail] 📧 Catégorie détectée pour "${email.subject}": ${analysis.category}`);
-                    }
-                }
-            });
+        if (window.emailScanner && window.emailScanner.emails) {
+            console.log(`[PageManagerGmail] 📧 Récupération ${window.emailScanner.emails.length} emails directs`);
+            
+            // Filtrer uniquement les emails Gmail
+            const gmailEmails = window.emailScanner.emails.filter(email => 
+                !email.provider || email.provider === 'google' || email.provider === 'gmail'
+            );
+            
+            return gmailEmails;
         }
         
-        console.log(`[PageManagerGmail] 📧 ${gmailEmails.length} emails Gmail filtrés et catégorisés`);
-        return gmailEmails;
+        console.log('[PageManagerGmail] ⚠️ Aucun email trouvé dans EmailScanner');
+        return [];
     }
 
     getCategories() {
@@ -1058,13 +1050,8 @@ class PageManagerGmail {
             email.provider === 'gmail' ? 'gmail-email' : ''
         ].filter(Boolean).join(' ');
         
-        // Détection des newsletters via CategoryManager
+        // Détection des newsletters pour Gmail
         const isNewsletter = this.isNewsletter(email);
-        
-        // Utiliser CategoryManager pour obtenir la catégorie si pas déjà définie
-        if (!email.category || email.category === 'other') {
-            email.category = this.getEmailCategory(email);
-        }
         
         return `
             <div class="${cardClasses}" 
@@ -1120,14 +1107,6 @@ class PageManagerGmail {
                                 ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
                                 ${isPreselectedForTasks ? ' ⭐' : ''}
                             </span>
-                        ` : ''}
-                        ${isNewsletter ? `
-                            <button class="unsubscribe-inline" 
-                                    onclick="event.stopPropagation(); window.pageManagerGmail.unsubscribeNewsletter('${email.id}')"
-                                    title="Se désabonner de cette newsletter">
-                                <i class="fas fa-user-minus"></i>
-                                Se désabonner
-                            </button>
                         ` : ''}
                     </div>
                 </div>
@@ -2149,36 +2128,40 @@ class PageManagerGmail {
     }
 
     // ================================================
-    // DÉTECTION DES NEWSLETTERS VIA CATEGORYMANAGER
+    // FONCTIONS SPÉCIFIQUES GMAIL
     // ================================================
     isNewsletter(email) {
-        // Utiliser CategoryManager pour analyser l'email
-        if (window.categoryManager) {
-            const analysis = window.categoryManager.analyzeEmail(email);
-            
-            // Vérifier si c'est catégorisé comme marketing_news
-            if (analysis.category === 'marketing_news') {
-                return true;
-            }
-        }
-        
-        // Fallback : vérifier les headers List-Unsubscribe pour Gmail
+        // Détection des newsletters basée sur des indices
+        const subject = (email.subject || '').toLowerCase();
+        const sender = (email.from?.emailAddress?.address || '').toLowerCase();
         const headers = email.internetMessageHeaders || [];
+        
+        // Vérifier les headers List-Unsubscribe
         const hasUnsubscribeHeader = headers.some(header => 
             header.name?.toLowerCase() === 'list-unsubscribe'
         );
         
-        return hasUnsubscribeHeader;
-    }
-    
-    // Obtenir la catégorie d'un email via CategoryManager
-    getEmailCategory(email) {
-        if (window.categoryManager) {
-            const analysis = window.categoryManager.analyzeEmail(email);
-            return analysis.category || 'other';
-        }
+        // Patterns communs de newsletters
+        const newsletterPatterns = [
+            'newsletter', 'digest', 'weekly', 'monthly', 'update',
+            'news', 'bulletin', 'notification', 'alert', 'announcement'
+        ];
         
-        return email.category || 'other';
+        const hasNewsletterPattern = newsletterPatterns.some(pattern => 
+            subject.includes(pattern) || sender.includes(pattern)
+        );
+        
+        // Expéditeurs typiques de newsletters
+        const newsletterSenders = [
+            'noreply', 'no-reply', 'newsletter', 'notifications',
+            'updates', 'info@', 'news@', 'hello@'
+        ];
+        
+        const hasNewsletterSender = newsletterSenders.some(pattern => 
+            sender.includes(pattern)
+        );
+        
+        return hasUnsubscribeHeader || (hasNewsletterPattern && hasNewsletterSender);
     }
 
     async unsubscribeNewsletter(emailId) {
@@ -4039,32 +4022,7 @@ class PageManagerGmail {
             }
 
             /* Auth states */
-            .unsubscribe-inline {
-                margin-left: 12px;
-                padding: 4px 10px;
-                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-                color: white;
-                border: none;
-                border-radius: 6px;
-                font-size: 12px;
-                font-weight: 600;
-                cursor: pointer;
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-                transition: all 0.2s ease;
-                box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
-            }
-
-            .unsubscribe-inline:hover {
-                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
-            }
-
-            .unsubscribe-inline i {
-                font-size: 11px;
-            }
+            .auth-required-state {
                 text-align: center;
                 padding: 60px 20px;
                 background: white;
