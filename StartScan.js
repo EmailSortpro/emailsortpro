@@ -1341,10 +1341,17 @@ class MinimalScanModule {
         
         // Redirection vers le bon PageManager
         setTimeout(() => {
-            if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
-                window.pageManager.loadPage('emails');
-            } else if (this.selectedProvider === 'gmail' && window.pageManagerGmail) {
+            if (this.selectedProvider === 'gmail' && window.pageManagerGmail) {
+                console.log('[MinimalScan] 🎯 Redirection vers PageManagerGmail');
                 window.pageManagerGmail.loadPage('emails');
+            } else if (this.selectedProvider === 'outlook' && window.pageManagerOutlook) {
+                console.log('[MinimalScan] 🎯 Redirection vers PageManagerOutlook');
+                window.pageManagerOutlook.loadPage('emails');
+            } else if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                console.log('[MinimalScan] 🎯 Redirection vers PageManager par défaut');
+                window.pageManager.loadPage('emails');
+            } else {
+                console.error('[MinimalScan] ❌ Aucun PageManager disponible pour', this.selectedProvider);
             }
         }, 500);
     }
