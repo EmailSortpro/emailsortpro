@@ -1825,7 +1825,7 @@ showEmailModal(emailId) {
     const syncBadge = this.syncState.startScanSynced ? 
         '<span class="sync-badge">🔄 Synchronisé depuis Gmail</span>' : '';
     
-    // Extraction du contenu avec support HTML complet
+    // Correction ici : utiliser getFullEmailContent au lieu de getEmailHtmlContent
     const emailBody = this.getFullEmailContent(email);
     const attachments = this.getEmailAttachments(email);
     
@@ -1910,6 +1910,7 @@ showEmailModal(emailId) {
     // Appliquer des styles pour le contenu email
     this.applyEmailContentStyles(uniqueId);
 }
+
 
 getFullEmailContent(email) {
     // Vérifier les différentes propriétés possibles pour le contenu
