@@ -1,6 +1,6 @@
-// StartScan.js - Version 15.0 - Scanner Multi-Provider avec Récupération Corrigée
+// StartScan.js - Version 14.0 - Scanner Multi-Provider avec Redirection Intelligente
 
-console.log('[StartScan] 🚀 Loading StartScan.js v15.0 - Fixed Multi-Provider Scanner...');
+console.log('[StartScan] 🚀 Loading StartScan.js v14.0 - Multi-Provider Edition...');
 
 class MinimalScanModule {
     constructor() {
@@ -8,767 +8,256 @@ class MinimalScanModule {
         this.scanInProgress = false;
         this.selectedDays = 7;
         this.stylesAdded = false;
+        this.scanStartTime = null;
         this.currentProvider = null;
         this.scanResults = null;
         this.abortController = null;
         
-        // Paramètres par défaut
-        this.settings = {
-            scanSettings: {
-                defaultPeriod: 7,
-                defaultFolder: 'inbox',
-                autoAnalyze: true,
-                autoCategrize: true
-            },
-            taskPreselectedCategories: []
-        };
+        // Intégration avec CategoryManager
+        this.settings = {};
+        this.taskPreselectedCategories = [];
+        this.lastSettingsSync = 0;
         
-        console.log('[StartScan] ✅ Scanner v15.0 initialized');
-        this.init();
-    }
-
-    async init() {
-        await this.detectCurrentProvider();
-        await this.loadSettings();
+        // Anti-duplication persistante
+        this.processedEmailIds = new Set();
+        this.loadPersistedEmailIds();
+        
+        console.log('[StartScan] Scanner v14.0 initialized - Multi-Provider Support');
+        this.detectAuthProvider();
+        this.loadSettingsFromCategoryManager();
         this.addMinimalStyles();
     }
 
     // ================================================
-    // DÉTECTION DU PROVIDER ACTIF
+    // GESTION DE LA PERSISTANCE DES IDS
     // ================================================
-    async detectCurrentProvider() {
-        console.log('[StartScan] 🔍 Détection du provider actif...');
+    loadPersistedEmailIds() {
+        try {
+            const stored = localStorage.getItem('startscan_processed_ids');
+            if (stored) {
+                const ids = JSON.parse(stored);
+                this.processedEmailIds = new Set(ids);
+                console.log(`[StartScan] ✅ ${this.processedEmailIds.size} IDs chargés depuis le cache`);
+            }
+        } catch (error) {
+            console.warn('[StartScan] ⚠️ Erreur chargement IDs persistés:', error);
+        }
+    }
+
+    savePersistedEmailIds() {
+        try {
+            const ids = Array.from(this.processedEmailIds);
+            // Garder les 50000 derniers IDs
+            const recentIds = ids.slice(-50000);
+            localStorage.setItem('startscan_processed_ids', JSON.stringify(recentIds));
+        } catch (error) {
+            console.warn('[StartScan] ⚠️ Erreur sauvegarde IDs:', error);
+        }
+    }
+
+    // ================================================
+    // DÉTECTION DU PROVIDER D'AUTHENTIFICATION
+    // ================================================
+    async detectAuthProvider() {
+        console.log('[StartScan] 🔍 Détection du provider d\'authentification...');
         
         try {
             // 1. Vérifier Google Auth
-            if (window.googleAuthService?.isAuthenticated) {
-                const isGoogle = await window.googleAuthService.isAuthenticated();
-                if (isGoogle) {
-                    this.currentProvider = 'google';
-                    console.log('[StartScan] ✅ Google/Gmail détecté');
-                    return;
+            if (window.googleAuthService) {
+                try {
+                    const isGoogleAuth = await window.googleAuthService.isAuthenticated();
+                    if (isGoogleAuth) {
+                        this.currentProvider = 'google';
+                        sessionStorage.setItem('lastAuthProvider', 'google');
+                        sessionStorage.setItem('currentProvider', 'google');
+                        console.log('[StartScan] ✅ Authentifié avec Google/Gmail');
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('[StartScan] ⚠️ Erreur vérification Google Auth:', error);
                 }
             }
             
             // 2. Vérifier Microsoft Auth
-            if (window.authService?.isAuthenticated) {
-                const isMicrosoft = await window.authService.isAuthenticated();
-                if (isMicrosoft) {
-                    this.currentProvider = 'microsoft';
-                    console.log('[StartScan] ✅ Microsoft/Outlook détecté');
-                    return;
+            if (window.authService) {
+                try {
+                    const isMSAuth = await window.authService.isAuthenticated();
+                    if (isMSAuth) {
+                        this.currentProvider = 'microsoft';
+                        sessionStorage.setItem('lastAuthProvider', 'microsoft');
+                        sessionStorage.setItem('currentProvider', 'microsoft');
+                        console.log('[StartScan] ✅ Authentifié avec Microsoft/Outlook');
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('[StartScan] ⚠️ Erreur vérification Microsoft Auth:', error);
                 }
             }
             
-            // 3. Vérifier depuis app
-            if (window.app?.currentProvider) {
+            // 3. Vérifier l'app principale
+            if (window.app && window.app.currentProvider) {
                 this.currentProvider = window.app.currentProvider;
+                sessionStorage.setItem('lastAuthProvider', this.currentProvider);
+                sessionStorage.setItem('currentProvider', this.currentProvider);
                 console.log('[StartScan] ✅ Provider depuis app:', this.currentProvider);
                 return;
             }
             
-            // 4. Vérifier sessionStorage
-            const lastProvider = sessionStorage.getItem('currentProvider');
-            if (lastProvider) {
+            // 4. Vérifier MailService
+            if (window.mailService && window.mailService.getCurrentProvider) {
+                const mailProvider = window.mailService.getCurrentProvider();
+                if (mailProvider && mailProvider !== 'demo') {
+                    this.currentProvider = mailProvider;
+                    sessionStorage.setItem('lastAuthProvider', mailProvider);
+                    sessionStorage.setItem('currentProvider', mailProvider);
+                    console.log('[StartScan] ✅ Provider depuis MailService:', mailProvider);
+                    return;
+                }
+            }
+            
+            // 5. Fallback sur le dernier provider
+            const lastProvider = sessionStorage.getItem('lastAuthProvider') || sessionStorage.getItem('currentProvider');
+            if (lastProvider === 'google' || lastProvider === 'microsoft') {
                 this.currentProvider = lastProvider;
-                console.log('[StartScan] ⚠️ Provider depuis storage:', lastProvider);
+                console.log('[StartScan] ⚠️ Utilisation du dernier provider:', lastProvider);
                 return;
             }
             
             console.log('[StartScan] ❌ Aucun provider détecté');
+            this.currentProvider = null;
             
         } catch (error) {
             console.error('[StartScan] ❌ Erreur détection provider:', error);
+            this.currentProvider = null;
         }
     }
 
     // ================================================
-    // CHARGEMENT DES PARAMÈTRES
+    // DÉTECTION DES PAGE MANAGERS
     // ================================================
-    async loadSettings() {
-        try {
-            // Depuis CategoryManager
-            if (window.categoryManager?.getSettings) {
-                this.settings = window.categoryManager.getSettings();
-                this.taskPreselectedCategories = window.categoryManager.getTaskPreselectedCategories() || [];
-                console.log('[StartScan] ✅ Settings chargés depuis CategoryManager');
-                return;
-            }
-            
-            // Depuis localStorage
-            const saved = localStorage.getItem('categorySettings');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                this.settings = parsed;
-                this.taskPreselectedCategories = parsed.taskPreselectedCategories || [];
-                console.log('[StartScan] ✅ Settings chargés depuis localStorage');
-            }
-            
-        } catch (error) {
-            console.error('[StartScan] ❌ Erreur chargement settings:', error);
+    detectPageManager() {
+        console.log('[StartScan] 🔍 Détection du PageManager approprié...');
+        
+        // Vérifier les PageManagers disponibles
+        const managers = {
+            gmail: window.pageManagerGmail || window.PageManagerGmail,
+            outlook: window.pageManagerOutlook || window.PageManagerOutlook,
+            default: window.pageManager || window.PageManager
+        };
+        
+        // Chercher aussi dans les modules globaux
+        if (!managers.gmail && window.modules?.pageManagerGmail) {
+            managers.gmail = window.modules.pageManagerGmail;
         }
-    }
-
-    // ================================================
-    // INTERFACE UTILISATEUR
-    // ================================================
-    async render(container) {
-        console.log('[StartScan] 🎨 Rendu du scanner...');
-        
-        if (!container) {
-            console.error('[StartScan] ❌ Container non fourni');
-            return;
+        if (!managers.outlook && window.modules?.pageManagerOutlook) {
+            managers.outlook = window.modules.pageManagerOutlook;
         }
-
-        try {
-            // Détecter le provider actuel
-            await this.detectCurrentProvider();
-            
-            if (!this.currentProvider) {
-                container.innerHTML = this.renderLoginRequired();
-                this.setupLoginHandlers();
-                return;
-            }
-
-            container.innerHTML = this.renderScanner();
-            this.setupEventHandlers();
-            this.isInitialized = true;
-            
-            console.log('[StartScan] ✅ Scanner rendu avec succès');
-            
-        } catch (error) {
-            console.error('[StartScan] ❌ Erreur rendu:', error);
-            container.innerHTML = this.renderError(error.message);
-        }
-    }
-
-    renderScanner() {
-        const providerName = this.currentProvider === 'google' ? 'Gmail' : 'Outlook';
-        const providerIcon = this.currentProvider === 'google' ? 'fab fa-google' : 'fab fa-microsoft';
         
-        return `
-            <div class="minimal-scanner">
-                <div class="scanner-card">
-                    <div class="scanner-icon">
-                        <i class="fas fa-envelope-open-text"></i>
-                    </div>
-                    
-                    <h1 class="scanner-title">Scanner d'Emails</h1>
-                    <p class="scanner-subtitle">Récupérez tous vos emails en un clic</p>
-                    
-                    <div class="provider-badge ${this.currentProvider}">
-                        <i class="${providerIcon}"></i>
-                        <span>${providerName}</span>
-                    </div>
-                    
-                    <div class="duration-section">
-                        <label class="duration-label">Période à analyser</label>
-                        <div class="duration-options">
-                            ${this.renderDurationOptions()}
-                        </div>
-                    </div>
-                    
-                    <button class="scan-button" id="scanBtn" onclick="window.minimalScanModule.startScan()">
-                        <i class="fas fa-play"></i>
-                        <span>Démarrer le scan</span>
-                    </button>
-                    
-                    <div class="progress-section" id="progressSection" style="display: none;">
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progressFill"></div>
-                        </div>
-                        <div class="progress-text" id="progressText">Initialisation...</div>
-                        <div class="progress-status" id="progressStatus"></div>
-                        
-                        <button class="scan-button cancel-button" onclick="window.minimalScanModule.cancelScan()" style="display: none;" id="cancelBtn">
-                            <i class="fas fa-stop"></i>
-                            <span>Annuler</span>
-                        </button>
-                    </div>
-                    
-                    <div class="scan-info">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Scan sécurisé avec récupération complète du contenu</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    renderDurationOptions() {
-        const options = [
-            { value: 1, label: '1 jour' },
-            { value: 3, label: '3 jours' },
-            { value: 7, label: '1 semaine' },
-            { value: 30, label: '1 mois' },
-            { value: 90, label: '3 mois' },
-            { value: 365, label: '1 an' },
-            { value: 999999, label: 'Tous' }
-        ];
-        
-        return options.map(opt => `
-            <button class="duration-btn ${opt.value === this.selectedDays ? 'active' : ''}" 
-                    data-days="${opt.value}"
-                    onclick="window.minimalScanModule.selectDuration(${opt.value})">
-                ${opt.label}
-            </button>
-        `).join('');
-    }
-
-    renderLoginRequired() {
-        return `
-            <div class="minimal-scanner">
-                <div class="scanner-card">
-                    <div class="scanner-icon">
-                        <i class="fas fa-lock"></i>
-                    </div>
-                    
-                    <h1 class="scanner-title">Connexion requise</h1>
-                    <p class="scanner-subtitle">Connectez-vous pour scanner vos emails</p>
-                    
-                    <div class="login-buttons">
-                        <button class="scan-button gmail-login" onclick="window.minimalScanModule.loginGoogle()">
-                            <i class="fab fa-google"></i>
-                            <span>Se connecter avec Gmail</span>
-                        </button>
-                        
-                        <button class="scan-button outlook-login" onclick="window.minimalScanModule.loginMicrosoft()">
-                            <i class="fab fa-microsoft"></i>
-                            <span>Se connecter avec Outlook</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    renderError(message) {
-        return `
-            <div class="minimal-scanner">
-                <div class="scanner-card">
-                    <div class="scanner-icon error">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    
-                    <h1 class="scanner-title">Erreur</h1>
-                    <p class="scanner-subtitle">${message}</p>
-                    
-                    <button class="scan-button" onclick="location.reload()">
-                        <i class="fas fa-redo"></i>
-                        <span>Réessayer</span>
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    // ================================================
-    // GESTION DES ÉVÉNEMENTS
-    // ================================================
-    setupEventHandlers() {
-        // Les handlers sont déjà définis inline dans le HTML
-        console.log('[StartScan] ✅ Event handlers configurés');
-    }
-
-    setupLoginHandlers() {
-        // Les handlers sont déjà définis inline dans le HTML
-        console.log('[StartScan] ✅ Login handlers configurés');
-    }
-
-    selectDuration(days) {
-        this.selectedDays = days;
-        
-        // Mettre à jour l'UI
-        document.querySelectorAll('.duration-btn').forEach(btn => {
-            btn.classList.toggle('active', parseInt(btn.dataset.days) === days);
+        console.log('[StartScan] 📋 PageManagers disponibles:', {
+            gmail: !!managers.gmail,
+            outlook: !!managers.outlook,
+            default: !!managers.default
         });
         
-        console.log(`[StartScan] ✅ Durée sélectionnée: ${days} jours`);
+        return managers;
     }
 
     // ================================================
-    // AUTHENTIFICATION
+    // CHARGEMENT DES PARAMÈTRES DEPUIS CATEGORYMANAGER
     // ================================================
-    async loginGoogle() {
-        console.log('[StartScan] 🔐 Connexion Google...');
-        
+    async loadSettingsFromCategoryManager() {
         try {
-            if (!window.googleAuthService) {
-                throw new Error('Service Google non disponible');
-            }
-            
-            await window.googleAuthService.login();
-            const isAuth = await window.googleAuthService.isAuthenticated();
-            
-            if (isAuth) {
-                this.currentProvider = 'google';
-                sessionStorage.setItem('currentProvider', 'google');
+            if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
+                this.settings = window.categoryManager.getSettings();
+                this.taskPreselectedCategories = window.categoryManager.getTaskPreselectedCategories() || [];
+                console.log('[StartScan] ✅ Paramètres chargés depuis CategoryManager');
+                console.log('[StartScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
                 
-                // Recharger l'interface
-                const container = document.querySelector('.page-content') || document.getElementById('content');
-                if (container) {
-                    await this.render(container);
+                if (this.settings.scanSettings?.defaultPeriod) {
+                    this.selectedDays = this.settings.scanSettings.defaultPeriod;
                 }
-                
-                this.showToast('Connexion Google réussie', 'success');
-            }
-            
-        } catch (error) {
-            console.error('[StartScan] ❌ Erreur connexion Google:', error);
-            this.showToast('Erreur de connexion Google', 'error');
-        }
-    }
-
-    async loginMicrosoft() {
-        console.log('[StartScan] 🔐 Connexion Microsoft...');
-        
-        try {
-            if (!window.authService) {
-                throw new Error('Service Microsoft non disponible');
-            }
-            
-            await window.authService.login();
-            const isAuth = await window.authService.isAuthenticated();
-            
-            if (isAuth) {
-                this.currentProvider = 'microsoft';
-                sessionStorage.setItem('currentProvider', 'microsoft');
-                
-                // Recharger l'interface
-                const container = document.querySelector('.page-content') || document.getElementById('content');
-                if (container) {
-                    await this.render(container);
-                }
-                
-                this.showToast('Connexion Microsoft réussie', 'success');
-            }
-            
-        } catch (error) {
-            console.error('[StartScan] ❌ Erreur connexion Microsoft:', error);
-            this.showToast('Erreur de connexion Microsoft', 'error');
-        }
-    }
-
-    // ================================================
-    // SCAN PRINCIPAL
-    // ================================================
-    async startScan() {
-        if (this.scanInProgress) {
-            console.warn('[StartScan] ⚠️ Scan déjà en cours');
-            return;
-        }
-
-        console.log('[StartScan] 🚀 === DÉMARRAGE DU SCAN ===');
-        console.log('[StartScan] 📋 Provider:', this.currentProvider);
-        console.log('[StartScan] 📅 Période:', this.selectedDays, 'jours');
-        
-        try {
-            this.scanInProgress = true;
-            this.abortController = new AbortController();
-            
-            // UI Updates
-            this.showProgress();
-            this.disableScanButton();
-            
-            // Vérifier et initialiser MailService
-            await this.initializeMailService();
-            
-            // Options de scan
-            const scanOptions = {
-                days: this.selectedDays,
-                provider: this.currentProvider,
-                folder: this.currentProvider === 'google' ? 'INBOX' : 'inbox',
-                includeFullContent: true,
-                abortSignal: this.abortController.signal,
-                taskPreselectedCategories: this.taskPreselectedCategories,
-                onProgress: (progress) => this.updateProgress(progress)
-            };
-            
-            // Exécuter le scan
-            const results = await this.executeScan(scanOptions);
-            
-            if (results && results.success) {
-                this.scanResults = results;
-                this.onScanComplete(results);
-            }
-            
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                console.log('[StartScan] ⚠️ Scan annulé');
-                this.onScanCancelled();
             } else {
-                console.error('[StartScan] ❌ Erreur scan:', error);
-                this.onScanError(error);
-            }
-        } finally {
-            this.scanInProgress = false;
-            this.abortController = null;
-        }
-    }
-
-    async initializeMailService() {
-        console.log('[StartScan] 🔧 Initialisation MailService...');
-        
-        if (!window.mailService) {
-            throw new Error('MailService non disponible');
-        }
-
-        try {
-            // S'assurer que MailService est initialisé
-            if (!window.mailService.isInitialized || !window.mailService.isInitialized()) {
-                await window.mailService.initialize();
-            }
-            
-            // Vérifier que le provider correspond
-            const mailProvider = window.mailService.getCurrentProvider?.();
-            console.log('[StartScan] 📋 MailService provider:', mailProvider);
-            
-            if (mailProvider && mailProvider !== this.currentProvider && mailProvider !== 'demo') {
-                console.warn('[StartScan] ⚠️ Provider mismatch, réinitialisation...');
-                if (window.mailService.reset) {
-                    await window.mailService.reset();
-                    await window.mailService.initialize();
-                }
-            }
-            
-            console.log('[StartScan] ✅ MailService prêt');
-            
-        } catch (error) {
-            console.error('[StartScan] ❌ Erreur init MailService:', error);
-            throw new Error('Impossible d\'initialiser le service email');
-        }
-    }
-
-    async executeScan(options) {
-        console.log('[StartScan] 🔄 Exécution du scan...');
-        
-        const results = {
-            success: false,
-            total: 0,
-            emails: [],
-            provider: options.provider,
-            timestamp: Date.now()
-        };
-
-        try {
-            // Étape 1: Récupération des emails
-            this.updateProgress({ phase: 'fetching', message: 'Récupération des emails...', progress: 20 });
-            
-            const emails = await this.fetchEmails(options);
-            results.emails = emails;
-            results.total = emails.length;
-            
-            console.log(`[StartScan] ✅ ${emails.length} emails récupérés`);
-            
-            // Étape 2: Catégorisation
-            if (options.taskPreselectedCategories && window.categoryManager) {
-                this.updateProgress({ phase: 'categorizing', message: 'Catégorisation...', progress: 60 });
-                
-                await this.categorizeEmails(emails, options);
-                results.categorized = emails.length;
-            }
-            
-            // Étape 3: Finalisation
-            this.updateProgress({ phase: 'complete', message: 'Finalisation...', progress: 100 });
-            
-            results.success = true;
-            results.taskPreselectedCategories = options.taskPreselectedCategories;
-            
-            return results;
-            
-        } catch (error) {
-            console.error('[StartScan] ❌ Erreur exécution scan:', error);
-            throw error;
-        }
-    }
-
-    async fetchEmails(options) {
-        console.log('[StartScan] 📧 Récupération des emails...');
-        
-        if (!window.mailService?.getMessages) {
-            throw new Error('MailService.getMessages non disponible');
-        }
-
-        try {
-            // Calculer les dates
-            const endDate = new Date();
-            const startDate = new Date();
-            
-            if (options.days === 999999) {
-                startDate.setFullYear(2000); // Récupérer depuis l'an 2000
-            } else {
-                startDate.setDate(endDate.getDate() - options.days);
-            }
-            
-            // Construire le filtre
-            let filter = '';
-            if (options.provider === 'microsoft') {
-                filter = `receivedDateTime ge ${startDate.toISOString()} and receivedDateTime le ${endDate.toISOString()}`;
-            } else {
-                // Gmail
-                const startStr = startDate.toISOString().split('T')[0];
-                const endStr = endDate.toISOString().split('T')[0];
-                filter = `after:${startStr} before:${endStr}`;
-            }
-            
-            console.log('[StartScan] 📅 Filtre de date:', filter);
-            
-            // Récupérer les emails
-            const emails = await window.mailService.getMessages(options.folder, { filter });
-            
-            console.log(`[StartScan] ✅ ${emails.length} emails récupérés`);
-            return emails || [];
-            
-        } catch (error) {
-            console.error('[StartScan] ❌ Erreur récupération emails:', error);
-            throw error;
-        }
-    }
-
-    async categorizeEmails(emails, options) {
-        console.log('[StartScan] 🏷️ Catégorisation des emails...');
-        
-        if (!window.categoryManager?.analyzeEmail) {
-            console.warn('[StartScan] ⚠️ CategoryManager non disponible');
-            return;
-        }
-
-        const batchSize = 50;
-        let processed = 0;
-        
-        for (let i = 0; i < emails.length; i += batchSize) {
-            const batch = emails.slice(i, i + batchSize);
-            
-            for (const email of batch) {
+                // Fallback localStorage
                 try {
-                    const analysis = window.categoryManager.analyzeEmail(email);
-                    email.category = analysis.category || 'other';
-                    email.categoryScore = analysis.score || 0;
-                    email.isPreselectedForTasks = options.taskPreselectedCategories.includes(email.category);
+                    const saved = localStorage.getItem('categorySettings');
+                    if (saved) {
+                        this.settings = JSON.parse(saved);
+                        this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
+                        if (this.settings.scanSettings?.defaultPeriod) {
+                            this.selectedDays = this.settings.scanSettings.defaultPeriod;
+                        }
+                    }
                 } catch (error) {
-                    console.error('[StartScan] ❌ Erreur catégorisation:', error);
-                    email.category = 'other';
+                    console.warn('[StartScan] ⚠️ Erreur chargement localStorage:', error);
                 }
-                
-                processed++;
             }
             
-            // Update progress
-            const progress = 60 + Math.round((processed / emails.length) * 30);
-            this.updateProgress({ 
-                phase: 'categorizing', 
-                message: `Catégorisation: ${processed}/${emails.length}`,
-                progress 
-            });
-            
-            // Pause pour ne pas bloquer l'UI
-            if (i + batchSize < emails.length) {
-                await new Promise(resolve => setTimeout(resolve, 10));
-            }
-        }
-        
-        console.log('[StartScan] ✅ Catégorisation terminée');
-    }
-
-    // ================================================
-    // GESTION DU PROGRÈS
-    // ================================================
-    showProgress() {
-        const progressSection = document.getElementById('progressSection');
-        const cancelBtn = document.getElementById('cancelBtn');
-        
-        if (progressSection) {
-            progressSection.style.display = 'block';
-        }
-        if (cancelBtn) {
-            cancelBtn.style.display = 'inline-flex';
-        }
-    }
-
-    updateProgress(data) {
-        const progressFill = document.getElementById('progressFill');
-        const progressText = document.getElementById('progressText');
-        const progressStatus = document.getElementById('progressStatus');
-        
-        if (progressFill && data.progress) {
-            progressFill.style.width = `${data.progress}%`;
-        }
-        if (progressText && data.message) {
-            progressText.textContent = data.message;
-        }
-        if (progressStatus && data.phase) {
-            progressStatus.textContent = data.phase;
-        }
-    }
-
-    disableScanButton() {
-        const scanBtn = document.getElementById('scanBtn');
-        if (scanBtn) {
-            scanBtn.disabled = true;
-            scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Scan en cours...</span>';
-        }
-    }
-
-    enableScanButton() {
-        const scanBtn = document.getElementById('scanBtn');
-        if (scanBtn) {
-            scanBtn.disabled = false;
-            scanBtn.innerHTML = '<i class="fas fa-play"></i> <span>Démarrer le scan</span>';
-        }
-    }
-
-    cancelScan() {
-        if (this.abortController) {
-            this.abortController.abort();
-        }
-    }
-
-    // ================================================
-    // CALLBACKS DE FIN DE SCAN
-    // ================================================
-    onScanComplete(results) {
-        console.log('[StartScan] 🎉 Scan terminé avec succès');
-        console.log('[StartScan] 📊 Résultats:', results);
-        
-        // Stocker les résultats
-        try {
-            sessionStorage.setItem('scanResults', JSON.stringify({
-                success: true,
-                total: results.total,
-                provider: results.provider,
-                timestamp: results.timestamp,
-                taskPreselectedCategories: results.taskPreselectedCategories
-            }));
-            
-            // Stocker les emails dans EmailScanner si disponible
-            if (window.emailScanner && results.emails) {
-                window.emailScanner.emails = results.emails;
-                console.log('[StartScan] ✅ Emails stockés dans EmailScanner');
-            }
-            
+            this.lastSettingsSync = Date.now();
         } catch (error) {
-            console.error('[StartScan] ❌ Erreur stockage résultats:', error);
+            console.error('[StartScan] ❌ Erreur chargement paramètres:', error);
+            this.settings = this.getDefaultSettings();
+            this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
         }
-        
-        // Notification
-        this.showToast(`${results.total} emails récupérés`, 'success');
-        
-        // UI Update
-        const scanBtn = document.getElementById('scanBtn');
-        if (scanBtn) {
-            scanBtn.innerHTML = '<i class="fas fa-check"></i> <span>Scan terminé!</span>';
-            scanBtn.style.background = '#10b981';
-        }
-        
-        // Dispatcher l'événement
-        window.dispatchEvent(new CustomEvent('scanCompleted', {
-            detail: {
-                results: results,
-                emails: results.emails,
-                source: 'StartScan',
-                provider: results.provider
+    }
+
+    getDefaultSettings() {
+        return {
+            scanSettings: {
+                defaultPeriod: 7,
+                defaultFolder: 'inbox',
+                autoAnalyze: true,
+                autoCategrize: true,
+                includeFullContent: true,
+                includeAttachments: false
+            },
+            taskPreselectedCategories: [],
+            preferences: {
+                excludeSpam: true,
+                detectCC: true,
+                showNotifications: true
             }
-        }));
-        
-        // Redirection après 2 secondes
-        setTimeout(() => {
-            this.redirectToEmails();
-        }, 2000);
-    }
-
-    onScanCancelled() {
-        console.log('[StartScan] ⚠️ Scan annulé');
-        this.showToast('Scan annulé', 'warning');
-        this.resetUI();
-    }
-
-    onScanError(error) {
-        console.error('[StartScan] ❌ Erreur de scan:', error);
-        this.showToast(`Erreur: ${error.message}`, 'error');
-        this.resetUI();
-    }
-
-    resetUI() {
-        this.enableScanButton();
-        
-        const progressSection = document.getElementById('progressSection');
-        const cancelBtn = document.getElementById('cancelBtn');
-        
-        if (progressSection) {
-            progressSection.style.display = 'none';
-        }
-        if (cancelBtn) {
-            cancelBtn.style.display = 'none';
-        }
-        
-        this.updateProgress({ progress: 0, message: 'Initialisation...', phase: '' });
+        };
     }
 
     // ================================================
-    // REDIRECTION
-    // ================================================
-    redirectToEmails() {
-        console.log('[StartScan] 🔄 Redirection vers la page emails...');
-        
-        // Méthode 1: PageManager approprié
-        if (this.currentProvider === 'google' && window.pageManagerGmail?.loadPage) {
-            window.pageManagerGmail.loadPage('emails');
-        } else if (this.currentProvider === 'microsoft' && window.pageManagerOutlook?.loadPage) {
-            window.pageManagerOutlook.loadPage('emails');
-        } 
-        // Méthode 2: PageManager générique
-        else if (window.pageManager?.loadPage) {
-            window.pageManager.loadPage('emails');
-        }
-        // Méthode 3: Navigation directe
-        else {
-            const emailsLink = document.querySelector('[data-page="emails"]');
-            if (emailsLink) {
-                emailsLink.click();
-            } else {
-                this.showToast('Cliquez sur "Emails" pour voir les résultats', 'info');
-            }
-        }
-    }
-
-    // ================================================
-    // UTILITAIRES
-    // ================================================
-    showToast(message, type = 'info') {
-        if (window.uiManager?.showToast) {
-            window.uiManager.showToast(message, type);
-        } else {
-            console.log(`[Toast] ${type}: ${message}`);
-        }
-    }
-
-    // ================================================
-    // STYLES CSS
+    // RENDU DU SCANNER
     // ================================================
     addMinimalStyles() {
-        if (this.stylesAdded) return;
+        if (this.stylesAdded || document.getElementById('minimal-scan-styles')) {
+            return;
+        }
         
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
+            /* Scanner Ultra-Minimaliste v14.0 - Multi-Provider */
             .minimal-scanner {
-                min-height: calc(100vh - 140px);
+                height: calc(100vh - 140px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                overflow: hidden;
+                position: relative;
                 padding: 20px;
             }
             
-            .scanner-card {
+            .scanner-card-minimal {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border-radius: 20px;
-                padding: 40px;
-                max-width: 600px;
+                padding: 50px;
                 width: 100%;
+                max-width: 700px;
                 text-align: center;
                 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                animation: fadeIn 0.5s ease-out;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
             }
             
             .scanner-icon {
@@ -779,38 +268,34 @@ class MinimalScanModule {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin: 0 auto 20px;
+                margin: 0 auto 25px;
                 color: white;
-                font-size: 36px;
-            }
-            
-            .scanner-icon.error {
-                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                font-size: 32px;
             }
             
             .scanner-title {
-                font-size: 28px;
+                font-size: 32px;
                 font-weight: 600;
                 color: #1a1a2e;
-                margin-bottom: 10px;
+                margin-bottom: 12px;
             }
             
             .scanner-subtitle {
-                font-size: 16px;
+                font-size: 18px;
                 color: #6b7280;
-                margin-bottom: 30px;
+                margin-bottom: 35px;
             }
             
             .provider-badge {
                 display: inline-flex;
                 align-items: center;
-                gap: 8px;
-                padding: 8px 20px;
+                gap: 6px;
+                padding: 6px 16px;
                 border-radius: 20px;
                 font-size: 14px;
                 font-weight: 600;
                 color: white;
-                margin-bottom: 30px;
+                margin-bottom: 20px;
             }
             
             .provider-badge.google {
@@ -822,103 +307,100 @@ class MinimalScanModule {
             }
             
             .duration-section {
-                margin-bottom: 30px;
+                margin-bottom: 35px;
             }
             
             .duration-label {
-                display: block;
+                font-size: 18px;
                 font-weight: 600;
                 color: #374151;
-                margin-bottom: 15px;
+                margin-bottom: 20px;
             }
             
             .duration-options {
                 display: flex;
-                gap: 10px;
+                gap: 12px;
                 justify-content: center;
                 flex-wrap: wrap;
             }
             
-            .duration-btn {
-                padding: 10px 20px;
+            .duration-option {
+                padding: 12px 20px;
                 border: 2px solid #e5e7eb;
                 background: white;
-                border-radius: 10px;
-                font-size: 14px;
+                border-radius: 12px;
+                font-size: 15px;
                 font-weight: 500;
                 color: #6b7280;
                 cursor: pointer;
                 transition: all 0.3s ease;
+                min-width: 85px;
             }
             
-            .duration-btn:hover {
+            .duration-option.selected {
                 border-color: #667eea;
-                transform: translateY(-2px);
-            }
-            
-            .duration-btn.active {
                 background: #667eea;
-                border-color: #667eea;
                 color: white;
                 transform: translateY(-2px);
                 box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
             }
             
-            .scan-button {
+            .duration-option:hover:not(.selected) {
+                border-color: #9ca3af;
+                transform: translateY(-1px);
+            }
+            
+            .scan-button-minimal {
                 width: 100%;
-                padding: 15px 30px;
+                height: 60px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 border: none;
-                border-radius: 12px;
+                border-radius: 15px;
                 color: white;
-                font-size: 16px;
+                font-size: 18px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.3s ease;
-                display: inline-flex;
+                display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: 10px;
-                margin-bottom: 20px;
+                margin-bottom: 25px;
+                position: relative;
+                overflow: hidden;
             }
             
-            .scan-button:hover:not(:disabled) {
+            .scan-button-minimal:hover:not(:disabled) {
                 transform: translateY(-2px);
                 box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
             }
             
-            .scan-button:disabled {
-                opacity: 0.7;
+            .scan-button-minimal:disabled {
+                opacity: 0.6;
                 cursor: not-allowed;
+                transform: none;
             }
             
-            .scan-button.cancel-button {
+            .cancel-button {
                 background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-                width: auto;
-                padding: 10px 20px;
-                margin: 20px auto 0;
+                margin-top: 10px;
             }
             
-            .scan-button.gmail-login {
-                background: linear-gradient(135deg, #4285f4, #34a853);
-                margin-bottom: 10px;
+            .cancel-button:hover {
+                box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
             }
             
-            .scan-button.outlook-login {
-                background: linear-gradient(135deg, #0078d4, #106ebe);
-            }
-            
-            .login-buttons {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .progress-section {
+            .progress-section-minimal {
+                opacity: 0;
+                transition: opacity 0.3s ease;
                 margin-top: 20px;
             }
             
-            .progress-bar {
+            .progress-section-minimal.visible {
+                opacity: 1;
+            }
+            
+            .progress-bar-minimal {
                 width: 100%;
                 height: 4px;
                 background: #e5e7eb;
@@ -935,74 +417,975 @@ class MinimalScanModule {
             }
             
             .progress-text {
-                font-size: 14px;
-                color: #374151;
-                font-weight: 600;
-                margin-bottom: 5px;
+                font-size: 16px;
+                color: #6b7280;
+                margin-bottom: 8px;
+                font-weight: 500;
             }
             
             .progress-status {
-                font-size: 12px;
+                font-size: 14px;
                 color: #9ca3af;
             }
             
             .scan-info {
                 background: rgba(102, 126, 234, 0.1);
                 border-radius: 10px;
-                padding: 12px 20px;
+                padding: 15px;
                 font-size: 14px;
                 color: #667eea;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: 8px;
+                font-weight: 500;
+                flex-direction: column;
             }
             
-            @media (max-width: 640px) {
-                .scanner-card {
-                    padding: 30px 20px;
-                }
-                
-                .scanner-title {
-                    font-size: 24px;
-                }
-                
-                .duration-options {
-                    flex-direction: column;
-                }
-                
-                .duration-btn {
-                    width: 100%;
-                }
+            .scan-mode-info {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                padding: 4px 12px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 10px;
+            }
+            
+            .email-count-info {
+                font-size: 12px;
+                color: #9ca3af;
+                margin-top: 5px;
+            }
+            
+            .error-state {
+                background: rgba(239, 68, 68, 0.1);
+                color: #dc2626;
+                padding: 20px;
+                border-radius: 10px;
+                margin-top: 20px;
+            }
+            
+            .login-buttons-container {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                width: 100%;
+            }
+            
+            .login-button-google {
+                background: linear-gradient(135deg, #4285f4, #34a853);
+            }
+            
+            .login-button-microsoft {
+                background: linear-gradient(135deg, #0078d4, #106ebe);
             }
         `;
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
+        console.log('[StartScan] ✅ Styles v14.0 ajoutés - Multi-Provider');
+    }
+
+    async render(container) {
+        console.log('[StartScan] 🎯 Rendu du scanner v14.0 - Multi-Provider...');
+        
+        try {
+            this.addMinimalStyles();
+            
+            // Re-détecter le provider
+            await this.detectAuthProvider();
+            
+            if (!this.currentProvider) {
+                container.innerHTML = this.renderNotAuthenticated();
+                return;
+            }
+
+            await this.checkServices();
+            container.innerHTML = this.renderMinimalScanner();
+            this.initializeEvents();
+            this.isInitialized = true;
+            
+            console.log('[StartScan] ✅ Scanner v14.0 rendu avec succès');
+            console.log('[StartScan] 📋 Provider actuel:', this.currentProvider);
+            
+        } catch (error) {
+            console.error('[StartScan] ❌ Erreur lors du rendu:', error);
+            container.innerHTML = this.renderError(error);
+        }
+    }
+
+    renderMinimalScanner() {
+        const providerName = this.currentProvider === 'google' ? 'Gmail' : 'Outlook';
+        const providerIcon = this.currentProvider === 'google' ? 'fab fa-google' : 'fab fa-microsoft';
+        
+        return `
+            <div class="minimal-scanner">
+                <div class="scanner-card-minimal">
+                    <div class="scanner-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    
+                    <h1 class="scanner-title">Scanner Email</h1>
+                    <p class="scanner-subtitle">Récupérez et organisez TOUS vos emails automatiquement</p>
+                    
+                    <div class="scan-mode-info">
+                        <i class="fas fa-infinity"></i>
+                        <span>Mode SANS LIMITES activé</span>
+                    </div>
+                    
+                    <div class="provider-badge ${this.currentProvider}">
+                        <i class="${providerIcon}"></i>
+                        <span>Connecté via ${providerName}</span>
+                    </div>
+                    
+                    <div class="duration-section">
+                        <div class="duration-label">Période d'analyse</div>
+                        <div class="duration-options">
+                            ${this.renderDurationOptions()}
+                        </div>
+                    </div>
+                    
+                    <button class="scan-button-minimal" id="minimalScanBtn" onclick="window.minimalScanModule.startScan()">
+                        <i class="fas fa-play"></i>
+                        <span>Démarrer le scan complet</span>
+                    </button>
+                    
+                    <div class="progress-section-minimal" id="progressSection">
+                        <div class="progress-bar-minimal">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text" id="progressText">Initialisation...</div>
+                        <div class="progress-status" id="progressStatus">Préparation du scan</div>
+                        
+                        <button class="scan-button-minimal cancel-button" id="cancelScanBtn" onclick="window.minimalScanModule.cancelScan()" style="display: none;">
+                            <i class="fas fa-stop"></i>
+                            <span>Annuler le scan</span>
+                        </button>
+                    </div>
+                    
+                    <div class="scan-info">
+                        <div class="scan-info-main">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Scan sécurisé avec récupération complète du contenu</span>
+                        </div>
+                        <div class="email-count-info" id="emailCountInfo"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderDurationOptions() {
+        const options = [
+            { value: 1, label: '1 jour' },
+            { value: 3, label: '3 jours' },
+            { value: 7, label: '7 jours' },
+            { value: 15, label: '15 jours' },
+            { value: 30, label: '30 jours' },
+            { value: 90, label: '3 mois' },
+            { value: 365, label: '1 an' },
+            { value: 999999, label: 'TOUT' }
+        ];
+        
+        return options.map(option => {
+            const isSelected = option.value === this.selectedDays;
+            return `
+                <button class="duration-option ${isSelected ? 'selected' : ''}" 
+                        onclick="window.minimalScanModule.selectDuration(${option.value})" 
+                        data-days="${option.value}">
+                    ${option.label}
+                </button>
+            `;
+        }).join('');
+    }
+
+    renderNotAuthenticated() {
+        return `
+            <div class="minimal-scanner">
+                <div class="scanner-card-minimal">
+                    <div class="scanner-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h1 class="scanner-title">Connexion requise</h1>
+                    <p class="scanner-subtitle">Connectez-vous pour analyser vos emails</p>
+                    
+                    <div class="login-buttons-container">
+                        <button class="scan-button-minimal login-button-google" onclick="window.minimalScanModule.handleLogin('google')">
+                            <i class="fab fa-google"></i>
+                            <span>Se connecter avec Gmail</span>
+                        </button>
+                        
+                        <button class="scan-button-minimal login-button-microsoft" onclick="window.minimalScanModule.handleLogin('microsoft')">
+                            <i class="fab fa-microsoft"></i>
+                            <span>Se connecter avec Outlook</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderError(error) {
+        return `
+            <div class="minimal-scanner">
+                <div class="scanner-card-minimal">
+                    <div class="scanner-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h1 class="scanner-title">Erreur</h1>
+                    <p class="scanner-subtitle">${error.message}</p>
+                    
+                    <button class="scan-button-minimal" onclick="window.location.reload()">
+                        <i class="fas fa-redo"></i>
+                        <span>Réessayer</span>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    async checkServices() {
+        if (!this.currentProvider) {
+            throw new Error('Aucune authentification détectée');
+        }
+        
+        if (this.currentProvider === 'google') {
+            if (!window.googleAuthService || !(await window.googleAuthService.isAuthenticated())) {
+                throw new Error('Authentification Google requise');
+            }
+        } else if (this.currentProvider === 'microsoft') {
+            if (!window.authService || !(await window.authService.isAuthenticated())) {
+                throw new Error('Authentification Microsoft requise');
+            }
+        }
+    }
+
+    initializeEvents() {
+        console.log('[StartScan] ✅ Événements initialisés');
+    }
+
+    selectDuration(days) {
+        this.selectedDays = days;
+        
+        document.querySelectorAll('.duration-option').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        
+        const selectedBtn = document.querySelector(`[data-days="${days}"]`);
+        if (selectedBtn) {
+            selectedBtn.classList.add('selected');
+        }
+        
+        const daysText = days === 999999 ? 'TOUS les emails' : `${days} jours`;
+        console.log(`[StartScan] ✅ Durée sélectionnée: ${daysText}`);
+    }
+
+    async handleLogin(provider) {
+        console.log('[StartScan] 🔐 Tentative de connexion:', provider);
+        
+        try {
+            let loginSuccess = false;
+            
+            if (provider === 'google' && window.googleAuthService) {
+                await window.googleAuthService.login();
+                loginSuccess = await window.googleAuthService.isAuthenticated();
+                if (loginSuccess) {
+                    this.currentProvider = 'google';
+                    sessionStorage.setItem('currentProvider', 'google');
+                    sessionStorage.setItem('lastAuthProvider', 'google');
+                }
+            } else if (provider === 'microsoft' && window.authService) {
+                await window.authService.login();
+                loginSuccess = await window.authService.isAuthenticated();
+                if (loginSuccess) {
+                    this.currentProvider = 'microsoft';
+                    sessionStorage.setItem('currentProvider', 'microsoft');
+                    sessionStorage.setItem('lastAuthProvider', 'microsoft');
+                }
+            }
+            
+            if (loginSuccess) {
+                console.log('[StartScan] ✅ Connexion réussie:', provider);
+                // Recharger l'interface après connexion réussie
+                const container = document.querySelector('.page-content') || document.getElementById('content');
+                if (container) {
+                    await this.render(container);
+                }
+            } else {
+                console.error('[StartScan] ❌ Échec de connexion:', provider);
+            }
+            
+        } catch (error) {
+            console.error('[StartScan] ❌ Erreur de connexion:', error);
+            if (window.uiManager?.showToast) {
+                window.uiManager.showToast('Erreur de connexion. Veuillez réessayer.', 'error');
+            }
+        }
     }
 
     // ================================================
-    // CLEANUP
+    // SCAN PRINCIPAL SANS LIMITES
     // ================================================
+    async startScan() {
+        if (this.scanInProgress) {
+            console.log('[StartScan] Scan déjà en cours');
+            return;
+        }
+        
+        console.log('[StartScan] 🚀 Démarrage du scan v14.0 - Mode SANS LIMITES');
+        console.log('[StartScan] 📋 Provider actuel:', this.currentProvider);
+        console.log('[StartScan] 🚀 Récupération de TOUS les emails avec contenu COMPLET');
+        
+        try {
+            this.scanInProgress = true;
+            this.scanStartTime = Date.now();
+            this.abortController = new AbortController();
+            
+            // Stocker le provider actuel pour la redirection
+            sessionStorage.setItem('scanProvider', this.currentProvider);
+            
+            const progressSection = document.getElementById('progressSection');
+            if (progressSection) {
+                progressSection.classList.add('visible');
+            }
+            
+            const scanBtn = document.getElementById('minimalScanBtn');
+            if (scanBtn) {
+                scanBtn.disabled = true;
+                scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Scan en cours...</span>';
+            }
+            
+            // Afficher le bouton d'annulation
+            const cancelBtn = document.getElementById('cancelScanBtn');
+            if (cancelBtn) {
+                cancelBtn.style.display = 'block';
+            }
+            
+            // Préparer les options de scan SANS LIMITES
+            const scanOptions = {
+                days: this.selectedDays,
+                provider: this.currentProvider,
+                taskPreselectedCategories: [...this.taskPreselectedCategories],
+                onProgress: (progress) => this.updateProgress(progress.progress || 0, progress.message || '', progress.phase || ''),
+                abortSignal: this.abortController.signal,
+                includeFullContent: true,
+                includeAttachments: this.settings.scanSettings?.includeAttachments || false,
+                noLimit: true // Flag pour indiquer le mode sans limites
+            };
+            
+            console.log('[StartScan] 📊 Options de scan SANS LIMITES:', scanOptions);
+            
+            // Lancer le scan de manière asynchrone
+            const results = await this.executeScanAsync(scanOptions);
+            
+            if (results) {
+                this.scanResults = results;
+                console.log('[StartScan] ✅ Scan terminé:', results);
+                this.completeScan();
+            }
+            
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('[StartScan] ⚠️ Scan annulé par l\'utilisateur');
+                this.showScanCancelled();
+            } else {
+                console.error('[StartScan] ❌ Erreur de scan:', error);
+                this.showScanError(error);
+            }
+        } finally {
+            this.scanInProgress = false;
+            this.abortController = null;
+        }
+    }
+
+    async executeScanAsync(scanOptions) {
+        console.log('[StartScan] 🔄 Exécution du scan asynchrone SANS LIMITES...');
+        
+        try {
+            // Étape 1: Initialiser MailService
+            this.updateProgress(10, 'Initialisation du service mail...', 'init');
+            await this.initializeMailService();
+            
+            // Vérifier que le provider de MailService correspond
+            if (window.mailService && window.mailService.getCurrentProvider) {
+                const mailProvider = window.mailService.getCurrentProvider();
+                console.log('[StartScan] 📋 Provider MailService:', mailProvider);
+                
+                // Si les providers ne correspondent pas, essayer de réinitialiser
+                if (mailProvider !== this.currentProvider && mailProvider !== 'demo') {
+                    console.warn('[StartScan] ⚠️ Provider mismatch, réinitialisation...');
+                    await window.mailService.reset();
+                    await window.mailService.initialize();
+                }
+            }
+            
+            // Vérifier l'annulation
+            if (scanOptions.abortSignal?.aborted) {
+                throw new Error('Scan annulé');
+            }
+            
+            // Étape 2: Récupérer TOUS les emails sans limite
+            this.updateProgress(20, 'Récupération de TOUS vos emails...', 'fetching');
+            const emails = await this.fetchAllEmails(scanOptions);
+            
+            // Vérifier l'annulation
+            if (scanOptions.abortSignal?.aborted) {
+                throw new Error('Scan annulé');
+            }
+            
+            // Étape 3: Catégoriser les emails
+            this.updateProgress(60, `Catégorisation de ${emails.length} emails...`, 'categorizing');
+            const categorizedEmails = await this.categorizeEmailsBatched(emails, scanOptions);
+            
+            // Vérifier l'annulation
+            if (scanOptions.abortSignal?.aborted) {
+                throw new Error('Scan annulé');
+            }
+            
+            // Étape 4: Analyser pour les tâches
+            this.updateProgress(80, 'Analyse pour les tâches...', 'analyzing');
+            const analyzedEmails = await this.quickAnalyzeForTasks(categorizedEmails, scanOptions);
+            
+            // Étape 5: Finaliser
+            this.updateProgress(100, 'Finalisation...', 'complete');
+            
+            // Sauvegarder les IDs traités
+            this.savePersistedEmailIds();
+            
+            return {
+                success: true,
+                total: emails.length,
+                categorized: categorizedEmails.length,
+                analyzed: analyzedEmails.length,
+                provider: this.currentProvider,
+                taskPreselectedCategories: [...scanOptions.taskPreselectedCategories],
+                emails: analyzedEmails,
+                scanDuration: Math.floor((Date.now() - this.scanStartTime) / 1000),
+                timestamp: Date.now(),
+                hasFullContent: true,
+                mode: 'no-limits'
+            };
+            
+        } catch (error) {
+            console.error('[StartScan] ❌ Erreur exécution scan:', error);
+            throw error;
+        }
+    }
+
+    async initializeMailService() {
+        console.log('[StartScan] 🔧 Initialisation MailService...');
+        
+        if (!window.mailService) {
+            throw new Error('MailService non disponible');
+        }
+        
+        try {
+            await window.mailService.initialize();
+            console.log('[StartScan] ✅ MailService initialisé');
+        } catch (error) {
+            console.error('[StartScan] ❌ Erreur initialisation MailService:', error);
+            throw new Error('Impossible d\'initialiser le service mail');
+        }
+    }
+
+    async fetchAllEmails(scanOptions) {
+        console.log('[StartScan] 📧 Récupération de TOUS les emails SANS LIMITE...');
+        
+        try {
+            // Calculer les dates
+            const endDate = new Date();
+            const startDate = new Date();
+            
+            // Si on veut TOUS les emails
+            if (scanOptions.days === 999999) {
+                startDate.setFullYear(2000); // Récupérer depuis l'an 2000
+                console.log('[StartScan] 🚀 Récupération de TOUS les emails depuis l\'an 2000');
+            } else {
+                startDate.setDate(endDate.getDate() - scanOptions.days);
+            }
+            
+            let allEmails = [];
+            const uniqueEmails = new Map();
+            
+            // Utiliser la méthode getMessages sans limite
+            if (window.mailService && typeof window.mailService.getMessages === 'function') {
+                console.log('[StartScan] 📬 Utilisation de getMessages en mode SANS LIMITES...');
+                
+                const folder = this.currentProvider === 'google' ? 'INBOX' : 'inbox';
+                
+                // Récupérer TOUS les emails d'un coup
+                const filter = this.buildDateFilter(startDate, endDate);
+                
+                this.updateProgress(25, 'Récupération en cours... Cela peut prendre plusieurs minutes', 'fetching');
+                
+                // Appel sans limite
+                const emails = await window.mailService.getMessages(folder, {
+                    filter: filter
+                    // Pas de limite 'top' - on récupère tout
+                });
+                
+                console.log(`[StartScan] 📊 ${emails.length} emails récupérés au total`);
+                
+                // Filtrer les doublons avec notre propre cache
+                emails.forEach(email => {
+                    if (email && email.id && !uniqueEmails.has(email.id) && !this.processedEmailIds.has(email.id)) {
+                        uniqueEmails.set(email.id, email);
+                        this.processedEmailIds.add(email.id);
+                    }
+                });
+                
+                allEmails = Array.from(uniqueEmails.values());
+                
+                console.log(`[StartScan] ✅ ${allEmails.length} emails uniques récupérés (CONTENU COMPLET)`);
+                
+                // Mettre à jour le compteur dans l'interface
+                const countInfo = document.getElementById('emailCountInfo');
+                if (countInfo) {
+                    countInfo.textContent = `${allEmails.length} emails traités avec contenu complet`;
+                }
+            }
+            
+            // Filtrer les emails valides
+            allEmails = allEmails.filter(email => email && email.subject && email.from);
+            
+            return allEmails;
+            
+        } catch (error) {
+            console.error('[StartScan] ❌ Erreur récupération emails:', error);
+            throw error;
+        }
+    }
+
+    buildDateFilter(startDate, endDate) {
+        if (this.currentProvider === 'microsoft') {
+            return `receivedDateTime ge ${startDate.toISOString()} and receivedDateTime le ${endDate.toISOString()}`;
+        } else {
+            // Gmail utilise une syntaxe différente
+            const startStr = startDate.toISOString().split('T')[0];
+            const endStr = endDate.toISOString().split('T')[0];
+            return `after:${startStr} before:${endStr}`;
+        }
+    }
+
+    async categorizeEmailsBatched(emails, scanOptions) {
+        console.log('[StartScan] 🏷️ Catégorisation des emails par batch...');
+        
+        if (!window.categoryManager) {
+            console.warn('[StartScan] ⚠️ CategoryManager non disponible');
+            return emails;
+        }
+        
+        const batchSize = 50; // Batches plus grands pour aller plus vite
+        let categorizedCount = 0;
+        let preselectedCount = 0;
+        
+        for (let i = 0; i < emails.length; i += batchSize) {
+            // Vérifier l'annulation
+            if (scanOptions.abortSignal?.aborted) {
+                throw new Error('Scan annulé');
+            }
+            
+            const batch = emails.slice(i, i + batchSize);
+            
+            for (const email of batch) {
+                try {
+                    // Analyser l'email avec CategoryManager
+                    const analysis = window.categoryManager.analyzeEmail(email);
+                    
+                    // Appliquer les résultats
+                    email.category = analysis.category || email.category || 'other';
+                    email.categoryScore = analysis.score || 0;
+                    email.categoryConfidence = analysis.confidence || 0;
+                    email.matchedPatterns = analysis.matchedPatterns || [];
+                    email.hasAbsolute = analysis.hasAbsolute || false;
+                    email.isSpam = analysis.isSpam || false;
+                    email.isCC = analysis.isCC || false;
+                    email.isExcluded = analysis.isExcluded || false;
+                    
+                    // Vérifier si l'email est pré-sélectionné pour les tâches
+                    email.isPreselectedForTasks = scanOptions.taskPreselectedCategories.includes(email.category);
+                    
+                    if (email.isPreselectedForTasks) {
+                        preselectedCount++;
+                    }
+                    
+                    categorizedCount++;
+                    
+                } catch (error) {
+                    console.error('[StartScan] ❌ Erreur catégorisation email:', error);
+                    email.category = email.category || 'other';
+                    email.isPreselectedForTasks = false;
+                }
+            }
+            
+            // Mise à jour du progrès
+            const progress = 60 + Math.round((categorizedCount / emails.length) * 20);
+            this.updateProgress(progress, `Catégorisation: ${categorizedCount}/${emails.length}`, 'categorizing');
+            
+            // Pause très courte pour ne pas bloquer l'UI
+            if (i + batchSize < emails.length) {
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+        }
+        
+        console.log(`[StartScan] ✅ ${categorizedCount} emails catégorisés, ${preselectedCount} pré-sélectionnés`);
+        return emails;
+    }
+
+    async quickAnalyzeForTasks(emails, scanOptions) {
+        console.log('[StartScan] 🤖 Analyse rapide pour les tâches...');
+        
+        let markedCount = 0;
+        
+        emails.forEach(email => {
+            if (email.isPreselectedForTasks) {
+                email.suggestedForTask = true;
+                markedCount++;
+            }
+        });
+        
+        console.log(`[StartScan] ✅ ${markedCount} emails marqués pour tâches`);
+        return emails;
+    }
+
+    cancelScan() {
+        console.log('[StartScan] ⚠️ Annulation du scan demandée');
+        
+        if (this.abortController) {
+            this.abortController.abort();
+        }
+    }
+
+    updateProgress(percent, text, status) {
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const progressStatus = document.getElementById('progressStatus');
+        
+        if (progressFill) progressFill.style.width = `${percent}%`;
+        if (progressText) progressText.textContent = text;
+        if (progressStatus) progressStatus.textContent = status;
+        
+        console.log(`[StartScan] 📊 Progress: ${percent}% - ${text}`);
+    }
+
+    completeScan() {
+        console.log('[StartScan] 🎉 Scan terminé avec succès');
+        
+        // Mettre à jour le compteur final
+        const countInfo = document.getElementById('emailCountInfo');
+        if (countInfo) {
+            countInfo.textContent = `${this.scanResults?.total || 0} emails traités au total (contenu complet)`;
+        }
+        
+        setTimeout(() => {
+            const scanBtn = document.getElementById('minimalScanBtn');
+            if (scanBtn) {
+                scanBtn.innerHTML = `<i class="fas fa-check"></i> <span>Scan terminé !</span>`;
+                scanBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            }
+            
+            const cancelBtn = document.getElementById('cancelScanBtn');
+            if (cancelBtn) {
+                cancelBtn.style.display = 'none';
+            }
+            
+            setTimeout(() => {
+                this.redirectToResults();
+            }, 1500);
+        }, 500);
+    }
+
+    showScanCancelled() {
+        console.log('[StartScan] ⚠️ Scan annulé');
+        
+        const progressSection = document.getElementById('progressSection');
+        if (progressSection) {
+            progressSection.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Scan annulé</p>
+                </div>
+            `;
+        }
+        
+        this.resetScanner();
+    }
+
+    redirectToResults() {
+        console.log('[StartScan] 🚀 Préparation de la redirection intelligente...');
+        console.log('[StartScan] 📋 Provider actuel:', this.currentProvider);
+        
+        this.scanInProgress = false;
+        
+        // Préparer les résultats essentiels
+        const essentialResults = {
+            success: true,
+            total: this.scanResults?.total || 0,
+            categorized: this.scanResults?.categorized || 0,
+            analyzed: this.scanResults?.analyzed || 0,
+            provider: this.currentProvider,
+            taskPreselectedCategories: [...this.taskPreselectedCategories],
+            preselectedForTasks: this.scanResults?.emails?.filter(e => e.isPreselectedForTasks)?.length || 0,
+            scanDuration: this.scanResults?.scanDuration || 0,
+            timestamp: Date.now(),
+            hasFullContent: true,
+            mode: 'no-limits'
+        };
+        
+        // Stocker les résultats
+        try {
+            sessionStorage.setItem('scanResults', JSON.stringify(essentialResults));
+            sessionStorage.setItem('lastScanProvider', this.currentProvider);
+            sessionStorage.setItem('currentProvider', this.currentProvider);
+            
+            // Stocker les emails dans EmailScanner si disponible
+            if (window.emailScanner && this.scanResults?.emails) {
+                window.emailScanner.emails = this.scanResults.emails;
+                window.emailScanner.startScanSynced = true;
+            }
+            
+        } catch (error) {
+            console.warn('[StartScan] ⚠️ Erreur stockage résultats:', error);
+        }
+        
+        // Notifier les autres modules
+        setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('scanCompleted', {
+                detail: {
+                    results: essentialResults,
+                    emails: this.scanResults?.emails || [],
+                    source: 'StartScan',
+                    provider: this.currentProvider,
+                    timestamp: Date.now()
+                }
+            }));
+        }, 100);
+        
+        // Afficher une notification
+        if (window.uiManager?.showToast) {
+            const message = `✅ ${essentialResults.total} emails scannés avec contenu complet • ${essentialResults.preselectedForTasks} pré-sélectionnés`;
+            window.uiManager.showToast(message, 'success', 5000);
+        }
+        
+        // Redirection intelligente basée sur le provider
+        setTimeout(() => {
+            console.log('[StartScan] 🚀 Redirection intelligente vers la page emails...');
+            
+            // Détecter les PageManagers disponibles
+            const managers = this.detectPageManager();
+            
+            // Forcer la mise à jour du provider dans tous les modules possibles
+            if (window.app) {
+                window.app.currentProvider = this.currentProvider;
+            }
+            
+            // Essayer de rediriger selon le provider
+            let redirected = false;
+            
+            if (this.currentProvider === 'google') {
+                console.log('[StartScan] 🔄 Tentative de redirection Gmail...');
+                
+                // Essayer plusieurs méthodes pour Gmail
+                if (managers.gmail && typeof managers.gmail.loadPage === 'function') {
+                    console.log('[StartScan] ✅ Utilisation de PageManagerGmail');
+                    managers.gmail.loadPage('emails');
+                    redirected = true;
+                } else if (window.loadPage && typeof window.loadPage === 'function') {
+                    console.log('[StartScan] ✅ Utilisation de window.loadPage');
+                    window.loadPage('emails', 'gmail');
+                    redirected = true;
+                } else if (managers.default && typeof managers.default.loadPage === 'function') {
+                    console.log('[StartScan] ⚠️ Utilisation du PageManager par défaut');
+                    // Forcer le provider avant le chargement
+                    if (managers.default.setProvider) {
+                        managers.default.setProvider('google');
+                    }
+                    managers.default.loadPage('emails');
+                    redirected = true;
+                }
+                
+            } else if (this.currentProvider === 'microsoft') {
+                console.log('[StartScan] 🔄 Tentative de redirection Outlook...');
+                
+                // Essayer plusieurs méthodes pour Outlook
+                if (managers.outlook && typeof managers.outlook.loadPage === 'function') {
+                    console.log('[StartScan] ✅ Utilisation de PageManagerOutlook');
+                    managers.outlook.loadPage('emails');
+                    redirected = true;
+                } else if (window.loadPage && typeof window.loadPage === 'function') {
+                    console.log('[StartScan] ✅ Utilisation de window.loadPage');
+                    window.loadPage('emails', 'microsoft');
+                    redirected = true;
+                } else if (managers.default && typeof managers.default.loadPage === 'function') {
+                    console.log('[StartScan] ⚠️ Utilisation du PageManager par défaut');
+                    // Forcer le provider avant le chargement
+                    if (managers.default.setProvider) {
+                        managers.default.setProvider('microsoft');
+                    }
+                    managers.default.loadPage('emails');
+                    redirected = true;
+                }
+            }
+            
+            // Si aucune méthode n'a fonctionné, essayer les méthodes de fallback
+            if (!redirected) {
+                console.warn('[StartScan] ⚠️ Aucune méthode de redirection n\'a fonctionné');
+                this.fallbackRedirect();
+            }
+            
+        }, 500);
+    }
+
+    fallbackRedirect() {
+        console.log('[StartScan] 🔄 Redirection fallback...');
+        
+        // Méthode 1: Chercher un lien emails dans la navigation
+        const emailsLink = document.querySelector('[data-page="emails"]') || 
+                          document.querySelector('a[href="#emails"]') ||
+                          document.querySelector('.nav-item[onclick*="emails"]') ||
+                          document.querySelector('button[onclick*="emails"]');
+        
+        if (emailsLink) {
+            console.log('[StartScan] ✅ Lien emails trouvé, clic simulé');
+            emailsLink.click();
+            return;
+        }
+        
+        // Méthode 2: Essayer de changer l'URL directement
+        if (window.history && window.history.pushState) {
+            console.log('[StartScan] 🔄 Changement d\'URL direct');
+            window.history.pushState({page: 'emails'}, 'Emails', '#emails');
+            window.dispatchEvent(new PopStateEvent('popstate', {state: {page: 'emails'}}));
+        }
+        
+        // Méthode 3: Notification finale
+        if (window.uiManager?.showToast) {
+            window.uiManager.showToast('Scan terminé ! Cliquez sur "Emails" dans le menu pour voir les résultats.', 'info', 8000);
+        }
+    }
+
+    showScanError(error) {
+        console.error('[StartScan] ❌ Erreur de scan:', error);
+        
+        const progressSection = document.getElementById('progressSection');
+        if (progressSection) {
+            progressSection.innerHTML = `
+                <div class="error-state">
+                    <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+                        Erreur de scan
+                    </div>
+                    <div style="font-size: 12px; margin-bottom: 16px;">
+                        ${error.message}
+                    </div>
+                    <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" 
+                            style="width: auto; padding: 0 20px; height: 40px; font-size: 14px;">
+                        <i class="fas fa-redo"></i>
+                        <span>Réessayer</span>
+                    </button>
+                </div>
+            `;
+        }
+        
+        this.scanInProgress = false;
+    }
+
+    resetScanner() {
+        this.scanInProgress = false;
+        
+        const progressSection = document.getElementById('progressSection');
+        if (progressSection) {
+            progressSection.classList.remove('visible');
+        }
+        
+        const scanBtn = document.getElementById('minimalScanBtn');
+        if (scanBtn) {
+            scanBtn.disabled = false;
+            scanBtn.innerHTML = '<i class="fas fa-play"></i> <span>Démarrer le scan complet</span>';
+            scanBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        }
+        
+        const cancelBtn = document.getElementById('cancelScanBtn');
+        if (cancelBtn) {
+            cancelBtn.style.display = 'none';
+        }
+        
+        this.updateProgress(0, 'Initialisation...', 'Préparation du scan');
+        
+        // Reset le compteur
+        const countInfo = document.getElementById('emailCountInfo');
+        if (countInfo) {
+            countInfo.textContent = '';
+        }
+        
+        console.log('[StartScan] 🔄 Scanner réinitialisé');
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================
+    getDebugInfo() {
+        return {
+            isInitialized: this.isInitialized,
+            scanInProgress: this.scanInProgress,
+            selectedDays: this.selectedDays,
+            currentProvider: this.currentProvider,
+            taskPreselectedCategories: [...this.taskPreselectedCategories],
+            settings: this.settings,
+            scanResults: this.scanResults,
+            processedEmailIds: this.processedEmailIds.size,
+            version: '14.0',
+            mode: 'no-limits',
+            features: ['full-content', 'no-limits', 'persistent-dedup', 'smart-redirect', 'multi-provider'],
+            pageManagers: this.detectPageManager()
+        };
+    }
+
+    clearHistory() {
+        console.log('[StartScan] 🧹 Effacement de l\'historique...');
+        this.processedEmailIds.clear();
+        localStorage.removeItem('startscan_processed_ids');
+        console.log('[StartScan] ✅ Historique effacé');
+    }
+
     cleanup() {
         this.scanInProgress = false;
+        this.isInitialized = false;
         this.scanResults = null;
         if (this.abortController) {
             this.abortController.abort();
         }
-        console.log('[StartScan] 🧹 Nettoyage effectué');
+        this.savePersistedEmailIds();
+        console.log('[StartScan] 🧹 Nettoyage terminé');
+    }
+
+    destroy() {
+        this.cleanup();
+        this.settings = {};
+        this.taskPreselectedCategories = [];
+        this.currentProvider = null;
+        console.log('[StartScan] Instance détruite');
     }
 }
 
-// ================================================
-// INITIALISATION GLOBALE
-// ================================================
+// Créer l'instance globale
 if (window.minimalScanModule) {
-    window.minimalScanModule.cleanup?.();
+    window.minimalScanModule.destroy?.();
 }
 
+window.MinimalScanModule = MinimalScanModule;
 window.minimalScanModule = new MinimalScanModule();
-window.scanStartModule = window.minimalScanModule; // Alias
+window.scanStartModule = window.minimalScanModule;
 
-console.log('✅ StartScan v15.0 loaded - Scanner Multi-Provider Corrigé');
-console.log('💡 Provider actuel:', window.minimalScanModule.currentProvider);
+// Fonctions utilitaires globales
+window.clearScanHistory = function() {
+    window.minimalScanModule.clearHistory();
+    console.log('✅ Historique du scan effacé');
+};
+
+console.log('[StartScan] ✅ Scanner v14.0 chargé - Support Multi-Provider avec redirection intelligente!');
+console.log('[StartScan] 💡 Debug info: window.minimalScanModule.getDebugInfo()');
+console.log('[StartScan] 💡 Effacer historique: window.clearScanHistory()');
