@@ -1,3 +1,4 @@
+
 // PageManagerGmail.js - Version 17.0 - Compatible Gmail avec catégories centrées et fixes
 
 class PageManagerGmail {
@@ -1814,10 +1815,7 @@ class PageManagerGmail {
         return emails.find(email => email.id === emailId) || null;
     }
 
-    // ================================================
-    // MODALS
-    // ================================================
-    showEmailModal(emailId) {
+showEmailModal(emailId) {
         const email = this.getEmailById(emailId);
         if (!email) return;
 
@@ -1827,9 +1825,35 @@ class PageManagerGmail {
         const syncBadge = this.syncState.startScanSynced ? 
             '<span class="sync-badge">🔄 Synchronisé depuis Gmail</span>' : '';
         
+        // Récupérer les pièces jointes si disponibles
+        const attachmentsHTML = email.attachments && email.attachments.length > 0 ? `
+            <div style="margin-top: 20px; padding: 16px; background: #f3f4f6; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #374151;">
+                    <i class="fas fa-paperclip"></i> Pièces jointes (${email.attachments.length})
+                </h4>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    ${email.attachments.map(attachment => `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas ${this.getAttachmentIcon(attachment.contentType || attachment.name)}" style="color: #6b7280;"></i>
+                                <span style="font-size: 13px; color: #374151; font-weight: 500;">${attachment.name || 'Sans nom'}</span>
+                                <span style="font-size: 11px; color: #9ca3af;">(${this.formatFileSize(attachment.size || 0)})</span>
+                            </div>
+                            ${attachment.id ? `
+                                <button onclick="window.pageManagerGmail.downloadAttachment('${emailId}', '${attachment.id}', '${attachment.name || 'file'}')" 
+                                        style="background: #3b82f6; color: white; border: none; padding: 4px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 500;">
+                                    <i class="fas fa-download"></i> Télécharger
+                                </button>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        ` : '';
+        
         const modalHTML = `
             <div id="${uniqueId}" class="modal-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
-                <div class="modal-container" style="background: white; border-radius: 12px; max-width: 800px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                <div class="modal-container" style="background: white; border-radius: 12px; max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
                     <div class="modal-header" style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
                         <h2 style="margin: 0; font-size: 20px; font-weight: 600;"><i class="fab fa-google" style="color: #4285f4; margin-right: 8px;"></i>Email Gmail</h2>
                         <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
@@ -1842,6 +1866,18 @@ class PageManagerGmail {
                                 <span style="font-weight: 600; color: #374151; margin-right: 8px;">De:</span>
                                 <span style="color: #6b7280;">${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
                             </div>
+                            ${email.toRecipients && email.toRecipients.length > 0 ? `
+                                <div style="margin-bottom: 12px;">
+                                    <span style="font-weight: 600; color: #374151; margin-right: 8px;">À:</span>
+                                    <span style="color: #6b7280;">${email.toRecipients.map(r => r.emailAddress.address).join(', ')}</span>
+                                </div>
+                            ` : ''}
+                            ${email.ccRecipients && email.ccRecipients.length > 0 ? `
+                                <div style="margin-bottom: 12px;">
+                                    <span style="font-weight: 600; color: #374151; margin-right: 8px;">Cc:</span>
+                                    <span style="color: #6b7280;">${email.ccRecipients.map(r => r.emailAddress.address).join(', ')}</span>
+                                </div>
+                            ` : ''}
                             <div style="margin-bottom: 12px;">
                                 <span style="font-weight: 600; color: #374151; margin-right: 8px;">Date:</span>
                                 <span style="color: #6b7280;">${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
@@ -1862,21 +1898,76 @@ class PageManagerGmail {
                                     <span style="color: #059669; font-weight: 600;">${Math.round(email.categoryConfidence * 100)}%</span>
                                 </div>
                             ` : ''}
+                            ${email.importance ? `
+                                <div style="margin-bottom: 12px;">
+                                    <span style="font-weight: 600; color: #374151; margin-right: 8px;">Importance:</span>
+                                    <span style="color: ${email.importance === 'high' ? '#dc2626' : '#6b7280'}; font-weight: 600;">
+                                        ${email.importance === 'high' ? '🔴 Haute' : email.importance === 'low' ? '🔵 Basse' : '⚪ Normale'}
+                                    </span>
+                                </div>
+                            ` : ''}
                             ${syncBadge}
                         </div>
-                        <div class="email-body" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; line-height: 1.6; color: #374151;">
-                            ${this.getEmailContent(email)}
+                        
+                        <div class="email-body-container">
+                            <div class="email-body-tabs" style="display: flex; gap: 8px; margin-bottom: 12px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">
+                                <button onclick="window.pageManagerGmail.switchEmailView('${uniqueId}', 'html')" 
+                                        id="tab-html-${uniqueId}"
+                                        style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: 500; font-size: 13px;">
+                                    <i class="fas fa-code"></i> HTML
+                                </button>
+                                <button onclick="window.pageManagerGmail.switchEmailView('${uniqueId}', 'text')" 
+                                        id="tab-text-${uniqueId}"
+                                        style="padding: 8px 16px; background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; border-bottom: none; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: 500; font-size: 13px;">
+                                    <i class="fas fa-align-left"></i> Texte
+                                </button>
+                                ${email.bodyPreview ? `
+                                    <button onclick="window.pageManagerGmail.switchEmailView('${uniqueId}', 'preview')" 
+                                            id="tab-preview-${uniqueId}"
+                                            style="padding: 8px 16px; background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; border-bottom: none; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: 500; font-size: 13px;">
+                                        <i class="fas fa-eye"></i> Aperçu
+                                    </button>
+                                ` : ''}
+                            </div>
+                            
+                            <div id="email-content-html-${uniqueId}" class="email-body" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; line-height: 1.6; color: #374151; min-height: 200px; max-height: 400px; overflow-y: auto;">
+                                ${this.getEmailHtmlContent(email)}
+                            </div>
+                            
+                            <div id="email-content-text-${uniqueId}" class="email-body" style="display: none; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; line-height: 1.6; color: #374151; min-height: 200px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; font-family: monospace;">
+                                ${this.getEmailTextContent(email)}
+                            </div>
+                            
+                            ${email.bodyPreview ? `
+                                <div id="email-content-preview-${uniqueId}" class="email-body" style="display: none; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; line-height: 1.6; color: #374151; min-height: 200px; max-height: 400px; overflow-y: auto;">
+                                    <p>${this.escapeHtml(email.bodyPreview)}</p>
+                                </div>
+                            ` : ''}
                         </div>
+                        
+                        ${attachmentsHTML}
                     </div>
-                    <div class="modal-footer" style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
-                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';" style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-weight: 500; color: #374151;">
-                            Fermer
-                        </button>
-                        ${!this.createdTasks.has(emailId) ? `
-                            <button onclick="document.getElementById('${uniqueId}').remove(); window.pageManagerGmail.showTaskCreationModal('${emailId}');" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px;">
-                                <i class="fas fa-tasks"></i> Créer une tâche
+                    <div class="modal-footer" style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; gap: 8px;">
+                            ${email.webLink ? `
+                                <button onclick="window.open('${email.webLink}', '_blank')" style="padding: 8px 16px; background: #4285f4; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fab fa-google"></i> Ouvrir dans Gmail
+                                </button>
+                            ` : ''}
+                            <button onclick="window.pageManagerGmail.printEmail('${emailId}')" style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-weight: 500; color: #374151; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-print"></i> Imprimer
                             </button>
-                        ` : ''}
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';" style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-weight: 500; color: #374151;">
+                                Fermer
+                            </button>
+                            ${!this.createdTasks.has(emailId) ? `
+                                <button onclick="document.getElementById('${uniqueId}').remove(); window.pageManagerGmail.showTaskCreationModal('${emailId}');" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fas fa-tasks"></i> Créer une tâche
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1884,8 +1975,10 @@ class PageManagerGmail {
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
+        
+        // Ajouter les styles pour l'iframe si nécessaire
+        this.addEmailModalStyles();
     }
-
     async showTaskCreationModal(emailId) {
         const email = this.getEmailById(emailId);
         if (!email) return;
