@@ -1,6 +1,6 @@
-// StartScan.js - Version 11.1 - Scanner corrigé sans limite et sans duplication
+// StartScan.js - Version 12.0 - Scanner avec détection et redirection améliorées
 
-console.log('[StartScan] 🚀 Loading StartScan.js v11.1...');
+console.log('[StartScan] 🚀 Loading StartScan.js v12.0...');
 
 class MinimalScanModule {
     constructor() {
@@ -21,7 +21,7 @@ class MinimalScanModule {
         // Anti-duplication
         this.processedEmailIds = new Set();
         
-        console.log('[StartScan] Scanner v11.1 initialized - Sans limite et anti-duplication');
+        console.log('[StartScan] Scanner v12.0 initialized - Détection provider améliorée');
         this.detectAuthProvider();
         this.loadSettingsFromCategoryManager();
         this.addMinimalStyles();
@@ -30,40 +30,100 @@ class MinimalScanModule {
     // ================================================
     // DÉTECTION DU PROVIDER D'AUTHENTIFICATION
     // ================================================
-    detectAuthProvider() {
+    async detectAuthProvider() {
         console.log('[StartScan] 🔍 Détection du provider d\'authentification...');
         
-        // 1. Vérifier Google Auth
-        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
-            this.currentProvider = 'google';
-            console.log('[StartScan] ✅ Authentifié avec Google/Gmail');
-            return;
+        try {
+            // 1. Vérifier Google Auth de manière asynchrone
+            if (window.googleAuthService) {
+                try {
+                    const isGoogleAuth = await window.googleAuthService.isAuthenticated();
+                    if (isGoogleAuth) {
+                        this.currentProvider = 'google';
+                        sessionStorage.setItem('lastAuthProvider', 'google');
+                        sessionStorage.setItem('currentProvider', 'google');
+                        console.log('[StartScan] ✅ Authentifié avec Google/Gmail');
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('[StartScan] ⚠️ Erreur vérification Google Auth:', error);
+                }
+            }
+            
+            // 2. Vérifier Microsoft Auth de manière asynchrone
+            if (window.authService) {
+                try {
+                    const isMSAuth = await window.authService.isAuthenticated();
+                    if (isMSAuth) {
+                        this.currentProvider = 'microsoft';
+                        sessionStorage.setItem('lastAuthProvider', 'microsoft');
+                        sessionStorage.setItem('currentProvider', 'microsoft');
+                        console.log('[StartScan] ✅ Authentifié avec Microsoft/Outlook');
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('[StartScan] ⚠️ Erreur vérification Microsoft Auth:', error);
+                }
+            }
+            
+            // 3. Vérifier l'app principale
+            if (window.app && window.app.currentProvider) {
+                this.currentProvider = window.app.currentProvider;
+                sessionStorage.setItem('lastAuthProvider', this.currentProvider);
+                sessionStorage.setItem('currentProvider', this.currentProvider);
+                console.log('[StartScan] ✅ Provider depuis app:', this.currentProvider);
+                return;
+            }
+            
+            // 4. Vérifier MailService
+            if (window.mailService && window.mailService.getCurrentProvider) {
+                const mailProvider = window.mailService.getCurrentProvider();
+                if (mailProvider && mailProvider !== 'demo') {
+                    this.currentProvider = mailProvider;
+                    sessionStorage.setItem('lastAuthProvider', mailProvider);
+                    sessionStorage.setItem('currentProvider', mailProvider);
+                    console.log('[StartScan] ✅ Provider depuis MailService:', mailProvider);
+                    return;
+                }
+            }
+            
+            // 5. Fallback sur le dernier provider
+            const lastProvider = sessionStorage.getItem('lastAuthProvider') || sessionStorage.getItem('currentProvider');
+            if (lastProvider === 'google' || lastProvider === 'microsoft') {
+                this.currentProvider = lastProvider;
+                console.log('[StartScan] ⚠️ Utilisation du dernier provider:', lastProvider);
+                return;
+            }
+            
+            console.log('[StartScan] ❌ Aucun provider détecté');
+            this.currentProvider = null;
+            
+        } catch (error) {
+            console.error('[StartScan] ❌ Erreur détection provider:', error);
+            this.currentProvider = null;
         }
+    }
+
+    // ================================================
+    // DÉTECTION DES PAGE MANAGERS
+    // ================================================
+    detectPageManager() {
+        console.log('[StartScan] 🔍 Détection du PageManager approprié...');
         
-        // 2. Vérifier Microsoft Auth
-        if (window.authService && window.authService.isAuthenticated()) {
-            this.currentProvider = 'microsoft';
-            console.log('[StartScan] ✅ Authentifié avec Microsoft/Outlook');
-            return;
-        }
+        // Vérifier les PageManagers disponibles
+        const managers = {
+            gmail: window.pageManagerGmail || window.PageManagerGmail,
+            outlook: window.pageManagerOutlook || window.PageManagerOutlook,
+            default: window.pageManager || window.PageManager
+        };
         
-        // 3. Vérifier l'app principale
-        if (window.app && window.app.currentProvider) {
-            this.currentProvider = window.app.currentProvider;
-            console.log('[StartScan] ✅ Provider depuis app:', this.currentProvider);
-            return;
-        }
+        console.log('[StartScan] 📋 PageManagers disponibles:', {
+            gmail: !!managers.gmail,
+            outlook: !!managers.outlook,
+            default: !!managers.default
+        });
         
-        // 4. Fallback sur le dernier provider
-        const lastProvider = sessionStorage.getItem('lastAuthProvider');
-        if (lastProvider === 'google' || lastProvider === 'microsoft') {
-            this.currentProvider = lastProvider;
-            console.log('[StartScan] ⚠️ Utilisation du dernier provider:', lastProvider);
-            return;
-        }
-        
-        console.log('[StartScan] ❌ Aucun provider détecté');
-        this.currentProvider = null;
+        return managers;
     }
 
     // ================================================
@@ -110,7 +170,7 @@ class MinimalScanModule {
                 defaultFolder: 'inbox',
                 autoAnalyze: true,
                 autoCategrize: true,
-                maxEmails: 1000 // Limite configurable
+                maxEmails: 1000
             },
             taskPreselectedCategories: [],
             preferences: {
@@ -132,7 +192,7 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Minimaliste v11.1 */
+            /* Scanner Ultra-Minimaliste v12.0 */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -357,21 +417,36 @@ class MinimalScanModule {
                 border-radius: 10px;
                 margin-top: 20px;
             }
+            
+            .login-buttons-container {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                width: 100%;
+            }
+            
+            .login-button-google {
+                background: linear-gradient(135deg, #4285f4, #34a853);
+            }
+            
+            .login-button-microsoft {
+                background: linear-gradient(135deg, #0078d4, #106ebe);
+            }
         `;
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[StartScan] ✅ Styles v11.1 ajoutés');
+        console.log('[StartScan] ✅ Styles v12.0 ajoutés');
     }
 
     async render(container) {
-        console.log('[StartScan] 🎯 Rendu du scanner v11.1...');
+        console.log('[StartScan] 🎯 Rendu du scanner v12.0...');
         
         try {
             this.addMinimalStyles();
             
-            // Re-détecter le provider
-            this.detectAuthProvider();
+            // Re-détecter le provider de manière asynchrone
+            await this.detectAuthProvider();
             
             if (!this.currentProvider) {
                 container.innerHTML = this.renderNotAuthenticated();
@@ -383,7 +458,8 @@ class MinimalScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[StartScan] ✅ Scanner v11.1 rendu avec succès');
+            console.log('[StartScan] ✅ Scanner v12.0 rendu avec succès');
+            console.log('[StartScan] 📋 Provider actuel:', this.currentProvider);
             
         } catch (error) {
             console.error('[StartScan] ❌ Erreur lors du rendu:', error);
@@ -479,15 +555,17 @@ class MinimalScanModule {
                     <h1 class="scanner-title">Connexion requise</h1>
                     <p class="scanner-subtitle">Connectez-vous pour analyser vos emails</p>
                     
-                    <button class="scan-button-minimal" onclick="window.minimalScanModule.handleLogin('google')" style="margin-bottom: 15px;">
-                        <i class="fab fa-google"></i>
-                        <span>Se connecter avec Gmail</span>
-                    </button>
-                    
-                    <button class="scan-button-minimal" onclick="window.minimalScanModule.handleLogin('microsoft')">
-                        <i class="fab fa-microsoft"></i>
-                        <span>Se connecter avec Outlook</span>
-                    </button>
+                    <div class="login-buttons-container">
+                        <button class="scan-button-minimal login-button-google" onclick="window.minimalScanModule.handleLogin('google')">
+                            <i class="fab fa-google"></i>
+                            <span>Se connecter avec Gmail</span>
+                        </button>
+                        
+                        <button class="scan-button-minimal login-button-microsoft" onclick="window.minimalScanModule.handleLogin('microsoft')">
+                            <i class="fab fa-microsoft"></i>
+                            <span>Se connecter avec Outlook</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -518,11 +596,11 @@ class MinimalScanModule {
         }
         
         if (this.currentProvider === 'google') {
-            if (!window.googleAuthService || !window.googleAuthService.isAuthenticated()) {
+            if (!window.googleAuthService || !(await window.googleAuthService.isAuthenticated())) {
                 throw new Error('Authentification Google requise');
             }
         } else if (this.currentProvider === 'microsoft') {
-            if (!window.authService || !window.authService.isAuthenticated()) {
+            if (!window.authService || !(await window.authService.isAuthenticated())) {
                 throw new Error('Authentification Microsoft requise');
             }
         }
@@ -548,18 +626,45 @@ class MinimalScanModule {
     }
 
     async handleLogin(provider) {
-        console.log('[StartScan] Tentative de connexion:', provider);
+        console.log('[StartScan] 🔐 Tentative de connexion:', provider);
         
         try {
+            let loginSuccess = false;
+            
             if (provider === 'google' && window.googleAuthService) {
                 await window.googleAuthService.login();
+                loginSuccess = await window.googleAuthService.isAuthenticated();
+                if (loginSuccess) {
+                    this.currentProvider = 'google';
+                    sessionStorage.setItem('currentProvider', 'google');
+                    sessionStorage.setItem('lastAuthProvider', 'google');
+                }
             } else if (provider === 'microsoft' && window.authService) {
                 await window.authService.login();
-            } else {
-                console.error('[StartScan] Service d\'authentification non disponible pour:', provider);
+                loginSuccess = await window.authService.isAuthenticated();
+                if (loginSuccess) {
+                    this.currentProvider = 'microsoft';
+                    sessionStorage.setItem('currentProvider', 'microsoft');
+                    sessionStorage.setItem('lastAuthProvider', 'microsoft');
+                }
             }
+            
+            if (loginSuccess) {
+                console.log('[StartScan] ✅ Connexion réussie:', provider);
+                // Recharger l'interface après connexion réussie
+                const container = document.querySelector('.page-content') || document.getElementById('content');
+                if (container) {
+                    await this.render(container);
+                }
+            } else {
+                console.error('[StartScan] ❌ Échec de connexion:', provider);
+            }
+            
         } catch (error) {
-            console.error('[StartScan] Erreur de connexion:', error);
+            console.error('[StartScan] ❌ Erreur de connexion:', error);
+            if (window.uiManager?.showToast) {
+                window.uiManager.showToast('Erreur de connexion. Veuillez réessayer.', 'error');
+            }
         }
     }
 
@@ -572,13 +677,17 @@ class MinimalScanModule {
             return;
         }
         
-        console.log('[StartScan] 🚀 Démarrage du scan v11.1 non bloquant');
+        console.log('[StartScan] 🚀 Démarrage du scan v12.0');
+        console.log('[StartScan] 📋 Provider actuel:', this.currentProvider);
         
         try {
             this.scanInProgress = true;
             this.scanStartTime = Date.now();
             this.abortController = new AbortController();
-            this.processedEmailIds.clear(); // Reset des IDs traités
+            this.processedEmailIds.clear();
+            
+            // Stocker le provider actuel pour la redirection
+            sessionStorage.setItem('scanProvider', this.currentProvider);
             
             const progressSection = document.getElementById('progressSection');
             if (progressSection) {
@@ -639,6 +748,19 @@ class MinimalScanModule {
             // Étape 1: Initialiser MailService
             this.updateProgress(10, 'Initialisation du service mail...', 'init');
             await this.initializeMailService();
+            
+            // Vérifier que le provider de MailService correspond
+            if (window.mailService && window.mailService.getCurrentProvider) {
+                const mailProvider = window.mailService.getCurrentProvider();
+                console.log('[StartScan] 📋 Provider MailService:', mailProvider);
+                
+                // Si les providers ne correspondent pas, essayer de réinitialiser
+                if (mailProvider !== this.currentProvider && mailProvider !== 'demo') {
+                    console.warn('[StartScan] ⚠️ Provider mismatch, réinitialisation...');
+                    await window.mailService.reset();
+                    await window.mailService.initialize();
+                }
+            }
             
             // Vérifier l'annulation
             if (scanOptions.abortSignal?.aborted) {
@@ -714,7 +836,7 @@ class MinimalScanModule {
             startDate.setDate(endDate.getDate() - scanOptions.days);
             
             let allEmails = [];
-            const uniqueEmails = new Map(); // Pour éviter les doublons
+            const uniqueEmails = new Map();
             
             // Utiliser la méthode getMessages avec limite configurable
             if (window.mailService && typeof window.mailService.getMessages === 'function') {
@@ -946,6 +1068,9 @@ class MinimalScanModule {
     }
 
     redirectToResults() {
+        console.log('[StartScan] 🚀 Préparation de la redirection...');
+        console.log('[StartScan] 📋 Provider actuel:', this.currentProvider);
+        
         this.scanInProgress = false;
         
         // Préparer les résultats essentiels
@@ -965,6 +1090,7 @@ class MinimalScanModule {
         try {
             sessionStorage.setItem('scanResults', JSON.stringify(essentialResults));
             sessionStorage.setItem('lastScanProvider', this.currentProvider);
+            sessionStorage.setItem('currentProvider', this.currentProvider);
             
             // Stocker les emails dans EmailScanner
             if (window.emailScanner && this.scanResults?.emails) {
@@ -983,6 +1109,7 @@ class MinimalScanModule {
                     results: essentialResults,
                     emails: this.scanResults?.emails || [],
                     source: 'StartScan',
+                    provider: this.currentProvider,
                     timestamp: Date.now()
                 }
             }));
@@ -994,18 +1121,70 @@ class MinimalScanModule {
             window.uiManager.showToast(message, 'success', 4000);
         }
         
-        // Redirection intelligente
+        // Redirection intelligente basée sur le provider
         setTimeout(() => {
             console.log('[StartScan] 🚀 Redirection vers la page emails...');
             
-            if (this.currentProvider === 'google' && window.pageManagerGmail) {
-                window.pageManagerGmail.loadPage('emails');
-            } else if (window.pageManager) {
-                window.pageManager.loadPage('emails');
+            // Détecter les PageManagers disponibles
+            const managers = this.detectPageManager();
+            
+            // Redirection en fonction du provider actuel
+            if (this.currentProvider === 'google') {
+                console.log('[StartScan] 🔄 Redirection vers PageManagerGmail...');
+                
+                if (managers.gmail) {
+                    managers.gmail.loadPage('emails');
+                } else if (managers.default) {
+                    console.warn('[StartScan] ⚠️ PageManagerGmail non trouvé, utilisation du default');
+                    managers.default.loadPage('emails');
+                } else {
+                    console.error('[StartScan] ❌ Aucun PageManager disponible pour Gmail');
+                    this.fallbackRedirect();
+                }
+                
+            } else if (this.currentProvider === 'microsoft') {
+                console.log('[StartScan] 🔄 Redirection vers PageManagerOutlook...');
+                
+                if (managers.outlook) {
+                    managers.outlook.loadPage('emails');
+                } else if (managers.default) {
+                    console.warn('[StartScan] ⚠️ PageManagerOutlook non trouvé, utilisation du default');
+                    managers.default.loadPage('emails');
+                } else {
+                    console.error('[StartScan] ❌ Aucun PageManager disponible pour Outlook');
+                    this.fallbackRedirect();
+                }
+                
             } else {
-                console.warn('[StartScan] ⚠️ Aucun PageManager disponible');
+                console.warn('[StartScan] ⚠️ Provider inconnu, utilisation du PageManager par défaut');
+                
+                if (managers.default) {
+                    managers.default.loadPage('emails');
+                } else {
+                    console.error('[StartScan] ❌ Aucun PageManager disponible');
+                    this.fallbackRedirect();
+                }
             }
+            
         }, 500);
+    }
+
+    fallbackRedirect() {
+        console.log('[StartScan] 🔄 Redirection fallback...');
+        
+        // Essayer de trouver un bouton ou lien emails dans la navigation
+        const emailsLink = document.querySelector('[data-page="emails"]') || 
+                          document.querySelector('a[href="#emails"]') ||
+                          document.querySelector('.nav-item:contains("Emails")');
+        
+        if (emailsLink) {
+            emailsLink.click();
+        } else {
+            // Dernier recours : notification
+            if (window.uiManager?.showToast) {
+                window.uiManager.showToast('Scan terminé ! Cliquez sur "Emails" dans le menu.', 'info', 5000);
+            }
+        }
     }
 
     showScanError(error) {
@@ -1077,7 +1256,8 @@ class MinimalScanModule {
             settings: this.settings,
             scanResults: this.scanResults,
             processedEmailIds: this.processedEmailIds.size,
-            version: '11.1'
+            version: '12.0',
+            pageManagers: this.detectPageManager()
         };
     }
 
@@ -1110,4 +1290,5 @@ window.MinimalScanModule = MinimalScanModule;
 window.minimalScanModule = new MinimalScanModule();
 window.scanStartModule = window.minimalScanModule;
 
-console.log('[StartScan] ✅ Scanner v11.1 chargé - Sans limite et anti-duplication!');
+console.log('[StartScan] ✅ Scanner v12.0 chargé - Détection et redirection améliorées!');
+console.log('[StartScan] 💡 Debug info: window.minimalScanModule.getDebugInfo()');
