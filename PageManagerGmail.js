@@ -222,6 +222,13 @@ class PageManagerGmail {
             this.fetchEmailsFromMailService();
         }
         
+        // Vérifier et forcer la catégorisation si nécessaire
+        const needsCategorization = emails.some(email => !email.category || email.category === '');
+        if (needsCategorization && window.categoryManager) {
+            console.log('[PageManagerGmail] ⚠️ Emails non catégorisés détectés, lancement de la catégorisation...');
+            emails = this.categorizeEmails(emails);
+        }
+        
         // Filtrer pour ne garder que les emails Gmail/Google
         const gmailEmails = emails.filter(email => {
             return !email.provider || email.provider === 'google' || email.provider === 'gmail';
@@ -229,6 +236,31 @@ class PageManagerGmail {
         
         console.log(`[PageManagerGmail] 📊 Total emails Gmail: ${gmailEmails.length}/${emails.length}`);
         return gmailEmails;
+    }
+
+    categorizeEmails(emails) {
+        if (!window.categoryManager || !window.categoryManager.analyzeEmail) {
+            console.warn('[PageManagerGmail] CategoryManager non disponible pour la catégorisation');
+            return emails;
+        }
+
+        console.log('[PageManagerGmail] 🏷️ Catégorisation de', emails.length, 'emails...');
+        
+        return emails.map(email => {
+            if (!email.category || email.category === '') {
+                try {
+                    const analysis = window.categoryManager.analyzeEmail(email);
+                    email.category = analysis.category || 'other';
+                    email.categoryScore = analysis.score || 0;
+                    email.categoryConfidence = analysis.confidence || 0;
+                    email.matchedPatterns = analysis.matchedPatterns || [];
+                } catch (error) {
+                    console.error('[PageManagerGmail] Erreur catégorisation email:', error);
+                    email.category = 'other';
+                }
+            }
+            return email;
+        });
     }
 
     async fetchEmailsFromMailService() {
@@ -407,7 +439,23 @@ class PageManagerGmail {
                             <span class="email-count">${emails.length}</span>
                         </h1>
                         <div class="header-actions">
-                            ${this.renderViewModeButtons()}
+                            <div class="view-mode-selector">
+                                <button class="view-mode-btn ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                        onclick="pageManagerGmail.changeViewMode('flat')"
+                                        title="Vue par liste">
+                                    <i class="fas fa-list"></i>
+                                </button>
+                                <button class="view-mode-btn ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                        onclick="pageManagerGmail.changeViewMode('grouped-domain')"
+                                        title="Vue par domaine">
+                                    <i class="fas fa-globe"></i>
+                                </button>
+                                <button class="view-mode-btn ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                                        onclick="pageManagerGmail.changeViewMode('grouped-sender')"
+                                        title="Vue par expéditeur">
+                                    <i class="fas fa-user"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -534,39 +582,78 @@ class PageManagerGmail {
 
     renderCategoryTabs(categoryCounts, totalEmails, categories) {
         const preselected = this.getTaskPreselectedCategories();
-        const tabs = [{ id: 'all', name: 'Tous', icon: '📧', count: totalEmails }];
+        console.log('[PageManagerGmail] 📌 Catégories pré-sélectionnées:', preselected);
         
-        Object.entries(categories).forEach(([id, cat]) => {
-            if (id !== 'all' && (categoryCounts[id] || 0) > 0) {
+        const tabs = [{ 
+            id: 'all', 
+            name: 'Tous', 
+            icon: '📧', 
+            count: totalEmails,
+            isPreselected: false 
+        }];
+        
+        // Ajouter les catégories actives
+        Object.entries(categories).forEach(([catId, category]) => {
+            if (catId === 'all') return;
+            
+            const count = categoryCounts[catId] || 0;
+            if (count > 0) {
+                const isPreselected = preselected.includes(catId);
                 tabs.push({
-                    id,
-                    name: cat.name,
-                    icon: cat.icon,
-                    color: cat.color,
-                    count: categoryCounts[id],
-                    isPreselected: preselected.includes(id)
+                    id: catId,
+                    name: category.name,
+                    icon: category.icon,
+                    color: category.color,
+                    count: count,
+                    isPreselected: isPreselected
                 });
+                
+                if (isPreselected) {
+                    console.log(`[PageManagerGmail] ⭐ Catégorie pré-sélectionnée: ${category.name} (${count} emails)`);
+                }
             }
         });
         
-        if (categoryCounts.other > 0) {
-            tabs.push({ id: 'other', name: 'Autre', icon: '📌', color: '#64748b', count: categoryCounts.other });
+        // Ajouter "Autre"
+        const otherCount = categoryCounts.other || 0;
+        if (otherCount > 0) {
+            tabs.push({
+                id: 'other',
+                name: 'Autre',
+                icon: '📌',
+                count: otherCount,
+                isPreselected: false
+            });
+        }
+        
+        // Diviser en lignes de 6 boutons maximum
+        let tabsHTML = '';
+        for (let i = 0; i < tabs.length; i += 6) {
+            const rowTabs = tabs.slice(i, i + 6);
+            tabsHTML += `<div class="category-row">`;
+            tabsHTML += rowTabs.map(tab => {
+                const isCurrentCategory = this.currentCategory === tab.id;
+                const baseClasses = `category-tab ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected' : ''}`;
+                
+                return `
+                    <button class="${baseClasses}" 
+                            onclick="pageManagerGmail.filterByCategory('${tab.id}')"
+                            data-category-id="${tab.id}"
+                            title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
+                        <span class="tab-icon">${tab.icon}</span>
+                        <span class="tab-name">${tab.name}</span>
+                        <span class="tab-count">${tab.count}</span>
+                        ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
+                    </button>
+                `;
+            }).join('');
+            tabsHTML += `</div>`;
         }
         
         return `
-            <div class="category-tabs-wrapper">
-                <div class="category-tabs">
-                    ${tabs.map(tab => `
-                        <button class="category-tab ${this.currentCategory === tab.id ? 'active' : ''} ${tab.isPreselected ? 'preselected' : ''}" 
-                                onclick="pageManagerGmail.filterByCategory('${tab.id}')"
-                                data-category-id="${tab.id}"
-                                style="${tab.color && tab.id !== 'all' ? `--category-color: ${tab.color};` : ''}">
-                            <span class="tab-icon">${tab.icon}</span>
-                            <span class="tab-name">${tab.name}</span>
-                            <span class="tab-count">${tab.count}</span>
-                            ${tab.isPreselected ? '<i class="fas fa-star preselected-indicator"></i>' : ''}
-                        </button>
-                    `).join('')}
+            <div class="category-filters-wrapper">
+                <div class="category-filters" id="categoryFilters">
+                    ${tabsHTML}
                 </div>
             </div>
         `;
@@ -1254,11 +1341,19 @@ class PageManagerGmail {
     }
 
     changeViewMode(mode) {
+        console.log('[PageManagerGmail] 🔄 Changement de vue:', mode);
         this.currentViewMode = mode;
+        
+        // Mettre à jour les boutons de vue
         document.querySelectorAll('.view-mode-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`.view-mode-btn[onclick*="${mode}"]`)?.classList.add('active');
+        const activeBtn = document.querySelector(`.view-mode-btn[onclick*="${mode}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
+        
+        // Rafraîchir la liste des emails
         this.refreshEmailsView();
     }
 
@@ -1305,18 +1400,28 @@ class PageManagerGmail {
     }
 
     calculateCategoryCounts(emails) {
+        console.log('[PageManagerGmail] 📊 Calcul des comptages de catégories...');
+        
         const counts = {};
-        let otherCount = 0;
+        let uncategorizedCount = 0;
         
         emails.forEach(email => {
-            if (email.category && email.category !== 'other') {
-                counts[email.category] = (counts[email.category] || 0) + 1;
+            const cat = email.category;
+            
+            if (cat && cat !== 'other' && cat !== null && cat !== undefined && cat !== '') {
+                counts[cat] = (counts[cat] || 0) + 1;
             } else {
-                otherCount++;
+                uncategorizedCount++;
             }
         });
         
-        if (otherCount > 0) counts.other = otherCount;
+        if (uncategorizedCount > 0) {
+            counts.other = uncategorizedCount;
+            console.log(`[PageManagerGmail] 📌 ${uncategorizedCount} emails dans la catégorie "Autre"`);
+        }
+        
+        console.log('[PageManagerGmail] 📊 Comptages finaux:', counts);
+        
         return counts;
     }
 
@@ -1611,96 +1716,124 @@ class PageManagerGmail {
             }
 
             /* Category tabs */
-            .category-tabs-container {
-                padding: 0 24px 16px;
-                background: white;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
+            .category-filters-wrapper {
+                padding: 0;
+                background: transparent;
+                overflow: visible;
             }
 
-            .category-tabs-wrapper {
-                display: inline-block;
-                min-width: 100%;
-            }
-
-            .category-tabs {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                gap: 8px;
+            .category-filters {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
                 max-width: 1200px;
                 margin: 0 auto;
             }
 
+            .category-row {
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 6px;
+                width: 100%;
+            }
+
             .category-tab {
-                height: 48px;
-                padding: 0 16px;
+                height: 56px;
+                padding: 0;
                 background: white;
-                border: 1px solid #dadce0;
-                border-radius: 24px;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
                 cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 8px;
-                transition: all 0.2s;
-                font-size: 14px;
-                font-weight: 500;
-                color: #5f6368;
-                position: relative;
+                gap: 2px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+                font-size: 12px;
+            }
+
+            .category-tab .tab-icon {
+                font-size: 18px;
+                line-height: 1;
+            }
+
+            .category-tab .tab-name {
+                font-size: 12px;
+                font-weight: 700;
+                color: #1f2937;
+                text-align: center;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                max-width: 90%;
+                padding: 0 4px;
             }
 
-            .category-tab:hover {
-                background: #f8f9fa;
-                border-color: #1a73e8;
-            }
-
-            .category-tab.active {
-                background: #e8f0fe;
-                border-color: #1a73e8;
-                color: #1967d2;
+            .category-tab .tab-count {
+                position: absolute;
+                top: 3px;
+                right: 3px;
+                background: #3b82f6;
+                color: white;
+                font-size: 10px;
+                font-weight: 700;
+                padding: 1px 5px;
+                border-radius: 8px;
+                min-width: 18px;
+                text-align: center;
+                line-height: 1.2;
             }
 
             .category-tab.preselected {
-                border-color: #7c3aed;
-                background: #f3e8ff;
+                border-color: #8b5cf6;
+                background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
             }
 
-            .category-tab.preselected.active {
-                background: #7c3aed;
-                border-color: #7c3aed;
+            .category-tab.preselected .tab-count {
+                background: #8b5cf6;
+            }
+
+            .category-tab:hover {
+                border-color: #3b82f6;
+                background: #f0f9ff;
+                transform: translateY(-1px);
+                box-shadow: 0 3px 8px rgba(59, 130, 246, 0.15);
+            }
+
+            .category-tab.active {
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                border-color: #3b82f6;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+            }
+
+            .category-tab.active .tab-name {
                 color: white;
             }
 
-            .tab-icon {
-                font-size: 16px;
-                flex-shrink: 0;
+            .category-tab.active .tab-count {
+                background: rgba(255, 255, 255, 0.2);
             }
 
-            .tab-name {
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-
-            .tab-count {
-                background: rgba(0,0,0,0.08);
-                padding: 2px 8px;
-                border-radius: 12px;
-                font-size: 12px;
-                margin-left: 4px;
-                flex-shrink: 0;
-            }
-
-            .preselected-indicator {
-                font-size: 12px;
-                color: #7c3aed;
-                margin-left: 4px;
-            }
-
-            .category-tab.active .preselected-indicator {
+            .preselected-star {
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                width: 18px;
+                height: 18px;
+                background: #8b5cf6;
                 color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                border: 2px solid white;
+                box-shadow: 0 2px 4px rgba(139, 92, 246, 0.4);
             }
 
             /* Action bar */
