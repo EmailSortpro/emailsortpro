@@ -1,12 +1,13 @@
-// StartScan.js - Version 9.0 - Mise en évidence des catégories pré-sélectionnées
+// StartScan.js - Version 10.0 - Double authentification Outlook/Gmail
 
-console.log('[StartScan] 🚀 Loading StartScan.js v9.0...');
+console.log('[StartScan] 🚀 Loading StartScan.js v10.0 - Dual Authentication...');
 
 class MinimalScanModule {
     constructor() {
         this.isInitialized = false;
         this.scanInProgress = false;
         this.selectedDays = 7;
+        this.selectedProvider = null; // 'outlook' ou 'gmail'
         this.stylesAdded = false;
         this.scanStartTime = null;
         
@@ -15,9 +16,89 @@ class MinimalScanModule {
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        console.log('[MinimalScan] Scanner v9.0 initialized - Mise en évidence des catégories');
+        // État d'authentification
+        this.authState = {
+            outlook: false,
+            gmail: false,
+            outlookUser: null,
+            gmailUser: null
+        };
+        
+        console.log('[MinimalScan] Scanner v10.0 initialized - Dual Authentication');
         this.loadSettingsFromCategoryManager();
+        this.checkAuthenticationStatus();
         this.addMinimalStyles();
+    }
+
+    // ================================================
+    // AUTHENTIFICATION
+    // ================================================
+    async checkAuthenticationStatus() {
+        console.log('[MinimalScan] 🔐 Vérification de l\'authentification...');
+        
+        try {
+            // Vérifier Outlook/Microsoft
+            if (window.authService) {
+                this.authState.outlook = await this.checkOutlookAuth();
+            }
+            
+            // Vérifier Gmail/Google
+            if (window.googleAuthService) {
+                this.authState.gmail = await this.checkGmailAuth();
+            }
+            
+            console.log('[MinimalScan] 📊 État authentification:', {
+                outlook: this.authState.outlook,
+                gmail: this.authState.gmail
+            });
+            
+        } catch (error) {
+            console.error('[MinimalScan] ❌ Erreur vérification auth:', error);
+        }
+    }
+
+    async checkOutlookAuth() {
+        try {
+            if (window.authService?.isAuthenticated) {
+                const isAuth = window.authService.isAuthenticated();
+                if (isAuth && window.authService.getUser) {
+                    this.authState.outlookUser = window.authService.getUser();
+                }
+                return isAuth;
+            }
+            
+            if (window.mailService?.getCurrentProvider) {
+                const provider = window.mailService.getCurrentProvider();
+                return provider === 'outlook' || provider === 'microsoft';
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('[MinimalScan] Erreur auth Outlook:', error);
+            return false;
+        }
+    }
+
+    async checkGmailAuth() {
+        try {
+            if (window.googleAuthService?.isAuthenticated) {
+                const isAuth = await window.googleAuthService.isAuthenticated();
+                if (isAuth && window.googleAuthService.getUser) {
+                    this.authState.gmailUser = await window.googleAuthService.getUser();
+                }
+                return isAuth;
+            }
+            
+            if (window.mailService?.getCurrentProvider) {
+                const provider = window.mailService.getCurrentProvider();
+                return provider === 'google' || provider === 'gmail';
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('[MinimalScan] Erreur auth Gmail:', error);
+            return false;
+        }
     }
 
     // ================================================
@@ -153,7 +234,7 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Minimaliste v9.0 */
+            /* Scanner Ultra-Minimaliste v10.0 */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -213,6 +294,126 @@ class MinimalScanModule {
                 font-size: 18px;
                 color: #6b7280;
                 margin-bottom: 35px;
+            }
+            
+            /* Section de sélection du provider */
+            .provider-selection {
+                margin: 30px 0;
+                padding: 25px;
+                background: #f8f9fa;
+                border-radius: 15px;
+                border: 2px solid #e5e7eb;
+            }
+            
+            .provider-title {
+                font-size: 18px;
+                font-weight: 600;
+                color: #374151;
+                margin-bottom: 20px;
+            }
+            
+            .provider-options {
+                display: flex;
+                gap: 15px;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .provider-option {
+                flex: 1;
+                min-width: 200px;
+                padding: 20px;
+                background: white;
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+            }
+            
+            .provider-option:hover:not(.disabled) {
+                border-color: #667eea;
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            }
+            
+            .provider-option.selected {
+                border-color: #667eea;
+                background: linear-gradient(135deg, #f0f4ff 0%, #e8eeff 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+            }
+            
+            .provider-option.disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            
+            .provider-icon {
+                font-size: 48px;
+                margin-bottom: 12px;
+                display: block;
+            }
+            
+            .provider-icon.outlook {
+                color: #0078d4;
+            }
+            
+            .provider-icon.gmail {
+                color: #ea4335;
+            }
+            
+            .provider-name {
+                font-size: 18px;
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 4px;
+            }
+            
+            .provider-status {
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+            }
+            
+            .provider-status.connected {
+                color: #10b981;
+            }
+            
+            .provider-status.disconnected {
+                color: #6b7280;
+            }
+            
+            .provider-email {
+                font-size: 12px;
+                color: #6b7280;
+                margin-top: 4px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .check-icon {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                width: 24px;
+                height: 24px;
+                background: #667eea;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+            
+            .provider-option.selected .check-icon {
+                opacity: 1;
             }
             
             /* Affichage des catégories pré-sélectionnées */
@@ -403,6 +604,14 @@ class MinimalScanModule {
                 overflow: hidden;
             }
             
+            .scan-button-minimal.outlook {
+                background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%);
+            }
+            
+            .scan-button-minimal.gmail {
+                background: linear-gradient(135deg, #ea4335 0%, #c5221f 100%);
+            }
+            
             .scan-button-minimal:hover:not(:disabled) {
                 transform: translateY(-2px);
                 box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
@@ -471,6 +680,14 @@ class MinimalScanModule {
                 transition: width 0.5s ease;
             }
             
+            .progress-fill.outlook {
+                background: linear-gradient(90deg, #0078d4 0%, #005a9e 100%);
+            }
+            
+            .progress-fill.gmail {
+                background: linear-gradient(90deg, #ea4335 0%, #c5221f 100%);
+            }
+            
             .progress-text {
                 font-size: 16px;
                 color: #6b7280;
@@ -511,7 +728,53 @@ class MinimalScanModule {
                 text-align: center;
             }
             
+            /* Connexion buttons */
+            .auth-button {
+                padding: 12px 24px;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .auth-button.outlook {
+                background: #0078d4;
+                color: white;
+            }
+            
+            .auth-button.outlook:hover {
+                background: #005a9e;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 120, 212, 0.3);
+            }
+            
+            .auth-button.gmail {
+                background: #ea4335;
+                color: white;
+            }
+            
+            .auth-button.gmail:hover {
+                background: #c5221f;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(234, 67, 53, 0.3);
+            }
+            
             /* Responsive */
+            @media (max-width: 768px) {
+                .provider-options {
+                    flex-direction: column;
+                }
+                
+                .provider-option {
+                    min-width: auto;
+                }
+            }
+            
             @media (max-width: 480px) {
                 .scanner-card-minimal {
                     padding: 35px 25px;
@@ -539,33 +802,35 @@ class MinimalScanModule {
                     font-size: 13px;
                     min-width: 75px;
                 }
+                
+                .provider-icon {
+                    font-size: 36px;
+                }
+                
+                .provider-name {
+                    font-size: 16px;
+                }
             }
         `;
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[MinimalScan] ✅ Styles v9.0 ajoutés');
+        console.log('[MinimalScan] ✅ Styles v10.0 ajoutés');
     }
 
     async render(container) {
-        console.log('[MinimalScan] 🎯 Rendu du scanner v9.0...');
+        console.log('[MinimalScan] 🎯 Rendu du scanner v10.0...');
         
         try {
             this.addMinimalStyles();
+            await this.checkAuthenticationStatus();
             this.checkSettingsUpdate();
-            
-            if (!window.authService?.isAuthenticated()) {
-                container.innerHTML = this.renderNotAuthenticated();
-                return;
-            }
-
-            await this.checkServices();
             
             container.innerHTML = this.renderMinimalScanner();
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[MinimalScan] ✅ Scanner v9.0 rendu avec succès');
+            console.log('[MinimalScan] ✅ Scanner v10.0 rendu avec succès');
             
         } catch (error) {
             console.error('[MinimalScan] ❌ Erreur lors du rendu:', error);
@@ -574,6 +839,8 @@ class MinimalScanModule {
     }
 
     renderMinimalScanner() {
+        const hasAnyAuth = this.authState.outlook || this.authState.gmail;
+        
         return `
             <div class="minimal-scanner">
                 <div class="scanner-card-minimal">
@@ -582,46 +849,52 @@ class MinimalScanModule {
                     </div>
                     
                     <h1 class="scanner-title">Scanner Email</h1>
-                    <p class="scanner-subtitle">Organisez vos emails automatiquement avec IA</p>
+                    <p class="scanner-subtitle">Choisissez votre service email pour analyser vos messages</p>
                     
-                    <div id="preselected-categories-display">
-                        ${this.renderPreselectedCategories()}
-                    </div>
+                    ${this.renderProviderSelection()}
                     
-                    <div class="steps-container">
-                        <div class="step active" id="step1">
-                            <div class="step-number">1</div>
-                            <div class="step-label">Sélection</div>
+                    ${hasAnyAuth && this.selectedProvider ? `
+                        <div id="preselected-categories-display">
+                            ${this.renderPreselectedCategories()}
                         </div>
-                        <div class="step" id="step2">
-                            <div class="step-number">2</div>
-                            <div class="step-label">Analyse</div>
+                        
+                        <div class="steps-container">
+                            <div class="step active" id="step1">
+                                <div class="step-number">1</div>
+                                <div class="step-label">Sélection</div>
+                            </div>
+                            <div class="step" id="step2">
+                                <div class="step-number">2</div>
+                                <div class="step-label">Analyse</div>
+                            </div>
+                            <div class="step" id="step3">
+                                <div class="step-number">3</div>
+                                <div class="step-label">Résultats</div>
+                            </div>
                         </div>
-                        <div class="step" id="step3">
-                            <div class="step-number">3</div>
-                            <div class="step-label">Résultats</div>
+                        
+                        <div class="duration-section">
+                            <div class="duration-label">Période d'analyse</div>
+                            <div class="duration-options">
+                                ${this.renderDurationOptions()}
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="duration-section">
-                        <div class="duration-label">Période d'analyse</div>
-                        <div class="duration-options">
-                            ${this.renderDurationOptions()}
+                        
+                        <button class="scan-button-minimal ${this.selectedProvider}" 
+                                id="minimalScanBtn" 
+                                onclick="window.minimalScanModule.startScan()">
+                            <i class="fas fa-play"></i>
+                            <span>Démarrer l'analyse ${this.selectedProvider === 'outlook' ? 'Outlook' : 'Gmail'}</span>
+                        </button>
+                        
+                        <div class="progress-section-minimal" id="progressSection">
+                            <div class="progress-bar-minimal">
+                                <div class="progress-fill ${this.selectedProvider}" id="progressFill"></div>
+                            </div>
+                            <div class="progress-text" id="progressText">Initialisation...</div>
+                            <div class="progress-status" id="progressStatus">Préparation du scan</div>
                         </div>
-                    </div>
-                    
-                    <button class="scan-button-minimal" id="minimalScanBtn" onclick="window.minimalScanModule.startScan()">
-                        <i class="fas fa-play"></i>
-                        <span>Démarrer l'analyse intelligente</span>
-                    </button>
-                    
-                    <div class="progress-section-minimal" id="progressSection">
-                        <div class="progress-bar-minimal">
-                            <div class="progress-fill" id="progressFill"></div>
-                        </div>
-                        <div class="progress-text" id="progressText">Initialisation...</div>
-                        <div class="progress-status" id="progressStatus">Préparation du scan</div>
-                    </div>
+                    ` : ''}
                     
                     <div class="scan-info">
                         <div class="scan-info-main">
@@ -629,6 +902,55 @@ class MinimalScanModule {
                             <span>Scan sécurisé et privé avec IA Claude</span>
                         </div>
                         ${this.renderScanInfoDetails()}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderProviderSelection() {
+        return `
+            <div class="provider-selection">
+                <div class="provider-title">Sélectionnez votre service email</div>
+                <div class="provider-options">
+                    <div class="provider-option ${this.authState.outlook ? '' : 'disabled'} ${this.selectedProvider === 'outlook' ? 'selected' : ''}" 
+                         onclick="${this.authState.outlook ? 'window.minimalScanModule.selectProvider(\'outlook\')' : 'window.minimalScanModule.loginOutlook()'}"
+                         data-provider="outlook">
+                        <i class="fab fa-microsoft provider-icon outlook"></i>
+                        <div class="provider-name">Outlook</div>
+                        <div class="provider-status ${this.authState.outlook ? 'connected' : 'disconnected'}">
+                            ${this.authState.outlook ? 
+                                `<i class="fas fa-check-circle"></i> Connecté` : 
+                                `<i class="fas fa-sign-in-alt"></i> Se connecter`
+                            }
+                        </div>
+                        ${this.authState.outlookUser ? 
+                            `<div class="provider-email">${this.authState.outlookUser.email || this.authState.outlookUser.name || ''}</div>` : 
+                            ''
+                        }
+                        <div class="check-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="provider-option ${this.authState.gmail ? '' : 'disabled'} ${this.selectedProvider === 'gmail' ? 'selected' : ''}" 
+                         onclick="${this.authState.gmail ? 'window.minimalScanModule.selectProvider(\'gmail\')' : 'window.minimalScanModule.loginGmail()'}"
+                         data-provider="gmail">
+                        <i class="fab fa-google provider-icon gmail"></i>
+                        <div class="provider-name">Gmail</div>
+                        <div class="provider-status ${this.authState.gmail ? 'connected' : 'disconnected'}">
+                            ${this.authState.gmail ? 
+                                `<i class="fas fa-check-circle"></i> Connecté` : 
+                                `<i class="fas fa-sign-in-alt"></i> Se connecter`
+                            }
+                        </div>
+                        ${this.authState.gmailUser ? 
+                            `<div class="provider-email">${this.authState.gmailUser.email || this.authState.gmailUser.name || ''}</div>` : 
+                            ''
+                        }
+                        <div class="check-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -702,28 +1024,13 @@ class MinimalScanModule {
             details.push('Filtrage spam actif');
         }
         
+        if (this.authState.outlook && this.authState.gmail) {
+            details.push('Double authentification active');
+        }
+        
         return details.length > 0 ? 
             `<div class="scan-info-details">${details.join(' • ')}</div>` :
             '<div class="scan-info-details">Configuration par défaut</div>';
-    }
-
-    renderNotAuthenticated() {
-        return `
-            <div class="minimal-scanner">
-                <div class="scanner-card-minimal">
-                    <div class="scanner-icon">
-                        <i class="fas fa-lock"></i>
-                    </div>
-                    <h1 class="scanner-title">Connexion requise</h1>
-                    <p class="scanner-subtitle">Connectez-vous pour analyser vos emails</p>
-                    
-                    <button class="scan-button-minimal" onclick="window.authService.login()">
-                        <i class="fab fa-microsoft"></i>
-                        <span>Se connecter</span>
-                    </button>
-                </div>
-            </div>
-        `;
     }
 
     renderError(error) {
@@ -745,16 +1052,82 @@ class MinimalScanModule {
         `;
     }
 
-    async checkServices() {
-        if (!window.authService?.isAuthenticated()) {
-            throw new Error('Authentification requise');
+    // ================================================
+    // SÉLECTION ET AUTHENTIFICATION
+    // ================================================
+    selectProvider(provider) {
+        console.log(`[MinimalScan] 📧 Provider sélectionné: ${provider}`);
+        
+        this.selectedProvider = provider;
+        
+        // Mettre à jour l'UI
+        document.querySelectorAll('.provider-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        
+        const selectedOption = document.querySelector(`[data-provider="${provider}"]`);
+        if (selectedOption) {
+            selectedOption.classList.add('selected');
         }
         
-        if (!window.mailService) {
-            console.warn('[MinimalScan] ⚠️ MailService non disponible');
+        // Rafraîchir la page pour afficher les options
+        const container = document.querySelector('.minimal-scanner').parentElement;
+        if (container) {
+            this.render(container);
         }
     }
 
+    async loginOutlook() {
+        console.log('[MinimalScan] 🔐 Connexion Outlook...');
+        
+        try {
+            if (window.authService?.login) {
+                await window.authService.login();
+                await this.checkAuthenticationStatus();
+                
+                if (this.authState.outlook) {
+                    this.selectedProvider = 'outlook';
+                    const container = document.querySelector('.minimal-scanner').parentElement;
+                    if (container) {
+                        this.render(container);
+                    }
+                }
+            } else {
+                window.uiManager?.showToast('Service Outlook non disponible', 'error');
+            }
+        } catch (error) {
+            console.error('[MinimalScan] Erreur connexion Outlook:', error);
+            window.uiManager?.showToast('Erreur de connexion Outlook', 'error');
+        }
+    }
+
+    async loginGmail() {
+        console.log('[MinimalScan] 🔐 Connexion Gmail...');
+        
+        try {
+            if (window.googleAuthService?.login) {
+                await window.googleAuthService.login();
+                await this.checkAuthenticationStatus();
+                
+                if (this.authState.gmail) {
+                    this.selectedProvider = 'gmail';
+                    const container = document.querySelector('.minimal-scanner').parentElement;
+                    if (container) {
+                        this.render(container);
+                    }
+                }
+            } else {
+                window.uiManager?.showToast('Service Gmail non disponible', 'error');
+            }
+        } catch (error) {
+            console.error('[MinimalScan] Erreur connexion Gmail:', error);
+            window.uiManager?.showToast('Erreur de connexion Gmail', 'error');
+        }
+    }
+
+    // ================================================
+    // SCAN
+    // ================================================
     initializeEvents() {
         console.log('[MinimalScan] ✅ Événements initialisés');
         
@@ -783,12 +1156,12 @@ class MinimalScanModule {
     }
 
     async startScan() {
-        if (this.scanInProgress) {
-            console.log('[MinimalScan] Scan déjà en cours');
+        if (this.scanInProgress || !this.selectedProvider) {
+            console.log('[MinimalScan] Scan impossible - en cours ou pas de provider');
             return;
         }
         
-        console.log('[MinimalScan] 🚀 Démarrage du scan');
+        console.log(`[MinimalScan] 🚀 Démarrage du scan ${this.selectedProvider}`);
         console.log('[MinimalScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
         
         try {
@@ -824,6 +1197,7 @@ class MinimalScanModule {
         const baseOptions = {
             days: this.selectedDays,
             folder: this.settings.scanSettings?.defaultFolder || 'inbox',
+            provider: this.selectedProvider,
             autoAnalyze: this.settings.scanSettings?.autoAnalyze !== false,
             autoCategrize: this.settings.scanSettings?.autoCategrize !== false,
             includeSpam: !this.settings.preferences?.excludeSpam,
@@ -841,6 +1215,11 @@ class MinimalScanModule {
 
     async executeScan(scanOptions) {
         try {
+            // Configurer le mail service sur le bon provider
+            if (window.mailService?.setProvider) {
+                await window.mailService.setProvider(this.selectedProvider);
+            }
+            
             if (window.emailScanner && typeof window.emailScanner.scan === 'function') {
                 console.log('[MinimalScan] 🔄 Scan réel en cours...');
                 
@@ -866,6 +1245,7 @@ class MinimalScanModule {
                     success: true,
                     total: 150,
                     categorized: 130,
+                    provider: this.selectedProvider,
                     taskPreselectedCategories: [...this.taskPreselectedCategories],
                     stats: { 
                         preselectedForTasks: this.taskPreselectedCategories.length > 0 ? 25 : 0,
@@ -932,6 +1312,7 @@ class MinimalScanModule {
             success: true,
             total: this.scanResults?.total || 0,
             categorized: this.scanResults?.categorized || 0,
+            provider: this.selectedProvider,
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             preselectedForTasks: this.scanResults?.stats?.preselectedForTasks || 0,
             scanDuration: Math.floor((Date.now() - this.scanStartTime) / 1000),
@@ -940,21 +1321,30 @@ class MinimalScanModule {
         
         try {
             sessionStorage.setItem('scanResults', JSON.stringify(essentialResults));
+            
+            // Mettre à jour EmailScanner avec le provider
+            if (window.emailScanner) {
+                window.emailScanner.currentProvider = this.selectedProvider;
+                window.emailScanner.startScanSynced = true;
+            }
         } catch (error) {
             console.warn('[MinimalScan] Erreur stockage:', error);
         }
         
         if (window.uiManager?.showToast) {
             const message = essentialResults.preselectedForTasks > 0 ?
-                `✅ ${essentialResults.total} emails analysés • ⭐ ${essentialResults.preselectedForTasks} pré-sélectionnés` :
-                `✅ ${essentialResults.total} emails analysés`;
+                `✅ ${essentialResults.total} emails ${this.selectedProvider === 'outlook' ? 'Outlook' : 'Gmail'} analysés • ⭐ ${essentialResults.preselectedForTasks} pré-sélectionnés` :
+                `✅ ${essentialResults.total} emails ${this.selectedProvider === 'outlook' ? 'Outlook' : 'Gmail'} analysés`;
             
             window.uiManager.showToast(message, 'success', 4000);
         }
         
+        // Redirection vers le bon PageManager
         setTimeout(() => {
             if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
                 window.pageManager.loadPage('emails');
+            } else if (this.selectedProvider === 'gmail' && window.pageManagerGmail) {
+                window.pageManagerGmail.loadPage('emails');
             }
         }, 500);
     }
@@ -991,8 +1381,10 @@ class MinimalScanModule {
         const scanBtn = document.getElementById('minimalScanBtn');
         if (scanBtn) {
             scanBtn.disabled = false;
-            scanBtn.innerHTML = '<i class="fas fa-play"></i> <span>Démarrer l\'analyse intelligente</span>';
-            scanBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            scanBtn.innerHTML = `<i class="fas fa-play"></i> <span>Démarrer l'analyse ${this.selectedProvider === 'outlook' ? 'Outlook' : 'Gmail'}</span>`;
+            scanBtn.style.background = this.selectedProvider === 'outlook' ? 
+                'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)' : 
+                'linear-gradient(135deg, #ea4335 0%, #c5221f 100%)';
             
             const badge = scanBtn.querySelector('.success-badge');
             if (badge) badge.remove();
@@ -1026,6 +1418,8 @@ class MinimalScanModule {
             isInitialized: this.isInitialized,
             scanInProgress: this.scanInProgress,
             selectedDays: this.selectedDays,
+            selectedProvider: this.selectedProvider,
+            authState: this.authState,
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             settings: this.settings,
             lastSettingsSync: this.lastSettingsSync,
@@ -1049,6 +1443,7 @@ class MinimalScanModule {
         this.cleanup();
         this.settings = {};
         this.taskPreselectedCategories = [];
+        this.selectedProvider = null;
         console.log('[MinimalScan] Instance détruite');
     }
 }
@@ -1062,4 +1457,4 @@ window.MinimalScanModule = MinimalScanModule;
 window.minimalScanModule = new MinimalScanModule();
 window.scanStartModule = window.minimalScanModule;
 
-console.log('[StartScan] ✅ Scanner v9.0 chargé - Mise en évidence des catégories pré-sélectionnées!');
+console.log('[StartScan] ✅ Scanner v10.0 chargé - Double authentification Outlook/Gmail!');
