@@ -58,6 +58,18 @@ class PageManagerGmail {
             // Charger les emails depuis le sessionStorage si disponibles
             this.loadEmailsFromStorage();
             
+            // Écouter les événements d'authentification Google
+            window.addEventListener('googleAuthReady', (e) => {
+                console.log('[PageManagerGmail] 🔐 Google Auth Ready:', e.detail);
+                if (e.detail && e.detail.authenticated) {
+                    this.syncState.provider = 'gmail';
+                    // Recharger la page si on est sur une page nécessitant l'auth
+                    if (this.currentPage && this.requiresAuthentication(this.currentPage)) {
+                        setTimeout(() => this.loadPage(this.currentPage), 500);
+                    }
+                }
+            });
+            
             this.isInitialized = true;
             console.log('[PageManagerGmail] ✅ Version 19.0 - Corrigé et Optimisé');
         } catch (error) {
@@ -353,20 +365,33 @@ class PageManagerGmail {
         try {
             let isAuthenticated = false;
             
-            if (window.googleAuthService?.isAuthenticated) {
-                isAuthenticated = await window.googleAuthService.isAuthenticated();
+            // Vérifier GoogleAuthService d'abord (pour Gmail)
+            if (window.googleAuthService) {
+                if (typeof window.googleAuthService.isAuthenticated === 'function') {
+                    const authCheck = await window.googleAuthService.isAuthenticated();
+                    isAuthenticated = authCheck.authenticated || false;
+                    console.log('[PageManagerGmail] GoogleAuthService check:', authCheck);
+                }
+                
+                if (!isAuthenticated && typeof window.googleAuthService.getAccessToken === 'function') {
+                    try {
+                        const token = await window.googleAuthService.getAccessToken();
+                        isAuthenticated = !!token;
+                        console.log('[PageManagerGmail] Token disponible:', !!token);
+                    } catch (e) {
+                        console.warn('[PageManagerGmail] Erreur récupération token:', e);
+                    }
+                }
             }
             
-            if (!isAuthenticated && window.googleAuthService?.getAccessToken) {
-                try {
-                    const token = await window.googleAuthService.getAccessToken();
-                    isAuthenticated = !!token;
-                } catch (e) {}
-            }
-            
-            return { isAuthenticated, provider: 'gmail' };
+            return { 
+                isAuthenticated, 
+                provider: 'gmail',
+                source: isAuthenticated ? 'googleAuthService' : 'none'
+            };
             
         } catch (error) {
+            console.error('[PageManagerGmail] Erreur vérification auth:', error);
             return { isAuthenticated: false };
         }
     }
@@ -2944,25 +2969,28 @@ class PageManagerGmail {
 // ================================================
 // INITIALISATION GLOBALE
 // ================================================
-if (window.pageManagerGmail) {
-    window.pageManagerGmail.cleanup?.();
-}
-
-window.pageManagerGmail = new PageManagerGmail();
-
-// Bind des méthodes
-Object.getOwnPropertyNames(PageManagerGmail.prototype).forEach(name => {
-    if (name !== 'constructor' && typeof window.pageManagerGmail[name] === 'function') {
-        window.pageManagerGmail[name] = window.pageManagerGmail[name].bind(window.pageManagerGmail);
+(function() {
+    // Nettoyer l'ancienne instance si elle existe
+    if (window.pageManagerGmail) {
+        window.pageManagerGmail.cleanup?.();
     }
-});
 
-// Fonction de debug globale
-window.debugPageManagerGmail = function() {
-    console.group('🔍 Debug PageManagerGmail');
-    console.log(window.pageManagerGmail.getDebugInfo());
-    console.groupEnd();
-};
+    window.pageManagerGmail = new PageManagerGmail();
 
-console.log('✅ PageManagerGmail v19.0 loaded - Corrigé et Optimisé');
-console.log('💡 Utilisez window.debugPageManagerGmail() pour déboguer');
+    // Bind des méthodes
+    Object.getOwnPropertyNames(PageManagerGmail.prototype).forEach(name => {
+        if (name !== 'constructor' && typeof window.pageManagerGmail[name] === 'function') {
+            window.pageManagerGmail[name] = window.pageManagerGmail[name].bind(window.pageManagerGmail);
+        }
+    });
+
+    // Fonction de debug globale
+    window.debugPageManagerGmail = function() {
+        console.group('🔍 Debug PageManagerGmail');
+        console.log(window.pageManagerGmail.getDebugInfo());
+        console.groupEnd();
+    };
+
+    console.log('✅ PageManagerGmail v19.0 loaded - Corrigé et Optimisé');
+    console.log('💡 Utilisez window.debugPageManagerGmail() pour déboguer');
+})();
