@@ -1,4 +1,4 @@
-// PageManagerGmail.js - Version 21.0 - Optimisée pour Gmail avec détection newsletter prioritaire
+/ PageManagerGmail.js - Version 20.0 - Refonte complète basée sur PageManager
 
 class PageManagerGmail {
     constructor() {
@@ -30,34 +30,18 @@ class PageManagerGmail {
         this._taskCategoriesCache = null;
         this._taskCategoriesCacheTime = 0;
         
+        // Page modules mapping
+        this.pageModules = {
+            scanner: 'minimalScanModule',
+            emails: null,
+            tasks: 'tasksView',
+            categories: 'categoriesPage',
+            settings: 'categoriesPage',
+            ranger: 'domainOrganizer'
+        };
+        
         // Cache pour le contenu des emails
         this.emailContentCache = new Map();
-        this.fullEmailCache = new Map();
-        
-        // Cache pour les signatures détectées
-        this.signatureCache = new Map();
-        
-        // Détection newsletter améliorée
-        this.newsletterPatterns = {
-            headers: ['list-unsubscribe', 'list-id', 'list-post', 'list-help'],
-            unsubscribeKeywords: [
-                'unsubscribe', 'se désinscrire', 'se desinscrire', 'désabonner',
-                'opt out', 'opt-out', 'manage preferences', 'gérer vos préférences',
-                'email preferences', 'préférences email', 'stop emails',
-                'ne plus recevoir', 'arrêter les emails', 'update subscription',
-                'modifier votre abonnement', 'manage subscription'
-            ],
-            senderPatterns: [
-                'noreply', 'no-reply', 'newsletter', 'notifications',
-                'updates', 'info@', 'news@', 'hello@', 'contact@',
-                'marketing@', 'team@', 'support@'
-            ],
-            subjectPatterns: [
-                'newsletter', 'digest', 'weekly', 'monthly', 'update',
-                'news', 'bulletin', 'notification', 'alert', 'announcement',
-                'nouveautés', 'actualités', 'info', 'flash', 'édition'
-            ]
-        };
         
         this.safeInit();
     }
@@ -84,401 +68,15 @@ class PageManagerGmail {
             this.setupEventListeners();
             this.setupSyncListeners();
             this.setupCategoryManagerIntegration();
-            this.enhanceNewsletterDetection();
             this.isInitialized = true;
-            console.log('[PageManagerGmail] ✅ Version 21.0 - Optimisée pour Gmail');
+            console.log('[PageManagerGmail] ✅ Version 20.0 - Refonte complète');
         } catch (error) {
             console.error('[PageManagerGmail] Erreur initialisation:', error);
         }
     }
 
     // ================================================
-    // AMÉLIORATION DE LA DÉTECTION NEWSLETTER
-    // ================================================
-    enhanceNewsletterDetection() {
-        console.log('[PageManagerGmail] 🔍 Configuration détection newsletter améliorée...');
-        
-        // Ajouter la catégorie newsletter si elle n'existe pas
-        if (window.categoryManager && !window.categoryManager.categories.newsletter) {
-            window.categoryManager.categories.newsletter = {
-                name: 'Newsletter',
-                icon: '📰',
-                color: '#f59e0b',
-                description: 'Newsletters et emails marketing',
-                priority: 95, // Priorité élevée, juste après marketing_news
-                isCustom: false
-            };
-            
-            // Ajouter les mots-clés pour la détection newsletter
-            window.categoryManager.weightedKeywords.newsletter = {
-                absolute: this.newsletterPatterns.unsubscribeKeywords,
-                strong: this.newsletterPatterns.subjectPatterns,
-                weak: ['update', 'info', 'news'],
-                exclusions: []
-            };
-        }
-    }
-
-    // ================================================
-    // DÉTECTION AVANCÉE DES NEWSLETTERS
-    // ================================================
-    isNewsletterEmail(email) {
-        // Score de détection newsletter
-        let score = 0;
-        
-        // 1. Vérifier les headers spécifiques aux newsletters
-        if (email.internetMessageHeaders) {
-            const headers = email.internetMessageHeaders;
-            const hasNewsletterHeaders = this.newsletterPatterns.headers.some(headerName => 
-                headers.some(h => h.name?.toLowerCase() === headerName)
-            );
-            if (hasNewsletterHeaders) score += 50;
-        }
-        
-        // 2. Rechercher les liens/textes de désabonnement dans le contenu
-        const content = this.getEmailFullText(email).toLowerCase();
-        const hasUnsubscribeContent = this.newsletterPatterns.unsubscribeKeywords.some(keyword => 
-            content.includes(keyword)
-        );
-        if (hasUnsubscribeContent) score += 40;
-        
-        // 3. Analyser l'expéditeur
-        const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
-        const hasNewsletterSender = this.newsletterPatterns.senderPatterns.some(pattern => 
-            senderEmail.includes(pattern)
-        );
-        if (hasNewsletterSender) score += 20;
-        
-        // 4. Analyser le sujet
-        const subject = (email.subject || '').toLowerCase();
-        const hasNewsletterSubject = this.newsletterPatterns.subjectPatterns.some(pattern => 
-            subject.includes(pattern)
-        );
-        if (hasNewsletterSubject) score += 20;
-        
-        // 5. Détecter les patterns HTML typiques des newsletters
-        if (email.body?.contentType === 'html' || email.body?.content?.includes('<table')) {
-            const htmlContent = email.body?.content || '';
-            // Patterns HTML courants dans les newsletters
-            if (htmlContent.includes('unsubscribe') || 
-                htmlContent.includes('email preferences') ||
-                htmlContent.includes('view in browser') ||
-                htmlContent.includes('voir dans le navigateur')) {
-                score += 30;
-            }
-        }
-        
-        // Un email est considéré comme newsletter si score >= 60
-        return score >= 60;
-    }
-
-    getEmailFullText(email) {
-        // Combiner tous les textes de l'email pour l'analyse
-        let fullText = '';
-        
-        fullText += (email.subject || '') + ' ';
-        fullText += (email.bodyPreview || '') + ' ';
-        
-        if (email.body?.content) {
-            if (email.body.contentType === 'html') {
-                fullText += this.stripHtml(email.body.content) + ' ';
-            } else {
-                fullText += email.body.content + ' ';
-            }
-        }
-        
-        if (email.uniqueBody?.content) {
-            fullText += email.uniqueBody.content + ' ';
-        }
-        
-        return fullText;
-    }
-
-    stripHtml(html) {
-        const temp = document.createElement('div');
-        temp.innerHTML = html;
-        return temp.textContent || temp.innerText || '';
-    }
-
-    // ================================================
-    // EXTRACTION DE LA SIGNATURE
-    // ================================================
-    extractEmailSignature(email) {
-        // Vérifier le cache
-        if (this.signatureCache.has(email.id)) {
-            return this.signatureCache.get(email.id);
-        }
-        
-        let signature = null;
-        const content = email.body?.content || email.bodyPreview || '';
-        
-        // Patterns de détection de signature
-        const signaturePatterns = [
-            /--\s*\n([\s\S]+)$/,  // Pattern -- suivi du contenu
-            /Cordialement[\s\S]+$/i,
-            /Best regards[\s\S]+$/i,
-            /Sincèrement[\s\S]+$/i,
-            /Bien à vous[\s\S]+$/i,
-            /Kind regards[\s\S]+$/i,
-            /Regards[\s\S]+$/i,
-            /Thanks[\s\S]+$/i,
-            /Merci[\s\S]+$/i,
-            /Sent from[\s\S]+$/i,
-            /Envoyé depuis[\s\S]+$/i
-        ];
-        
-        // Rechercher la signature
-        for (const pattern of signaturePatterns) {
-            const match = content.match(pattern);
-            if (match) {
-                signature = match[0];
-                break;
-            }
-        }
-        
-        // Recherche alternative basée sur les sauts de ligne
-        if (!signature) {
-            const lines = content.split('\n');
-            const reversedLines = lines.slice().reverse();
-            let signatureLines = [];
-            let foundSignature = false;
-            
-            for (const line of reversedLines) {
-                const trimmedLine = line.trim();
-                
-                // Détecter le début probable de la signature
-                if (trimmedLine.match(/^(--|\*{3,}|_{3,}|={3,})$/) ||
-                    trimmedLine.match(/^(Cordialement|Best|Regards|Thanks|Merci|Sincèrement)/i)) {
-                    foundSignature = true;
-                }
-                
-                if (foundSignature || signatureLines.length > 0) {
-                    signatureLines.unshift(line);
-                    
-                    // Limiter la taille de la signature
-                    if (signatureLines.length > 10) break;
-                }
-            }
-            
-            if (signatureLines.length > 0) {
-                signature = signatureLines.join('\n');
-            }
-        }
-        
-        // Mettre en cache
-        this.signatureCache.set(email.id, signature);
-        
-        return signature;
-    }
-
-    // ================================================
-    // EXTRACTION DU LIEN DE DÉSABONNEMENT
-    // ================================================
-    extractUnsubscribeLink(email) {
-        const links = [];
-        
-        // 1. Vérifier les headers
-        if (email.internetMessageHeaders) {
-            const unsubHeader = email.internetMessageHeaders.find(h => 
-                h.name?.toLowerCase() === 'list-unsubscribe'
-            );
-            
-            if (unsubHeader?.value) {
-                // Extraire les URLs du header
-                const urlMatches = unsubHeader.value.match(/<(https?:\/\/[^>]+)>/g);
-                if (urlMatches) {
-                    urlMatches.forEach(match => {
-                        const url = match.slice(1, -1); // Retirer < et >
-                        links.push({
-                            url: url,
-                            source: 'header',
-                            type: url.startsWith('mailto:') ? 'email' : 'web'
-                        });
-                    });
-                }
-            }
-        }
-        
-        // 2. Rechercher dans le contenu HTML
-        if (email.body?.content) {
-            const content = email.body.content;
-            
-            // Patterns pour trouver les liens de désabonnement
-            const unsubPatterns = [
-                /<a[^>]*href=["']([^"']+)["'][^>]*>(.*?unsubscribe.*?)<\/a>/gi,
-                /<a[^>]*href=["']([^"']+)["'][^>]*>(.*?désinscrire.*?)<\/a>/gi,
-                /<a[^>]*href=["']([^"']+)["'][^>]*>(.*?désabonner.*?)<\/a>/gi,
-                /<a[^>]*href=["']([^"']+)["'][^>]*>(.*?opt.?out.*?)<\/a>/gi,
-                /<a[^>]*href=["']([^"']+)["'][^>]*>(.*?preferences.*?)<\/a>/gi
-            ];
-            
-            unsubPatterns.forEach(pattern => {
-                const matches = [...content.matchAll(pattern)];
-                matches.forEach(match => {
-                    if (match[1] && !links.some(l => l.url === match[1])) {
-                        links.push({
-                            url: match[1],
-                            source: 'content',
-                            type: 'web',
-                            text: match[2] || 'Unsubscribe'
-                        });
-                    }
-                });
-            });
-        }
-        
-        return links;
-    }
-
-    // ================================================
-    // RÉCUPÉRATION DU CONTENU COMPLET DE L'EMAIL
-    // ================================================
-    async getFullEmailContent(email) {
-        // Vérifier le cache d'abord
-        if (this.fullEmailCache.has(email.id)) {
-            return this.fullEmailCache.get(email.id);
-        }
-        
-        let fullContent = {
-            text: '',
-            html: '',
-            signature: null,
-            unsubscribeLinks: [],
-            attachments: [],
-            headers: {}
-        };
-        
-        try {
-            // Essayer de récupérer le contenu complet via l'API Gmail
-            if (window.gmailService && typeof window.gmailService.getMessage === 'function') {
-                const fullMessage = await window.gmailService.getMessage(email.id);
-                if (fullMessage) {
-                    fullContent = this.parseGmailMessage(fullMessage);
-                }
-            } else if (window.mailService && typeof window.mailService.getMessageContent === 'function') {
-                const content = await window.mailService.getMessageContent(email.id);
-                fullContent.html = content;
-                fullContent.text = this.stripHtml(content);
-            } else {
-                // Fallback sur le contenu disponible
-                fullContent.html = email.body?.content || '';
-                fullContent.text = email.bodyPreview || this.stripHtml(fullContent.html);
-            }
-            
-            // Extraire la signature
-            fullContent.signature = this.extractEmailSignature(email);
-            
-            // Extraire les liens de désabonnement
-            fullContent.unsubscribeLinks = this.extractUnsubscribeLink(email);
-            
-            // Informations sur les pièces jointes
-            if (email.hasAttachments && email.attachments) {
-                fullContent.attachments = email.attachments.map(att => ({
-                    name: att.name,
-                    size: att.size,
-                    contentType: att.contentType,
-                    id: att.id
-                }));
-            }
-            
-            // Headers importants
-            if (email.internetMessageHeaders) {
-                const importantHeaders = ['from', 'to', 'cc', 'subject', 'date', 'message-id'];
-                email.internetMessageHeaders.forEach(header => {
-                    if (importantHeaders.includes(header.name.toLowerCase())) {
-                        fullContent.headers[header.name] = header.value;
-                    }
-                });
-            }
-            
-        } catch (error) {
-            console.error('[PageManagerGmail] Erreur récupération contenu complet:', error);
-            fullContent.html = email.body?.content || email.bodyPreview || 'Contenu non disponible';
-            fullContent.text = this.stripHtml(fullContent.html);
-        }
-        
-        // Mettre en cache
-        this.fullEmailCache.set(email.id, fullContent);
-        
-        return fullContent;
-    }
-
-    parseGmailMessage(message) {
-        const result = {
-            text: '',
-            html: '',
-            signature: null,
-            unsubscribeLinks: [],
-            attachments: [],
-            headers: {}
-        };
-        
-        // Parser les parties du message Gmail
-        if (message.payload) {
-            // Headers
-            if (message.payload.headers) {
-                message.payload.headers.forEach(header => {
-                    result.headers[header.name] = header.value;
-                });
-            }
-            
-            // Contenu
-            const parts = this.getMessageParts(message.payload);
-            parts.forEach(part => {
-                if (part.mimeType === 'text/plain' && part.body?.data) {
-                    result.text += this.decodeBase64(part.body.data);
-                } else if (part.mimeType === 'text/html' && part.body?.data) {
-                    result.html += this.decodeBase64(part.body.data);
-                }
-            });
-            
-            // Pièces jointes
-            parts.forEach(part => {
-                if (part.filename) {
-                    result.attachments.push({
-                        name: part.filename,
-                        size: part.body?.size || 0,
-                        contentType: part.mimeType,
-                        id: part.body?.attachmentId
-                    });
-                }
-            });
-        }
-        
-        return result;
-    }
-
-    getMessageParts(payload) {
-        let parts = [];
-        
-        if (payload.parts) {
-            payload.parts.forEach(part => {
-                if (part.parts) {
-                    parts = parts.concat(this.getMessageParts(part));
-                } else {
-                    parts.push(part);
-                }
-            });
-        } else {
-            parts.push(payload);
-        }
-        
-        return parts;
-    }
-
-    decodeBase64(data) {
-        try {
-            // Remplacer les caractères URL-safe
-            const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
-            return decodeURIComponent(escape(atob(base64)));
-        } catch (error) {
-            console.error('[PageManagerGmail] Erreur décodage base64:', error);
-            return '';
-        }
-    }
-
-    // ================================================
-    // INTÉGRATION CATEGORYMANAGER AVEC PRIORITÉ NEWSLETTER
+    // INTÉGRATION CATEGORYMANAGER
     // ================================================
     setupCategoryManagerIntegration() {
         console.log('[PageManagerGmail] 🔗 Configuration intégration CategoryManager...');
@@ -486,25 +84,6 @@ class PageManagerGmail {
         if (window.categoryManager) {
             console.log('[PageManagerGmail] ✅ CategoryManager détecté');
             this.syncState.categoryManagerSynced = true;
-            
-            // Modifier l'analyse pour prioriser les newsletters
-            const originalAnalyzeEmail = window.categoryManager.analyzeEmail;
-            window.categoryManager.analyzeEmail = (email) => {
-                // Vérifier d'abord si c'est une newsletter
-                if (this.isNewsletterEmail(email)) {
-                    return {
-                        category: 'newsletter',
-                        score: 100,
-                        confidence: 0.95,
-                        matchedPatterns: [{ keyword: 'newsletter_detected', type: 'absolute', score: 100 }],
-                        hasAbsolute: true,
-                        isNewsletter: true
-                    };
-                }
-                
-                // Sinon, utiliser l'analyse normale
-                return originalAnalyzeEmail.call(window.categoryManager, email);
-            };
             
             window.categoryManager.addChangeListener((type, value, settings) => {
                 console.log('[PageManagerGmail] 📨 Changement CategoryManager reçu:', type, value);
@@ -514,598 +93,6 @@ class PageManagerGmail {
             console.warn('[PageManagerGmail] ⚠️ CategoryManager non trouvé, attente...');
             setTimeout(() => this.setupCategoryManagerIntegration(), 2000);
         }
-    }
-
-    // ================================================
-    // RENDU OPTIMISÉ DES EMAILS
-    // ================================================
-    renderEmailCard(email) {
-        const hasTask = this.createdTasks.has(email.id);
-        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
-        const senderEmail = email.from?.emailAddress?.address || '';
-        
-        const preselectedCategories = this.getTaskPreselectedCategories();
-        
-        let isPreselectedForTasks = email.isPreselectedForTasks === true;
-        
-        if (!isPreselectedForTasks && preselectedCategories.includes(email.category)) {
-            isPreselectedForTasks = true;
-            email.isPreselectedForTasks = true;
-        }
-        
-        const isSelected = this.selectedEmails.has(email.id) || isPreselectedForTasks;
-        
-        if (isPreselectedForTasks && !this.selectedEmails.has(email.id)) {
-            this.selectedEmails.add(email.id);
-        }
-        
-        // Détection améliorée des newsletters
-        const isNewsletter = email.category === 'newsletter' || 
-                           email.category === 'marketing_news' || 
-                           this.isNewsletterEmail(email);
-        
-        // Détection de la signature
-        const signature = this.extractEmailSignature(email);
-        const hasSignature = !!signature;
-        
-        const cardClasses = [
-            'email-card',
-            isSelected ? 'selected' : '',
-            hasTask ? 'has-task' : '',
-            isPreselectedForTasks ? 'preselected' : '',
-            isNewsletter ? 'newsletter' : '',
-            email.provider === 'gmail' ? 'gmail-email' : ''
-        ].filter(Boolean).join(' ');
-        
-        return `
-            <div class="${cardClasses}" 
-                 data-email-id="${email.id}"
-                 data-category="${email.category}"
-                 data-preselected="${isPreselectedForTasks}">
-                
-                <input type="checkbox" 
-                       class="email-checkbox" 
-                       ${isSelected ? 'checked' : ''}
-                       onchange="event.stopPropagation(); window.pageManagerGmail.toggleEmailSelection('${email.id}')">
-                
-                <div class="priority-bar" 
-                     style="background-color: ${isNewsletter ? '#f59e0b' : isPreselectedForTasks ? '#8b5cf6' : this.getEmailPriorityColor(email)}"></div>
-                
-                <div class="email-content" onclick="window.pageManagerGmail.handleEmailClick(event, '${email.id}')">
-                    <div class="email-header">
-                        <h3 class="email-title">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
-                        <div class="email-meta">
-                            <span class="email-type">
-                                <i class="fab fa-google"></i> Gmail
-                            </span>
-                            <span class="email-date">
-                                📅 ${this.formatEmailDate(email.receivedDateTime)}
-                            </span>
-                            ${isPreselectedForTasks ? `
-                                <span class="preselected-badge">
-                                    ⭐ Pré-sélectionné
-                                </span>
-                            ` : ''}
-                            ${isNewsletter ? `
-                                <span class="newsletter-badge">
-                                    📰 Newsletter
-                                </span>
-                            ` : ''}
-                            ${hasSignature ? `
-                                <span class="signature-badge">
-                                    ✍️ Signature
-                                </span>
-                            ` : ''}
-                            ${email.categoryConfidence ? `
-                                <span class="confidence-badge">
-                                    🎯 ${Math.round(email.categoryConfidence * 100)}%
-                                </span>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="email-sender">
-                        <i class="fas fa-envelope"></i>
-                        <span class="sender-name">${this.escapeHtml(senderName)}</span>
-                        ${email.hasAttachments ? '<span class="attachment-indicator">📎 Pièce jointe</span>' : ''}
-                        ${email.category ? `
-                            <span class="category-badge" 
-                                  style="background: ${this.getCategoryColor(email.category)}20; 
-                                         color: ${this.getCategoryColor(email.category)};
-                                         ${isPreselectedForTasks ? 'font-weight: 700;' : ''}">
-                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
-                                ${isPreselectedForTasks ? ' ⭐' : ''}
-                            </span>
-                        ` : ''}
-                    </div>
-                    
-                    ${email.bodyPreview ? `
-                        <div class="email-preview">
-                            ${this.escapeHtml(email.bodyPreview.substring(0, 150))}${email.bodyPreview.length > 150 ? '...' : ''}
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <div class="email-actions">
-                    ${this.renderEmailActions(email, isNewsletter)}
-                </div>
-            </div>
-        `;
-    }
-
-    renderEmailActions(email, isNewsletter) {
-        const hasTask = this.createdTasks.has(email.id);
-        const actions = [];
-        
-        if (!hasTask) {
-            actions.push(`
-                <button class="action-btn create-task" 
-                        onclick="event.stopPropagation(); window.pageManagerGmail.showTaskCreationModal('${email.id}')"
-                        title="Créer une tâche à partir de cet email">
-                    <i class="fas fa-tasks"></i>
-                </button>
-            `);
-        } else {
-            actions.push(`
-                <button class="action-btn view-task" 
-                        onclick="event.stopPropagation(); window.pageManagerGmail.openCreatedTask('${email.id}')"
-                        title="Voir la tâche créée">
-                    <i class="fas fa-check-circle"></i>
-                </button>
-            `);
-        }
-        
-        // Bouton Contenu complet
-        actions.push(`
-            <button class="action-btn full-content" 
-                    onclick="event.stopPropagation(); window.pageManagerGmail.showFullContentModal('${email.id}')"
-                    title="Voir le contenu complet avec signature">
-                <i class="fas fa-expand-alt"></i>
-            </button>
-        `);
-        
-        // Bouton Se désabonner pour les newsletters
-        if (isNewsletter) {
-            actions.push(`
-                <button class="action-btn unsubscribe" 
-                        onclick="event.stopPropagation(); window.pageManagerGmail.smartUnsubscribe('${email.id}')"
-                        title="Se désabonner intelligemment">
-                    <i class="fas fa-user-minus"></i>
-                </button>
-            `);
-        }
-        
-        // Bouton Google Calendar
-        actions.push(`
-            <button class="action-btn calendar google-calendar" 
-                    onclick="event.stopPropagation(); window.pageManagerGmail.openGoogleCalendar('${email.id}')"
-                    title="Créer un événement Google Calendar">
-                <i class="fab fa-google"></i>
-            </button>
-        `);
-        
-        // Bouton Détails
-        actions.push(`
-            <button class="action-btn details" 
-                    onclick="event.stopPropagation(); window.pageManagerGmail.showEmailModal('${email.id}')"
-                    title="Voir les détails de l'email">
-                <i class="fas fa-eye"></i>
-            </button>
-        `);
-        
-        return actions.join('');
-    }
-
-    // ================================================
-    // MODAL DE CONTENU COMPLET AVEC SIGNATURE
-    // ================================================
-    async showFullContentModal(emailId) {
-        const email = this.getEmailById(emailId);
-        if (!email) return;
-        
-        this.showLoading('Chargement du contenu complet...');
-        
-        try {
-            const fullContent = await this.getFullEmailContent(email);
-            this.hideLoading();
-            
-            document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-            
-            const uniqueId = 'full_content_modal_' + Date.now();
-            
-            const modalHTML = `
-                <div id="${uniqueId}" class="modal-overlay">
-                    <div class="modal-container full-content-modal">
-                        <div class="modal-header">
-                            <h2>📧 Contenu complet de l'email Gmail</h2>
-                            <button class="modal-close" onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';">
-                                ×
-                            </button>
-                        </div>
-                        
-                        <div class="modal-tabs">
-                            <button class="tab-button active" onclick="window.pageManagerGmail.switchTab(event, 'content')">
-                                <i class="fas fa-file-alt"></i> Contenu
-                            </button>
-                            <button class="tab-button" onclick="window.pageManagerGmail.switchTab(event, 'signature')">
-                                <i class="fas fa-pen"></i> Signature
-                            </button>
-                            <button class="tab-button" onclick="window.pageManagerGmail.switchTab(event, 'headers')">
-                                <i class="fas fa-info-circle"></i> Headers
-                            </button>
-                            ${fullContent.attachments.length > 0 ? `
-                                <button class="tab-button" onclick="window.pageManagerGmail.switchTab(event, 'attachments')">
-                                    <i class="fas fa-paperclip"></i> Pièces jointes (${fullContent.attachments.length})
-                                </button>
-                            ` : ''}
-                        </div>
-                        
-                        <div class="modal-content">
-                            <div class="tab-content active" id="content-tab">
-                                <div class="email-full-details">
-                                    <div class="detail-row">
-                                        <strong>De:</strong>
-                                        <span>${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
-                                    </div>
-                                    <div class="detail-row">
-                                        <strong>Date:</strong>
-                                        <span>${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
-                                    </div>
-                                    <div class="detail-row">
-                                        <strong>Sujet:</strong>
-                                        <span>${email.subject || 'Sans sujet'}</span>
-                                    </div>
-                                    ${email.category ? `
-                                        <div class="detail-row">
-                                            <strong>Catégorie:</strong>
-                                            <span class="category-badge" style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)};">
-                                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
-                                            </span>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                                
-                                <div class="email-body-container">
-                                    ${fullContent.html || fullContent.text ? `
-                                        <div class="email-body-content">
-                                            ${fullContent.html || `<pre>${this.escapeHtml(fullContent.text)}</pre>`}
-                                        </div>
-                                    ` : '<p class="no-content">Aucun contenu disponible</p>'}
-                                </div>
-                                
-                                ${fullContent.unsubscribeLinks.length > 0 ? `
-                                    <div class="unsubscribe-section">
-                                        <h4><i class="fas fa-user-minus"></i> Liens de désabonnement détectés:</h4>
-                                        ${fullContent.unsubscribeLinks.map(link => `
-                                            <div class="unsubscribe-link">
-                                                <span class="link-source">${link.source === 'header' ? 'Header' : 'Contenu'}</span>
-                                                <a href="${link.url}" target="_blank" rel="noopener noreferrer">
-                                                    ${link.text || link.url.substring(0, 50) + '...'}
-                                                </a>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                ` : ''}
-                            </div>
-                            
-                            <div class="tab-content" id="signature-tab">
-                                ${fullContent.signature ? `
-                                    <div class="signature-container">
-                                        <h4><i class="fas fa-pen"></i> Signature détectée:</h4>
-                                        <div class="signature-content">
-                                            <pre>${this.escapeHtml(fullContent.signature)}</pre>
-                                        </div>
-                                    </div>
-                                ` : '<p class="no-content">Aucune signature détectée dans cet email</p>'}
-                            </div>
-                            
-                            <div class="tab-content" id="headers-tab">
-                                <div class="headers-container">
-                                    <h4><i class="fas fa-info-circle"></i> Headers de l'email:</h4>
-                                    <table class="headers-table">
-                                        ${Object.entries(fullContent.headers).map(([key, value]) => `
-                                            <tr>
-                                                <td class="header-key">${this.escapeHtml(key)}:</td>
-                                                <td class="header-value">${this.escapeHtml(value)}</td>
-                                            </tr>
-                                        `).join('')}
-                                    </table>
-                                </div>
-                            </div>
-                            
-                            ${fullContent.attachments.length > 0 ? `
-                                <div class="tab-content" id="attachments-tab">
-                                    <div class="attachments-container">
-                                        <h4><i class="fas fa-paperclip"></i> Pièces jointes:</h4>
-                                        <div class="attachments-list">
-                                            ${fullContent.attachments.map(att => `
-                                                <div class="attachment-item">
-                                                    <i class="fas fa-file"></i>
-                                                    <span class="attachment-name">${att.name}</span>
-                                                    <span class="attachment-size">(${this.formatFileSize(att.size)})</span>
-                                                    <span class="attachment-type">${att.contentType}</span>
-                                                </div>
-                                            `).join('')}
-                                        </div>
-                                    </div>
-                                </div>
-                            ` : ''}
-                        </div>
-                        
-                        <div class="modal-footer">
-                            <button class="btn btn-secondary" onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';">
-                                Fermer
-                            </button>
-                            ${!this.createdTasks.has(emailId) ? `
-                                <button class="btn btn-primary" onclick="document.getElementById('${uniqueId}').remove(); window.pageManagerGmail.showTaskCreationModal('${emailId}');">
-                                    <i class="fas fa-tasks"></i> Créer une tâche
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-            document.body.style.overflow = 'hidden';
-            
-        } catch (error) {
-            this.hideLoading();
-            console.error('[PageManagerGmail] Erreur chargement contenu complet:', error);
-            this.showToast('Erreur lors du chargement du contenu', 'error');
-        }
-    }
-
-    switchTab(event, tabName) {
-        // Retirer la classe active de tous les tabs et contenus
-        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        
-        // Activer le tab et contenu sélectionnés
-        event.target.classList.add('active');
-        document.getElementById(`${tabName}-tab`)?.classList.add('active');
-    }
-
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    // ================================================
-    // DÉSABONNEMENT INTELLIGENT
-    // ================================================
-    async smartUnsubscribe(emailId) {
-        const email = this.getEmailById(emailId);
-        if (!email) return;
-        
-        console.log('[PageManagerGmail] 🔍 Désabonnement intelligent pour:', email.subject);
-        
-        this.showLoading('Recherche des options de désabonnement...');
-        
-        try {
-            const fullContent = await this.getFullEmailContent(email);
-            this.hideLoading();
-            
-            const unsubLinks = fullContent.unsubscribeLinks;
-            
-            if (unsubLinks.length > 0) {
-                // Prioriser les liens web sur les liens mailto
-                const webLinks = unsubLinks.filter(l => l.type === 'web');
-                const emailLinks = unsubLinks.filter(l => l.type === 'email');
-                
-                if (webLinks.length > 0) {
-                    // Afficher un modal avec les options
-                    this.showUnsubscribeModal(email, webLinks, emailLinks);
-                } else if (emailLinks.length > 0) {
-                    // Proposer d'envoyer un email
-                    const mailto = emailLinks[0].url;
-                    if (confirm(`Voulez-vous envoyer un email de désabonnement à:\n${mailto.replace('mailto:', '')} ?`)) {
-                        window.open(mailto, '_blank');
-                        this.showToast('Ouverture du client mail pour désabonnement...', 'info');
-                    }
-                } else {
-                    this.showManualUnsubscribeOptions(email);
-                }
-            } else {
-                this.showManualUnsubscribeOptions(email);
-            }
-            
-        } catch (error) {
-            this.hideLoading();
-            console.error('[PageManagerGmail] Erreur désabonnement:', error);
-            this.showManualUnsubscribeOptions(email);
-        }
-    }
-
-    showUnsubscribeModal(email, webLinks, emailLinks) {
-        const modalId = 'unsubscribe_modal_' + Date.now();
-        
-        const modalHTML = `
-            <div id="${modalId}" class="modal-overlay">
-                <div class="modal-container unsubscribe-modal">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-user-minus"></i> Options de désabonnement</h2>
-                        <button class="modal-close" onclick="document.getElementById('${modalId}').remove(); document.body.style.overflow = 'auto';">
-                            ×
-                        </button>
-                    </div>
-                    
-                    <div class="modal-content">
-                        <div class="unsubscribe-info">
-                            <p><strong>Newsletter:</strong> ${email.from?.emailAddress?.name || 'Expéditeur inconnu'}</p>
-                            <p><strong>Email:</strong> ${email.from?.emailAddress?.address || ''}</p>
-                        </div>
-                        
-                        <div class="unsubscribe-options">
-                            <h4>Liens de désabonnement trouvés:</h4>
-                            
-                            ${webLinks.map((link, index) => `
-                                <div class="unsubscribe-option">
-                                    <button class="btn btn-primary" onclick="window.open('${link.url}', '_blank'); document.getElementById('${modalId}').remove();">
-                                        <i class="fas fa-external-link-alt"></i>
-                                        ${link.text || 'Lien de désabonnement ' + (index + 1)}
-                                    </button>
-                                    <span class="link-source">Source: ${link.source === 'header' ? 'En-tête email' : 'Contenu email'}</span>
-                                </div>
-                            `).join('')}
-                            
-                            ${emailLinks.length > 0 ? `
-                                <h4>Options email:</h4>
-                                ${emailLinks.map((link, index) => `
-                                    <div class="unsubscribe-option">
-                                        <button class="btn btn-secondary" onclick="window.open('${link.url}', '_blank'); document.getElementById('${modalId}').remove();">
-                                            <i class="fas fa-envelope"></i>
-                                            Envoyer un email de désabonnement
-                                        </button>
-                                        <span class="link-email">${link.url.replace('mailto:', '')}</span>
-                                    </div>
-                                `).join('')}
-                            ` : ''}
-                        </div>
-                        
-                        <div class="unsubscribe-alternatives">
-                            <h4>Autres options:</h4>
-                            <button class="btn btn-secondary" onclick="window.pageManagerGmail.searchGmailUnsubscribe('${email.from?.emailAddress?.address}'); document.getElementById('${modalId}').remove();">
-                                <i class="fab fa-google"></i>
-                                Rechercher dans Gmail
-                            </button>
-                            <button class="btn btn-secondary" onclick="window.pageManagerGmail.blockSender('${email.from?.emailAddress?.address}'); document.getElementById('${modalId}').remove();">
-                                <i class="fas fa-ban"></i>
-                                Bloquer l'expéditeur
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" onclick="document.getElementById('${modalId}').remove(); document.body.style.overflow = 'auto';">
-                            Annuler
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-    }
-
-    showManualUnsubscribeOptions(email) {
-        const senderEmail = email.from?.emailAddress?.address || '';
-        const options = [
-            {
-                title: 'Rechercher dans Gmail',
-                action: () => this.searchGmailUnsubscribe(senderEmail),
-                icon: 'fab fa-google'
-            },
-            {
-                title: 'Créer un filtre Gmail',
-                action: () => this.createGmailFilter(senderEmail),
-                icon: 'fas fa-filter'
-            },
-            {
-                title: 'Bloquer l\'expéditeur',
-                action: () => this.blockSender(senderEmail),
-                icon: 'fas fa-ban'
-            }
-        ];
-        
-        if (confirm(`Aucun lien de désabonnement trouvé pour ${email.from?.emailAddress?.name || 'cet expéditeur'}.\n\nVoulez-vous voir les options alternatives ?`)) {
-            this.showAlternativeUnsubscribeModal(email, options);
-        }
-    }
-
-    showAlternativeUnsubscribeModal(email, options) {
-        const modalId = 'alt_unsubscribe_modal_' + Date.now();
-        
-        const modalHTML = `
-            <div id="${modalId}" class="modal-overlay">
-                <div class="modal-container alternative-unsubscribe-modal">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-exclamation-triangle"></i> Options alternatives</h2>
-                        <button class="modal-close" onclick="document.getElementById('${modalId}').remove(); document.body.style.overflow = 'auto';">
-                            ×
-                        </button>
-                    </div>
-                    
-                    <div class="modal-content">
-                        <div class="alert alert-warning">
-                            <i class="fas fa-info-circle"></i>
-                            <span>Aucun lien de désabonnement automatique trouvé. Voici des alternatives:</span>
-                        </div>
-                        
-                        <div class="alternative-options">
-                            ${options.map(opt => `
-                                <button class="btn btn-option" onclick="(${opt.action.toString()})(); document.getElementById('${modalId}').remove();">
-                                    <i class="${opt.icon}"></i>
-                                    ${opt.title}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-    }
-
-    searchGmailUnsubscribe(senderEmail) {
-        const searchUrl = `https://mail.google.com/mail/u/0/#search/from:${encodeURIComponent(senderEmail)}+unsubscribe`;
-        window.open(searchUrl, '_blank');
-        this.showToast('Recherche des options de désabonnement dans Gmail...', 'info');
-    }
-
-    createGmailFilter(senderEmail) {
-        const filterUrl = `https://mail.google.com/mail/u/0/#settings/filters`;
-        window.open(filterUrl, '_blank');
-        this.showToast(`Créez un filtre pour: ${senderEmail}`, 'info');
-    }
-
-    blockSender(senderEmail) {
-        // Ouvrir les paramètres Gmail pour bloquer
-        const blockUrl = `https://mail.google.com/mail/u/0/#settings/general`;
-        window.open(blockUrl, '_blank');
-        this.showToast(`Ajoutez ${senderEmail} à votre liste de blocage`, 'info');
-    }
-
-    // ================================================
-    // LISTENERS ET SYNCHRONISATION
-    // ================================================
-    setupSyncListeners() {
-        console.log('[PageManagerGmail] 📡 Configuration des listeners de synchronisation...');
-        
-        window.addEventListener('scanCompleted', (event) => {
-            console.log('[PageManagerGmail] 📨 Scan terminé reçu:', event.detail);
-            this.handleScanCompleted(event.detail);
-        });
-        
-        window.addEventListener('emailScannerSynced', (event) => {
-            console.log('[PageManagerGmail] 🔄 EmailScanner synchronisé:', event.detail);
-            this.handleEmailScannerSynced(event.detail);
-        });
-        
-        window.addEventListener('emailsRecategorized', (event) => {
-            console.log('[PageManagerGmail] 🏷️ Emails re-catégorisés:', event.detail);
-            this.handleEmailsRecategorized(event.detail);
-        });
-        
-        window.addEventListener('emailScannerReady', (event) => {
-            console.log('[PageManagerGmail] ✅ EmailScanner prêt:', event.detail);
-            this.handleEmailScannerReady(event.detail);
-        });
-        
-        window.addEventListener('googleAuthReady', (event) => {
-            console.log('[PageManagerGmail] 🔐 Google Auth prêt:', event.detail);
-            if (event.detail.authenticated) {
-                this.syncState.provider = 'gmail';
-            }
-        });
-        
-        console.log('[PageManagerGmail] ✅ Listeners de synchronisation configurés');
     }
 
     handleCategoryManagerChange(type, value, settings) {
@@ -1185,6 +172,42 @@ class PageManagerGmail {
         if (window.aiTaskAnalyzer && type === 'automationSettings') {
             window.aiTaskAnalyzer.updateAutomationSettings?.(value);
         }
+    }
+
+    // ================================================
+    // LISTENERS DE SYNCHRONISATION
+    // ================================================
+    setupSyncListeners() {
+        console.log('[PageManagerGmail] 📡 Configuration des listeners de synchronisation...');
+        
+        window.addEventListener('scanCompleted', (event) => {
+            console.log('[PageManagerGmail] 📨 Scan terminé reçu:', event.detail);
+            this.handleScanCompleted(event.detail);
+        });
+        
+        window.addEventListener('emailScannerSynced', (event) => {
+            console.log('[PageManagerGmail] 🔄 EmailScanner synchronisé:', event.detail);
+            this.handleEmailScannerSynced(event.detail);
+        });
+        
+        window.addEventListener('emailsRecategorized', (event) => {
+            console.log('[PageManagerGmail] 🏷️ Emails re-catégorisés:', event.detail);
+            this.handleEmailsRecategorized(event.detail);
+        });
+        
+        window.addEventListener('emailScannerReady', (event) => {
+            console.log('[PageManagerGmail] ✅ EmailScanner prêt:', event.detail);
+            this.handleEmailScannerReady(event.detail);
+        });
+        
+        window.addEventListener('googleAuthReady', (event) => {
+            console.log('[PageManagerGmail] 🔐 Google Auth prêt:', event.detail);
+            if (event.detail.authenticated) {
+                this.syncState.provider = 'gmail';
+            }
+        });
+        
+        console.log('[PageManagerGmail] ✅ Listeners de synchronisation configurés');
     }
 
     handleScanCompleted(scanData) {
@@ -1267,6 +290,9 @@ class PageManagerGmail {
         }
     }
 
+    // ================================================
+    // ÉVÉNEMENTS GLOBAUX
+    // ================================================
     setupEventListeners() {
         window.addEventListener('settingsChanged', (event) => {
             if (event.detail?.source === 'PageManagerGmail') {
@@ -1551,6 +577,12 @@ class PageManagerGmail {
     async renderPage(pageName, container) {
         console.log(`[PageManagerGmail] Rendering page: ${pageName}`);
         
+        const moduleName = this.pageModules[pageName];
+        if (moduleName && window[moduleName]) {
+            console.log(`[PageManagerGmail] Delegating to module: ${moduleName}`);
+            return await this.delegateToModule(moduleName, container);
+        }
+        
         switch (pageName) {
             case 'emails':
                 return await this.renderEmails(container);
@@ -1566,6 +598,36 @@ class PageManagerGmail {
                 return await this.renderRanger(container);
             default:
                 throw new Error(`Page ${pageName} not found`);
+        }
+    }
+
+    async delegateToModule(moduleName, container) {
+        const module = window[moduleName];
+        if (!module) {
+            throw new Error(`Module ${moduleName} not found`);
+        }
+
+        try {
+            if (typeof module.render === 'function') {
+                await module.render(container);
+            } else if (typeof module.showPage === 'function') {
+                await module.showPage(container);
+            } else if (typeof module.renderSettings === 'function') {
+                await module.renderSettings(container);
+            } else {
+                console.log(`[PageManagerGmail] Initializing module: ${moduleName}`);
+                container.innerHTML = `
+                    <div class="module-placeholder">
+                        <div class="loading-spinner">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        <p>Loading ${moduleName}...</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error(`[PageManagerGmail] Error rendering module: ${moduleName}`, error);
+            throw error;
         }
     }
 
@@ -1612,34 +674,18 @@ class PageManagerGmail {
     }
 
     getCategories() {
-        const categories = {};
-        
-        // Récupérer les catégories depuis CategoryManager
         if (window.categoryManager && window.categoryManager.getCategories) {
-            const managerCategories = window.categoryManager.getCategories();
-            Object.assign(categories, managerCategories);
+            return window.categoryManager.getCategories();
         }
         
-        // Assurer que la catégorie newsletter existe et est prioritaire
-        if (!categories.newsletter) {
-            categories.newsletter = {
-                name: 'Newsletter',
-                icon: '📰',
-                color: '#f59e0b',
-                description: 'Newsletters et emails marketing',
-                priority: 95
-            };
+        if (window.emailScanner && window.emailScanner.defaultWebCategories) {
+            return window.emailScanner.defaultWebCategories;
         }
         
-        // Ajouter les catégories par défaut si manquantes
-        if (!categories.all) {
-            categories.all = { name: 'Tous', icon: '📧', color: '#1e293b' };
-        }
-        if (!categories.other) {
-            categories.other = { name: 'Autre', icon: '❓', color: '#64748b' };
-        }
-        
-        return categories;
+        return {
+            'all': { name: 'Tous', icon: '📧', color: '#1e293b' },
+            'other': { name: 'Autre', icon: '❓', color: '#64748b' }
+        };
     }
 
     getTaskPreselectedCategories() {
@@ -1680,7 +726,7 @@ class PageManagerGmail {
     }
 
     // ================================================
-    // RENDU DE LA PAGE EMAILS OPTIMISÉ
+    // RENDU DE LA PAGE EMAILS OPTIMISÉ (STYLE PAGEMANAGER)
     // ================================================
     async renderEmails(container) {
         console.log('[PageManagerGmail] 📧 Rendu page emails Gmail...');
@@ -1705,7 +751,7 @@ class PageManagerGmail {
                 ${!this.hideExplanation ? `
                     <div class="explanation-notice gmail-notice">
                         <i class="fab fa-google"></i>
-                        <span>Emails Gmail ${this.syncState.startScanSynced ? 'synchronisés depuis votre compte' : 'disponibles'}. Analyse complète avec détection des newsletters et signatures.</span>
+                        <span>Emails Gmail ${this.syncState.startScanSynced ? 'synchronisés depuis votre compte' : 'disponibles'}. Cliquez pour sélectionner et créer des tâches.</span>
                         <button class="explanation-close" onclick="window.pageManagerGmail.hideExplanationMessage()">
                             <i class="fas fa-times"></i>
                         </button>
@@ -1853,23 +899,16 @@ class PageManagerGmail {
                 name: 'Tous', 
                 icon: '📧', 
                 count: totalEmails,
-                isPreselected: false,
-                priority: 0
+                isPreselected: false 
             }
         ];
         
-        // Ajouter les catégories en ordre de priorité
-        const sortedCategories = Object.entries(categories)
-            .filter(([catId]) => catId !== 'all')
-            .sort((a, b) => {
-                const priorityA = a[1].priority || 50;
-                const priorityB = b[1].priority || 50;
-                return priorityB - priorityA;
-            });
-        
-        sortedCategories.forEach(([catId, category]) => {
+        // Ajouter les autres catégories
+        Object.entries(categories).forEach(([catId, category]) => {
+            if (catId === 'all') return;
+            
             const count = categoryCounts[catId] || 0;
-            if (count > 0 || catId === 'newsletter') { // Toujours afficher newsletter
+            if (count > 0) {
                 const isPreselected = preselectedCategories.includes(catId);
                 tabs.push({
                     id: catId,
@@ -1877,8 +916,7 @@ class PageManagerGmail {
                     icon: category.icon,
                     color: category.color,
                     count: count,
-                    isPreselected: isPreselected,
-                    priority: category.priority || 50
+                    isPreselected: isPreselected
                 });
                 
                 if (isPreselected) {
@@ -1887,7 +925,7 @@ class PageManagerGmail {
             }
         });
         
-        // Ajouter "Autre" à la fin
+        // Ajouter "Autre"
         const otherCount = categoryCounts.other || 0;
         if (otherCount > 0) {
             tabs.push({
@@ -1895,8 +933,7 @@ class PageManagerGmail {
                 name: 'Autre',
                 icon: '📌',
                 count: otherCount,
-                isPreselected: false,
-                priority: 0
+                isPreselected: false
             });
         }
         
@@ -1907,7 +944,7 @@ class PageManagerGmail {
             tabsHTML += `<div class="category-row">`;
             tabsHTML += rowTabs.map(tab => {
                 const isCurrentCategory = this.currentCategory === tab.id;
-                const baseClasses = `category-tab ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected' : ''} ${tab.id === 'newsletter' ? 'newsletter-tab' : ''}`;
+                const baseClasses = `category-tab ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected' : ''}`;
                 
                 return `
                     <button class="${baseClasses}" 
@@ -1982,6 +1019,165 @@ class PageManagerGmail {
                 ${emails.map(email => this.renderEmailCard(email)).join('')}
             </div>
         `;
+    }
+
+    renderEmailCard(email) {
+        const hasTask = this.createdTasks.has(email.id);
+        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
+        
+        const preselectedCategories = this.getTaskPreselectedCategories();
+        
+        let isPreselectedForTasks = email.isPreselectedForTasks === true;
+        
+        if (!isPreselectedForTasks && preselectedCategories.includes(email.category)) {
+            isPreselectedForTasks = true;
+            email.isPreselectedForTasks = true;
+        }
+        
+        const isSelected = this.selectedEmails.has(email.id) || isPreselectedForTasks;
+        
+        if (isPreselectedForTasks && !this.selectedEmails.has(email.id)) {
+            this.selectedEmails.add(email.id);
+        }
+        
+        const cardClasses = [
+            'email-card',
+            isSelected ? 'selected' : '',
+            hasTask ? 'has-task' : '',
+            isPreselectedForTasks ? 'preselected' : '',
+            email.webSimulated ? 'simulated' : '',
+            email.provider === 'gmail' ? 'gmail-email' : ''
+        ].filter(Boolean).join(' ');
+        
+        // Détection des newsletters pour Gmail
+        const isNewsletter = this.isNewsletter(email);
+        
+        return `
+            <div class="${cardClasses}" 
+                 data-email-id="${email.id}"
+                 data-category="${email.category}"
+                 data-preselected="${isPreselectedForTasks}">
+                
+                <input type="checkbox" 
+                       class="email-checkbox" 
+                       ${isSelected ? 'checked' : ''}
+                       onchange="event.stopPropagation(); window.pageManagerGmail.toggleEmailSelection('${email.id}')">
+                
+                <div class="priority-bar" 
+                     style="background-color: ${isPreselectedForTasks ? '#8b5cf6' : this.getEmailPriorityColor(email)}"></div>
+                
+                <div class="email-content" onclick="window.pageManagerGmail.handleEmailClick(event, '${email.id}')">
+                    <div class="email-header">
+                        <h3 class="email-title">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
+                        <div class="email-meta">
+                            <span class="email-type">
+                                <i class="fab fa-google"></i> Gmail
+                            </span>
+                            <span class="email-date">
+                                📅 ${this.formatEmailDate(email.receivedDateTime)}
+                            </span>
+                            ${isPreselectedForTasks ? `
+                                <span class="preselected-badge">
+                                    ⭐ Pré-sélectionné
+                                </span>
+                            ` : ''}
+                            ${isNewsletter ? `
+                                <span class="newsletter-badge">
+                                    📰 Newsletter
+                                </span>
+                            ` : ''}
+                            ${email.categoryConfidence ? `
+                                <span class="confidence-badge">
+                                    🎯 ${Math.round(email.categoryConfidence * 100)}%
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="email-sender">
+                        <i class="fas fa-envelope"></i>
+                        <span class="sender-name">${this.escapeHtml(senderName)}</span>
+                        ${email.hasAttachments ? '<span class="attachment-indicator">📎 Pièce jointe</span>' : ''}
+                        ${email.category && email.category !== 'other' ? `
+                            <span class="category-badge" 
+                                  style="background: ${this.getCategoryColor(email.category)}20; 
+                                         color: ${this.getCategoryColor(email.category)};
+                                         ${isPreselectedForTasks ? 'font-weight: 700;' : ''}">
+                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                                ${isPreselectedForTasks ? ' ⭐' : ''}
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="email-actions">
+                    ${this.renderEmailActions(email, isNewsletter)}
+                </div>
+            </div>
+        `;
+    }
+
+    renderEmailActions(email, isNewsletter) {
+        const hasTask = this.createdTasks.has(email.id);
+        const actions = [];
+        
+        if (!hasTask) {
+            actions.push(`
+                <button class="action-btn create-task" 
+                        onclick="event.stopPropagation(); window.pageManagerGmail.showTaskCreationModal('${email.id}')"
+                        title="Créer une tâche à partir de cet email">
+                    <i class="fas fa-tasks"></i>
+                </button>
+            `);
+        } else {
+            actions.push(`
+                <button class="action-btn view-task" 
+                        onclick="event.stopPropagation(); window.pageManagerGmail.openCreatedTask('${email.id}')"
+                        title="Voir la tâche créée">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+            `);
+        }
+        
+        // Bouton Google Calendar
+        actions.push(`
+            <button class="action-btn calendar google-calendar" 
+                    onclick="event.stopPropagation(); window.pageManagerGmail.openGoogleCalendar('${email.id}')"
+                    title="Voir dans Google Calendar">
+                <i class="fab fa-google"></i>
+            </button>
+        `);
+        
+        // Bouton Rappel/Note
+        actions.push(`
+            <button class="action-btn reminder" 
+                    onclick="event.stopPropagation(); window.pageManagerGmail.createCalendarReminder('${email.id}')"
+                    title="Créer un rappel dans Google Calendar">
+                <i class="fas fa-bell"></i>
+            </button>
+        `);
+        
+        // Bouton Se désabonner pour les newsletters (Gmail uniquement)
+        if (isNewsletter) {
+            actions.push(`
+                <button class="action-btn unsubscribe" 
+                        onclick="event.stopPropagation(); window.pageManagerGmail.unsubscribeNewsletter('${email.id}')"
+                        title="Se désabonner de cette newsletter">
+                    <i class="fas fa-user-minus"></i>
+                </button>
+            `);
+        }
+        
+        actions.push(`
+            <button class="action-btn details" 
+                    onclick="event.stopPropagation(); window.pageManagerGmail.showEmailModal('${email.id}')"
+                    title="Voir le contenu complet de l'email">
+                <i class="fas fa-eye"></i>
+            </button>
+        `);
+        
+        return actions.join('');
     }
 
     renderGroupedView(emails, groupMode) {
@@ -2636,57 +1832,52 @@ class PageManagerGmail {
             '<span class="sync-badge gmail-sync"><i class="fab fa-google"></i> Gmail</span>' : '';
         
         const modalHTML = `
-            <div id="${uniqueId}" class="modal-overlay">
-                <div class="modal-container email-details-modal">
-                    <div class="modal-header">
-                        <h2>📧 Email Gmail</h2>
-                        <button class="modal-close" onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';">
+            <div id="${uniqueId}" class="modal-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                <div class="modal-container" style="background: white; border-radius: 12px; max-width: 800px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div class="modal-header" style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px; font-weight: 600;">📧 Email Gmail Complet</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
                             ×
                         </button>
                     </div>
-                    <div class="modal-content">
-                        <div class="email-details">
-                            <div class="detail-row">
-                                <strong>De:</strong>
-                                <span>${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
+                    <div class="modal-content" style="padding: 20px; overflow-y: auto; flex: 1;">
+                        <div class="email-details" style="margin-bottom: 20px;">
+                            <div style="margin-bottom: 12px;">
+                                <span style="font-weight: 600; color: #374151; margin-right: 8px;">De:</span>
+                                <span style="color: #6b7280;">${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
                             </div>
-                            <div class="detail-row">
-                                <strong>Date:</strong>
-                                <span>${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
+                            <div style="margin-bottom: 12px;">
+                                <span style="font-weight: 600; color: #374151; margin-right: 8px;">Date:</span>
+                                <span style="color: #6b7280;">${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
                             </div>
-                            <div class="detail-row">
-                                <strong>Sujet:</strong>
-                                <span>${email.subject || 'Sans sujet'}</span>
+                            <div style="margin-bottom: 12px;">
+                                <span style="font-weight: 600; color: #374151; margin-right: 8px;">Sujet:</span>
+                                <span style="color: #6b7280;">${email.subject || 'Sans sujet'}</span>
                             </div>
                             ${email.category ? `
-                                <div class="detail-row">
-                                    <strong>Catégorie:</strong>
-                                    <span class="category-badge" style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)};">
-                                        ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
-                                    </span>
+                                <div style="margin-bottom: 12px;">
+                                    <span style="font-weight: 600; color: #374151; margin-right: 8px;">Catégorie:</span>
+                                    <span style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}</span>
                                 </div>
                             ` : ''}
                             ${email.categoryConfidence ? `
-                                <div class="detail-row">
-                                    <strong>Confiance IA:</strong>
-                                    <span class="confidence-value">${Math.round(email.categoryConfidence * 100)}%</span>
+                                <div style="margin-bottom: 12px;">
+                                    <span style="font-weight: 600; color: #374151; margin-right: 8px;">Confiance IA:</span>
+                                    <span style="color: #059669; font-weight: 600;">${Math.round(email.categoryConfidence * 100)}%</span>
                                 </div>
                             ` : ''}
                             ${syncBadge}
                         </div>
-                        <div class="email-body">
-                            ${fullContent.html || `<pre>${this.escapeHtml(fullContent.text)}</pre>`}
+                        <div class="email-body" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; line-height: 1.6; color: #374151;">
+                            ${fullContent}
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';">
+                    <div class="modal-footer" style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';" style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-weight: 500; color: #374151;">
                             Fermer
                         </button>
-                        <button class="btn btn-secondary" onclick="window.pageManagerGmail.showFullContentModal('${emailId}'); document.getElementById('${uniqueId}').remove();">
-                            <i class="fas fa-expand-alt"></i> Contenu complet
-                        </button>
                         ${!this.createdTasks.has(emailId) ? `
-                            <button class="btn btn-primary" onclick="document.getElementById('${uniqueId}').remove(); window.pageManagerGmail.showTaskCreationModal('${emailId}');">
+                            <button onclick="document.getElementById('${uniqueId}').remove(); window.pageManagerGmail.showTaskCreationModal('${emailId}');" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px;">
                                 <i class="fas fa-tasks"></i> Créer une tâche
                             </button>
                         ` : ''}
@@ -2697,6 +1888,59 @@ class PageManagerGmail {
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
+    }
+
+    async getFullEmailContent(email) {
+        // Vérifier le cache d'abord
+        if (this.emailContentCache.has(email.id)) {
+            return this.emailContentCache.get(email.id);
+        }
+
+        let content = email.bodyPreview || 'Aucun contenu disponible';
+        
+        // Essayer de récupérer le contenu complet
+        if (email.body?.content) {
+            content = email.body.content;
+        } else if (email.uniqueBody?.content) {
+            content = email.uniqueBody.content;
+        } else if (window.mailService && window.mailService.getMessageContent) {
+            try {
+                content = await window.mailService.getMessageContent(email.id);
+            } catch (error) {
+                console.warn('[PageManagerGmail] Impossible de récupérer le contenu complet:', error);
+            }
+        }
+
+        // Nettoyer et sécuriser le contenu HTML
+        content = this.sanitizeEmailContent(content);
+        
+        // Mettre en cache
+        this.emailContentCache.set(email.id, content);
+        
+        return content;
+    }
+
+    sanitizeEmailContent(content) {
+        // Créer un élément temporaire pour parser le HTML
+        const temp = document.createElement('div');
+        temp.innerHTML = content;
+        
+        // Supprimer les scripts et styles dangereux
+        temp.querySelectorAll('script, link[rel="stylesheet"], style').forEach(el => el.remove());
+        
+        // Sécuriser les liens
+        temp.querySelectorAll('a').forEach(link => {
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+        });
+        
+        // Limiter la taille des images
+        temp.querySelectorAll('img').forEach(img => {
+            img.style.maxWidth = '100%';
+            img.style.height = 'auto';
+        });
+        
+        return temp.innerHTML;
     }
 
     async showTaskCreationModal(emailId) {
@@ -2728,70 +1972,79 @@ class PageManagerGmail {
             (analysis?.mainTask?.title || `Email de ${senderName}`);
 
         const modalHTML = `
-            <div id="${uniqueId}" class="modal-overlay">
-                <div class="modal-container task-creation-modal">
-                    <div class="modal-header">
-                        <h2>✅ Créer une tâche</h2>
-                        <button class="modal-close" onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';">
+            <div id="${uniqueId}" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); z-index: 99999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                <div style="background: white; border-radius: 16px; max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">✅ Créer une tâche</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
                             ×
                         </button>
                     </div>
-                    <div class="modal-content">
-                        <div class="creation-form">
+                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
                             ${analysis ? `
-                                <div class="ai-banner success">
-                                    <i class="fas fa-robot"></i>
-                                    <span>✨ Analyse intelligente par Claude AI</span>
+                                <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+                                    <i class="fas fa-robot" style="color: #0ea5e9; font-size: 20px;"></i>
+                                    <span style="color: #0c4a6e; font-weight: 600;">✨ Analyse intelligente par Claude AI</span>
                                 </div>
                             ` : `
-                                <div class="ai-banner warning">
-                                    <i class="fas fa-info-circle"></i>
-                                    <span>⚠️ Création manuelle - Analyse IA non disponible</span>
+                                <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+                                    <i class="fas fa-info-circle" style="color: #f59e0b; font-size: 20px;"></i>
+                                    <span style="color: #92400e; font-weight: 600;">⚠️ Création manuelle - Analyse IA non disponible</span>
                                 </div>
                             `}
                             
-                            <div class="sender-info">
-                                <div class="sender-avatar" style="background: ${this.generateAvatarColor(senderName)}">
+                            <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+                                <div style="width: 48px; height: 48px; background: ${this.generateAvatarColor(senderName)}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px;">
                                     ${senderName.charAt(0).toUpperCase()}
                                 </div>
-                                <div class="sender-details">
-                                    <div class="sender-name">${senderName}</div>
-                                    <div class="sender-email">${senderEmail}</div>
+                                <div>
+                                    <div style="font-weight: 700; color: #1f2937; font-size: 16px;">${senderName}</div>
+                                    <div style="color: #6b7280; font-size: 14px;">${senderEmail}</div>
                                 </div>
                             </div>
                             
-                            <div class="form-group">
-                                <label>📝 Titre de la tâche</label>
-                                <input type="text" id="task-title" class="form-control" value="${enhancedTitle}" />
+                            <div>
+                                <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">📝 Titre de la tâche</label>
+                                <input type="text" id="task-title" 
+                                       style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                                       value="${enhancedTitle}" />
                             </div>
                             
-                            <div class="form-group">
-                                <label>📄 Description</label>
-                                <textarea id="task-description" class="form-control" rows="4">${analysis?.mainTask?.description || analysis?.summary || email.bodyPreview || ''}</textarea>
+                            <div>
+                                <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">📄 Description</label>
+                                <textarea id="task-description" 
+                                          style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 100px;"
+                                          rows="4">${analysis?.mainTask?.description || analysis?.summary || email.bodyPreview || ''}</textarea>
                             </div>
                             
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>⚡ Priorité</label>
-                                    <select id="task-priority" class="form-control">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div>
+                                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">⚡ Priorité</label>
+                                    <select id="task-priority" style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
                                         <option value="urgent" ${analysis?.mainTask?.priority === 'urgent' ? 'selected' : ''}>🚨 Urgent</option>
                                         <option value="high" ${analysis?.mainTask?.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
                                         <option value="medium" ${!analysis?.mainTask?.priority || analysis?.mainTask?.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
                                         <option value="low" ${analysis?.mainTask?.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
                                     </select>
                                 </div>
-                                <div class="form-group">
-                                    <label>📅 Date d'échéance</label>
-                                    <input type="date" id="task-duedate" class="form-control" value="${analysis?.mainTask?.dueDate || ''}" />
+                                <div>
+                                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">📅 Date d'échéance</label>
+                                    <input type="date" id="task-duedate" 
+                                           style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                                           value="${analysis?.mainTask?.dueDate || ''}" />
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';">
+                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
                             Annuler
                         </button>
-                        <button class="btn btn-primary" onclick="window.pageManagerGmail.createTaskFromModal('${email.id}'); document.getElementById('${uniqueId}').remove();">
+                        <button onclick="window.pageManagerGmail.createTaskFromModal('${email.id}'); document.getElementById('${uniqueId}').remove();"
+                                style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
                             <i class="fas fa-check"></i> Créer la tâche
                         </button>
                     </div>
@@ -2874,6 +2127,80 @@ class PageManagerGmail {
         });
     }
 
+    // ================================================
+    // FONCTIONS SPÉCIFIQUES GMAIL
+    // ================================================
+    isNewsletter(email) {
+        // Détection des newsletters basée sur des indices
+        const subject = (email.subject || '').toLowerCase();
+        const sender = (email.from?.emailAddress?.address || '').toLowerCase();
+        const headers = email.internetMessageHeaders || [];
+        
+        // Vérifier les headers List-Unsubscribe
+        const hasUnsubscribeHeader = headers.some(header => 
+            header.name?.toLowerCase() === 'list-unsubscribe'
+        );
+        
+        // Patterns communs de newsletters
+        const newsletterPatterns = [
+            'newsletter', 'digest', 'weekly', 'monthly', 'update',
+            'news', 'bulletin', 'notification', 'alert', 'announcement'
+        ];
+        
+        const hasNewsletterPattern = newsletterPatterns.some(pattern => 
+            subject.includes(pattern) || sender.includes(pattern)
+        );
+        
+        // Expéditeurs typiques de newsletters
+        const newsletterSenders = [
+            'noreply', 'no-reply', 'newsletter', 'notifications',
+            'updates', 'info@', 'news@', 'hello@'
+        ];
+        
+        const hasNewsletterSender = newsletterSenders.some(pattern => 
+            sender.includes(pattern)
+        );
+        
+        return hasUnsubscribeHeader || (hasNewsletterPattern && hasNewsletterSender);
+    }
+
+    async unsubscribeNewsletter(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) return;
+        
+        console.log('[PageManagerGmail] 📧 Désabonnement newsletter:', email.subject);
+        
+        // Rechercher le lien de désabonnement
+        const headers = email.internetMessageHeaders || [];
+        const unsubscribeHeader = headers.find(header => 
+            header.name?.toLowerCase() === 'list-unsubscribe'
+        );
+        
+        if (unsubscribeHeader && unsubscribeHeader.value) {
+            // Extraire l'URL de désabonnement
+            const urlMatch = unsubscribeHeader.value.match(/<(https?:\/\/[^>]+)>/);
+            if (urlMatch && urlMatch[1]) {
+                const unsubscribeUrl = urlMatch[1];
+                
+                // Demander confirmation
+                if (confirm(`Voulez-vous vous désabonner de cette newsletter ?\n\n${email.from?.emailAddress?.name || 'Expéditeur inconnu'}`)) {
+                    window.open(unsubscribeUrl, '_blank');
+                    this.showToast('Ouverture de la page de désabonnement...', 'info');
+                }
+                return;
+            }
+        }
+        
+        // Si pas de lien trouvé, proposer une recherche Gmail
+        const senderEmail = email.from?.emailAddress?.address || '';
+        const gmailSearchUrl = `https://mail.google.com/mail/u/0/#search/from:${encodeURIComponent(senderEmail)}+unsubscribe`;
+        
+        if (confirm(`Aucun lien de désabonnement trouvé.\n\nVoulez-vous rechercher les options de désabonnement dans Gmail ?`)) {
+            window.open(gmailSearchUrl, '_blank');
+            this.showToast('Recherche des options de désabonnement dans Gmail...', 'info');
+        }
+    }
+
     async openGoogleCalendar(emailId) {
         const email = this.getEmailById(emailId);
         if (!email) {
@@ -2881,24 +2208,165 @@ class PageManagerGmail {
             return;
         }
 
-        const subject = email.subject || 'Sans sujet';
+        const senderEmail = email.from?.emailAddress?.address;
         const senderName = email.from?.emailAddress?.name || 'Inconnu';
         
-        // Créer l'événement dans Google Calendar via l'URL
-        const eventDate = new Date();
-        eventDate.setHours(eventDate.getHours() + 1);
-        const eventEndDate = new Date(eventDate.getTime() + 60 * 60 * 1000); // +1 heure
+        console.log(`[PageManagerGmail] 📅 Ouverture Google Calendar pour: ${senderName} (${senderEmail})`);
         
-        const calendarUrl = new URL('https://calendar.google.com/calendar/render');
-        calendarUrl.searchParams.append('action', 'TEMPLATE');
-        calendarUrl.searchParams.append('text', `Email: ${subject}`);
-        calendarUrl.searchParams.append('details', `Email de ${senderName}\n\n${email.bodyPreview || ''}`);
-        calendarUrl.searchParams.append('dates', 
-            `${eventDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}/${eventEndDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}`
-        );
+        // Ouvrir Google Calendar avec recherche
+        const calendarUrl = `https://calendar.google.com/calendar/u/0/r/search?q=${encodeURIComponent(senderEmail)}`;
+        window.open(calendarUrl, '_blank');
         
-        window.open(calendarUrl.toString(), '_blank');
-        this.showToast('Ouverture de Google Calendar...', 'info');
+        this.showToast(`Ouverture de Google Calendar pour ${senderName}`, 'info');
+    }
+
+    async createCalendarReminder(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) {
+            this.showToast('Email non trouvé', 'error');
+            return;
+        }
+
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const subject = email.subject || 'Sans sujet';
+        
+        console.log(`[PageManagerGmail] 🔔 Création rappel Google Calendar pour email de ${senderName}`);
+        
+        // Afficher modal de création de rappel
+        this.showReminderCreationModal(email);
+    }
+
+    showReminderCreationModal(email) {
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const subject = email.subject || 'Sans sujet';
+        
+        const modalId = 'reminder_modal_' + Date.now();
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(9, 0, 0, 0);
+        
+        const modalHTML = `
+            <div id="${modalId}" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); z-index: 99999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                <div style="background: white; border-radius: 16px; max-width: 600px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">
+                            <i class="fab fa-google" style="color: #4285f4; margin-right: 8px;"></i>
+                            Créer un rappel Google Calendar
+                        </h2>
+                        <button onclick="document.getElementById('${modalId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                            ×
+                        </button>
+                    </div>
+                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
+                        <div style="background: #e8f0fe; border: 1px solid #4285f4; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                            <div style="font-weight: 600; color: #1967d2; margin-bottom: 4px;">Email de: ${senderName}</div>
+                            <div style="color: #1967d2; font-size: 14px;">${subject}</div>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <div>
+                                <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">📝 Titre du rappel</label>
+                                <input type="text" id="reminder-title" 
+                                       style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                                       value="Répondre à ${senderName}" />
+                            </div>
+                            
+                            <div>
+                                <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">📄 Notes</label>
+                                <textarea id="reminder-notes" 
+                                          style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 100px;"
+                                          rows="4">Email: ${subject}\nDe: ${senderName}</textarea>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                <div>
+                                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">📅 Date</label>
+                                    <input type="date" id="reminder-date" 
+                                           style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                                           value="${tomorrow.toISOString().split('T')[0]}" />
+                                </div>
+                                <div>
+                                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">⏰ Heure</label>
+                                    <input type="time" id="reminder-time" 
+                                           style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                                           value="09:00" />
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">🔔 Type de rappel</label>
+                                <select id="reminder-type" style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                                    <option value="15">15 minutes avant</option>
+                                    <option value="30">30 minutes avant</option>
+                                    <option value="60" selected>1 heure avant</option>
+                                    <option value="1440">1 jour avant</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button onclick="document.getElementById('${modalId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Annuler
+                        </button>
+                        <button onclick="window.pageManagerGmail.saveReminder('${email.id}'); document.getElementById('${modalId}').remove();"
+                                style="padding: 12px 20px; background: linear-gradient(135deg, #4285f4, #1a73e8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            <i class="fab fa-google"></i> Créer dans Google Calendar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    async saveReminder(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) return;
+        
+        const title = document.getElementById('reminder-title')?.value;
+        const notes = document.getElementById('reminder-notes')?.value;
+        const date = document.getElementById('reminder-date')?.value;
+        const time = document.getElementById('reminder-time')?.value;
+        const reminderType = document.getElementById('reminder-type')?.value;
+        
+        const reminderData = {
+            title,
+            notes,
+            datetime: `${date}T${time}`,
+            reminderMinutes: parseInt(reminderType),
+            emailId: emailId,
+            senderEmail: email.from?.emailAddress?.address,
+            senderName: email.from?.emailAddress?.name
+        };
+        
+        console.log('[PageManagerGmail] 💾 Création rappel Google Calendar:', reminderData);
+        
+        try {
+            // Créer l'événement dans Google Calendar via l'URL
+            const eventDate = new Date(reminderData.datetime);
+            const eventEndDate = new Date(eventDate.getTime() + 60 * 60 * 1000); // +1 heure
+            
+            const calendarUrl = new URL('https://calendar.google.com/calendar/render');
+            calendarUrl.searchParams.append('action', 'TEMPLATE');
+            calendarUrl.searchParams.append('text', reminderData.title);
+            calendarUrl.searchParams.append('details', reminderData.notes);
+            calendarUrl.searchParams.append('dates', 
+                `${eventDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}/${eventEndDate.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')}`
+            );
+            
+            window.open(calendarUrl.toString(), '_blank');
+            
+            this.showToast('Ouverture de Google Calendar pour créer le rappel!', 'success');
+            document.body.style.overflow = 'auto';
+            
+        } catch (error) {
+            console.error('[PageManagerGmail] Erreur création rappel:', error);
+            this.showToast('Erreur lors de la création du rappel', 'error');
+        }
     }
 
     // ================================================
@@ -3299,11 +2767,6 @@ class PageManagerGmail {
         let uncategorizedCount = 0;
         
         emails.forEach(email => {
-            // Détecter d'abord si c'est une newsletter
-            if (this.isNewsletterEmail(email)) {
-                email.category = 'newsletter';
-            }
-            
             const cat = email.category;
             
             if (cat && cat !== 'other' && cat !== null && cat !== undefined && cat !== '') {
@@ -3409,6 +2872,13 @@ class PageManagerGmail {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    getEmailContent(email) {
+        if (email.body?.content) {
+            return email.body.content;
+        }
+        return `<p>${email.bodyPreview || 'Aucun contenu disponible'}</p>`;
     }
 
     getCategoryColor(categoryId) {
@@ -3543,7 +3013,7 @@ class PageManagerGmail {
     }
 
     // ================================================
-    // STYLES CSS OPTIMISÉS
+    // STYLES CSS OPTIMISÉS (MÊME STYLE QUE PAGEMANAGER)
     // ================================================
     addEmailsStyles() {
         if (document.getElementById('emailsPageStylesGmail')) return;
@@ -3551,7 +3021,7 @@ class PageManagerGmail {
         const styles = document.createElement('style');
         styles.id = 'emailsPageStylesGmail';
         styles.textContent = `
-            /* Styles optimisés pour Gmail avec détection newsletter */
+            /* Réutilisation des styles de PageManager avec adaptations Gmail */
             .emails-page-modern {
                 padding: 16px;
                 background: #f8fafc;
@@ -3961,31 +3431,6 @@ class PageManagerGmail {
                 line-height: 1.2;
             }
 
-            .category-tab.newsletter-tab {
-                border-color: #f59e0b;
-                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            }
-
-            .category-tab.newsletter-tab .tab-count {
-                background: #f59e0b;
-            }
-
-            .category-tab.newsletter-tab:hover {
-                border-color: #d97706;
-                background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
-                box-shadow: 0 3px 8px rgba(245, 158, 11, 0.15);
-            }
-
-            .category-tab.newsletter-tab.active {
-                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-                border-color: #f59e0b;
-                box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
-            }
-
-            .category-tab.newsletter-tab.active .tab-name {
-                color: white;
-            }
-
             .category-tab.preselected {
                 border-color: #8b5cf6;
                 background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
@@ -4064,11 +3509,6 @@ class PageManagerGmail {
                 border-left: 3px solid #4285f4;
             }
 
-            .email-card.newsletter {
-                border-left: 3px solid #f59e0b;
-                background: linear-gradient(135deg, #fffdf7 0%, #fef3c7 100%);
-            }
-
             .email-card:first-child {
                 border-top-left-radius: 12px;
                 border-top-right-radius: 12px;
@@ -4092,12 +3532,6 @@ class PageManagerGmail {
                 border-color: rgba(66, 133, 244, 0.2);
                 border-left: 3px solid #4285f4;
                 z-index: 2;
-            }
-
-            .email-card.newsletter:hover {
-                border-left: 3px solid #f59e0b;
-                box-shadow: 0 8px 24px rgba(245, 158, 11, 0.15);
-                border-color: rgba(245, 158, 11, 0.3);
             }
 
             .email-card.selected {
@@ -4264,21 +3698,6 @@ class PageManagerGmail {
                 white-space: nowrap;
             }
 
-            .signature-badge {
-                background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-                color: white;
-                border: none;
-                font-weight: 700;
-                box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 11px;
-                display: flex;
-                align-items: center;
-                gap: 3px;
-                white-space: nowrap;
-            }
-
             .sync-badge.gmail-sync {
                 background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
                 color: white;
@@ -4338,18 +3757,6 @@ class PageManagerGmail {
                 transition: all 0.2s ease;
             }
 
-            .email-preview {
-                font-size: 12px;
-                color: #6b7280;
-                line-height: 1.4;
-                margin-top: 4px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-            }
-
             .email-actions {
                 display: flex;
                 align-items: center;
@@ -4404,16 +3811,6 @@ class PageManagerGmail {
                 color: #15803d;
             }
 
-            .action-btn.full-content {
-                color: #6366f1;
-            }
-
-            .action-btn.full-content:hover {
-                background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-                border-color: #6366f1;
-                color: #4f46e5;
-            }
-
             .action-btn.calendar.google-calendar {
                 color: #4285f4;
             }
@@ -4422,6 +3819,16 @@ class PageManagerGmail {
                 background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%);
                 border-color: #4285f4;
                 color: #1a73e8;
+            }
+
+            .action-btn.reminder {
+                color: #f59e0b;
+            }
+
+            .action-btn.reminder:hover {
+                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                border-color: #f59e0b;
+                color: #d97706;
             }
 
             .action-btn.unsubscribe {
@@ -4614,603 +4021,6 @@ class PageManagerGmail {
                 font-weight: 500;
             }
 
-            /* Modals optimisés */
-            .modal-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.75);
-                z-index: 99999999;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-            }
-
-            .modal-container {
-                background: white;
-                border-radius: 16px;
-                max-width: 900px;
-                width: 100%;
-                max-height: 90vh;
-                display: flex;
-                flex-direction: column;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            }
-
-            .modal-container.full-content-modal {
-                max-width: 1000px;
-            }
-
-            .modal-container.unsubscribe-modal {
-                max-width: 600px;
-            }
-
-            .modal-header {
-                padding: 24px;
-                border-bottom: 1px solid #e5e7eb;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-
-            .modal-header h2 {
-                margin: 0;
-                font-size: 24px;
-                font-weight: 700;
-                color: #1f2937;
-            }
-
-            .modal-close {
-                background: none;
-                border: none;
-                font-size: 24px;
-                cursor: pointer;
-                color: #6b7280;
-                width: 32px;
-                height: 32px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 6px;
-                transition: all 0.2s ease;
-            }
-
-            .modal-close:hover {
-                background: #f3f4f6;
-            }
-
-            .modal-tabs {
-                display: flex;
-                gap: 8px;
-                padding: 16px 24px;
-                border-bottom: 1px solid #e5e7eb;
-            }
-
-            .tab-button {
-                padding: 8px 16px;
-                background: transparent;
-                border: none;
-                color: #6b7280;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                border-radius: 8px;
-                transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-
-            .tab-button:hover {
-                background: #f8fafc;
-                color: #374151;
-            }
-
-            .tab-button.active {
-                background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
-                color: white;
-            }
-
-            .modal-content {
-                padding: 24px;
-                overflow-y: auto;
-                flex: 1;
-            }
-
-            .tab-content {
-                display: none;
-            }
-
-            .tab-content.active {
-                display: block;
-            }
-
-            .email-full-details {
-                margin-bottom: 20px;
-            }
-
-            .detail-row {
-                display: flex;
-                gap: 12px;
-                margin-bottom: 12px;
-                align-items: flex-start;
-            }
-
-            .detail-row strong {
-                font-weight: 600;
-                color: #374151;
-                min-width: 100px;
-            }
-
-            .detail-row span {
-                color: #6b7280;
-                flex: 1;
-            }
-
-            .email-body-container {
-                background: #f9fafb;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 16px;
-                line-height: 1.6;
-                color: #374151;
-            }
-
-            .email-body-content {
-                font-size: 14px;
-                line-height: 1.6;
-            }
-
-            .email-body-content pre {
-                white-space: pre-wrap;
-                word-wrap: break-word;
-                font-family: inherit;
-                margin: 0;
-            }
-
-            .no-content {
-                text-align: center;
-                color: #9ca3af;
-                font-style: italic;
-                padding: 40px;
-            }
-
-            .unsubscribe-section {
-                margin-top: 20px;
-                padding: 16px;
-                background: #fef3c7;
-                border: 1px solid #f59e0b;
-                border-radius: 8px;
-            }
-
-            .unsubscribe-section h4 {
-                margin: 0 0 12px 0;
-                color: #92400e;
-                font-size: 16px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .unsubscribe-link {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-bottom: 8px;
-            }
-
-            .link-source {
-                background: #f59e0b;
-                color: white;
-                padding: 2px 8px;
-                border-radius: 4px;
-                font-size: 11px;
-                font-weight: 600;
-            }
-
-            .unsubscribe-link a {
-                color: #d97706;
-                text-decoration: none;
-                font-weight: 500;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                flex: 1;
-            }
-
-            .unsubscribe-link a:hover {
-                text-decoration: underline;
-            }
-
-            .signature-container {
-                padding: 20px;
-            }
-
-            .signature-container h4 {
-                margin: 0 0 16px 0;
-                color: #374151;
-                font-size: 16px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .signature-content {
-                background: #f3f4f6;
-                border: 1px solid #d1d5db;
-                border-radius: 8px;
-                padding: 16px;
-            }
-
-            .signature-content pre {
-                margin: 0;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-                font-family: 'Courier New', monospace;
-                font-size: 13px;
-                color: #4b5563;
-            }
-
-            .headers-container {
-                padding: 20px;
-            }
-
-            .headers-container h4 {
-                margin: 0 0 16px 0;
-                color: #374151;
-                font-size: 16px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .headers-table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-
-            .headers-table tr {
-                border-bottom: 1px solid #e5e7eb;
-            }
-
-            .headers-table tr:last-child {
-                border-bottom: none;
-            }
-
-            .headers-table td {
-                padding: 8px 12px;
-                vertical-align: top;
-            }
-
-            .header-key {
-                font-weight: 600;
-                color: #374151;
-                width: 150px;
-            }
-
-            .header-value {
-                color: #6b7280;
-                word-break: break-all;
-            }
-
-            .attachments-container {
-                padding: 20px;
-            }
-
-            .attachments-container h4 {
-                margin: 0 0 16px 0;
-                color: #374151;
-                font-size: 16px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .attachments-list {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .attachment-item {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 12px;
-                background: #f8fafc;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-            }
-
-            .attachment-item i {
-                color: #6b7280;
-                font-size: 16px;
-            }
-
-            .attachment-name {
-                font-weight: 600;
-                color: #374151;
-                flex: 1;
-            }
-
-            .attachment-size {
-                color: #9ca3af;
-                font-size: 12px;
-            }
-
-            .attachment-type {
-                color: #6b7280;
-                font-size: 12px;
-                padding: 2px 8px;
-                background: #f3f4f6;
-                border-radius: 4px;
-            }
-
-            .modal-footer {
-                padding: 24px;
-                border-top: 1px solid #e5e7eb;
-                display: flex;
-                justify-content: flex-end;
-                gap: 12px;
-            }
-
-            .unsubscribe-info {
-                background: #f8fafc;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 16px;
-                margin-bottom: 20px;
-            }
-
-            .unsubscribe-info p {
-                margin: 4px 0;
-                color: #374151;
-            }
-
-            .unsubscribe-info strong {
-                color: #1f2937;
-            }
-
-            .unsubscribe-options {
-                margin-bottom: 20px;
-            }
-
-            .unsubscribe-options h4 {
-                margin: 0 0 12px 0;
-                color: #374151;
-                font-size: 16px;
-            }
-
-            .unsubscribe-option {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                margin-bottom: 12px;
-                padding: 12px;
-                background: #f8fafc;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-            }
-
-            .unsubscribe-option .btn {
-                width: 100%;
-            }
-
-            .link-email {
-                font-size: 12px;
-                color: #6b7280;
-                text-align: center;
-            }
-
-            .unsubscribe-alternatives {
-                border-top: 1px solid #e5e7eb;
-                padding-top: 20px;
-            }
-
-            .unsubscribe-alternatives h4 {
-                margin: 0 0 12px 0;
-                color: #374151;
-                font-size: 16px;
-            }
-
-            .unsubscribe-alternatives .btn {
-                margin-bottom: 8px;
-            }
-
-            .alternative-unsubscribe-modal .modal-content {
-                max-width: 500px;
-                margin: 0 auto;
-            }
-
-            .alert {
-                padding: 16px;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                margin-bottom: 20px;
-            }
-
-            .alert-warning {
-                background: #fef3c7;
-                border: 1px solid #f59e0b;
-                color: #92400e;
-            }
-
-            .alert-info {
-                background: #dbeafe;
-                border: 1px solid #3b82f6;
-                color: #1e40af;
-            }
-
-            .alert i {
-                font-size: 20px;
-                flex-shrink: 0;
-            }
-
-            .alternative-options {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .btn-option {
-                width: 100%;
-                padding: 12px 16px;
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                transition: all 0.2s ease;
-            }
-
-            .btn-option:hover {
-                background: #f8fafc;
-                border-color: #3b82f6;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-
-            .btn-option i {
-                width: 20px;
-                text-align: center;
-            }
-
-            .email-details-modal .email-body {
-                background: #f9fafb;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 16px;
-                line-height: 1.6;
-                color: #374151;
-                margin-top: 20px;
-            }
-
-            .confidence-value {
-                color: #059669;
-                font-weight: 600;
-            }
-
-            .task-creation-modal .modal-content {
-                max-width: 600px;
-                margin: 0 auto;
-            }
-
-            .creation-form {
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-            }
-
-            .ai-banner {
-                padding: 12px 16px;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                font-weight: 600;
-            }
-
-            .ai-banner.success {
-                background: #d1fae5;
-                border: 1px solid #10b981;
-                color: #065f46;
-            }
-
-            .ai-banner.warning {
-                background: #fef3c7;
-                border: 1px solid #f59e0b;
-                color: #92400e;
-            }
-
-            .sender-info {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 16px;
-                background: #f8fafc;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-            }
-
-            .sender-avatar {
-                width: 48px;
-                height: 48px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: 700;
-                font-size: 18px;
-                flex-shrink: 0;
-            }
-
-            .sender-details {
-                flex: 1;
-            }
-
-            .sender-name {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 16px;
-            }
-
-            .sender-email {
-                color: #6b7280;
-                font-size: 14px;
-            }
-
-            .form-group {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .form-group label {
-                font-weight: 600;
-                color: #374151;
-                font-size: 14px;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-
-            .form-control {
-                width: 100%;
-                padding: 12px 16px;
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 14px;
-                transition: all 0.2s ease;
-            }
-
-            .form-control:focus {
-                outline: none;
-                border-color: #3b82f6;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            }
-
-            textarea.form-control {
-                resize: vertical;
-                min-height: 100px;
-                font-family: inherit;
-            }
-
-            .form-row {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 16px;
-            }
-
             /* Auth states */
             .auth-required-state {
                 text-align: center;
@@ -5370,8 +4180,23 @@ class PageManagerGmail {
                 margin: 0 auto;
             }
 
-            .alert div {
-                flex: 1;
+            .alert {
+                padding: 20px;
+                border-radius: 12px;
+                display: flex;
+                gap: 16px;
+            }
+
+            .alert-info {
+                background: #e8f0fe;
+                border: 1px solid #4285f4;
+                color: #1967d2;
+            }
+
+            .alert i {
+                font-size: 24px;
+                flex-shrink: 0;
+                margin-top: 4px;
             }
 
             .alert h3 {
@@ -5441,15 +4266,6 @@ class PageManagerGmail {
                     flex-direction: column;
                     gap: 2px;
                 }
-
-                .modal-container {
-                    margin: 10px;
-                    max-height: calc(100vh - 20px);
-                }
-
-                .form-row {
-                    grid-template-columns: 1fr;
-                }
             }
 
             @media (max-width: 480px) {
@@ -5459,10 +4275,6 @@ class PageManagerGmail {
                 
                 .category-tab {
                     height: 52px;
-                }
-
-                .email-preview {
-                    display: none;
                 }
             }
         `;
@@ -5484,8 +4296,7 @@ class PageManagerGmail {
             categoryManager: {
                 available: !!window.categoryManager,
                 preselectedCategories: this.getTaskPreselectedCategories(),
-                categories: Object.keys(this.getCategories()).length,
-                hasNewsletterCategory: !!this.getCategories().newsletter
+                categories: Object.keys(this.getCategories()).length
             },
             googleAuth: {
                 available: !!window.googleAuthService,
@@ -5493,14 +4304,6 @@ class PageManagerGmail {
             },
             mailService: {
                 available: !!window.mailService
-            },
-            gmailService: {
-                available: !!window.gmailService
-            },
-            caches: {
-                emailContent: this.emailContentCache.size,
-                fullEmail: this.fullEmailCache.size,
-                signatures: this.signatureCache.size
             },
             lastScanData: this.lastScanData
         };
@@ -5516,8 +4319,6 @@ class PageManagerGmail {
         this.aiAnalysisResults.clear();
         this.createdTasks.clear();
         this.emailContentCache.clear();
-        this.fullEmailCache.clear();
-        this.signatureCache.clear();
         
         console.log('[PageManagerGmail] 🧹 Nettoyage effectué');
     }
@@ -5531,10 +4332,9 @@ if (window.pageManagerGmail) {
     window.pageManagerGmail.cleanup?.();
 }
 
-console.log('[PageManagerGmail] 🚀 Création nouvelle instance v21.0...');
+console.log('[PageManagerGmail] 🚀 Création nouvelle instance v20.0...');
 window.pageManagerGmail = new PageManagerGmail();
 
-// Bind all methods to instance
 Object.getOwnPropertyNames(PageManagerGmail.prototype).forEach(name => {
     if (name !== 'constructor' && typeof window.pageManagerGmail[name] === 'function') {
         window.pageManagerGmail[name] = window.pageManagerGmail[name].bind(window.pageManagerGmail);
@@ -5554,29 +4354,4 @@ window.refreshPageManagerGmailEmails = function() {
     return { success: false, message: 'Pas sur la page emails ou PageManagerGmail non disponible' };
 };
 
-window.testNewsletterDetection = function(emailId) {
-    if (!window.pageManagerGmail) {
-        return { error: 'PageManagerGmail non disponible' };
-    }
-    
-    const email = window.pageManagerGmail.getEmailById(emailId);
-    if (!email) {
-        return { error: 'Email non trouvé' };
-    }
-    
-    const isNewsletter = window.pageManagerGmail.isNewsletterEmail(email);
-    const unsubscribeLinks = window.pageManagerGmail.extractUnsubscribeLink(email);
-    const signature = window.pageManagerGmail.extractEmailSignature(email);
-    
-    return {
-        emailId: emailId,
-        subject: email.subject,
-        isNewsletter: isNewsletter,
-        unsubscribeLinks: unsubscribeLinks,
-        hasSignature: !!signature,
-        signature: signature,
-        category: email.category
-    };
-};
-
-console.log('✅ PageManagerGmail v21.0 loaded - Optimisée pour Gmail avec détection newsletter prioritaire');
+console.log('✅ PageManagerGmail v20.0 loaded - Refonte complète basée sur PageManager');
