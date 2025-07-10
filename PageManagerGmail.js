@@ -1816,169 +1816,458 @@ class PageManagerGmail {
     }
 
 showEmailModal(emailId) {
-        const email = this.getEmailById(emailId);
-        if (!email) return;
+    const email = this.getEmailById(emailId);
+    if (!email) return;
 
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        
-        const uniqueId = 'email_modal_' + Date.now();
-        const syncBadge = this.syncState.startScanSynced ? 
-            '<span class="sync-badge">🔄 Synchronisé depuis Gmail</span>' : '';
-        
-        // Récupérer les pièces jointes si disponibles
-        const attachmentsHTML = email.attachments && email.attachments.length > 0 ? `
-            <div style="margin-top: 20px; padding: 16px; background: #f3f4f6; border-radius: 8px; border: 1px solid #e5e7eb;">
-                <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #374151;">
-                    <i class="fas fa-paperclip"></i> Pièces jointes (${email.attachments.length})
-                </h4>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    ${email.attachments.map(attachment => `
-                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <i class="fas ${this.getAttachmentIcon(attachment.contentType || attachment.name)}" style="color: #6b7280;"></i>
-                                <span style="font-size: 13px; color: #374151; font-weight: 500;">${attachment.name || 'Sans nom'}</span>
-                                <span style="font-size: 11px; color: #9ca3af;">(${this.formatFileSize(attachment.size || 0)})</span>
-                            </div>
-                            ${attachment.id ? `
-                                <button onclick="window.pageManagerGmail.downloadAttachment('${emailId}', '${attachment.id}', '${attachment.name || 'file'}')" 
-                                        style="background: #3b82f6; color: white; border: none; padding: 4px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 500;">
-                                    <i class="fas fa-download"></i> Télécharger
-                                </button>
-                            ` : ''}
-                        </div>
-                    `).join('')}
+    document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+    
+    const uniqueId = 'email_modal_' + Date.now();
+    const syncBadge = this.syncState.startScanSynced ? 
+        '<span class="sync-badge">🔄 Synchronisé depuis Gmail</span>' : '';
+    
+    // Extraction du contenu avec support HTML complet
+    const emailBody = this.getFullEmailContent(email);
+    const attachments = this.getEmailAttachments(email);
+    
+    const modalHTML = `
+        <div id="${uniqueId}" class="modal-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+            <div class="modal-container" style="background: white; border-radius: 12px; max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                <div class="modal-header" style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; font-size: 20px; font-weight: 600;"><i class="fab fa-google" style="color: #4285f4; margin-right: 8px;"></i>Email Gmail</h2>
+                    <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
+                        ×
+                    </button>
                 </div>
-            </div>
-        ` : '';
-        
-        const modalHTML = `
-            <div id="${uniqueId}" class="modal-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
-                <div class="modal-container" style="background: white; border-radius: 12px; max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                    <div class="modal-header" style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                        <h2 style="margin: 0; font-size: 20px; font-weight: 600;"><i class="fab fa-google" style="color: #4285f4; margin-right: 8px;"></i>Email Gmail</h2>
-                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
-                            ×
+                <div class="modal-content" style="padding: 20px; overflow-y: auto; flex: 1;">
+                    <div class="email-details" style="margin-bottom: 20px;">
+                        <div style="margin-bottom: 12px;">
+                            <span style="font-weight: 600; color: #374151; margin-right: 8px;">De:</span>
+                            <span style="color: #6b7280;">${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <span style="font-weight: 600; color: #374151; margin-right: 8px;">Date:</span>
+                            <span style="color: #6b7280;">${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
+                        </div>
+                        <div style="margin-bottom: 12px;">
+                            <span style="font-weight: 600; color: #374151; margin-right: 8px;">Sujet:</span>
+                            <span style="color: #6b7280;">${email.subject || 'Sans sujet'}</span>
+                        </div>
+                        ${email.toRecipients && email.toRecipients.length > 0 ? `
+                            <div style="margin-bottom: 12px;">
+                                <span style="font-weight: 600; color: #374151; margin-right: 8px;">À:</span>
+                                <span style="color: #6b7280;">${email.toRecipients.map(r => `${r.emailAddress.name || ''} &lt;${r.emailAddress.address}&gt;`).join(', ')}</span>
+                            </div>
+                        ` : ''}
+                        ${email.category ? `
+                            <div style="margin-bottom: 12px;">
+                                <span style="font-weight: 600; color: #374151; margin-right: 8px;">Catégorie:</span>
+                                <span style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}</span>
+                            </div>
+                        ` : ''}
+                        ${email.categoryConfidence ? `
+                            <div style="margin-bottom: 12px;">
+                                <span style="font-weight: 600; color: #374151; margin-right: 8px;">Confiance IA:</span>
+                                <span style="color: #059669; font-weight: 600;">${Math.round(email.categoryConfidence * 100)}%</span>
+                            </div>
+                        ` : ''}
+                        ${syncBadge}
+                    </div>
+                    
+                    ${attachments.length > 0 ? `
+                        <div class="email-attachments" style="margin-bottom: 20px; padding: 16px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
+                            <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #374151;">
+                                <i class="fas fa-paperclip"></i> Pièces jointes (${attachments.length})
+                            </h4>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                ${attachments.map(att => this.renderAttachment(att)).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="email-body" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; line-height: 1.6; color: #374151;">
+                        <div class="email-content-wrapper" style="max-width: 100%; overflow-x: auto;">
+                            ${emailBody}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                    <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';" style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-weight: 500; color: #374151;">
+                        Fermer
+                    </button>
+                    ${!this.createdTasks.has(emailId) ? `
+                        <button onclick="document.getElementById('${uniqueId}').remove(); window.pageManagerGmail.showTaskCreationModal('${emailId}');" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-tasks"></i> Créer une tâche
                         </button>
-                    </div>
-                    <div class="modal-content" style="padding: 20px; overflow-y: auto; flex: 1;">
-                        <div class="email-details" style="margin-bottom: 20px;">
-                            <div style="margin-bottom: 12px;">
-                                <span style="font-weight: 600; color: #374151; margin-right: 8px;">De:</span>
-                                <span style="color: #6b7280;">${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
-                            </div>
-                            ${email.toRecipients && email.toRecipients.length > 0 ? `
-                                <div style="margin-bottom: 12px;">
-                                    <span style="font-weight: 600; color: #374151; margin-right: 8px;">À:</span>
-                                    <span style="color: #6b7280;">${email.toRecipients.map(r => r.emailAddress.address).join(', ')}</span>
-                                </div>
-                            ` : ''}
-                            ${email.ccRecipients && email.ccRecipients.length > 0 ? `
-                                <div style="margin-bottom: 12px;">
-                                    <span style="font-weight: 600; color: #374151; margin-right: 8px;">Cc:</span>
-                                    <span style="color: #6b7280;">${email.ccRecipients.map(r => r.emailAddress.address).join(', ')}</span>
-                                </div>
-                            ` : ''}
-                            <div style="margin-bottom: 12px;">
-                                <span style="font-weight: 600; color: #374151; margin-right: 8px;">Date:</span>
-                                <span style="color: #6b7280;">${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
-                            </div>
-                            <div style="margin-bottom: 12px;">
-                                <span style="font-weight: 600; color: #374151; margin-right: 8px;">Sujet:</span>
-                                <span style="color: #6b7280;">${email.subject || 'Sans sujet'}</span>
-                            </div>
-                            ${email.category ? `
-                                <div style="margin-bottom: 12px;">
-                                    <span style="font-weight: 600; color: #374151; margin-right: 8px;">Catégorie:</span>
-                                    <span style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}</span>
-                                </div>
-                            ` : ''}
-                            ${email.categoryConfidence ? `
-                                <div style="margin-bottom: 12px;">
-                                    <span style="font-weight: 600; color: #374151; margin-right: 8px;">Confiance IA:</span>
-                                    <span style="color: #059669; font-weight: 600;">${Math.round(email.categoryConfidence * 100)}%</span>
-                                </div>
-                            ` : ''}
-                            ${email.importance ? `
-                                <div style="margin-bottom: 12px;">
-                                    <span style="font-weight: 600; color: #374151; margin-right: 8px;">Importance:</span>
-                                    <span style="color: ${email.importance === 'high' ? '#dc2626' : '#6b7280'}; font-weight: 600;">
-                                        ${email.importance === 'high' ? '🔴 Haute' : email.importance === 'low' ? '🔵 Basse' : '⚪ Normale'}
-                                    </span>
-                                </div>
-                            ` : ''}
-                            ${syncBadge}
-                        </div>
-                        
-                        <div class="email-body-container">
-                            <div class="email-body-tabs" style="display: flex; gap: 8px; margin-bottom: 12px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px;">
-                                <button onclick="window.pageManagerGmail.switchEmailView('${uniqueId}', 'html')" 
-                                        id="tab-html-${uniqueId}"
-                                        style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: 500; font-size: 13px;">
-                                    <i class="fas fa-code"></i> HTML
-                                </button>
-                                <button onclick="window.pageManagerGmail.switchEmailView('${uniqueId}', 'text')" 
-                                        id="tab-text-${uniqueId}"
-                                        style="padding: 8px 16px; background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; border-bottom: none; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: 500; font-size: 13px;">
-                                    <i class="fas fa-align-left"></i> Texte
-                                </button>
-                                ${email.bodyPreview ? `
-                                    <button onclick="window.pageManagerGmail.switchEmailView('${uniqueId}', 'preview')" 
-                                            id="tab-preview-${uniqueId}"
-                                            style="padding: 8px 16px; background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; border-bottom: none; border-radius: 6px 6px 0 0; cursor: pointer; font-weight: 500; font-size: 13px;">
-                                        <i class="fas fa-eye"></i> Aperçu
-                                    </button>
-                                ` : ''}
-                            </div>
-                            
-                            <div id="email-content-html-${uniqueId}" class="email-body" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; line-height: 1.6; color: #374151; min-height: 200px; max-height: 400px; overflow-y: auto;">
-                                ${this.getEmailHtmlContent(email)}
-                            </div>
-                            
-                            <div id="email-content-text-${uniqueId}" class="email-body" style="display: none; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; line-height: 1.6; color: #374151; min-height: 200px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; font-family: monospace;">
-                                ${this.getEmailTextContent(email)}
-                            </div>
-                            
-                            ${email.bodyPreview ? `
-                                <div id="email-content-preview-${uniqueId}" class="email-body" style="display: none; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; line-height: 1.6; color: #374151; min-height: 200px; max-height: 400px; overflow-y: auto;">
-                                    <p>${this.escapeHtml(email.bodyPreview)}</p>
-                                </div>
-                            ` : ''}
-                        </div>
-                        
-                        ${attachmentsHTML}
-                    </div>
-                    <div class="modal-footer" style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; gap: 8px;">
-                            ${email.webLink ? `
-                                <button onclick="window.open('${email.webLink}', '_blank')" style="padding: 8px 16px; background: #4285f4; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px;">
-                                    <i class="fab fa-google"></i> Ouvrir dans Gmail
-                                </button>
-                            ` : ''}
-                            <button onclick="window.pageManagerGmail.printEmail('${emailId}')" style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-weight: 500; color: #374151; display: flex; align-items: center; gap: 6px;">
-                                <i class="fas fa-print"></i> Imprimer
-                            </button>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';" style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer; font-weight: 500; color: #374151;">
-                                Fermer
-                            </button>
-                            ${!this.createdTasks.has(emailId) ? `
-                                <button onclick="document.getElementById('${uniqueId}').remove(); window.pageManagerGmail.showTaskCreationModal('${emailId}');" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px;">
-                                    <i class="fas fa-tasks"></i> Créer une tâche
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
+                    ` : ''}
                 </div>
             </div>
-        `;
+        </div>
+    `;
 
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-        
-        // Ajouter les styles pour l'iframe si nécessaire
-        this.addEmailModalStyles();
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+    
+    // Appliquer des styles pour le contenu email
+    this.applyEmailContentStyles(uniqueId);
+}
+
+getFullEmailContent(email) {
+    // Vérifier les différentes propriétés possibles pour le contenu
+    let content = '';
+    
+    // Gmail API retourne le contenu dans body
+    if (email.body) {
+        if (email.body.content) {
+            content = email.body.content;
+        } else if (email.body.data) {
+            // Le contenu peut être encodé en base64
+            try {
+                content = atob(email.body.data);
+            } catch (e) {
+                content = email.body.data;
+            }
+        }
     }
+    
+    // Microsoft Graph API structure
+    if (!content && email.body) {
+        if (email.body.contentType === 'html') {
+            content = email.body.content;
+        } else if (email.body.contentType === 'text') {
+            // Convertir le texte brut en HTML
+            content = this.textToHtml(email.body.content);
+        }
+    }
+    
+    // Fallback sur bodyPreview
+    if (!content && email.bodyPreview) {
+        content = this.textToHtml(email.bodyPreview);
+    }
+    
+    // Si aucun contenu trouvé
+    if (!content) {
+        content = '<p style="color: #6b7280; font-style: italic;">Aucun contenu disponible</p>';
+    }
+    
+    // Nettoyer et sécuriser le HTML
+    return this.sanitizeEmailHtml(content);
+}
+
+getEmailAttachments(email) {
+    const attachments = [];
+    
+    // Structure Gmail API
+    if (email.payload && email.payload.parts) {
+        email.payload.parts.forEach(part => {
+            if (part.filename && part.filename.length > 0) {
+                attachments.push({
+                    id: part.body.attachmentId,
+                    name: part.filename,
+                    size: part.body.size || 0,
+                    mimeType: part.mimeType || 'application/octet-stream',
+                    inline: part.headers?.some(h => h.name === 'Content-Disposition' && h.value.includes('inline'))
+                });
+            }
+        });
+    }
+    
+    // Structure Microsoft Graph API
+    if (email.attachments && Array.isArray(email.attachments)) {
+        email.attachments.forEach(att => {
+            attachments.push({
+                id: att.id,
+                name: att.name,
+                size: att.size || 0,
+                mimeType: att.contentType || 'application/octet-stream',
+                inline: att.isInline || false,
+                contentId: att.contentId,
+                contentBytes: att.contentBytes // Pour les images inline
+            });
+        });
+    }
+    
+    // Structure alternative
+    if (email.hasAttachments && !attachments.length) {
+        // Indicateur générique si les détails ne sont pas disponibles
+        attachments.push({
+            id: 'generic',
+            name: 'Pièce(s) jointe(s)',
+            size: 0,
+            mimeType: 'application/octet-stream'
+        });
+    }
+    
+    return attachments;
+}
+
+renderAttachment(attachment) {
+    const isImage = attachment.mimeType && attachment.mimeType.startsWith('image/');
+    const isPdf = attachment.mimeType && attachment.mimeType.includes('pdf');
+    const isDoc = attachment.mimeType && (
+        attachment.mimeType.includes('word') || 
+        attachment.mimeType.includes('document')
+    );
+    
+    let icon = 'fa-file';
+    let color = '#6b7280';
+    
+    if (isImage) {
+        icon = 'fa-image';
+        color = '#10b981';
+    } else if (isPdf) {
+        icon = 'fa-file-pdf';
+        color = '#dc2626';
+    } else if (isDoc) {
+        icon = 'fa-file-word';
+        color = '#2563eb';
+    }
+    
+    const sizeStr = this.formatFileSize(attachment.size);
+    
+    return `
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer; transition: all 0.2s;" 
+             onmouseover="this.style.background='#f9fafb'; this.style.borderColor='#d1d5db';" 
+             onmouseout="this.style.background='white'; this.style.borderColor='#e5e7eb';"
+             onclick="window.pageManagerGmail.handleAttachmentClick('${attachment.id}', '${attachment.name}')">
+            <i class="fas ${icon}" style="color: ${color}; font-size: 16px;"></i>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 13px; font-weight: 600; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    ${attachment.name}
+                </div>
+                ${sizeStr ? `<div style="font-size: 11px; color: #6b7280;">${sizeStr}</div>` : ''}
+            </div>
+            ${isImage && attachment.contentBytes ? `
+                <img src="data:${attachment.mimeType};base64,${attachment.contentBytes}" 
+                     style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #e5e7eb;">
+            ` : ''}
+        </div>
+    `;
+}
+
+sanitizeEmailHtml(html) {
+    // Créer un conteneur temporaire pour parser le HTML
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    // Supprimer les scripts et styles dangereux
+    const dangerousTags = ['script', 'style', 'iframe', 'object', 'embed', 'form'];
+    dangerousTags.forEach(tag => {
+        const elements = temp.getElementsByTagName(tag);
+        for (let i = elements.length - 1; i >= 0; i--) {
+            elements[i].remove();
+        }
+    });
+    
+    // Nettoyer les attributs dangereux
+    const allElements = temp.getElementsByTagName('*');
+    for (let i = 0; i < allElements.length; i++) {
+        const el = allElements[i];
+        
+        // Supprimer les event handlers
+        const attrs = Array.from(el.attributes);
+        attrs.forEach(attr => {
+            if (attr.name.startsWith('on') || attr.name === 'href' && attr.value.startsWith('javascript:')) {
+                el.removeAttribute(attr.name);
+            }
+        });
+        
+        // Ajouter target="_blank" aux liens
+        if (el.tagName === 'A') {
+            el.setAttribute('target', '_blank');
+            el.setAttribute('rel', 'noopener noreferrer');
+            el.style.color = '#3b82f6';
+            el.style.textDecoration = 'underline';
+        }
+        
+        // Limiter la taille des images
+        if (el.tagName === 'IMG') {
+            el.style.maxWidth = '100%';
+            el.style.height = 'auto';
+            el.style.display = 'block';
+            el.style.margin = '10px 0';
+        }
+        
+        // Styles pour les tableaux
+        if (el.tagName === 'TABLE') {
+            el.style.width = '100%';
+            el.style.borderCollapse = 'collapse';
+            el.style.marginBottom = '16px';
+        }
+        
+        if (el.tagName === 'TD' || el.tagName === 'TH') {
+            el.style.padding = '8px';
+            el.style.border = '1px solid #e5e7eb';
+        }
+    }
+    
+    return temp.innerHTML;
+}
+
+textToHtml(text) {
+    if (!text) return '';
+    
+    // Échapper les caractères HTML
+    const escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    
+    // Convertir les URLs en liens
+    const withLinks = escaped.replace(
+        /(https?:\/\/[^\s]+)/g,
+        '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: #3b82f6; text-decoration: underline;">$1</a>'
+    );
+    
+    // Convertir les sauts de ligne en paragraphes
+    const paragraphs = withLinks
+        .split(/\n\n+/)
+        .map(p => p.trim())
+        .filter(p => p.length > 0)
+        .map(p => `<p style="margin-bottom: 12px;">${p.replace(/\n/g, '<br>')}</p>`)
+        .join('');
+    
+    return paragraphs || `<p>${withLinks.replace(/\n/g, '<br>')}</p>`;
+}
+
+formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '';
+    
+    const units = ['o', 'Ko', 'Mo', 'Go'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const size = (bytes / Math.pow(1024, i)).toFixed(1);
+    
+    return `${size} ${units[i]}`;
+}
+
+
+applyEmailContentStyles(modalId) {
+    const style = document.createElement('style');
+    style.textContent = `
+        #${modalId} .email-content-wrapper {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #374151;
+        }
+        
+        #${modalId} .email-content-wrapper p {
+            margin-bottom: 12px;
+        }
+        
+        #${modalId} .email-content-wrapper img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 16px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        #${modalId} .email-content-wrapper a {
+            color: #3b82f6;
+            text-decoration: underline;
+        }
+        
+        #${modalId} .email-content-wrapper a:hover {
+            color: #2563eb;
+        }
+        
+        #${modalId} .email-content-wrapper blockquote {
+            border-left: 4px solid #e5e7eb;
+            padding-left: 16px;
+            margin: 16px 0;
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        #${modalId} .email-content-wrapper pre {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+        
+        #${modalId} .email-content-wrapper code {
+            background: #f3f4f6;
+            color: #1f2937;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+        
+        #${modalId} .email-content-wrapper ul,
+        #${modalId} .email-content-wrapper ol {
+            margin-bottom: 12px;
+            padding-left: 24px;
+        }
+        
+        #${modalId} .email-content-wrapper li {
+            margin-bottom: 4px;
+        }
+        
+        #${modalId} .email-content-wrapper table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+        
+        #${modalId} .email-content-wrapper th,
+        #${modalId} .email-content-wrapper td {
+            padding: 8px;
+            border: 1px solid #e5e7eb;
+            text-align: left;
+        }
+        
+        #${modalId} .email-content-wrapper th {
+            background: #f9fafb;
+            font-weight: 600;
+        }
+        
+        #${modalId} .email-content-wrapper hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 24px 0;
+        }
+    `;
+    
+    document.head.appendChild(style);
+    
+    // Nettoyer le style à la fermeture du modal
+    setTimeout(() => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            const observer = new MutationObserver((mutations) => {
+                if (!document.getElementById(modalId)) {
+                    style.remove();
+                    observer.disconnect();
+                }
+            });
+            observer.observe(document.body, { childList: true });
+        }
+    }, 100);
+}
+
+handleAttachmentClick(attachmentId, fileName) {
+    console.log('[PageManagerGmail] Clic sur pièce jointe:', fileName);
+    
+    // Pour Gmail, on peut télécharger via l'API
+    if (window.googleAuthService && attachmentId !== 'generic') {
+        this.showToast(`Téléchargement de ${fileName}...`, 'info');
+        
+        // TODO: Implémenter le téléchargement via Gmail API
+        // Pour l'instant, on affiche juste un message
+        setTimeout(() => {
+            this.showToast('Fonctionnalité de téléchargement en cours de développement', 'warning');
+        }, 1000);
+    } else {
+        this.showToast('Pièce jointe non téléchargeable', 'warning');
+    }
+}
+
     async showTaskCreationModal(emailId) {
         const email = this.getEmailById(emailId);
         if (!email) return;
@@ -2764,12 +3053,10 @@ showEmailModal(emailId) {
         return div.innerHTML;
     }
 
-    getEmailContent(email) {
-        if (email.body?.content) {
-            return email.body.content;
-        }
-        return `<p>${email.bodyPreview || 'Aucun contenu disponible'}</p>`;
-    }
+getEmailContent(email) {
+    // Utiliser la nouvelle fonction pour obtenir le contenu complet
+    return this.getFullEmailContent(email);
+}
 
     getCategoryColor(categoryId) {
         if (window.categoryManager && window.categoryManager.getCategory) {
