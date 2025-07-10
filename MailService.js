@@ -602,11 +602,12 @@ class MailService {
             const headers = message.payload?.headers || [];
             const getHeader = (name) => headers.find(h => h.name === name)?.value || '';
             
-            // Extraire le contenu complet du message
+            // Extraire le contenu complet du message avec images
             let bodyContent = message.snippet || '';
             let htmlContent = '';
             let textContent = '';
             let attachments = [];
+            let inlineImages = [];
             
             if (fullContent && message.payload) {
                 const extraction = this.extractGmailContent(message.payload);
@@ -614,7 +615,19 @@ class MailService {
                 htmlContent = extraction.html || '';
                 textContent = extraction.text || '';
                 attachments = extraction.attachments || [];
+                inlineImages = extraction.inlineImages || [];
+                
+                // Traiter les images inline dans le HTML
+                if (htmlContent && inlineImages.length > 0) {
+                    htmlContent = await this.processInlineImagesGmail(messageId, htmlContent, inlineImages);
+                }
             }
+            
+            // Extraire toutes les images (inline + attachments)
+            const allImages = [
+                ...inlineImages.map(img => ({ ...img, isInline: true })),
+                ...attachments.filter(att => att.contentType && att.contentType.startsWith('image/'))
+            ];
             
             // Convertir au format unifié
             const unifiedMessage = {
@@ -624,7 +637,7 @@ class MailService {
                 subject: getHeader('Subject') || 'Sans sujet',
                 bodyPreview: message.snippet || '',
                 body: {
-                    content: bodyContent,
+                    content: htmlContent || textContent || bodyContent,
                     contentType: htmlContent ? 'html' : 'text'
                 },
                 bodyHtml: htmlContent,
@@ -633,7 +646,10 @@ class MailService {
                 isRead: !message.labelIds?.includes('UNREAD'),
                 isDraft: message.labelIds?.includes('DRAFT'),
                 hasAttachments: attachments.length > 0,
+                hasImages: allImages.length > 0,
                 attachments: attachments,
+                images: allImages,
+                inlineImages: inlineImages,
                 from: {
                     emailAddress: {
                         name: this.extractNameFromEmail(getHeader('From')),
@@ -663,11 +679,11 @@ class MailService {
         }
     }
 
-    extractGmailContent(payload, attachments = []) {
+    extractGmailContent(payload, attachments = [], inlineImages = []) {
         let text = '';
         let html = '';
         
-        if (!payload) return { text, html, attachments };
+        if (!payload) return { text, html, attachments, inlineImages };
         
         // Si c'est une partie simple
         if (payload.body && payload.body.data) {
@@ -684,24 +700,90 @@ class MailService {
         if (payload.parts) {
             for (const part of payload.parts) {
                 // Vérifier si c'est une pièce jointe
-                if (part.filename && part.body && part.body.attachmentId) {
-                    attachments.push({
+                if (part.filename && part.body) {
+                    const attachment = {
                         id: part.body.attachmentId,
+                        partId: part.partId,
                         name: part.filename,
                         contentType: part.mimeType,
                         size: part.body.size || 0,
-                        inline: part.headers?.some(h => h.name === 'Content-Disposition' && h.value.includes('inline'))
-                    });
+                        contentId: this.getHeaderValue(part.headers, 'Content-ID'),
+                        contentDisposition: this.getHeaderValue(part.headers, 'Content-Disposition'),
+                        inline: false
+                    };
+                    
+                    // Vérifier si c'est une image inline
+                    if (attachment.contentId || (attachment.contentDisposition && attachment.contentDisposition.includes('inline'))) {
+                        attachment.inline = true;
+                        // Nettoyer le Content-ID
+                        if (attachment.contentId) {
+                            attachment.contentId = attachment.contentId.replace(/[<>]/g, '');
+                        }
+                        inlineImages.push(attachment);
+                    }
+                    
+                    attachments.push(attachment);
                 } else {
                     // Récursivement extraire le contenu
-                    const subContent = this.extractGmailContent(part, attachments);
+                    const subContent = this.extractGmailContent(part, attachments, inlineImages);
                     if (subContent.text) text = text || subContent.text;
                     if (subContent.html) html = html || subContent.html;
                 }
             }
         }
         
-        return { text, html, attachments };
+        return { text, html, attachments, inlineImages };
+    }
+
+    getHeaderValue(headers, headerName) {
+        if (!headers) return null;
+        const header = headers.find(h => h.name.toLowerCase() === headerName.toLowerCase());
+        return header ? header.value : null;
+    }
+
+    async processInlineImagesGmail(messageId, htmlContent, inlineImages) {
+        console.log(`[MailService] 🖼️ Traitement de ${inlineImages.length} images inline...`);
+        
+        try {
+            let processedHtml = htmlContent;
+            
+            for (const image of inlineImages) {
+                if (!image.id) continue;
+                
+                try {
+                    // Récupérer les données de l'image
+                    const imageData = await this.getGmailAttachment(messageId, image.id);
+                    if (imageData && imageData.data) {
+                        const dataUrl = `data:${image.contentType};base64,${imageData.data}`;
+                        
+                        // Remplacer les références CID
+                        if (image.contentId) {
+                            // Remplacer cid:contentId
+                            processedHtml = processedHtml.replace(
+                                new RegExp(`cid:${image.contentId}`, 'gi'),
+                                dataUrl
+                            );
+                            // Remplacer src="contentId"
+                            processedHtml = processedHtml.replace(
+                                new RegExp(`src=["']?${image.contentId}["']?`, 'gi'),
+                                `src="${dataUrl}"`
+                            );
+                        }
+                        
+                        // Ajouter le data URL à l'objet image pour référence
+                        image.dataUrl = dataUrl;
+                    }
+                } catch (error) {
+                    console.error(`[MailService] ❌ Erreur récupération image ${image.id}:`, error);
+                }
+            }
+            
+            return processedHtml;
+            
+        } catch (error) {
+            console.error('[MailService] ❌ Erreur traitement images inline:', error);
+            return htmlContent;
+        }
     }
 
     base64Decode(data) {
@@ -717,7 +799,7 @@ class MailService {
 
     async getOutlookMessages(folderId = 'inbox', options = {}) {
         console.log(`[MailService] 📂 Récupération emails Outlook depuis ${folderId}...`);
-        console.log('[MailService] 🚀 Mode SANS LIMITES - Récupération de TOUS les emails avec contenu COMPLET');
+        console.log('[MailService] 🚀 Mode SANS LIMITES - Récupération de TOUS les emails avec contenu COMPLET et IMAGES');
         
         try {
             const allMessages = [];
@@ -737,11 +819,11 @@ class MailService {
                 if (nextLink) {
                     url = nextLink;
                 } else {
-                    // Première requête avec TOUS les champs
+                    // Première requête avec TOUS les champs et expansions
                     const params = new URLSearchParams({
                         '$top': 999, // Maximum autorisé par l'API
-                        '$select': 'id,conversationId,receivedDateTime,subject,body,bodyPreview,importance,isRead,isDraft,hasAttachments,from,toRecipients,ccRecipients,bccRecipients,replyTo,categories,flag,internetMessageId,parentFolderId,webLink,attachments,singleValueExtendedProperties,multiValueExtendedProperties',
-                        '$expand': 'attachments',
+                        '$select': 'id,conversationId,receivedDateTime,subject,body,bodyPreview,importance,isRead,isDraft,hasAttachments,from,toRecipients,ccRecipients,bccRecipients,replyTo,categories,flag,internetMessageId,parentFolderId,webLink,attachments,internetMessageHeaders',
+                        '$expand': 'attachments($select=id,name,contentType,size,isInline,contentId,contentLocation,contentBytes)',
                         '$orderby': 'receivedDateTime desc'
                     });
 
@@ -789,25 +871,55 @@ class MailService {
                         message.bodyText = message.body?.content || '';
                         message.bodyHtml = message.body?.contentType === 'html' ? message.body.content : '';
                         
-                        // Formater les pièces jointes
+                        // Séparer les images des autres pièces jointes
+                        const allImages = [];
+                        const regularAttachments = [];
+                        const inlineImages = [];
+                        
                         if (message.attachments) {
-                            message.attachments = message.attachments.map(att => ({
-                                id: att.id,
-                                name: att.name,
-                                contentType: att.contentType,
-                                size: att.size,
-                                inline: att.isInline,
-                                contentId: att.contentId,
-                                contentLocation: att.contentLocation
-                            }));
+                            message.attachments.forEach(att => {
+                                const processedAtt = {
+                                    id: att.id,
+                                    name: att.name,
+                                    contentType: att.contentType,
+                                    size: att.size,
+                                    inline: att.isInline,
+                                    contentId: att.contentId,
+                                    contentLocation: att.contentLocation,
+                                    contentBytes: att.contentBytes // Base64 si disponible
+                                };
+                                
+                                // Vérifier si c'est une image
+                                if (att.contentType && att.contentType.startsWith('image/')) {
+                                    allImages.push(processedAtt);
+                                    
+                                    if (att.isInline || att.contentId) {
+                                        processedAtt.dataUrl = att.contentBytes ? 
+                                            `data:${att.contentType};base64,${att.contentBytes}` : null;
+                                        inlineImages.push(processedAtt);
+                                    }
+                                }
+                                
+                                regularAttachments.push(processedAtt);
+                            });
+                            
+                            // Traiter les images inline dans le HTML
+                            if (message.bodyHtml && inlineImages.length > 0) {
+                                message.bodyHtml = this.processInlineImagesOutlook(message.bodyHtml, inlineImages);
+                            }
                         }
+                        
+                        message.attachments = regularAttachments;
+                        message.images = allImages;
+                        message.inlineImages = inlineImages;
+                        message.hasImages = allImages.length > 0;
                         
                         allMessages.push(message);
                     }
                 }
                 
                 totalFetched = allMessages.length;
-                console.log(`[MailService] 📊 Total Outlook récupéré: ${totalFetched} emails (avec contenu complet)`);
+                console.log(`[MailService] 📊 Total Outlook récupéré: ${totalFetched} emails (avec contenu complet et images)`);
                 
                 // Petite pause pour ne pas surcharger l'API
                 if (nextLink) {
@@ -820,7 +932,7 @@ class MailService {
             // Sauvegarder les IDs traités
             this.savePersistedEmailIds();
             
-            console.log(`[MailService] ✅ ${allMessages.length} messages Outlook récupérés au total (CONTENU COMPLET)`);
+            console.log(`[MailService] ✅ ${allMessages.length} messages Outlook récupérés au total (CONTENU COMPLET + IMAGES)`);
             return allMessages;
             
         } catch (error) {
@@ -829,8 +941,42 @@ class MailService {
         }
     }
 
+    processInlineImagesOutlook(htmlContent, inlineImages) {
+        console.log(`[MailService] 🖼️ Traitement de ${inlineImages.length} images inline Outlook...`);
+        
+        let processedHtml = htmlContent;
+        
+        inlineImages.forEach(image => {
+            if (!image.dataUrl) return;
+            
+            // Remplacer les références CID
+            if (image.contentId) {
+                // Remplacer cid:contentId
+                processedHtml = processedHtml.replace(
+                    new RegExp(`cid:${image.contentId}`, 'gi'),
+                    image.dataUrl
+                );
+                // Remplacer src="contentId"
+                processedHtml = processedHtml.replace(
+                    new RegExp(`src=["']?${image.contentId}["']?`, 'gi'),
+                    `src="${image.dataUrl}"`
+                );
+            }
+            
+            // Remplacer par nom de fichier si nécessaire
+            if (image.name) {
+                processedHtml = processedHtml.replace(
+                    new RegExp(`src=["']?${image.name}["']?`, 'gi'),
+                    `src="${image.dataUrl}"`
+                );
+            }
+        });
+        
+        return processedHtml;
+    }
+
     // ================================================
-    // RÉCUPÉRATION DES PIÈCES JOINTES
+    // RÉCUPÉRATION DES PIÈCES JOINTES ET IMAGES
     // ================================================
     async getGmailAttachment(messageId, attachmentId) {
         try {
@@ -860,17 +1006,19 @@ class MailService {
         }
     }
 
-    async getOutlookAttachment(messageId, attachmentId) {
+    async getOutlookAttachment(messageId, attachmentId, includeBytes = true) {
         try {
-            const response = await fetch(
-                `https://graph.microsoft.com/v1.0/me/messages/${messageId}/attachments/${attachmentId}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${this.accessToken}`,
-                        'Content-Type': 'application/json'
-                    }
+            // Pour Outlook, on peut demander directement les bytes
+            const url = includeBytes ? 
+                `https://graph.microsoft.com/v1.0/me/messages/${messageId}/attachments/${attachmentId}?$select=id,name,contentType,size,contentBytes,isInline,contentId` :
+                `https://graph.microsoft.com/v1.0/me/messages/${messageId}/attachments/${attachmentId}`;
+                
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`,
+                    'Content-Type': 'application/json'
                 }
-            );
+            });
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -881,7 +1029,9 @@ class MailService {
                 data: data.contentBytes, // Base64 encoded
                 contentType: data.contentType,
                 name: data.name,
-                size: data.size
+                size: data.size,
+                isInline: data.isInline,
+                contentId: data.contentId
             };
             
         } catch (error) {
@@ -890,11 +1040,73 @@ class MailService {
         }
     }
 
+    async downloadAllAttachments(email) {
+        console.log(`[MailService] 📎 Téléchargement de toutes les pièces jointes pour l'email ${email.id}...`);
+        
+        if (!email.attachments || email.attachments.length === 0) {
+            return [];
+        }
+        
+        const downloadedAttachments = [];
+        
+        for (const attachment of email.attachments) {
+            try {
+                let attachmentData;
+                
+                if (email.provider === 'google') {
+                    attachmentData = await this.getGmailAttachment(email.id, attachment.id);
+                } else if (email.provider === 'microsoft') {
+                    attachmentData = await this.getOutlookAttachment(email.id, attachment.id);
+                }
+                
+                if (attachmentData && attachmentData.data) {
+                    downloadedAttachments.push({
+                        ...attachment,
+                        data: attachmentData.data,
+                        dataUrl: `data:${attachment.contentType};base64,${attachmentData.data}`
+                    });
+                }
+            } catch (error) {
+                console.error(`[MailService] ❌ Erreur téléchargement pièce jointe ${attachment.name}:`, error);
+            }
+        }
+        
+        console.log(`[MailService] ✅ ${downloadedAttachments.length} pièces jointes téléchargées`);
+        return downloadedAttachments;
+    }
+
+    // ================================================
+    // EXTRACTION D'IMAGES DEPUIS LE HTML
+    // ================================================
+    extractExternalImages(htmlContent) {
+        if (!htmlContent) return [];
+        
+        const images = [];
+        const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+        let match;
+        
+        while ((match = imgRegex.exec(htmlContent)) !== null) {
+            const src = match[1];
+            
+            // Ignorer les images data:, cid: et les chemins relatifs
+            if (!src.startsWith('data:') && !src.startsWith('cid:') && 
+                (src.startsWith('http://') || src.startsWith('https://'))) {
+                images.push({
+                    type: 'external',
+                    url: src,
+                    isExternal: true
+                });
+            }
+        }
+        
+        return images;
+    }
+
     // ================================================
     // GÉNÉRATION D'EMAILS DE DÉMONSTRATION
     // ================================================
     generateDemoEmails(options = {}) {
-        console.log('[MailService] 🎭 Génération d\'emails de démonstration...');
+        console.log('[MailService] 🎭 Génération d\'emails de démonstration avec images...');
         
         const categories = ['shopping', 'newsletters', 'meetings', 'finance', 'marketing', 'work', 'personal', 'social'];
         const senders = [
@@ -929,7 +1141,46 @@ class MailService {
             const hoursAgo = Math.floor(Math.random() * 168);
             
             const bodyText = `Ceci est un email de démonstration ${i + 1}. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.`;
-            const bodyHtml = `<html><body><h1>${subject}</h1><p>${bodyText}</p><p>Cordialement,<br>${sender.name}</p></body></html>`;
+            
+            // HTML avec images de démonstration
+            const bodyHtml = `
+                <html>
+                <body style="font-family: Arial, sans-serif;">
+                    <div style="max-width: 600px; margin: 0 auto;">
+                        <img src="https://via.placeholder.com/600x200/667eea/ffffff?text=${encodeURIComponent(sender.name)}" 
+                             alt="Header" style="width: 100%; height: auto;">
+                        <h1 style="color: #333;">${subject}</h1>
+                        <p>${bodyText}</p>
+                        <div style="margin: 20px 0;">
+                            <img src="https://via.placeholder.com/300x200/764ba2/ffffff?text=Product+Image" 
+                                 alt="Product" style="width: 300px; height: auto;">
+                        </div>
+                        <p>Cordialement,<br><strong>${sender.name}</strong></p>
+                    </div>
+                </body>
+                </html>`;
+            
+            const hasImages = Math.random() > 0.5;
+            const images = hasImages ? [
+                {
+                    id: `demo_img_${i}_1`,
+                    name: 'header.png',
+                    contentType: 'image/png',
+                    size: 50000,
+                    inline: true,
+                    contentId: `header_${i}`,
+                    dataUrl: `https://via.placeholder.com/600x200/667eea/ffffff?text=${encodeURIComponent(sender.name)}`
+                },
+                {
+                    id: `demo_img_${i}_2`,
+                    name: 'product.png',
+                    contentType: 'image/png',
+                    size: 30000,
+                    inline: true,
+                    contentId: `product_${i}`,
+                    dataUrl: 'https://via.placeholder.com/300x200/764ba2/ffffff?text=Product+Image'
+                }
+            ] : [];
             
             demoEmails.push({
                 id: `demo_${Date.now()}_${i}`,
@@ -952,6 +1203,9 @@ class MailService {
                 isRead: Math.random() > 0.5,
                 isDraft: false,
                 hasAttachments: Math.random() > 0.7,
+                hasImages: hasImages,
+                images: images,
+                inlineImages: images.filter(img => img.inline),
                 attachments: Math.random() > 0.7 ? [{
                     id: `demo_att_${i}`,
                     name: 'document.pdf',
@@ -967,7 +1221,7 @@ class MailService {
         
         demoEmails.sort((a, b) => new Date(b.receivedDateTime) - new Date(a.receivedDateTime));
         
-        console.log(`[MailService] ✅ ${demoEmails.length} emails de démonstration générés (avec contenu complet)`);
+        console.log(`[MailService] ✅ ${demoEmails.length} emails de démonstration générés (avec contenu complet et images)`);
         return demoEmails;
     }
 
@@ -1343,7 +1597,8 @@ window.clearMailHistory = function() {
     console.log('✅ Historique effacé');
 };
 
-console.log('✅ MailService v9.0 loaded - Mode SANS LIMITES avec récupération COMPLÈTE!');
+console.log('✅ MailService v9.0 loaded - Mode SANS LIMITES avec récupération COMPLÈTE + IMAGES!');
 console.log('💡 Utilisez window.testMailService() pour tester');
 console.log('💡 Utilisez window.getAllEmails() pour récupérer TOUS les emails');
 console.log('💡 Utilisez window.clearMailHistory() pour réinitialiser l\'historique');
+console.log('🖼️ Les images inline sont automatiquement converties en data URLs');
