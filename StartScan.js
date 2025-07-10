@@ -1,6 +1,6 @@
-// StartScan.js - Version 11.0 - Scanner non bloquant optimisé
+// StartScan.js - Version 11.1 - Scanner corrigé sans limite et sans duplication
 
-console.log('[StartScan] 🚀 Loading StartScan.js v11.0...');
+console.log('[StartScan] 🚀 Loading StartScan.js v11.1...');
 
 class MinimalScanModule {
     constructor() {
@@ -18,7 +18,10 @@ class MinimalScanModule {
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        console.log('[StartScan] Scanner v11.0 initialized - Non bloquant');
+        // Anti-duplication
+        this.processedEmailIds = new Set();
+        
+        console.log('[StartScan] Scanner v11.1 initialized - Sans limite et anti-duplication');
         this.detectAuthProvider();
         this.loadSettingsFromCategoryManager();
         this.addMinimalStyles();
@@ -106,7 +109,8 @@ class MinimalScanModule {
                 defaultPeriod: 7,
                 defaultFolder: 'inbox',
                 autoAnalyze: true,
-                autoCategrize: true
+                autoCategrize: true,
+                maxEmails: 1000 // Limite configurable
             },
             taskPreselectedCategories: [],
             preferences: {
@@ -128,7 +132,7 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Minimaliste v11.0 */
+            /* Scanner Ultra-Minimaliste v11.1 */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -340,6 +344,12 @@ class MinimalScanModule {
                 flex-direction: column;
             }
             
+            .email-count-info {
+                font-size: 12px;
+                color: #9ca3af;
+                margin-top: 5px;
+            }
+            
             .error-state {
                 background: rgba(239, 68, 68, 0.1);
                 color: #dc2626;
@@ -351,11 +361,11 @@ class MinimalScanModule {
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[StartScan] ✅ Styles v11.0 ajoutés');
+        console.log('[StartScan] ✅ Styles v11.1 ajoutés');
     }
 
     async render(container) {
-        console.log('[StartScan] 🎯 Rendu du scanner v11.0...');
+        console.log('[StartScan] 🎯 Rendu du scanner v11.1...');
         
         try {
             this.addMinimalStyles();
@@ -373,7 +383,7 @@ class MinimalScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[StartScan] ✅ Scanner v11.0 rendu avec succès');
+            console.log('[StartScan] ✅ Scanner v11.1 rendu avec succès');
             
         } catch (error) {
             console.error('[StartScan] ❌ Erreur lors du rendu:', error);
@@ -430,6 +440,7 @@ class MinimalScanModule {
                             <i class="fas fa-shield-alt"></i>
                             <span>Scan sécurisé et privé</span>
                         </div>
+                        <div class="email-count-info" id="emailCountInfo"></div>
                     </div>
                 </div>
             </div>
@@ -442,7 +453,8 @@ class MinimalScanModule {
             { value: 3, label: '3 jours' },
             { value: 7, label: '7 jours' },
             { value: 15, label: '15 jours' },
-            { value: 30, label: '30 jours' }
+            { value: 30, label: '30 jours' },
+            { value: 90, label: '3 mois' }
         ];
         
         return options.map(option => {
@@ -560,12 +572,13 @@ class MinimalScanModule {
             return;
         }
         
-        console.log('[StartScan] 🚀 Démarrage du scan v11.0 non bloquant');
+        console.log('[StartScan] 🚀 Démarrage du scan v11.1 non bloquant');
         
         try {
             this.scanInProgress = true;
             this.scanStartTime = Date.now();
             this.abortController = new AbortController();
+            this.processedEmailIds.clear(); // Reset des IDs traités
             
             const progressSection = document.getElementById('progressSection');
             if (progressSection) {
@@ -590,7 +603,8 @@ class MinimalScanModule {
                 provider: this.currentProvider,
                 taskPreselectedCategories: [...this.taskPreselectedCategories],
                 onProgress: (progress) => this.updateProgress(progress.progress || 0, progress.message || '', progress.phase || ''),
-                abortSignal: this.abortController.signal
+                abortSignal: this.abortController.signal,
+                maxEmails: this.settings.scanSettings?.maxEmails || 1000
             };
             
             console.log('[StartScan] 📊 Options de scan:', scanOptions);
@@ -699,39 +713,58 @@ class MinimalScanModule {
             const startDate = new Date();
             startDate.setDate(endDate.getDate() - scanOptions.days);
             
-            let emails = [];
+            let allEmails = [];
+            const uniqueEmails = new Map(); // Pour éviter les doublons
             
-            // Utiliser la méthode getMessages avec limite raisonnable
+            // Utiliser la méthode getMessages avec limite configurable
             if (window.mailService && typeof window.mailService.getMessages === 'function') {
                 console.log('[StartScan] 📬 Utilisation de getMessages...');
                 
                 const folder = this.currentProvider === 'google' ? 'INBOX' : 'inbox';
                 
-                // Récupérer les emails par batch de 50
+                // Récupérer les emails par batch
                 const batchSize = 50;
                 let offset = 0;
                 let hasMore = true;
+                let totalFetched = 0;
                 
-                while (hasMore && emails.length < 200) { // Limite à 200 emails max
+                while (hasMore && totalFetched < scanOptions.maxEmails) {
                     // Vérifier l'annulation
                     if (scanOptions.abortSignal?.aborted) {
                         throw new Error('Scan annulé');
                     }
                     
+                    const remainingEmails = scanOptions.maxEmails - totalFetched;
+                    const currentBatchSize = Math.min(batchSize, remainingEmails);
+                    
                     const batch = await window.mailService.getMessages(folder, {
-                        top: batchSize,
+                        top: currentBatchSize,
                         skip: offset,
                         filter: this.buildDateFilter(startDate, endDate)
                     });
                     
                     if (batch && batch.length > 0) {
-                        emails = emails.concat(batch);
+                        // Ajouter uniquement les emails non traités
+                        batch.forEach(email => {
+                            if (!uniqueEmails.has(email.id) && !this.processedEmailIds.has(email.id)) {
+                                uniqueEmails.set(email.id, email);
+                                this.processedEmailIds.add(email.id);
+                            }
+                        });
+                        
                         offset += batch.length;
-                        hasMore = batch.length === batchSize;
+                        totalFetched = uniqueEmails.size;
+                        hasMore = batch.length === currentBatchSize;
                         
                         // Mettre à jour le progrès
-                        const progress = 20 + Math.min(30, (emails.length / 200) * 30);
-                        this.updateProgress(progress, `${emails.length} emails récupérés...`, 'fetching');
+                        const progress = 20 + Math.min(30, (totalFetched / scanOptions.maxEmails) * 30);
+                        this.updateProgress(progress, `${totalFetched} emails uniques récupérés...`, 'fetching');
+                        
+                        // Mettre à jour le compteur dans l'interface
+                        const countInfo = document.getElementById('emailCountInfo');
+                        if (countInfo) {
+                            countInfo.textContent = `${totalFetched} emails traités`;
+                        }
                         
                         // Pause courte pour ne pas bloquer l'UI
                         await new Promise(resolve => setTimeout(resolve, 100));
@@ -740,13 +773,16 @@ class MinimalScanModule {
                     }
                 }
                 
-                console.log(`[StartScan] ✅ ${emails.length} emails récupérés`);
+                // Convertir Map en Array
+                allEmails = Array.from(uniqueEmails.values());
+                
+                console.log(`[StartScan] ✅ ${allEmails.length} emails uniques récupérés`);
             }
             
             // Filtrer les emails valides
-            emails = emails.filter(email => email && email.subject && email.from);
+            allEmails = allEmails.filter(email => email && email.subject && email.from);
             
-            return emails;
+            return allEmails;
             
         } catch (error) {
             console.error('[StartScan] ❌ Erreur récupération emails:', error);
@@ -868,6 +904,12 @@ class MinimalScanModule {
 
     completeScan() {
         console.log('[StartScan] 🎉 Scan terminé avec succès');
+        
+        // Mettre à jour le compteur final
+        const countInfo = document.getElementById('emailCountInfo');
+        if (countInfo) {
+            countInfo.textContent = `${this.scanResults?.total || 0} emails traités au total`;
+        }
         
         setTimeout(() => {
             const scanBtn = document.getElementById('minimalScanBtn');
@@ -1013,6 +1055,12 @@ class MinimalScanModule {
         
         this.updateProgress(0, 'Initialisation...', 'Préparation du scan');
         
+        // Reset le compteur
+        const countInfo = document.getElementById('emailCountInfo');
+        if (countInfo) {
+            countInfo.textContent = '';
+        }
+        
         console.log('[StartScan] 🔄 Scanner réinitialisé');
     }
 
@@ -1028,7 +1076,8 @@ class MinimalScanModule {
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             settings: this.settings,
             scanResults: this.scanResults,
-            version: '11.0'
+            processedEmailIds: this.processedEmailIds.size,
+            version: '11.1'
         };
     }
 
@@ -1036,6 +1085,7 @@ class MinimalScanModule {
         this.scanInProgress = false;
         this.isInitialized = false;
         this.scanResults = null;
+        this.processedEmailIds.clear();
         if (this.abortController) {
             this.abortController.abort();
         }
@@ -1060,4 +1110,4 @@ window.MinimalScanModule = MinimalScanModule;
 window.minimalScanModule = new MinimalScanModule();
 window.scanStartModule = window.minimalScanModule;
 
-console.log('[StartScan] ✅ Scanner v11.0 chargé - Non bloquant avec annulation!');
+console.log('[StartScan] ✅ Scanner v11.1 chargé - Sans limite et anti-duplication!');
