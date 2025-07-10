@@ -1,4 +1,4 @@
-// MailService.js - Version 6.0 - Service de gestion des emails optimisé
+// MailService.js - Version 7.0 - Service de gestion des emails sans limitation
 
 class MailService {
     constructor() {
@@ -13,7 +13,11 @@ class MailService {
         this.lastFetchTime = 0;
         this.cacheDuration = 5 * 60 * 1000; // 5 minutes
         
-        console.log('[MailService] Constructor v6.0 - Service emails optimisé');
+        // Anti-duplication et pagination
+        this.fetchedEmailIds = new Set();
+        this.pageTokens = new Map(); // Pour gérer la pagination Gmail
+        
+        console.log('[MailService] Constructor v7.0 - Service emails sans limitation');
     }
 
     async initialize() {
@@ -66,7 +70,7 @@ class MailService {
             console.error('[MailService] ❌ Erreur initialisation:', error);
             this.currentProvider = 'demo';
             this.initialized = true;
-            return true; // Ne pas bloquer, utiliser le mode démo
+            return true;
         }
     }
 
@@ -234,18 +238,6 @@ class MailService {
             await this.initialize();
         }
         
-        // Vérifier le cache
-        const cacheKey = `${this.currentProvider}_${folderId}_${JSON.stringify(options)}`;
-        const now = Date.now();
-        
-        if (this.emailCache.has(cacheKey)) {
-            const cached = this.emailCache.get(cacheKey);
-            if (now - cached.timestamp < this.cacheDuration) {
-                console.log('[MailService] 📦 Emails récupérés depuis le cache');
-                return cached.emails;
-            }
-        }
-        
         try {
             let messages = [];
             
@@ -258,14 +250,19 @@ class MailService {
                 messages = this.generateDemoEmails(options);
             }
             
-            // Mettre en cache
-            this.emailCache.set(cacheKey, {
-                emails: messages,
-                timestamp: now
+            // Filtrer les doublons au cas où
+            const uniqueMessages = [];
+            const seenIds = new Set();
+            
+            messages.forEach(msg => {
+                if (msg && msg.id && !seenIds.has(msg.id)) {
+                    seenIds.add(msg.id);
+                    uniqueMessages.push(msg);
+                }
             });
             
-            console.log(`[MailService] ✅ ${messages.length} messages récupérés`);
-            return messages;
+            console.log(`[MailService] ✅ ${uniqueMessages.length} messages uniques récupérés`);
+            return uniqueMessages;
             
         } catch (error) {
             console.error('[MailService] ❌ Erreur récupération messages:', error);
@@ -280,70 +277,107 @@ class MailService {
         console.log(`[MailService] 📧 Récupération emails Gmail depuis ${labelId}...`);
         
         try {
-            // Construire les paramètres de requête
-            const params = new URLSearchParams({
-                maxResults: Math.min(options.top || 50, 100), // Limiter à 100 pour éviter les timeouts
-                labelIds: labelId,
-                includeSpamTrash: false
-            });
+            const allMessages = [];
+            let pageToken = null;
+            let totalFetched = 0;
+            const maxResults = options.top || 500; // Par défaut 500 si non spécifié
+            
+            // Si on veut TOUS les emails, on met une grande limite
+            const targetCount = options.all ? 10000 : maxResults;
+            
+            do {
+                // Construire les paramètres de requête
+                const params = new URLSearchParams({
+                    maxResults: Math.min(500, targetCount - totalFetched), // Max 500 par requête API
+                    labelIds: labelId,
+                    includeSpamTrash: false
+                });
 
-            // Ajouter le filtre si fourni
-            if (options.filter) {
-                params.append('q', options.filter);
-            }
-
-            // Première requête pour obtenir la liste des messages
-            const listResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${this.accessToken}`,
-                    'Content-Type': 'application/json'
+                // Ajouter le filtre si fourni
+                if (options.filter) {
+                    params.append('q', options.filter);
                 }
-            });
-
-            if (!listResponse.ok) {
-                throw new Error(`HTTP ${listResponse.status}: ${listResponse.statusText}`);
-            }
-
-            const listData = await listResponse.json();
-            const messagesList = listData.messages || [];
-            
-            console.log(`[MailService] 📋 ${messagesList.length} messages trouvés dans Gmail`);
-            
-            if (messagesList.length === 0) {
-                return [];
-            }
-
-            // Récupérer les détails de chaque message en batch
-            const batchSize = 10; // Traiter par batch pour éviter les timeouts
-            const detailedMessages = [];
-            
-            for (let i = 0; i < messagesList.length; i += batchSize) {
-                const batch = messagesList.slice(i, i + batchSize);
-                const batchPromises = batch.map(msg => this.getGmailMessageDetails(msg.id));
                 
-                const batchResults = await Promise.allSettled(batchPromises);
-                
-                batchResults.forEach((result, index) => {
-                    if (result.status === 'fulfilled' && result.value) {
-                        detailedMessages.push(result.value);
-                    } else {
-                        console.warn(`[MailService] ⚠️ Erreur récupération message ${batch[index].id}`);
+                // Ajouter le token de pagination si disponible
+                if (pageToken) {
+                    params.append('pageToken', pageToken);
+                }
+
+                // Requête pour obtenir la liste des messages
+                const listResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${this.accessToken}`,
+                        'Content-Type': 'application/json'
                     }
                 });
-                
-                // Pause courte entre les batchs
-                if (i + batchSize < messagesList.length) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                if (!listResponse.ok) {
+                    throw new Error(`HTTP ${listResponse.status}: ${listResponse.statusText}`);
                 }
-            }
+
+                const listData = await listResponse.json();
+                const messagesList = listData.messages || [];
+                pageToken = listData.nextPageToken;
+                
+                console.log(`[MailService] 📋 ${messagesList.length} messages trouvés dans cette page Gmail`);
+                
+                if (messagesList.length === 0) {
+                    break;
+                }
+
+                // Récupérer les détails en batch
+                const detailedMessages = await this.getGmailMessageDetailsBatch(messagesList);
+                allMessages.push(...detailedMessages);
+                totalFetched = allMessages.length;
+                
+                console.log(`[MailService] 📊 Total récupéré: ${totalFetched}/${targetCount}`);
+                
+                // Continuer si on a un token et qu'on n'a pas atteint la limite
+            } while (pageToken && totalFetched < targetCount);
             
-            console.log(`[MailService] ✅ ${detailedMessages.length} messages Gmail détaillés récupérés`);
-            return detailedMessages;
+            console.log(`[MailService] ✅ ${allMessages.length} messages Gmail récupérés au total`);
+            return allMessages;
             
         } catch (error) {
             console.error('[MailService] ❌ Erreur récupération Gmail:', error);
             throw error;
         }
+    }
+
+    async getGmailMessageDetailsBatch(messagesList) {
+        const batchSize = 50; // Traiter 50 messages à la fois
+        const detailedMessages = [];
+        
+        for (let i = 0; i < messagesList.length; i += batchSize) {
+            const batch = messagesList.slice(i, i + batchSize);
+            
+            // Créer toutes les promesses pour ce batch
+            const batchPromises = batch.map(msg => {
+                // Vérifier si on a déjà cet email
+                if (this.fetchedEmailIds.has(msg.id)) {
+                    return null;
+                }
+                this.fetchedEmailIds.add(msg.id);
+                return this.getGmailMessageDetails(msg.id);
+            });
+            
+            // Attendre que toutes les requêtes du batch se terminent
+            const batchResults = await Promise.allSettled(batchPromises);
+            
+            // Traiter les résultats
+            batchResults.forEach((result) => {
+                if (result.status === 'fulfilled' && result.value) {
+                    detailedMessages.push(result.value);
+                }
+            });
+            
+            // Petite pause entre les batchs pour éviter de surcharger l'API
+            if (i + batchSize < messagesList.length) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        
+        return detailedMessages;
     }
 
     async getGmailMessageDetails(messageId) {
@@ -393,8 +427,8 @@ class MailService {
             return unifiedMessage;
             
         } catch (error) {
-            console.error('[MailService] ❌ Erreur récupération détails Gmail:', error);
-            throw error;
+            console.error(`[MailService] ❌ Erreur récupération détails Gmail ${messageId}:`, error);
+            return null;
         }
     }
 
@@ -402,39 +436,71 @@ class MailService {
         console.log(`[MailService] 📂 Récupération emails Outlook depuis ${folderId}...`);
         
         try {
-            // Construire les paramètres de requête
-            const params = new URLSearchParams({
-                '$top': Math.min(options.top || 50, 100),
-                '$select': 'id,conversationId,receivedDateTime,subject,bodyPreview,importance,isRead,isDraft,hasAttachments,from,toRecipients,ccRecipients,categories,webLink',
-                '$orderby': 'receivedDateTime desc'
-            });
+            const allMessages = [];
+            let nextLink = null;
+            let totalFetched = 0;
+            const maxResults = options.top || 999;
+            const targetCount = options.all ? 10000 : maxResults;
+            
+            do {
+                let url;
+                
+                if (nextLink) {
+                    // Utiliser le lien de pagination fourni par l'API
+                    url = nextLink;
+                } else {
+                    // Première requête
+                    const params = new URLSearchParams({
+                        '$top': Math.min(999, targetCount - totalFetched),
+                        '$select': 'id,conversationId,receivedDateTime,subject,bodyPreview,importance,isRead,isDraft,hasAttachments,from,toRecipients,ccRecipients,categories,webLink',
+                        '$orderby': 'receivedDateTime desc'
+                    });
 
-            // Ajouter le filtre si fourni
-            if (options.filter) {
-                params.append('$filter', options.filter);
-            }
-
-            const response = await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages?${params}`, {
-                headers: {
-                    'Authorization': `Bearer ${this.accessToken}`,
-                    'Content-Type': 'application/json'
+                    // Ajouter le filtre si fourni
+                    if (options.filter) {
+                        params.append('$filter', options.filter);
+                    }
+                    
+                    // Gérer le skip pour la pagination manuelle
+                    if (options.skip) {
+                        params.append('$skip', options.skip);
+                    }
+                    
+                    url = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages?${params}`;
                 }
-            });
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${this.accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-            const data = await response.json();
-            const messages = data.value || [];
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const messages = data.value || [];
+                nextLink = data['@odata.nextLink'] || null;
+                
+                // Filtrer les doublons et ajouter le provider
+                messages.forEach(message => {
+                    if (message && message.id && !this.fetchedEmailIds.has(message.id)) {
+                        this.fetchedEmailIds.add(message.id);
+                        message.provider = 'microsoft';
+                        allMessages.push(message);
+                    }
+                });
+                
+                totalFetched = allMessages.length;
+                console.log(`[MailService] 📊 Total Outlook récupéré: ${totalFetched}/${targetCount}`);
+                
+                // Continuer si on a un nextLink et qu'on n'a pas atteint la limite
+            } while (nextLink && totalFetched < targetCount);
             
-            // Ajouter le provider à chaque message
-            messages.forEach(message => {
-                message.provider = 'microsoft';
-            });
-            
-            console.log(`[MailService] ✅ ${messages.length} messages Outlook récupérés`);
-            return messages;
+            console.log(`[MailService] ✅ ${allMessages.length} messages Outlook récupérés au total`);
+            return allMessages;
             
         } catch (error) {
             console.error('[MailService] ❌ Erreur récupération Outlook:', error);
@@ -448,110 +514,65 @@ class MailService {
     generateDemoEmails(options = {}) {
         console.log('[MailService] 🎭 Génération d\'emails de démonstration...');
         
-        const demoEmails = [
-            {
-                id: 'demo_1',
-                subject: 'Votre commande Amazon a été expédiée',
-                from: {
-                    emailAddress: {
-                        name: 'Amazon',
-                        address: 'ship-confirm@amazon.com'
-                    }
-                },
-                receivedDateTime: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-                bodyPreview: 'Votre commande #123-456 a été expédiée et arrivera demain. Suivez votre colis en cliquant sur le lien...',
-                importance: 'normal',
-                isRead: false,
-                isDraft: false,
-                hasAttachments: false,
-                provider: this.currentProvider,
-                category: 'shopping',
-                isDemoEmail: true
-            },
-            {
-                id: 'demo_2',
-                subject: 'Newsletter Tech Weekly - Édition #142',
-                from: {
-                    emailAddress: {
-                        name: 'TechCrunch',
-                        address: 'newsletter@techcrunch.com'
-                    }
-                },
-                receivedDateTime: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-                bodyPreview: 'Les dernières actualités tech de la semaine. IA, startups, et innovations. Cliquez pour vous désabonner.',
-                importance: 'normal',
-                isRead: true,
-                isDraft: false,
-                hasAttachments: false,
-                provider: this.currentProvider,
-                category: 'newsletters',
-                isDemoEmail: true
-            },
-            {
-                id: 'demo_3',
-                subject: 'Rappel: Réunion équipe demain 14h',
-                from: {
-                    emailAddress: {
-                        name: 'Google Calendar',
-                        address: 'calendar-notification@google.com'
-                    }
-                },
-                receivedDateTime: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-                bodyPreview: 'Rappel: Vous avez une réunion d\'équipe prévue demain à 14h00. Salle de conférence A.',
-                importance: 'high',
-                isRead: false,
-                isDraft: false,
-                hasAttachments: false,
-                provider: this.currentProvider,
-                category: 'meetings',
-                isDemoEmail: true
-            },
-            {
-                id: 'demo_4',
-                subject: 'Votre relevé bancaire mensuel',
-                from: {
-                    emailAddress: {
-                        name: 'BNP Paribas',
-                        address: 'noreply@bnpparibas.com'
-                    }
-                },
-                receivedDateTime: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-                bodyPreview: 'Votre relevé bancaire du mois de décembre est maintenant disponible en ligne.',
-                importance: 'normal',
-                isRead: false,
-                isDraft: false,
-                hasAttachments: true,
-                provider: this.currentProvider,
-                category: 'finance',
-                isDemoEmail: true
-            },
-            {
-                id: 'demo_5',
-                subject: 'Offre spéciale: -50% sur votre prochain achat',
-                from: {
-                    emailAddress: {
-                        name: 'Nike',
-                        address: 'offers@nike.com'
-                    }
-                },
-                receivedDateTime: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
-                bodyPreview: 'Profitez de 50% de réduction sur une sélection d\'articles Nike. Offre valable jusqu\'au 31 décembre.',
-                importance: 'normal',
-                isRead: true,
-                isDraft: false,
-                hasAttachments: false,
-                provider: this.currentProvider,
-                category: 'marketing',
-                isDemoEmail: true
-            }
+        const categories = ['shopping', 'newsletters', 'meetings', 'finance', 'marketing', 'work', 'personal', 'social'];
+        const senders = [
+            { name: 'Amazon', domain: 'amazon.com' },
+            { name: 'TechCrunch', domain: 'techcrunch.com' },
+            { name: 'Google Calendar', domain: 'google.com' },
+            { name: 'BNP Paribas', domain: 'bnpparibas.com' },
+            { name: 'Nike', domain: 'nike.com' },
+            { name: 'LinkedIn', domain: 'linkedin.com' },
+            { name: 'GitHub', domain: 'github.com' },
+            { name: 'Spotify', domain: 'spotify.com' }
         ];
         
-        // Limiter le nombre d'emails selon les options
-        const maxEmails = Math.min(options.top || 50, demoEmails.length);
-        const selectedEmails = demoEmails.slice(0, maxEmails);
+        const subjects = [
+            'Votre commande a été expédiée',
+            'Newsletter hebdomadaire',
+            'Rappel: Réunion demain',
+            'Votre relevé mensuel',
+            'Offre spéciale -50%',
+            'Nouvelle connexion détectée',
+            'Pull request approuvé',
+            'Votre playlist de la semaine'
+        ];
         
-        console.log(`[MailService] ✅ ${selectedEmails.length} emails de démonstration générés`);
-        return selectedEmails;
+        // Générer le nombre d'emails demandé
+        const count = Math.min(options.top || 50, 1000);
+        const demoEmails = [];
+        
+        for (let i = 0; i < count; i++) {
+            const sender = senders[i % senders.length];
+            const subject = subjects[i % subjects.length];
+            const category = categories[i % categories.length];
+            const hoursAgo = Math.floor(Math.random() * 168); // Jusqu'à 7 jours
+            
+            demoEmails.push({
+                id: `demo_${Date.now()}_${i}`,
+                subject: `${subject} #${i + 1}`,
+                from: {
+                    emailAddress: {
+                        name: sender.name,
+                        address: `noreply@${sender.domain}`
+                    }
+                },
+                receivedDateTime: new Date(Date.now() - hoursAgo * 60 * 60 * 1000).toISOString(),
+                bodyPreview: `Ceci est un email de démonstration ${i + 1}. Lorem ipsum dolor sit amet, consectetur adipiscing elit...`,
+                importance: Math.random() > 0.8 ? 'high' : 'normal',
+                isRead: Math.random() > 0.5,
+                isDraft: false,
+                hasAttachments: Math.random() > 0.7,
+                provider: this.currentProvider,
+                category: category,
+                isDemoEmail: true
+            });
+        }
+        
+        // Trier par date décroissante
+        demoEmails.sort((a, b) => new Date(b.receivedDateTime) - new Date(a.receivedDateTime));
+        
+        console.log(`[MailService] ✅ ${demoEmails.length} emails de démonstration générés`);
+        return demoEmails;
     }
 
     // ================================================
@@ -596,7 +617,7 @@ class MailService {
             };
         });
         
-        return addresses;
+        return addresses.filter(addr => addr.emailAddress.address);
     }
 
     getLocalizedLabelName(labelName) {
@@ -677,8 +698,71 @@ class MailService {
                 childFolderCount: 0,
                 unreadItemCount: 0,
                 totalItemCount: 0
+            },
+            {
+                id: 'junkmail',
+                displayName: 'Courrier indésirable',
+                parentFolderId: null,
+                childFolderCount: 0,
+                unreadItemCount: 0,
+                totalItemCount: 0
             }
         ];
+    }
+
+    // ================================================
+    // MÉTHODES ADDITIONNELLES
+    // ================================================
+    async getAllMessages(folderId = 'inbox', filter = null) {
+        console.log('[MailService] 📥 Récupération de TOUS les messages...');
+        
+        const options = {
+            all: true,
+            filter: filter
+        };
+        
+        return this.getMessages(folderId, options);
+    }
+
+    async searchMessages(query) {
+        console.log(`[MailService] 🔍 Recherche: "${query}"`);
+        
+        if (this.currentProvider === 'google') {
+            // Gmail utilise le paramètre q pour la recherche
+            return this.getMessages('INBOX', { filter: query, top: 100 });
+        } else if (this.currentProvider === 'microsoft') {
+            // Outlook utilise $search
+            const searchUrl = `https://graph.microsoft.com/v1.0/me/messages?$search="${query}"&$top=100`;
+            
+            try {
+                const response = await fetch(searchUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${this.accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                return data.value || [];
+                
+            } catch (error) {
+                console.error('[MailService] ❌ Erreur recherche:', error);
+                return [];
+            }
+        } else {
+            // Mode démo : recherche dans le sujet et le corps
+            const allEmails = await this.getMessages('inbox', { top: 100 });
+            const lowerQuery = query.toLowerCase();
+            
+            return allEmails.filter(email => 
+                email.subject.toLowerCase().includes(lowerQuery) ||
+                email.bodyPreview.toLowerCase().includes(lowerQuery)
+            );
+        }
     }
 
     // ================================================
@@ -693,7 +777,9 @@ class MailService {
             initialized: this.initialized,
             hasAccessToken: !!this.accessToken,
             foldersCount: this.folders.length,
-            labelsCount: this.labels.length
+            labelsCount: this.labels.length,
+            fetchedEmailIds: this.fetchedEmailIds.size,
+            cacheSize: this.emailCache.size
         };
     }
 
@@ -705,12 +791,22 @@ class MailService {
         return this.currentProvider;
     }
 
+    getFolders() {
+        return this.folders;
+    }
+
+    getLabels() {
+        return this.labels;
+    }
+
     // ================================================
-    // NETTOYAGE
+    // NETTOYAGE ET RÉINITIALISATION
     // ================================================
     clearCache() {
         console.log('[MailService] 🧹 Nettoyage du cache...');
         this.emailCache.clear();
+        this.fetchedEmailIds.clear();
+        this.pageTokens.clear();
         this.lastFetchTime = 0;
     }
 
@@ -736,7 +832,9 @@ class MailService {
     }
 }
 
-// Créer l'instance globale
+// ================================================
+// INSTANCE GLOBALE
+// ================================================
 if (window.mailService) {
     console.log('[MailService] 🔄 Nettoyage ancienne instance...');
     window.mailService.cleanup?.();
@@ -744,28 +842,50 @@ if (window.mailService) {
 
 window.mailService = new MailService();
 
-// Fonctions utilitaires globales
-window.testMailService = async function() {
-    console.group('🧪 TEST MailService v6.0');
+// ================================================
+// FONCTIONS UTILITAIRES GLOBALES
+// ================================================
+window.testMailService = async function(options = {}) {
+    console.group('🧪 TEST MailService v7.0');
     
     try {
         console.log('1. Informations du service:');
         console.log(window.mailService.getProviderInfo());
         
-        console.log('2. Test d\'initialisation:');
+        console.log('\n2. Test d\'initialisation:');
         await window.mailService.initialize();
+        console.log('✅ Service initialisé');
         
-        console.log('3. Test de récupération d\'emails:');
-        const emails = await window.mailService.getMessages('inbox', { top: 5 });
+        console.log('\n3. Test de récupération d\'emails:');
+        const testCount = options.count || 10;
+        const emails = await window.mailService.getMessages('inbox', { top: testCount });
         console.log(`✅ ${emails.length} emails récupérés`);
         
-        console.log('4. Aperçu des emails:');
-        emails.forEach((email, index) => {
-            console.log(`  ${index + 1}. ${email.subject} - ${email.from?.emailAddress?.name}`);
+        console.log('\n4. Vérification des doublons:');
+        const uniqueIds = new Set(emails.map(e => e.id));
+        console.log(`📊 ${uniqueIds.size} IDs uniques sur ${emails.length} emails`);
+        if (uniqueIds.size !== emails.length) {
+            console.warn('⚠️ Des doublons ont été détectés!');
+        }
+        
+        console.log('\n5. Aperçu des emails:');
+        emails.slice(0, 5).forEach((email, index) => {
+            console.log(`  ${index + 1}. [${email.id}] ${email.subject} - ${email.from?.emailAddress?.name}`);
         });
         
-        console.log('✅ Test terminé avec succès');
-        return { success: true, emails: emails.length };
+        console.log('\n6. Test de recherche (optionnel):');
+        if (options.searchQuery) {
+            const searchResults = await window.mailService.searchMessages(options.searchQuery);
+            console.log(`🔍 ${searchResults.length} résultats pour "${options.searchQuery}"`);
+        }
+        
+        console.log('\n✅ Test terminé avec succès');
+        return { 
+            success: true, 
+            emails: emails.length, 
+            unique: uniqueIds.size,
+            provider: window.mailService.getCurrentProvider()
+        };
         
     } catch (error) {
         console.error('❌ Test échoué:', error);
@@ -775,4 +895,14 @@ window.testMailService = async function() {
     }
 };
 
-console.log('✅ MailService v6.0 loaded - Service optimisé avec cache et mode démo!');
+// Fonction pour récupérer TOUS les emails
+window.getAllEmails = async function() {
+    console.log('📥 Récupération de TOUS les emails...');
+    const allEmails = await window.mailService.getAllMessages();
+    console.log(`✅ ${allEmails.length} emails récupérés au total`);
+    return allEmails;
+};
+
+console.log('✅ MailService v7.0 loaded - Service complet sans limitation!');
+console.log('💡 Utilisez window.testMailService() pour tester');
+console.log('💡 Utilisez window.getAllEmails() pour récupérer tous les emails');
