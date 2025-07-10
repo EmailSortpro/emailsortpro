@@ -1,6 +1,6 @@
-// StartScan.js - Version 13.0 - Scanner SANS LIMITES avec détection et redirection Gmail/Outlook améliorées
+// StartScan.js - Version 14.0 - Scanner Multi-Provider avec Redirection Intelligente
 
-console.log('[StartScan] 🚀 Loading StartScan.js v13.0 - Mode SANS LIMITES...');
+console.log('[StartScan] 🚀 Loading StartScan.js v14.0 - Multi-Provider Edition...');
 
 class MinimalScanModule {
     constructor() {
@@ -13,7 +13,7 @@ class MinimalScanModule {
         this.scanResults = null;
         this.abortController = null;
         
-        // Intégration avec les paramètres
+        // Intégration avec CategoryManager
         this.settings = {};
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
@@ -22,7 +22,7 @@ class MinimalScanModule {
         this.processedEmailIds = new Set();
         this.loadPersistedEmailIds();
         
-        console.log('[StartScan] Scanner v13.0 initialized - Mode SANS LIMITES activé');
+        console.log('[StartScan] Scanner v14.0 initialized - Multi-Provider Support');
         this.detectAuthProvider();
         this.loadSettingsFromCategoryManager();
         this.addMinimalStyles();
@@ -62,7 +62,7 @@ class MinimalScanModule {
         console.log('[StartScan] 🔍 Détection du provider d\'authentification...');
         
         try {
-            // 1. Vérifier Google Auth de manière asynchrone
+            // 1. Vérifier Google Auth
             if (window.googleAuthService) {
                 try {
                     const isGoogleAuth = await window.googleAuthService.isAuthenticated();
@@ -78,7 +78,7 @@ class MinimalScanModule {
                 }
             }
             
-            // 2. Vérifier Microsoft Auth de manière asynchrone
+            // 2. Vérifier Microsoft Auth
             if (window.authService) {
                 try {
                     const isMSAuth = await window.authService.isAuthenticated();
@@ -163,14 +163,15 @@ class MinimalScanModule {
     }
 
     // ================================================
-    // CHARGEMENT DES PARAMÈTRES
+    // CHARGEMENT DES PARAMÈTRES DEPUIS CATEGORYMANAGER
     // ================================================
-    loadSettingsFromCategoryManager() {
+    async loadSettingsFromCategoryManager() {
         try {
             if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
                 this.settings = window.categoryManager.getSettings();
-                this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
+                this.taskPreselectedCategories = window.categoryManager.getTaskPreselectedCategories() || [];
                 console.log('[StartScan] ✅ Paramètres chargés depuis CategoryManager');
+                console.log('[StartScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
                 
                 if (this.settings.scanSettings?.defaultPeriod) {
                     this.selectedDays = this.settings.scanSettings.defaultPeriod;
@@ -229,7 +230,7 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Minimaliste v13.0 - Mode SANS LIMITES */
+            /* Scanner Ultra-Minimaliste v14.0 - Multi-Provider */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -486,16 +487,16 @@ class MinimalScanModule {
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[StartScan] ✅ Styles v13.0 ajoutés - Mode SANS LIMITES');
+        console.log('[StartScan] ✅ Styles v14.0 ajoutés - Multi-Provider');
     }
 
     async render(container) {
-        console.log('[StartScan] 🎯 Rendu du scanner v13.0 - Mode SANS LIMITES...');
+        console.log('[StartScan] 🎯 Rendu du scanner v14.0 - Multi-Provider...');
         
         try {
             this.addMinimalStyles();
             
-            // Re-détecter le provider de manière asynchrone
+            // Re-détecter le provider
             await this.detectAuthProvider();
             
             if (!this.currentProvider) {
@@ -508,7 +509,7 @@ class MinimalScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[StartScan] ✅ Scanner v13.0 rendu avec succès - Mode SANS LIMITES');
+            console.log('[StartScan] ✅ Scanner v14.0 rendu avec succès');
             console.log('[StartScan] 📋 Provider actuel:', this.currentProvider);
             
         } catch (error) {
@@ -735,7 +736,7 @@ class MinimalScanModule {
             return;
         }
         
-        console.log('[StartScan] 🚀 Démarrage du scan v13.0 - Mode SANS LIMITES');
+        console.log('[StartScan] 🚀 Démarrage du scan v14.0 - Mode SANS LIMITES');
         console.log('[StartScan] 📋 Provider actuel:', this.currentProvider);
         console.log('[StartScan] 🚀 Récupération de TOUS les emails avec contenu COMPLET');
         
@@ -1336,9 +1337,9 @@ class MinimalScanModule {
             settings: this.settings,
             scanResults: this.scanResults,
             processedEmailIds: this.processedEmailIds.size,
-            version: '13.0',
+            version: '14.0',
             mode: 'no-limits',
-            features: ['full-content', 'no-limits', 'persistent-dedup', 'smart-redirect'],
+            features: ['full-content', 'no-limits', 'persistent-dedup', 'smart-redirect', 'multi-provider'],
             pageManagers: this.detectPageManager()
         };
     }
@@ -1385,6 +1386,6 @@ window.clearScanHistory = function() {
     console.log('✅ Historique du scan effacé');
 };
 
-console.log('[StartScan] ✅ Scanner v13.0 chargé - Mode SANS LIMITES avec redirection intelligente!');
+console.log('[StartScan] ✅ Scanner v14.0 chargé - Support Multi-Provider avec redirection intelligente!');
 console.log('[StartScan] 💡 Debug info: window.minimalScanModule.getDebugInfo()');
 console.log('[StartScan] 💡 Effacer historique: window.clearScanHistory()');
