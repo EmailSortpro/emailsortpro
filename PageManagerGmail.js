@@ -141,13 +141,37 @@ class PageManagerGmail {
             'scanCompleted': (e) => this.handleScanCompleted(e.detail),
             'emailScannerSynced': (e) => this.handleEmailScannerSynced(e.detail),
             'emailsRecategorized': () => this.currentPage === 'emails' && this.refreshEmailsView(),
-            'googleAuthReady': (e) => e.detail.authenticated && (this.syncState.provider = 'gmail'),
+            'googleAuthReady': (e) => {
+                console.log('[PageManagerGmail] 🔐 Google Auth Ready event:', e.detail);
+                if (e.detail && e.detail.authenticated) {
+                    this.syncState.provider = 'gmail';
+                    // Propager l'info à PageManager standard si nécessaire
+                    if (window.pageManager && window.pageManager !== this) {
+                        window.pageManager.googleAuthReady = true;
+                    }
+                }
+            },
             'mailServiceReady': (e) => this.handleMailServiceReady(e.detail)
         };
         
         Object.entries(handlers).forEach(([event, handler]) => {
             window.addEventListener(event, handler);
         });
+        
+        // Écouter aussi les changements d'auth Google
+        if (window.googleAuthService) {
+            const originalIsAuthenticated = window.googleAuthService.isAuthenticated;
+            if (originalIsAuthenticated) {
+                window.googleAuthService.isAuthenticated = async function() {
+                    const result = await originalIsAuthenticated.call(this);
+                    // Propager à PageManager standard
+                    if (window.pageManager && result && result.authenticated) {
+                        window.pageManager.googleAuthReady = true;
+                    }
+                    return result;
+                };
+            }
+        }
     }
 
     handleScanCompleted(scanData) {
@@ -338,7 +362,12 @@ class PageManagerGmail {
             container.innerHTML = '';
             
             if (this.requiresAuthentication(pageName)) {
+                // Attendre un peu que GoogleAuthService soit prêt
+                await this.waitForAuth();
+                
                 const authStatus = await this.checkAuthenticationStatus();
+                console.log('[PageManagerGmail] Auth status for', pageName, ':', authStatus);
+                
                 if (!authStatus.isAuthenticated) {
                     this.hideLoading();
                     container.innerHTML = this.renderAuthRequired();
@@ -357,42 +386,101 @@ class PageManagerGmail {
         }
     }
 
+    async waitForAuth() {
+        // Attendre que GoogleAuthService soit complètement initialisé
+        let attempts = 0;
+        while (attempts < 10) {
+            if (window.googleAuthService && window.googleAuthService.initialized) {
+                console.log('[PageManagerGmail] GoogleAuthService prêt');
+                return;
+            }
+            
+            // Vérifier aussi si on a déjà un user
+            if (window.googleAuthService && window.googleAuthService.user) {
+                console.log('[PageManagerGmail] GoogleAuthService a un user');
+                return;
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 200));
+            attempts++;
+        }
+        console.log('[PageManagerGmail] Timeout attente GoogleAuthService');
+    }
+
     requiresAuthentication(pageName) {
+        // Pour Gmail, on vérifie toujours l'authentification Google
         return ['emails', 'tasks', 'scanner'].includes(pageName);
     }
 
     async checkAuthenticationStatus() {
         try {
             let isAuthenticated = false;
+            let provider = 'gmail';
             
-            // Vérifier GoogleAuthService d'abord (pour Gmail)
+            // Vérifier GoogleAuthService pour Gmail
             if (window.googleAuthService) {
+                console.log('[PageManagerGmail] Vérification GoogleAuthService...');
+                
+                // Vérifier si la méthode isAuthenticated existe
                 if (typeof window.googleAuthService.isAuthenticated === 'function') {
-                    const authCheck = await window.googleAuthService.isAuthenticated();
-                    isAuthenticated = authCheck.authenticated || false;
-                    console.log('[PageManagerGmail] GoogleAuthService check:', authCheck);
+                    try {
+                        const authResult = await window.googleAuthService.isAuthenticated();
+                        console.log('[PageManagerGmail] GoogleAuth result:', authResult);
+                        
+                        // GoogleAuthService retourne un objet {authenticated: boolean}
+                        if (authResult && typeof authResult === 'object') {
+                            isAuthenticated = authResult.authenticated === true;
+                        } else {
+                            isAuthenticated = authResult === true;
+                        }
+                    } catch (e) {
+                        console.warn('[PageManagerGmail] Erreur isAuthenticated:', e);
+                    }
                 }
                 
+                // Si pas encore authentifié, vérifier le token
                 if (!isAuthenticated && typeof window.googleAuthService.getAccessToken === 'function') {
                     try {
                         const token = await window.googleAuthService.getAccessToken();
                         isAuthenticated = !!token;
-                        console.log('[PageManagerGmail] Token disponible:', !!token);
+                        console.log('[PageManagerGmail] Token check:', !!token);
                     } catch (e) {
-                        console.warn('[PageManagerGmail] Erreur récupération token:', e);
+                        console.warn('[PageManagerGmail] Erreur getAccessToken:', e);
                     }
+                }
+                
+                // Vérifier aussi l'utilisateur
+                if (!isAuthenticated && window.googleAuthService.user) {
+                    isAuthenticated = true;
+                    console.log('[PageManagerGmail] User found:', window.googleAuthService.user);
                 }
             }
             
+            // Vérifier aussi dans le localStorage
+            if (!isAuthenticated) {
+                try {
+                    const authData = localStorage.getItem('googleAuthData');
+                    if (authData) {
+                        const parsed = JSON.parse(authData);
+                        if (parsed.access_token && parsed.expiry_date > Date.now()) {
+                            isAuthenticated = true;
+                            console.log('[PageManagerGmail] Auth trouvée dans localStorage');
+                        }
+                    }
+                } catch (e) {}
+            }
+            
+            console.log('[PageManagerGmail] Final auth status:', { isAuthenticated, provider });
+            
             return { 
                 isAuthenticated, 
-                provider: 'gmail',
+                provider,
                 source: isAuthenticated ? 'googleAuthService' : 'none'
             };
             
         } catch (error) {
             console.error('[PageManagerGmail] Erreur vérification auth:', error);
-            return { isAuthenticated: false };
+            return { isAuthenticated: false, provider: 'gmail' };
         }
     }
 
