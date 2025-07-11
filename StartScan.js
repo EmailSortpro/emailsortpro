@@ -1,7 +1,7 @@
-// StartScan.js - Version 11.1 - Scanner Unifié avec correction syntaxe
+// StartScan.js - Version 11.2 - Scanner Unifié avec détection désabonnement Gmail
 // Affichage instantané des résultats, sans limite d'emails
 
-console.log('[StartScan] 🚀 Loading StartScan.js v11.1 - Scanner Unifié Corrigé...');
+console.log('[StartScan] 🚀 Loading StartScan.js v11.2 - Scanner Unifié avec détection désabonnement...');
 
 class UnifiedScanModule {
     constructor() {
@@ -21,7 +21,7 @@ class UnifiedScanModule {
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        console.log('[UnifiedScan] Scanner v11.1 initialized - Corrigé');
+        console.log('[UnifiedScan] Scanner v11.2 initialized - Détection désabonnement');
         this.detectCurrentProvider();
         this.loadSettingsFromCategoryManager();
         this.addUnifiedStyles();
@@ -35,21 +35,31 @@ class UnifiedScanModule {
         
         // Vérifier Gmail
         if (window.googleAuthService?.isAuthenticated) {
-            const isGmailAuth = window.googleAuthService.isAuthenticated();
-            if (isGmailAuth) {
-                this.currentProvider = 'gmail';
-                this.isAuthenticated = true;
-                console.log('[UnifiedScan] ✅ Gmail détecté et connecté');
-                return;
+            try {
+                const isGmailAuth = window.googleAuthService.isAuthenticated();
+                if (isGmailAuth) {
+                    this.currentProvider = 'gmail';
+                    this.isAuthenticated = true;
+                    console.log('[UnifiedScan] ✅ Gmail détecté et connecté');
+                    return;
+                }
+            } catch (e) {
+                console.log('[UnifiedScan] Gmail auth check failed:', e);
             }
         }
         
         // Vérifier Outlook
-        if (window.authService?.isAuthenticated && window.authService.isAuthenticated()) {
-            this.currentProvider = 'outlook';
-            this.isAuthenticated = true;
-            console.log('[UnifiedScan] ✅ Outlook détecté et connecté');
-            return;
+        if (window.authService?.isAuthenticated) {
+            try {
+                if (window.authService.isAuthenticated()) {
+                    this.currentProvider = 'outlook';
+                    this.isAuthenticated = true;
+                    console.log('[UnifiedScan] ✅ Outlook détecté et connecté');
+                    return;
+                }
+            } catch (e) {
+                console.log('[UnifiedScan] Outlook auth check failed:', e);
+            }
         }
         
         // Vérifier via MailService
@@ -139,7 +149,7 @@ class UnifiedScanModule {
         const styles = document.createElement('style');
         styles.id = 'unified-scan-styles';
         styles.textContent = `
-            /* Scanner Unifié v11.1 - Optimisé */
+            /* Scanner Unifié v11.2 - Optimisé */
             .unified-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -613,14 +623,14 @@ class UnifiedScanModule {
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[UnifiedScan] ✅ Styles v11.1 ajoutés');
+        console.log('[UnifiedScan] ✅ Styles v11.2 ajoutés');
     }
 
     // ================================================
     // RENDU PRINCIPAL
     // ================================================
     async render(container) {
-        console.log('[UnifiedScan] 🎯 Rendu du scanner unifié v11.1...');
+        console.log('[UnifiedScan] 🎯 Rendu du scanner unifié v11.2...');
         
         try {
             this.addUnifiedStyles();
@@ -638,7 +648,7 @@ class UnifiedScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[UnifiedScan] ✅ Scanner unifié v11.1 rendu avec succès');
+            console.log('[UnifiedScan] ✅ Scanner unifié v11.2 rendu avec succès');
             
         } catch (error) {
             console.error('[UnifiedScan] ❌ Erreur lors du rendu:', error);
@@ -1337,4 +1347,4 @@ window.unifiedScanModule = new UnifiedScanModule();
 window.scanStartModule = window.unifiedScanModule;
 window.minimalScanModule = window.unifiedScanModule; // Compatibilité
 
-console.log('[StartScan] ✅ Scanner Unifié v11.1 chargé - Corrigé!');
+console.log('[StartScan] ✅ Scanner Unifié v11.2 chargé - Détection désabonnement!');
