@@ -61,6 +61,15 @@ class EmailScanner {
             });
             
             console.log('[EmailScanner] 👂 Listener CategoryManager enregistré');
+        } else {
+            console.warn('[EmailScanner] ⚠️ CategoryManager non disponible pour l\'enregistrement du listener');
+            
+            // Réessayer dans 1 seconde
+            setTimeout(() => {
+                if (window.categoryManager && typeof window.categoryManager.addChangeListener === 'function' && !this.changeListener) {
+                    this.registerAsChangeListener();
+                }
+            }, 1000);
         }
     }
 
@@ -140,7 +149,10 @@ class EmailScanner {
     }
 
     async checkAndSyncSettings() {
-        if (!window.categoryManager) return;
+        if (!window.categoryManager) {
+            console.warn('[EmailScanner] ⚠️ CategoryManager non disponible pour la synchronisation');
+            return;
+        }
         
         try {
             const currentManagerCategories = window.categoryManager.getTaskPreselectedCategories();
@@ -194,6 +206,26 @@ class EmailScanner {
             }
         } else {
             console.warn('[EmailScanner] ⚠️ CategoryManager non disponible, utilisation fallback');
+            
+            // Attendre un peu au cas où CategoryManager est en cours de chargement
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Réessayer une fois
+            if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
+                try {
+                    this.settings = window.categoryManager.getSettings();
+                    this.taskPreselectedCategories = window.categoryManager.getTaskPreselectedCategories();
+                    
+                    console.log('[EmailScanner] ✅ Paramètres chargés depuis CategoryManager (après attente)');
+                    console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+                    
+                    this.lastSettingsSync = Date.now();
+                    return true;
+                } catch (error) {
+                    console.error('[EmailScanner] ❌ Erreur chargement CategoryManager (après attente):', error);
+                }
+            }
+            
             return this.loadSettingsFromFallback();
         }
     }
@@ -377,8 +409,23 @@ class EmailScanner {
                 throw new Error('MailService non disponible');
             }
 
+            // Vérifier CategoryManager avec attente si nécessaire
             if (!window.categoryManager) {
-                throw new Error('CategoryManager non disponible');
+                console.warn('[EmailScanner] ⚠️ CategoryManager non disponible, tentative de chargement...');
+                
+                // Attendre un peu que CategoryManager se charge
+                let attempts = 0;
+                while (!window.categoryManager && attempts < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    attempts++;
+                }
+                
+                if (!window.categoryManager) {
+                    console.error('[EmailScanner] ❌ CategoryManager toujours non disponible après attente');
+                    throw new Error('CategoryManager non disponible après plusieurs tentatives');
+                }
+                
+                console.log('[EmailScanner] ✅ CategoryManager maintenant disponible');
             }
 
             // Étape 1: Récupérer les emails via MailService
@@ -541,6 +588,32 @@ class EmailScanner {
         console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION ===');
         console.log('[EmailScanner] 📊 Total emails:', total);
         console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', taskPreselectedCategories);
+
+        // Vérifier que CategoryManager est disponible
+        if (!window.categoryManager || typeof window.categoryManager.analyzeEmail !== 'function') {
+            console.error('[EmailScanner] ❌ CategoryManager non disponible pour la catégorisation');
+            
+            // Fallback : catégoriser tous les emails comme "other"
+            this.emails.forEach(email => {
+                email.category = 'other';
+                email.categoryScore = 0;
+                email.categoryConfidence = 0;
+                email.matchedPatterns = [];
+                email.hasAbsolute = false;
+                email.isSpam = false;
+                email.isCC = false;
+                email.isExcluded = false;
+                email.isPreselectedForTasks = false;
+                
+                if (!this.categorizedEmails.other) {
+                    this.categorizedEmails.other = [];
+                }
+                this.categorizedEmails.other.push(email);
+            });
+            
+            console.warn('[EmailScanner] ⚠️ Catégorisation par défaut appliquée (other)');
+            return;
+        }
 
         const categoryStats = {};
         const preselectedStats = {};
@@ -966,15 +1039,19 @@ class EmailScanner {
             gmailUnsubscribeCount: 0
         };
         
-        // Initialiser avec toutes les catégories
-        if (window.categoryManager) {
-            const categories = window.categoryManager.getCategories();
-            Object.keys(categories).forEach(catId => {
-                this.categorizedEmails[catId] = [];
-            });
+        // Initialiser avec toutes les catégories si CategoryManager disponible
+        if (window.categoryManager && typeof window.categoryManager.getCategories === 'function') {
+            try {
+                const categories = window.categoryManager.getCategories();
+                Object.keys(categories).forEach(catId => {
+                    this.categorizedEmails[catId] = [];
+                });
+            } catch (error) {
+                console.warn('[EmailScanner] ⚠️ Impossible d\'initialiser les catégories:', error);
+            }
         }
         
-        // Catégories spéciales
+        // Catégories spéciales par défaut
         ['other', 'excluded', 'spam', 'personal'].forEach(catId => {
             if (!this.categorizedEmails[catId]) {
                 this.categorizedEmails[catId] = [];
@@ -1234,9 +1311,23 @@ class EmailScanner {
     testCategorization(emailSample) {
         console.log('[EmailScanner] 🧪 === TEST CATEGORISATION ===');
         
-        if (!window.categoryManager) {
+        if (!window.categoryManager || typeof window.categoryManager.analyzeEmail !== 'function') {
             console.error('[EmailScanner] ❌ CategoryManager non disponible');
-            return null;
+            
+            // Résultat par défaut
+            console.log('Email:', emailSample.subject);
+            console.log('Résultat: other (CategoryManager non disponible)');
+            console.log('============================');
+            
+            return {
+                category: 'other',
+                score: 0,
+                confidence: 0,
+                matchedPatterns: [],
+                hasAbsolute: false,
+                isPreselectedForTasks: false,
+                error: 'CategoryManager non disponible'
+            };
         }
         
         // Test d'abord la détection Gmail
