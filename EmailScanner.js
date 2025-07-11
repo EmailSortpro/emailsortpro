@@ -29,8 +29,24 @@ class EmailScanner {
             gmailUnsubscribeCount: 0
         };
         
+        console.log('[EmailScanner] 🚀 Création nouvelle instance v10.1...');
         console.log('[EmailScanner] ✅ Version 10.1 - Détection désabonnement Gmail');
-        this.initializeWithSync();
+        
+        // Attendre que CategoryManager soit prêt
+        this.waitForCategoryManager();
+    }
+
+    // ================================================
+    // ATTENTE DE CATEGORYMANAGER
+    // ================================================
+    waitForCategoryManager() {
+        if (window.categoryManager && window.categoryManager.isInitialized) {
+            console.log('[EmailScanner] ✅ CategoryManager détecté, initialisation...');
+            this.initializeWithSync();
+        } else {
+            console.log('[EmailScanner] ⏳ En attente de CategoryManager...');
+            setTimeout(() => this.waitForCategoryManager(), 100);
+        }
     }
 
     // ================================================
