@@ -1,7 +1,7 @@
-// StartScan.js - Version 11.0 - Scanner Unifié Optimisé pour Gmail
+// StartScan.js - Version 11.1 - Scanner Unifié avec correction syntaxe
 // Affichage instantané des résultats, sans limite d'emails
 
-console.log('[StartScan] 🚀 Loading StartScan.js v11.0 - Scanner Unifié Optimisé...');
+console.log('[StartScan] 🚀 Loading StartScan.js v11.1 - Scanner Unifié Corrigé...');
 
 class UnifiedScanModule {
     constructor() {
@@ -21,7 +21,7 @@ class UnifiedScanModule {
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        console.log('[UnifiedScan] Scanner v11.0 initialized - Optimisé pour Gmail');
+        console.log('[UnifiedScan] Scanner v11.1 initialized - Corrigé');
         this.detectCurrentProvider();
         this.loadSettingsFromCategoryManager();
         this.addUnifiedStyles();
@@ -139,7 +139,7 @@ class UnifiedScanModule {
         const styles = document.createElement('style');
         styles.id = 'unified-scan-styles';
         styles.textContent = `
-            /* Scanner Unifié v11.0 - Optimisé */
+            /* Scanner Unifié v11.1 - Optimisé */
             .unified-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -613,14 +613,14 @@ class UnifiedScanModule {
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[UnifiedScan] ✅ Styles v11.0 ajoutés');
+        console.log('[UnifiedScan] ✅ Styles v11.1 ajoutés');
     }
 
     // ================================================
     // RENDU PRINCIPAL
     // ================================================
     async render(container) {
-        console.log('[UnifiedScan] 🎯 Rendu du scanner unifié v11.0...');
+        console.log('[UnifiedScan] 🎯 Rendu du scanner unifié v11.1...');
         
         try {
             this.addUnifiedStyles();
@@ -638,7 +638,7 @@ class UnifiedScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[UnifiedScan] ✅ Scanner unifié v11.0 rendu avec succès');
+            console.log('[UnifiedScan] ✅ Scanner unifié v11.1 rendu avec succès');
             
         } catch (error) {
             console.error('[UnifiedScan] ❌ Erreur lors du rendu:', error);
@@ -1337,4 +1337,4 @@ window.unifiedScanModule = new UnifiedScanModule();
 window.scanStartModule = window.unifiedScanModule;
 window.minimalScanModule = window.unifiedScanModule; // Compatibilité
 
-console.log('[StartScan] ✅ Scanner Unifié v11.0 chargé - Optimisé pour Gmail, sans limite!');
+console.log('[StartScan] ✅ Scanner Unifié v11.1 chargé - Corrigé!');
