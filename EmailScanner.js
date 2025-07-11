@@ -422,8 +422,8 @@ class EmailScanner {
                 return this.buildEmptyResults(mergedOptions);
             }
 
-            // Étape 2: Catégoriser les emails SEULEMENT si CategoryManager est disponible
-            if (mergedOptions.autoCategrize && window.categoryManager) {
+            // Étape 2: Catégoriser les emails
+            if (mergedOptions.autoCategrize) {
                 if (this.scanProgress) {
                     this.scanProgress({
                         phase: 'categorizing',
@@ -433,10 +433,6 @@ class EmailScanner {
                 }
 
                 await this.categorizeEmails();
-            } else if (mergedOptions.autoCategrize && !window.categoryManager) {
-                console.warn('[EmailScanner] ⚠️ Catégorisation demandée mais CategoryManager non disponible');
-                // Appliquer une catégorisation basique
-                this.applyBasicCategorization();
             }
 
             // Étape 3: Analyser pour les tâches (optionnel)
@@ -502,35 +498,6 @@ class EmailScanner {
         } finally {
             this.isScanning = false;
         }
-    }
-
-    // ================================================
-    // CATÉGORISATION BASIQUE (FALLBACK)
-    // ================================================
-    applyBasicCategorization() {
-        console.log('[EmailScanner] 🏷️ Application catégorisation basique (mode dégradé)');
-        
-        this.emails.forEach(email => {
-            email.category = 'other';
-            email.categoryScore = 0;
-            email.categoryConfidence = 0;
-            email.matchedPatterns = [];
-            email.hasAbsolute = false;
-            email.isSpam = false;
-            email.isCC = false;
-            email.isExcluded = false;
-            email.isPreselectedForTasks = false;
-            
-            // Ajouter à la catégorie 'other'
-            if (!this.categorizedEmails.other) {
-                this.categorizedEmails.other = [];
-            }
-            this.categorizedEmails.other.push(email);
-        });
-        
-        this.scanMetrics.categorizedCount = this.emails.length;
-        this.scanMetrics.categoryDistribution = { other: this.emails.length };
-        this.scanMetrics.preselectedCount = 0;
     }
 
     // ================================================
@@ -807,13 +774,6 @@ class EmailScanner {
     // CATÉGORISATION DES EMAILS - AMÉLIORÉE
     // ================================================
     async categorizeEmails(overridePreselectedCategories = null) {
-        // Vérifier si CategoryManager est disponible
-        if (!window.categoryManager) {
-            console.warn('[EmailScanner] ⚠️ CategoryManager non disponible pour la catégorisation');
-            this.applyBasicCategorization();
-            return;
-        }
-        
         const total = this.emails.length;
         let processed = 0;
         let errors = 0;
@@ -827,6 +787,38 @@ class EmailScanner {
         const categoryStats = {};
         const preselectedStats = {};
         const providerStats = { gmail: 0, microsoft: 0, other: 0 };
+        
+        // Initialiser TOUTES les catégories
+        if (window.categoryManager) {
+            const categories = window.categoryManager.getCategories();
+            Object.keys(categories).forEach(catId => {
+                categoryStats[catId] = 0;
+                if (!this.categorizedEmails[catId]) {
+                    this.categorizedEmails[catId] = [];
+                }
+            });
+            
+            // Ajouter les catégories personnalisées
+            const customCategories = window.categoryManager.getCustomCategories();
+            Object.keys(customCategories).forEach(catId => {
+                if (!categoryStats[catId]) {
+                    categoryStats[catId] = 0;
+                }
+                if (!this.categorizedEmails[catId]) {
+                    this.categorizedEmails[catId] = [];
+                }
+            });
+        }
+        
+        // Initialiser les catégories spéciales
+        ['other', 'excluded', 'spam', 'personal'].forEach(specialCat => {
+            if (!categoryStats[specialCat]) {
+                categoryStats[specialCat] = 0;
+            }
+            if (!this.categorizedEmails[specialCat]) {
+                this.categorizedEmails[specialCat] = [];
+            }
+        });
         
         // Initialiser les statistiques
         taskPreselectedCategories.forEach(catId => {
@@ -850,8 +842,14 @@ class EmailScanner {
                         email.normalized = true;
                     }
                     
-                    // Analyser l'email avec CategoryManager
-                    const analysis = window.categoryManager.analyzeEmail(email);
+                    // Analyser l'email avec CategoryManager SI DISPONIBLE
+                    let analysis;
+                    if (window.categoryManager) {
+                        analysis = window.categoryManager.analyzeEmail(email);
+                    } else {
+                        // Mode dégradé sans CategoryManager - catégorisation basique
+                        analysis = this.basicCategorization(email);
+                    }
                     
                     // Appliquer les résultats
                     const finalCategory = analysis.category || 'other';
@@ -945,6 +943,40 @@ class EmailScanner {
         if (gmailUnsubscribeCount > 0) {
             console.log(`[EmailScanner] 🔔 Gmail unsubscribe: ${gmailUnsubscribeCount} emails avec bouton désabonnement`);
         }
+    }
+
+    // ================================================
+    // CATÉGORISATION BASIQUE (FALLBACK)
+    // ================================================
+    basicCategorization(email) {
+        // Catégorisation très basique sans CategoryManager
+        const subject = (email.subject || '').toLowerCase();
+        const from = email.from?.emailAddress?.address?.toLowerCase() || '';
+        const body = (email.bodyPreview || '').toLowerCase();
+        
+        // Détection basique par mots-clés simples
+        if (subject.includes('invoice') || subject.includes('facture') || subject.includes('payment')) {
+            return { category: 'finance', score: 50, confidence: 0.5 };
+        }
+        
+        if (subject.includes('meeting') || subject.includes('réunion') || subject.includes('invitation')) {
+            return { category: 'meetings', score: 50, confidence: 0.5 };
+        }
+        
+        if (subject.includes('urgent') || subject.includes('action required') || subject.includes('deadline')) {
+            return { category: 'tasks', score: 50, confidence: 0.5 };
+        }
+        
+        if (from.includes('noreply') || from.includes('no-reply') || from.includes('notification')) {
+            return { category: 'notifications', score: 50, confidence: 0.5 };
+        }
+        
+        if (subject.includes('newsletter') || body.includes('unsubscribe') || body.includes('désabonner')) {
+            return { category: 'marketing_news', score: 50, confidence: 0.5 };
+        }
+        
+        // Par défaut
+        return { category: 'other', score: 0, confidence: 0.1 };
     }
 
     detectEmailProviderFromEmail(email) {
