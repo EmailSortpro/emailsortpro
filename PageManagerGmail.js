@@ -120,33 +120,73 @@ class PageManagerGmail {
         try {
             console.log('[PageManagerGmail] 📥 Loading emails from session...');
             
-            // Depuis EmailScanner
+            // 1. Depuis EmailScanner (priorité)
             if (window.emailScanner?.emails) {
                 this.emails = window.emailScanner.emails.filter(e => 
                     !e.provider || e.provider === 'google' || e.provider === 'gmail'
                 );
                 console.log(`[PageManagerGmail] ✅ ${this.emails.length} emails Gmail chargés depuis EmailScanner`);
                 this.syncState.emailCount = this.emails.length;
-                return;
-            }
-            
-            // Depuis sessionStorage
-            const scanResults = sessionStorage.getItem('scanResults');
-            if (scanResults) {
-                const data = JSON.parse(scanResults);
-                if (data.provider === 'google' || data.provider === 'gmail') {
-                    this.emails = data.emails || [];
-                    console.log(`[PageManagerGmail] 📥 ${this.emails.length} emails chargés depuis sessionStorage`);
-                    this.syncState.emailCount = this.emails.length;
+                
+                // Si on a des emails, on retourne
+                if (this.emails.length > 0) {
+                    return;
                 }
             }
             
-            // Depuis localStorage
+            // 2. Depuis sessionStorage (résultats de scan)
+            const scanResults = sessionStorage.getItem('scanResults');
+            if (scanResults) {
+                const data = JSON.parse(scanResults);
+                console.log('[PageManagerGmail] 📊 Données scan trouvées:', data);
+                
+                // Vérifier si c'est un scan Gmail
+                if (data.provider === 'google' || data.provider === 'gmail') {
+                    // Si on a des emails directement
+                    if (data.emails && data.emails.length > 0) {
+                        this.emails = data.emails;
+                        console.log(`[PageManagerGmail] 📥 ${this.emails.length} emails chargés depuis sessionStorage`);
+                        this.syncState.emailCount = this.emails.length;
+                        return;
+                    }
+                    
+                    // Sinon, essayer de récupérer depuis EmailScanner après le scan
+                    if (data.total > 0 && window.emailScanner?.emails) {
+                        console.log('[PageManagerGmail] 🔄 Récupération post-scan...');
+                        this.emails = window.emailScanner.emails.filter(e => 
+                            !e.provider || e.provider === 'google' || e.provider === 'gmail'
+                        );
+                        console.log(`[PageManagerGmail] ✅ ${this.emails.length} emails récupérés post-scan`);
+                        this.syncState.emailCount = this.emails.length;
+                        
+                        if (this.emails.length > 0) {
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // 3. Depuis localStorage (sauvegarde locale)
             const savedEmails = this.getLocalStorageItem('gmailEmails');
             if (savedEmails) {
                 this.emails = JSON.parse(savedEmails);
                 console.log(`[PageManagerGmail] 💾 ${this.emails.length} emails chargés depuis localStorage`);
                 this.syncState.emailCount = this.emails.length;
+            }
+            
+            // Si toujours pas d'emails et qu'on a une session de scan récente
+            if (this.emails.length === 0 && scanResults) {
+                const data = JSON.parse(scanResults);
+                if (data.timestamp && Date.now() - data.timestamp < 60000) { // Moins d'1 minute
+                    console.log('[PageManagerGmail] ⏳ Scan récent détecté, attente des emails...');
+                    // Attendre un peu et réessayer
+                    setTimeout(() => {
+                        this.loadEmailsFromSession();
+                        if (this.currentPage === 'emails') {
+                            this.refreshView();
+                        }
+                    }, 1000);
+                }
             }
             
         } catch (error) {
