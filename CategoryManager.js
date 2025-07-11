@@ -1940,8 +1940,7 @@ class CategoryManager {
     }
 
     escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\        const allSorted = Object.values(results)
-            .');
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\        if (allSorted.length > 0 && allS');
     }
 
     calculateConfidence(score) {
