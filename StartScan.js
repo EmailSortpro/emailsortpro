@@ -952,7 +952,7 @@ class UnifiedScanModule {
             includeSpam: !this.settings.preferences?.excludeSpam,
             detectCC: this.settings.preferences?.detectCC !== false,
             provider: this.currentProvider,
-            maxResults: this.selectedDays === -1 ? -1 : undefined, // Pas de limite si "Tous" sélectionné
+            maxEmails: this.selectedDays === -1 ? 1000 : 500, // Gmail n'accepte pas -1, utiliser une grande valeur
             onProgress: (progress) => this.updateProgress(
                 progress.progress?.current || 0, 
                 progress.message || '', 
