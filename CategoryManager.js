@@ -17,14 +17,20 @@ class CategoryManager {
         this.changeListeners = new Set();
         this.lastSyncTimestamp = 0;
         
+        // Initialisation immédiate et synchrone
         this.initializeCategories();
         this.loadCustomCategories();
         this.initializeWeightedDetection();
         this.initializeFilters();
-        this.setupEventListeners();
         
-        // Démarrer la synchronisation automatique
-        this.startAutoSync();
+        // Marquer comme initialisé
+        this.isInitialized = true;
+        
+        // Setup asynchrone
+        setTimeout(() => {
+            this.setupEventListeners();
+            this.startAutoSync();
+        }, 10);
         
         console.log('[CategoryManager] ✅ Version 22.0 - Détection Newsletter Prioritaire');
     }
@@ -33,7 +39,9 @@ class CategoryManager {
     // SYSTÈME DE SYNCHRONISATION AUTOMATIQUE
     // ================================================
     startAutoSync() {
-        setInterval(() => {
+        if (this.syncInterval) return;
+        
+        this.syncInterval = setInterval(() => {
             this.processSettingsChanges();
         }, 2000);
         
@@ -166,8 +174,8 @@ class CategoryManager {
         }
         
         // StartScan/MinimalScanModule
-        if (window.minimalScanModule || window.scanStartModule) {
-            const scanner = window.minimalScanModule || window.scanStartModule;
+        if (window.minimalScanModule || window.scanStartModule || window.unifiedScanModule) {
+            const scanner = window.unifiedScanModule || window.minimalScanModule || window.scanStartModule;
             if (type === 'taskPreselectedCategories' || type === 'scanSettings') {
                 console.log('[CategoryManager] → ScanModule:', type);
                 if (typeof scanner.updateSettings === 'function') {
@@ -1869,9 +1877,23 @@ class CategoryManager {
     }
 
     escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\    getTaskPreselectedCategories() {
-        const now = Date.now();
-        const CACHE_DURATION = 10000');
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\    selectBestCategory(results) {
+        const MIN_SCORE_THRESHOLD = 30;
+        const MIN_CONFIDENCE_THRESHOLD = 0.5;
+        
+        const sortedResults = Object.values(results)
+            .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
+            .sort((a, b) => {
+                // Priorité aux mots absolus
+                if (a.hasAbsolute && !b.hasAbsolute) return -1;
+                if (!a.hasAbsolute && b.hasAbsolute) return 1;
+                
+                // Ensuite par score
+                return b.score - a.score;
+            });
+        
+        if (this.debugMode) {
+            console.log('[CategoryManager] 📊 Scores par catég');
     }
 
     calculateConfidence(score) {
