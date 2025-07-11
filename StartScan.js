@@ -1177,29 +1177,68 @@ class UnifiedScanModule {
             window.uiManager.showToast(message, 'success', 4000);
         }
         
+        console.log('[UnifiedScan] 🔄 Redirection vers la page emails...');
+        
         // Redirection vers le bon PageManager
         setTimeout(() => {
-            if (this.currentProvider === 'gmail') {
-                // Rediriger vers PageManagerGmail
-                if (window.pageManagerGmail && typeof window.pageManagerGmail.loadPage === 'function') {
-                    window.pageManagerGmail.loadPage('emails');
-                } else if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
-                    window.pageManager.loadPage('emails', 'gmail');
+            try {
+                if (this.currentProvider === 'gmail') {
+                    console.log('[UnifiedScan] 📧 Redirection vers PageManagerGmail...');
+                    
+                    // Essayer d'abord pageManagerGmail
+                    if (window.pageManagerGmail && typeof window.pageManagerGmail.loadPage === 'function') {
+                        console.log('[UnifiedScan] ✅ Utilisation de pageManagerGmail.loadPage');
+                        window.pageManagerGmail.loadPage('emails');
+                    } 
+                    // Sinon essayer pageManager global
+                    else if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                        console.log('[UnifiedScan] ✅ Utilisation de pageManager.loadPage');
+                        window.pageManager.loadPage('emails');
+                    }
+                    // Dernier recours : recharger la page
+                    else {
+                        console.log('[UnifiedScan] ⚠️ Aucun PageManager trouvé, rechargement...');
+                        window.location.href = '#emails';
+                        window.location.reload();
+                    }
+                    
+                } else if (this.currentProvider === 'outlook') {
+                    console.log('[UnifiedScan] 📧 Redirection vers PageManagerOutlook...');
+                    
+                    // Essayer d'abord pageManagerOutlook
+                    if (window.pageManagerOutlook && typeof window.pageManagerOutlook.loadPage === 'function') {
+                        console.log('[UnifiedScan] ✅ Utilisation de pageManagerOutlook.loadPage');
+                        window.pageManagerOutlook.loadPage('emails');
+                    } 
+                    // Sinon essayer pageManager global
+                    else if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                        console.log('[UnifiedScan] ✅ Utilisation de pageManager.loadPage');
+                        window.pageManager.loadPage('emails');
+                    }
+                    // Dernier recours
+                    else {
+                        console.log('[UnifiedScan] ⚠️ Aucun PageManager trouvé, rechargement...');
+                        window.location.href = '#emails';
+                        window.location.reload();
+                    }
+                    
+                } else {
+                    // Fallback - redirection générique
+                    console.log('[UnifiedScan] 🔄 Redirection générique...');
+                    if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                        window.pageManager.loadPage('emails');
+                    } else {
+                        window.location.href = '#emails';
+                        window.location.reload();
+                    }
                 }
-            } else if (this.currentProvider === 'outlook') {
-                // Rediriger vers PageManagerOutlook (ou équivalent)
-                if (window.pageManagerOutlook && typeof window.pageManagerOutlook.loadPage === 'function') {
-                    window.pageManagerOutlook.loadPage('emails');
-                } else if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
-                    window.pageManager.loadPage('emails', 'outlook');
-                }
-            } else {
-                // Fallback - redirection générique
-                if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
-                    window.pageManager.loadPage('emails');
-                }
+            } catch (error) {
+                console.error('[UnifiedScan] ❌ Erreur redirection:', error);
+                // En cas d'erreur, forcer le rechargement
+                window.location.href = '#emails';
+                window.location.reload();
             }
-        }, 500);
+        }, 1000);
     }
 
     showScanError(error) {
