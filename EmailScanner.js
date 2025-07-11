@@ -10,6 +10,7 @@ class EmailScanner {
         this.settings = {};
         this.eventListenersSetup = false;
         this.startScanSynced = false;
+        this.needsRecategorization = false; // Flag pour indiquer si une re-catégorisation est nécessaire
         
         // Système de synchronisation
         this.taskPreselectedCategories = [];
@@ -38,10 +39,10 @@ class EmailScanner {
     async initializeWithSync() {
         console.log('[EmailScanner] 🔧 Initialisation avec synchronisation...');
         
-        // 1. Charger les paramètres
+        // 1. Charger les paramètres (avec attente si nécessaire)
         await this.loadSettingsFromCategoryManager();
         
-        // 2. S'enregistrer comme listener
+        // 2. S'enregistrer comme listener (avec retry automatique)
         this.registerAsChangeListener();
         
         // 3. Démarrer la surveillance
@@ -50,7 +51,27 @@ class EmailScanner {
         // 4. Setup event listeners
         this.setupEventListeners();
         
+        // 5. Vérifier périodiquement si CategoryManager devient disponible
+        this.checkCategoryManagerAvailability();
+        
         console.log('[EmailScanner] ✅ Initialisation terminée');
+    }
+
+    checkCategoryManagerAvailability() {
+        // Vérifier toutes les 2 secondes si CategoryManager est disponible
+        const checkInterval = setInterval(() => {
+            if (window.categoryManager && this.needsRecategorization && this.emails.length > 0) {
+                console.log('[EmailScanner] 🎉 CategoryManager maintenant disponible - lancement re-catégorisation');
+                this.recategorizeEmails();
+                clearInterval(checkInterval);
+            } else if (window.categoryManager) {
+                // CategoryManager disponible, arrêter la vérification
+                clearInterval(checkInterval);
+            }
+        }, 2000);
+        
+        // Arrêter après 60 secondes
+        setTimeout(() => clearInterval(checkInterval), 60000);
     }
 
     registerAsChangeListener() {
@@ -411,21 +432,11 @@ class EmailScanner {
 
             // Vérifier CategoryManager avec attente si nécessaire
             if (!window.categoryManager) {
-                console.warn('[EmailScanner] ⚠️ CategoryManager non disponible, tentative de chargement...');
+                console.warn('[EmailScanner] ⚠️ CategoryManager non disponible, mode dégradé activé');
+                console.warn('[EmailScanner] 📝 Les emails seront récupérés mais non catégorisés');
                 
-                // Attendre un peu que CategoryManager se charge
-                let attempts = 0;
-                while (!window.categoryManager && attempts < 10) {
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                    attempts++;
-                }
-                
-                if (!window.categoryManager) {
-                    console.error('[EmailScanner] ❌ CategoryManager toujours non disponible après attente');
-                    throw new Error('CategoryManager non disponible après plusieurs tentatives');
-                }
-                
-                console.log('[EmailScanner] ✅ CategoryManager maintenant disponible');
+                // Continuer sans CategoryManager - les emails seront catégorisés comme "other"
+                // La catégorisation pourra être refaite plus tard
             }
 
             // Étape 1: Récupérer les emails via MailService
@@ -459,6 +470,12 @@ class EmailScanner {
                 }
 
                 await this.categorizeEmails();
+                
+                // Si CategoryManager n'était pas disponible, marquer pour re-catégorisation ultérieure
+                if (!window.categoryManager) {
+                    console.warn('[EmailScanner] ⚠️ Catégorisation incomplète - CategoryManager absent');
+                    this.needsRecategorization = true;
+                }
             }
 
             // Étape 3: Analyser pour les tâches (optionnel)
@@ -954,6 +971,13 @@ class EmailScanner {
             return;
         }
 
+        // Vérifier que CategoryManager est maintenant disponible
+        if (!window.categoryManager || typeof window.categoryManager.analyzeEmail !== 'function') {
+            console.warn('[EmailScanner] ⚠️ CategoryManager toujours non disponible pour re-catégorisation');
+            this.needsRecategorization = true;
+            return;
+        }
+
         console.log('[EmailScanner] 🔄 === DÉBUT RE-CATÉGORISATION ===');
         console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
         
@@ -971,6 +995,9 @@ class EmailScanner {
 
         // Recatégoriser tous les emails
         await this.categorizeEmails();
+        
+        // Marquer comme recatégorisé
+        this.needsRecategorization = false;
         
         console.log('[EmailScanner] ✅ Re-catégorisation terminée');
         
@@ -1304,6 +1331,7 @@ class EmailScanner {
             changeListener: !!this.changeListener,
             newsletterCount: this.scanMetrics.newsletterCount,
             gmailUnsubscribeCount: this.scanMetrics.gmailUnsubscribeCount,
+            needsRecategorization: this.needsRecategorization,
             version: '10.1'
         };
     }
