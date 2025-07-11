@@ -1,5 +1,4 @@
-// EmailScanner.js - Version 10.1 - Intégration complète avec détection désabonnement Gmail
-// Support complet des headers Gmail pour détecter les newsletters
+// EmailScanner.js - Version 10.0 - Intégration complète avec MailService
 
 class EmailScanner {
     constructor() {
@@ -10,7 +9,6 @@ class EmailScanner {
         this.settings = {};
         this.eventListenersSetup = false;
         this.startScanSynced = false;
-        this.needsRecategorization = false; // Flag pour indiquer si une re-catégorisation est nécessaire
         
         // Système de synchronisation
         this.taskPreselectedCategories = [];
@@ -24,29 +22,11 @@ class EmailScanner {
             categorizedCount: 0,
             keywordMatches: {},
             categoryDistribution: {},
-            preselectedCount: 0,
-            newsletterCount: 0,
-            gmailUnsubscribeCount: 0
+            preselectedCount: 0
         };
         
-        console.log('[EmailScanner] 🚀 Création nouvelle instance v10.1...');
-        console.log('[EmailScanner] ✅ Version 10.1 - Détection désabonnement Gmail');
-        
-        // Attendre que CategoryManager soit prêt
-        this.waitForCategoryManager();
-    }
-
-    // ================================================
-    // ATTENTE DE CATEGORYMANAGER
-    // ================================================
-    waitForCategoryManager() {
-        if (window.categoryManager && window.categoryManager.isInitialized) {
-            console.log('[EmailScanner] ✅ CategoryManager détecté, initialisation...');
-            this.initializeWithSync();
-        } else {
-            console.log('[EmailScanner] ⏳ En attente de CategoryManager...');
-            setTimeout(() => this.waitForCategoryManager(), 100);
-        }
+        console.log('[EmailScanner] ✅ Version 10.0 - Synchronisation MailService');
+        this.initializeWithSync();
     }
 
     // ================================================
@@ -55,10 +35,10 @@ class EmailScanner {
     async initializeWithSync() {
         console.log('[EmailScanner] 🔧 Initialisation avec synchronisation...');
         
-        // 1. Charger les paramètres (avec attente si nécessaire)
+        // 1. Charger les paramètres
         await this.loadSettingsFromCategoryManager();
         
-        // 2. S'enregistrer comme listener (avec retry automatique)
+        // 2. S'enregistrer comme listener
         this.registerAsChangeListener();
         
         // 3. Démarrer la surveillance
@@ -67,27 +47,7 @@ class EmailScanner {
         // 4. Setup event listeners
         this.setupEventListeners();
         
-        // 5. Vérifier périodiquement si CategoryManager devient disponible
-        this.checkCategoryManagerAvailability();
-        
         console.log('[EmailScanner] ✅ Initialisation terminée');
-    }
-
-    checkCategoryManagerAvailability() {
-        // Vérifier toutes les 2 secondes si CategoryManager est disponible
-        const checkInterval = setInterval(() => {
-            if (window.categoryManager && this.needsRecategorization && this.emails.length > 0) {
-                console.log('[EmailScanner] 🎉 CategoryManager maintenant disponible - lancement re-catégorisation');
-                this.recategorizeEmails();
-                clearInterval(checkInterval);
-            } else if (window.categoryManager) {
-                // CategoryManager disponible, arrêter la vérification
-                clearInterval(checkInterval);
-            }
-        }, 2000);
-        
-        // Arrêter après 60 secondes
-        setTimeout(() => clearInterval(checkInterval), 60000);
     }
 
     registerAsChangeListener() {
@@ -98,15 +58,6 @@ class EmailScanner {
             });
             
             console.log('[EmailScanner] 👂 Listener CategoryManager enregistré');
-        } else {
-            console.warn('[EmailScanner] ⚠️ CategoryManager non disponible pour l\'enregistrement du listener');
-            
-            // Réessayer dans 1 seconde
-            setTimeout(() => {
-                if (window.categoryManager && typeof window.categoryManager.addChangeListener === 'function' && !this.changeListener) {
-                    this.registerAsChangeListener();
-                }
-            }, 1000);
         }
     }
 
@@ -186,10 +137,7 @@ class EmailScanner {
     }
 
     async checkAndSyncSettings() {
-        if (!window.categoryManager) {
-            console.warn('[EmailScanner] ⚠️ CategoryManager non disponible pour la synchronisation');
-            return;
-        }
+        if (!window.categoryManager) return;
         
         try {
             const currentManagerCategories = window.categoryManager.getTaskPreselectedCategories();
@@ -243,26 +191,6 @@ class EmailScanner {
             }
         } else {
             console.warn('[EmailScanner] ⚠️ CategoryManager non disponible, utilisation fallback');
-            
-            // Attendre un peu au cas où CategoryManager est en cours de chargement
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Réessayer une fois
-            if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
-                try {
-                    this.settings = window.categoryManager.getSettings();
-                    this.taskPreselectedCategories = window.categoryManager.getTaskPreselectedCategories();
-                    
-                    console.log('[EmailScanner] ✅ Paramètres chargés depuis CategoryManager (après attente)');
-                    console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
-                    
-                    this.lastSettingsSync = Date.now();
-                    return true;
-                } catch (error) {
-                    console.error('[EmailScanner] ❌ Erreur chargement CategoryManager (après attente):', error);
-                }
-            }
-            
             return this.loadSettingsFromFallback();
         }
     }
@@ -404,7 +332,7 @@ class EmailScanner {
     // MÉTHODE SCAN PRINCIPALE AVEC MAILSERVICE
     // ================================================
     async scan(options = {}) {
-        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v10.1 ===');
+        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v10.0 ===');
         
         // Synchronisation pré-scan
         if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
@@ -446,13 +374,8 @@ class EmailScanner {
                 throw new Error('MailService non disponible');
             }
 
-            // Vérifier CategoryManager avec attente si nécessaire
             if (!window.categoryManager) {
-                console.warn('[EmailScanner] ⚠️ CategoryManager non disponible, mode dégradé activé');
-                console.warn('[EmailScanner] 📝 Les emails seront récupérés mais non catégorisés');
-                
-                // Continuer sans CategoryManager - les emails seront catégorisés comme "other"
-                // La catégorisation pourra être refaite plus tard
+                throw new Error('CategoryManager non disponible');
             }
 
             // Étape 1: Récupérer les emails via MailService
@@ -486,12 +409,6 @@ class EmailScanner {
                 }
 
                 await this.categorizeEmails();
-                
-                // Si CategoryManager n'était pas disponible, marquer pour re-catégorisation ultérieure
-                if (!window.categoryManager) {
-                    console.warn('[EmailScanner] ⚠️ Catégorisation incomplète - CategoryManager absent');
-                    this.needsRecategorization = true;
-                }
             }
 
             // Étape 3: Analyser pour les tâches (optionnel)
@@ -517,9 +434,7 @@ class EmailScanner {
             console.log('[EmailScanner] 📊 Résultats:', {
                 total: results.total,
                 categorized: results.categorized,
-                preselectedForTasks: results.stats.preselectedForTasks,
-                newsletterCount: results.stats.newsletterCount,
-                gmailUnsubscribeCount: results.stats.gmailUnsubscribeCount
+                preselectedForTasks: results.stats.preselectedForTasks
             });
 
             if (this.scanProgress) {
@@ -609,7 +524,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // CATÉGORISATION DES EMAILS AVEC DÉTECTION GMAIL
+    // CATÉGORISATION DES EMAILS
     // ================================================
     async categorizeEmails(overridePreselectedCategories = null) {
         const total = this.emails.length;
@@ -621,32 +536,6 @@ class EmailScanner {
         console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION ===');
         console.log('[EmailScanner] 📊 Total emails:', total);
         console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', taskPreselectedCategories);
-
-        // Vérifier que CategoryManager est disponible
-        if (!window.categoryManager || typeof window.categoryManager.analyzeEmail !== 'function') {
-            console.error('[EmailScanner] ❌ CategoryManager non disponible pour la catégorisation');
-            
-            // Fallback : catégoriser tous les emails comme "other"
-            this.emails.forEach(email => {
-                email.category = 'other';
-                email.categoryScore = 0;
-                email.categoryConfidence = 0;
-                email.matchedPatterns = [];
-                email.hasAbsolute = false;
-                email.isSpam = false;
-                email.isCC = false;
-                email.isExcluded = false;
-                email.isPreselectedForTasks = false;
-                
-                if (!this.categorizedEmails.other) {
-                    this.categorizedEmails.other = [];
-                }
-                this.categorizedEmails.other.push(email);
-            });
-            
-            console.warn('[EmailScanner] ⚠️ Catégorisation par défaut appliquée (other)');
-            return;
-        }
 
         const categoryStats = {};
         const preselectedStats = {};
@@ -662,37 +551,19 @@ class EmailScanner {
             
             for (const email of batch) {
                 try {
-                    // NOUVEAU: Détection du bouton de désabonnement Gmail en premier
-                    if (this.hasGmailUnsubscribeButton(email)) {
-                        console.log('[EmailScanner] 🔔 Bouton désabonnement Gmail détecté:', email.subject);
-                        email.category = 'marketing_news';
-                        email.categoryScore = 200;
-                        email.categoryConfidence = 0.99;
-                        email.hasGmailUnsubscribe = true;
-                        email.matchedPatterns = [{ keyword: 'gmail_unsubscribe_button', type: 'absolute', score: 200 }];
-                        email.hasAbsolute = true;
-                        email.isSpam = false;
-                        email.isCC = false;
-                        email.isExcluded = false;
-                        this.scanMetrics.gmailUnsubscribeCount++;
-                    } else {
-                        // Analyser l'email normalement
-                        const analysis = window.categoryManager.analyzeEmail(email);
-                        
-                        // Appliquer les résultats
-                        const finalCategory = analysis.category || 'other';
-                        email.category = finalCategory;
-                        email.categoryScore = analysis.score || 0;
-                        email.categoryConfidence = analysis.confidence || 0;
-                        email.matchedPatterns = analysis.matchedPatterns || [];
-                        email.hasAbsolute = analysis.hasAbsolute || false;
-                        email.isSpam = analysis.isSpam || false;
-                        email.isCC = analysis.isCC || false;
-                        email.isExcluded = analysis.isExcluded || false;
-                        email.hasGmailUnsubscribe = analysis.gmailUnsubscribe || false;
-                    }
+                    // Analyser l'email
+                    const analysis = window.categoryManager.analyzeEmail(email);
                     
-                    const finalCategory = email.category;
+                    // Appliquer les résultats
+                    const finalCategory = analysis.category || 'other';
+                    email.category = finalCategory;
+                    email.categoryScore = analysis.score || 0;
+                    email.categoryConfidence = analysis.confidence || 0;
+                    email.matchedPatterns = analysis.matchedPatterns || [];
+                    email.hasAbsolute = analysis.hasAbsolute || false;
+                    email.isSpam = analysis.isSpam || false;
+                    email.isCC = analysis.isCC || false;
+                    email.isExcluded = analysis.isExcluded || false;
                     
                     // Marquer comme pré-sélectionné pour les tâches
                     email.isPreselectedForTasks = taskPreselectedCategories.includes(finalCategory);
@@ -708,11 +579,6 @@ class EmailScanner {
                     this.categorizedEmails[finalCategory].push(email);
                     
                     categoryStats[finalCategory] = (categoryStats[finalCategory] || 0) + 1;
-                    
-                    // Compter les newsletters
-                    if (finalCategory === 'marketing_news') {
-                        this.scanMetrics.newsletterCount++;
-                    }
 
                 } catch (error) {
                     console.error('[EmailScanner] ❌ Erreur catégorisation:', error);
@@ -763,8 +629,6 @@ class EmailScanner {
         console.log('[EmailScanner] ✅ === CATÉGORISATION TERMINÉE ===');
         console.log('[EmailScanner] 📊 Distribution:', categoryStats);
         console.log('[EmailScanner] ⭐ Total pré-sélectionnés:', preselectedCount);
-        console.log('[EmailScanner] 📰 Newsletters détectées:', this.scanMetrics.newsletterCount);
-        console.log('[EmailScanner] 🔔 Gmail unsubscribe:', this.scanMetrics.gmailUnsubscribeCount);
         console.log('[EmailScanner] ⚠️ Erreurs:', errors);
         
         // Log des pré-sélectionnés par catégorie
@@ -773,62 +637,6 @@ class EmailScanner {
                 console.log(`[EmailScanner] ⭐ ${catId}: ${count} emails pré-sélectionnés`);
             }
         });
-    }
-
-    // ================================================
-    // DÉTECTION DU BOUTON GMAIL UNSUBSCRIBE
-    // ================================================
-    hasGmailUnsubscribeButton(email) {
-        // Vérifier les headers Gmail pour le bouton de désabonnement
-        if (email.internetMessageHeaders && Array.isArray(email.internetMessageHeaders)) {
-            const unsubscribeHeaders = ['list-unsubscribe', 'list-unsubscribe-post'];
-            const hasUnsubscribeHeader = email.internetMessageHeaders.some(header => 
-                unsubscribeHeaders.includes(header.name.toLowerCase())
-            );
-            
-            if (hasUnsubscribeHeader) {
-                return true;
-            }
-        }
-        
-        // Vérifier les catégories Gmail (Promotions, Updates, Forums)
-        if (email.categories && Array.isArray(email.categories)) {
-            const promotionalCategories = ['promotions', 'updates', 'forums', 'social'];
-            const hasPromotionCategory = email.categories.some(cat => 
-                promotionalCategories.includes(cat.toLowerCase())
-            );
-            
-            if (hasPromotionCategory) {
-                return true;
-            }
-        }
-        
-        // Vérifier les labels Gmail
-        if (email.labelIds && Array.isArray(email.labelIds)) {
-            const promotionalLabels = ['CATEGORY_PROMOTIONS', 'CATEGORY_UPDATES', 'CATEGORY_FORUMS', 'CATEGORY_SOCIAL'];
-            const hasPromotionalLabel = email.labelIds.some(label =>
-                promotionalLabels.includes(label)
-            );
-            
-            if (hasPromotionalLabel) {
-                return true;
-            }
-        }
-        
-        // Vérifier les propriétés spécifiques Gmail
-        if (email.gmailCategories) {
-            const promotionalCategories = ['PROMOTIONS', 'UPDATES', 'FORUMS', 'SOCIAL'];
-            if (promotionalCategories.includes(email.gmailCategories)) {
-                return true;
-            }
-        }
-        
-        // Vérifier la propriété unsubscribeUrl si elle existe
-        if (email.unsubscribeUrl || email.listUnsubscribe) {
-            return true;
-        }
-        
-        return false;
     }
 
     // ================================================
@@ -905,9 +713,7 @@ class EmailScanner {
                 errors: 0,
                 preselectedForTasks: 0,
                 highConfidence: 0,
-                taskSuggestions: 0,
-                newsletterCount: 0,
-                gmailUnsubscribeCount: 0
+                taskSuggestions: 0
             },
             emails: [],
             taskPreselectedCategories: [...this.taskPreselectedCategories],
@@ -966,9 +772,7 @@ class EmailScanner {
                 preselectedForTasks: totalPreselected,
                 spamFiltered: totalSpam,
                 excluded: totalExcluded,
-                scanDuration: scanDuration,
-                newsletterCount: this.scanMetrics.newsletterCount,
-                gmailUnsubscribeCount: this.scanMetrics.gmailUnsubscribeCount
+                scanDuration: scanDuration
             },
             emails: this.emails,
             settings: this.settings,
@@ -987,13 +791,6 @@ class EmailScanner {
             return;
         }
 
-        // Vérifier que CategoryManager est maintenant disponible
-        if (!window.categoryManager || typeof window.categoryManager.analyzeEmail !== 'function') {
-            console.warn('[EmailScanner] ⚠️ CategoryManager toujours non disponible pour re-catégorisation');
-            this.needsRecategorization = true;
-            return;
-        }
-
         console.log('[EmailScanner] 🔄 === DÉBUT RE-CATÉGORISATION ===');
         console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
         
@@ -1001,8 +798,6 @@ class EmailScanner {
         this.scanMetrics.startTime = Date.now();
         this.scanMetrics.categorizedCount = 0;
         this.scanMetrics.categoryDistribution = {};
-        this.scanMetrics.newsletterCount = 0;
-        this.scanMetrics.gmailUnsubscribeCount = 0;
         
         // Vider les catégories actuelles
         Object.keys(this.categorizedEmails).forEach(cat => {
@@ -1011,9 +806,6 @@ class EmailScanner {
 
         // Recatégoriser tous les emails
         await this.categorizeEmails();
-        
-        // Marquer comme recatégorisé
-        this.needsRecategorization = false;
         
         console.log('[EmailScanner] ✅ Re-catégorisation terminée');
         
@@ -1077,24 +869,18 @@ class EmailScanner {
             categorizedCount: 0,
             keywordMatches: {},
             categoryDistribution: {},
-            preselectedCount: 0,
-            newsletterCount: 0,
-            gmailUnsubscribeCount: 0
+            preselectedCount: 0
         };
         
-        // Initialiser avec toutes les catégories si CategoryManager disponible
-        if (window.categoryManager && typeof window.categoryManager.getCategories === 'function') {
-            try {
-                const categories = window.categoryManager.getCategories();
-                Object.keys(categories).forEach(catId => {
-                    this.categorizedEmails[catId] = [];
-                });
-            } catch (error) {
-                console.warn('[EmailScanner] ⚠️ Impossible d\'initialiser les catégories:', error);
-            }
+        // Initialiser avec toutes les catégories
+        if (window.categoryManager) {
+            const categories = window.categoryManager.getCategories();
+            Object.keys(categories).forEach(catId => {
+                this.categorizedEmails[catId] = [];
+            });
         }
         
-        // Catégories spéciales par défaut
+        // Catégories spéciales
         ['other', 'excluded', 'spam', 'personal'].forEach(catId => {
             if (!this.categorizedEmails[catId]) {
                 this.categorizedEmails[catId] = [];
@@ -1221,7 +1007,6 @@ class EmailScanner {
             isPreselectedForTasks: email.isPreselectedForTasks,
             isSpam: email.isSpam,
             isExcluded: email.isExcluded,
-            hasGmailUnsubscribe: email.hasGmailUnsubscribe,
             patterns: email.matchedPatterns?.map(p => ({
                 type: p.type,
                 keyword: p.keyword,
@@ -1239,7 +1024,7 @@ class EmailScanner {
 
     exportToCSV() {
         const rows = [
-            ['Date', 'De', 'Email', 'Sujet', 'Catégorie', 'Confiance', 'Score', 'Tâche Suggérée', 'Pré-sélectionné', 'Newsletter Gmail', 'Spam', 'Exclus']
+            ['Date', 'De', 'Email', 'Sujet', 'Catégorie', 'Confiance', 'Score', 'Tâche Suggérée', 'Pré-sélectionné', 'Spam', 'Exclus']
         ];
 
         this.emails.forEach(email => {
@@ -1256,7 +1041,6 @@ class EmailScanner {
                 email.categoryScore || 0,
                 email.taskSuggested ? 'Oui' : 'Non',
                 email.isPreselectedForTasks ? 'Oui' : 'Non',
-                email.hasGmailUnsubscribe ? 'Oui' : 'Non',
                 email.isSpam ? 'Oui' : 'Non',
                 email.isExcluded ? 'Oui' : 'Non'
             ]);
@@ -1345,50 +1129,16 @@ class EmailScanner {
             scanMetrics: this.scanMetrics,
             startScanSynced: this.startScanSynced,
             changeListener: !!this.changeListener,
-            newsletterCount: this.scanMetrics.newsletterCount,
-            gmailUnsubscribeCount: this.scanMetrics.gmailUnsubscribeCount,
-            needsRecategorization: this.needsRecategorization,
-            version: '10.1'
+            version: '10.0'
         };
     }
 
     testCategorization(emailSample) {
         console.log('[EmailScanner] 🧪 === TEST CATEGORISATION ===');
         
-        if (!window.categoryManager || typeof window.categoryManager.analyzeEmail !== 'function') {
+        if (!window.categoryManager) {
             console.error('[EmailScanner] ❌ CategoryManager non disponible');
-            
-            // Résultat par défaut
-            console.log('Email:', emailSample.subject);
-            console.log('Résultat: other (CategoryManager non disponible)');
-            console.log('============================');
-            
-            return {
-                category: 'other',
-                score: 0,
-                confidence: 0,
-                matchedPatterns: [],
-                hasAbsolute: false,
-                isPreselectedForTasks: false,
-                error: 'CategoryManager non disponible'
-            };
-        }
-        
-        // Test d'abord la détection Gmail
-        const hasGmailUnsubscribe = this.hasGmailUnsubscribeButton(emailSample);
-        console.log('Gmail Unsubscribe Button:', hasGmailUnsubscribe ? '✅ DÉTECTÉ' : '❌ NON DÉTECTÉ');
-        
-        if (hasGmailUnsubscribe) {
-            console.log('→ Email automatiquement catégorisé en marketing_news');
-            return {
-                category: 'marketing_news',
-                score: 200,
-                confidence: 0.99,
-                matchedPatterns: [{ keyword: 'gmail_unsubscribe_button', type: 'absolute', score: 200 }],
-                hasAbsolute: true,
-                isPreselectedForTasks: this.taskPreselectedCategories.includes('marketing_news'),
-                gmailUnsubscribe: true
-            };
+            return null;
         }
         
         const result = window.categoryManager.analyzeEmail(emailSample);
@@ -1442,9 +1192,7 @@ class EmailScanner {
             categorizedCount: 0, 
             keywordMatches: {}, 
             categoryDistribution: {},
-            preselectedCount: 0,
-            newsletterCount: 0,
-            gmailUnsubscribeCount: 0
+            preselectedCount: 0
         };
         
         console.log('[EmailScanner] ✅ Nettoyage terminé');
@@ -1467,14 +1215,14 @@ if (window.emailScanner) {
     window.emailScanner.destroy?.();
 }
 
-console.log('[EmailScanner] 🚀 Création nouvelle instance v10.1...');
+console.log('[EmailScanner] 🚀 Création nouvelle instance v10.0...');
 window.emailScanner = new EmailScanner();
 
 // ================================================
 // FONCTIONS UTILITAIRES GLOBALES
 // ================================================
 window.testEmailScanner = function() {
-    console.group('🧪 TEST EmailScanner v10.1');
+    console.group('🧪 TEST EmailScanner v10.0');
     
     const testEmails = [
         {
@@ -1488,15 +1236,6 @@ window.testEmailScanner = function() {
             from: { emailAddress: { address: "orders@shop.com", name: "Shop Orders" } },
             bodyPreview: "Veuillez compléter votre commande dans les plus brefs délais",
             receivedDateTime: new Date().toISOString()
-        },
-        {
-            subject: "Promotion Gmail Test",
-            from: { emailAddress: { address: "promo@gmail.com", name: "Gmail Promo" } },
-            bodyPreview: "Test avec header Gmail",
-            receivedDateTime: new Date().toISOString(),
-            internetMessageHeaders: [
-                { name: "List-Unsubscribe", value: "<https://example.com/unsubscribe>" }
-            ]
         }
     ];
     
@@ -1512,13 +1251,11 @@ window.testEmailScanner = function() {
 };
 
 window.debugEmailCategories = function() {
-    console.group('📊 DEBUG Catégories v10.1');
+    console.group('📊 DEBUG Catégories v10.0');
     console.log('Settings:', window.emailScanner.settings);
     console.log('Task Preselected Categories:', window.emailScanner.taskPreselectedCategories);
     console.log('Emails total:', window.emailScanner.emails.length);
     console.log('Emails pré-sélectionnés:', window.emailScanner.getPreselectedEmails().length);
-    console.log('Newsletters détectées:', window.emailScanner.scanMetrics.newsletterCount);
-    console.log('Gmail unsubscribe:', window.emailScanner.scanMetrics.gmailUnsubscribeCount);
     console.log('Breakdown:', window.emailScanner.getDetailedResults().breakdown);
     console.log('Debug complet:', window.emailScanner.getDebugInfo());
     console.groupEnd();
@@ -1550,4 +1287,4 @@ window.forceEmailScannerSync = function() {
     return { success: true, message: 'Synchronisation EmailScanner forcée' };
 };
 
-console.log('✅ EmailScanner v10.1 loaded - Détection désabonnement Gmail activée!');
+console.log('✅ EmailScanner v10.0 loaded - Synchronisation MailService complète!');
