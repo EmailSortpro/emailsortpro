@@ -553,15 +553,22 @@ class EmailScanner {
             // Calculer les dates
             const endDate = new Date();
             const startDate = new Date();
-            startDate.setDate(endDate.getDate() - options.days);
+            
+            // Si days est -1, récupérer tous les emails (limite raisonnable)
+            if (options.days === -1) {
+                startDate.setFullYear(endDate.getFullYear() - 5); // 5 ans max
+            } else {
+                startDate.setDate(endDate.getDate() - options.days);
+            }
 
             // Construire le filtre de date selon le provider
             const dateFilter = this.buildDateFilter(startDate, endDate, provider);
 
             // Options spécifiques pour Gmail
             const fetchOptions = {
-                top: options.maxEmails,
-                filter: dateFilter
+                top: options.maxEmails || 500,
+                filter: dateFilter,
+                days: options.days === -1 ? 1825 : options.days // 5 ans en jours
             };
 
             // Pour Gmail, demander les headers supplémentaires
@@ -569,6 +576,7 @@ class EmailScanner {
                 fetchOptions.includeHeaders = true;
                 fetchOptions.includeLabels = true;
                 fetchOptions.includeCategories = true;
+                fetchOptions.maxResults = options.maxEmails || 500; // Gmail utilise maxResults
             }
 
             // Récupérer les emails via MailService
