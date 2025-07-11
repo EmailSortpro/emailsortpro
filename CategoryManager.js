@@ -1,4 +1,5 @@
-// CategoryManager.js - Version 21.0 - Détection RH/Commercial et désabonnement Gmail améliorée
+// CategoryManager.js - Version 22.0 - Détection Newsletter Prioritaire
+// Simplifié : Les newsletters sont toujours détectées en premier
 
 class CategoryManager {
     constructor() {
@@ -25,7 +26,7 @@ class CategoryManager {
         // Démarrer la synchronisation automatique
         this.startAutoSync();
         
-        console.log('[CategoryManager] ✅ Version 21.0 - Détection RH/Commercial et désabonnement améliorée');
+        console.log('[CategoryManager] ✅ Version 22.0 - Détection Newsletter Prioritaire');
     }
 
     // ================================================
@@ -532,8 +533,7 @@ class CategoryManager {
             Object.entries(this.customCategories).forEach(([id, category]) => {
                 this.categories[id] = {
                     ...category,
-                    isCustom: true,
-                    priority: category.priority || 30
+                    isCustom: true
                 };
                 
                 if (category.keywords) {
@@ -554,7 +554,6 @@ class CategoryManager {
                 
                 const totalKeywords = this.getTotalKeywordsCount(id);
                 console.log(`[CategoryManager] ✅ Catégorie personnalisée "${category.name}" (${id}):`);
-                console.log(`  - Priorité: ${category.priority || 30}`);
                 console.log(`  - Mots-clés: ${totalKeywords}`);
                 
                 if (totalKeywords === 0) {
@@ -601,7 +600,6 @@ class CategoryManager {
             icon: categoryData.icon || '📂',
             color: categoryData.color || '#6366f1',
             description: categoryData.description || '',
-            priority: categoryData.priority || 30,
             createdAt: new Date().toISOString(),
             isCustom: true,
             keywords: categoryData.keywords || { absolute: [], strong: [], weak: [], exclusions: [] }
@@ -805,53 +803,48 @@ class CategoryManager {
     // ================================================
     initializeCategories() {
         this.categories = {
-            // PRIORITÉ MAXIMALE - MARKETING & NEWS
+            // NEWSLETTER & MARKETING - Toujours analysé en premier
             marketing_news: {
                 name: 'Marketing & News',
                 icon: '📰',
                 color: '#8b5cf6',
                 description: 'Newsletters et promotions',
-                priority: 100,
                 isCustom: false
             },
             
-            // CATÉGORIE CC - PRIORITÉ ÉLEVÉE
+            // CATÉGORIE CC
             cc: {
                 name: 'En Copie',
                 icon: '📋',
                 color: '#64748b',
                 description: 'Emails où vous êtes en copie',
-                priority: 90,
                 isCustom: false
             },
             
-            // RESSOURCES HUMAINES - PRIORITÉ ÉLEVÉE POUR BIEN DISTINGUER DU COMMERCIAL
+            // RESSOURCES HUMAINES
             hr: {
                 name: 'RH',
                 icon: '👥',
                 color: '#10b981',
                 description: 'Ressources humaines et recrutement',
-                priority: 85, // Augmenté pour mieux capturer avant commercial
                 isCustom: false
             },
             
-            // COMMERCIAL - PRIORITÉ NORMALE
+            // COMMERCIAL
             commercial: {
                 name: 'Commercial',
                 icon: '💼',
                 color: '#059669',
                 description: 'Opportunités commerciales, devis et contrats',
-                priority: 50,
                 isCustom: false
             },
             
-            // PRIORITÉ NORMALE
+            // AUTRES CATÉGORIES
             security: {
                 name: 'Sécurité',
                 icon: '🔒',
                 color: '#991b1b',
                 description: 'Alertes de sécurité, connexions et authentification',
-                priority: 50,
                 isCustom: false
             },
             
@@ -860,7 +853,6 @@ class CategoryManager {
                 icon: '💰',
                 color: '#dc2626',
                 description: 'Factures et paiements',
-                priority: 50,
                 isCustom: false
             },
             
@@ -869,7 +861,6 @@ class CategoryManager {
                 icon: '✅',
                 color: '#ef4444',
                 description: 'Tâches à faire et demandes d\'action',
-                priority: 50,
                 isCustom: false
             },
             
@@ -878,7 +869,6 @@ class CategoryManager {
                 icon: '📅',
                 color: '#f59e0b',
                 description: 'Invitations et demandes de réunion',
-                priority: 50,
                 isCustom: false
             },
             
@@ -887,7 +877,6 @@ class CategoryManager {
                 icon: '🛠️',
                 color: '#f59e0b',
                 description: 'Tickets et assistance',
-                priority: 50,
                 isCustom: false
             },
             
@@ -896,7 +885,6 @@ class CategoryManager {
                 icon: '🔄',
                 color: '#10b981',
                 description: 'Rappels et suivis',
-                priority: 50,
                 isCustom: false
             },
             
@@ -905,7 +893,6 @@ class CategoryManager {
                 icon: '📊',
                 color: '#3b82f6',
                 description: 'Gestion de projet',
-                priority: 50,
                 isCustom: false
             },
             
@@ -914,7 +901,6 @@ class CategoryManager {
                 icon: '📢',
                 color: '#0ea5e9',
                 description: 'Annonces internes',
-                priority: 50,
                 isCustom: false
             },
             
@@ -923,7 +909,6 @@ class CategoryManager {
                 icon: '🔔',
                 color: '#94a3b8',
                 description: 'Notifications automatiques',
-                priority: 50,
                 isCustom: false
             }
         };
@@ -932,11 +917,11 @@ class CategoryManager {
     }
 
     // ================================================
-    // INITIALISATION DES MOTS-CLÉS PONDÉRÉS - VERSION AMÉLIORÉE
+    // INITIALISATION DES MOTS-CLÉS PONDÉRÉS - VERSION SIMPLIFIÉE
     // ================================================
     initializeWeightedDetection() {
         this.weightedKeywords = {
-            // PRIORITÉ MAXIMALE - MARKETING & NEWS
+            // MARKETING & NEWS - Détection newsletter améliorée
             marketing_news: {
                 absolute: [
                     // Mots-clés de désabonnement standards
@@ -948,7 +933,7 @@ class CategoryManager {
                     'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
                     'paramétrez vos choix', 'parametrez vos choix',
                     
-                    // NOUVEAU: Détection du bouton Gmail de désabonnement
+                    // Headers et footers typiques des newsletters
                     'list-unsubscribe', 'list-unsubscribe-post', 'unsubscribe link',
                     'one-click unsubscribe', 'click here to unsubscribe',
                     'manage email preferences', 'update email preferences',
@@ -970,7 +955,14 @@ class CategoryManager {
                     'mass email', 'campaign email', 'automated email',
                     'marketing message', 'promotional message',
                     'if you no longer wish', 'to stop receiving',
-                    'email sent by', 'sent on behalf of'
+                    'email sent by', 'sent on behalf of',
+                    
+                    // Footer patterns pour Outlook
+                    'why am i receiving this', 'pourquoi je reçois',
+                    'you received this email because', 'vous recevez cet email',
+                    'to opt out', 'pour vous désabonner',
+                    'update subscription', 'mettre à jour abonnement',
+                    'email frequency', 'fréquence des emails'
                 ],
                 strong: [
                     'promo', 'deal', 'offer', 'sale', 'discount', 'réduction',
@@ -985,29 +977,22 @@ class CategoryManager {
                 exclusions: ['facture', 'invoice', 'payment', 'contract']
             },
 
-            // RESSOURCES HUMAINES - MOTS-CLÉS RENFORCÉS
+            // RESSOURCES HUMAINES
             hr: {
                 absolute: [
-                    // Termes RH spécifiques
                     'ressources humaines', 'human resources', 'département rh', 'service rh',
                     'hr department', 'hr team', 'équipe rh', 'direction rh',
-                    
-                    // Recrutement spécifique
                     'offre d\'emploi', 'job offer', 'job opening', 'poste à pourvoir',
                     'nous recrutons', 'we are hiring', 'recrutement', 'recruitment',
                     'candidature', 'application', 'postuler', 'apply now',
                     'cv reçu', 'resume received', 'profil correspond',
                     'entretien rh', 'hr interview', 'entretien recrutement',
-                    
-                    // Processus RH
                     'onboarding', 'intégration', 'nouveau collaborateur',
                     'bulletin de paie', 'payslip', 'fiche de paie',
                     'congés', 'leave request', 'demande de congés',
                     'entretien annuel', 'performance review', 'évaluation annuelle',
                     'formation obligatoire', 'mandatory training',
                     'contrat de travail', 'employment contract',
-                    
-                    // Termes administratifs RH
                     'mutuelle entreprise', 'company health insurance',
                     'tickets restaurant', 'meal vouchers',
                     'note de frais', 'expense report',
@@ -1023,33 +1008,25 @@ class CategoryManager {
                 ],
                 weak: ['équipe', 'team', 'entreprise', 'company', 'organisation'],
                 exclusions: [
-                    // Exclure les termes commerciaux
                     'client', 'customer', 'prospect', 'lead', 'opportunity',
                     'devis', 'quotation', 'proposal', 'marché', 'deal',
                     'vente', 'sales', 'commercial', 'business development',
-                    
-                    // Exclure les termes personnels
                     'famille', 'family', 'papa', 'maman', 'personnel', 'personal',
                     'bises', 'bisous', 'familial'
                 ]
             },
 
-            // COMMERCIAL - MOTS-CLÉS PLUS SPÉCIFIQUES
+            // COMMERCIAL
             commercial: {
                 absolute: [
-                    // Termes purement commerciaux
                     'devis commercial', 'commercial quotation', 'proposal',
                     'proposition commerciale', 'business proposal',
                     'contrat commercial', 'commercial contract',
                     'bon de commande', 'purchase order',
                     'offre commerciale', 'commercial offer',
-                    
-                    // Opportunités et leads
                     'opportunity', 'opportunité commerciale', 'lead qualifié',
                     'qualified lead', 'prospect chaud', 'hot prospect',
                     'nouveau client potentiel', 'new potential customer',
-                    
-                    // Process commercial
                     'closing', 'signature contrat', 'contract signing',
                     'négociation commerciale', 'business negotiation',
                     'rendez-vous commercial', 'sales meeting',
@@ -1065,18 +1042,16 @@ class CategoryManager {
                 ],
                 weak: ['offre', 'proposition', 'discussion', 'projet', 'collaboration'],
                 exclusions: [
-                    // Exclure spécifiquement les termes RH
                     'ressources humaines', 'human resources', 'rh', 'hr',
                     'recrutement', 'recruitment', 'candidature', 'cv',
                     'entretien rh', 'hr interview', 'onboarding',
                     'bulletin de paie', 'payslip', 'congés', 'formation rh',
-                    
-                    // Exclure newsletter/marketing
                     'newsletter', 'marketing', 'promotion', 'unsubscribe',
                     'ventes en ligne', 'shopping', 'boutique en ligne'
                 ]
             },
 
+            // SÉCURITÉ
             security: {
                 absolute: [
                     'alerte de connexion', 'alert connexion', 'nouvelle connexion',
@@ -1097,6 +1072,7 @@ class CategoryManager {
                 exclusions: ['newsletter', 'unsubscribe', 'promotion']
             },
 
+            // TÂCHES
             tasks: {
                 absolute: [
                     'action required', 'action requise', 'action needed',
@@ -1122,6 +1098,7 @@ class CategoryManager {
                 exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe', 'papa', 'maman', 'famille']
             },
 
+            // RÉUNIONS
             meetings: {
                 absolute: [
                     'demande de réunion', 'meeting request', 'réunion',
@@ -1141,6 +1118,7 @@ class CategoryManager {
                 exclusions: ['newsletter', 'promotion', 'marketing', 'papa', 'maman', 'famille']
             },
 
+            // FINANCE
             finance: {
                 absolute: [
                     'facture', 'invoice', 'payment', 'paiement',
@@ -1164,6 +1142,7 @@ class CategoryManager {
                 exclusions: ['newsletter', 'marketing', 'spam', 'promotion', 'soldes', 'ventes en ligne']
             },
 
+            // PROJETS
             project: {
                 absolute: [
                     'projet xx', 'project update', 'milestone',
@@ -1184,6 +1163,7 @@ class CategoryManager {
                 exclusions: ['newsletter', 'marketing', 'promotion', 'papa', 'maman', 'famille', 'bises']
             },
 
+            // RELANCES
             reminders: {
                 absolute: [
                     'reminder:', 'rappel:', 'follow up', 'relance',
@@ -1201,6 +1181,7 @@ class CategoryManager {
                 exclusions: ['newsletter', 'marketing', 'promotion']
             },
 
+            // SUPPORT
             support: {
                 absolute: [
                     'ticket #', 'ticket number', 'numéro de ticket',
@@ -1219,6 +1200,7 @@ class CategoryManager {
                 exclusions: ['newsletter', 'marketing', 'promotion']
             },
 
+            // COMMUNICATION INTERNE
             internal: {
                 absolute: [
                     'all staff', 'tout le personnel', 'annonce interne',
@@ -1237,6 +1219,7 @@ class CategoryManager {
                 exclusions: ['newsletter', 'marketing', 'external', 'client', 'papa', 'maman', 'famille', 'bises']
             },
 
+            // NOTIFICATIONS
             notifications: {
                 absolute: [
                     'do not reply', 'ne pas répondre', 'noreply@',
@@ -1252,6 +1235,7 @@ class CategoryManager {
                 exclusions: ['newsletter', 'marketing', 'urgent']
             },
 
+            // EN COPIE
             cc: {
                 absolute: [
                     'copie pour information', 'for your information', 'fyi',
@@ -1271,24 +1255,25 @@ class CategoryManager {
     }
 
     // ================================================
-    // ANALYSE D'EMAIL PRINCIPALE - VERSION AMÉLIORÉE
+    // ANALYSE D'EMAIL PRINCIPALE - VERSION SIMPLIFIÉE
     // ================================================
     analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
         
-        // NOUVEAU: Détecter d'abord le bouton de désabonnement Gmail
-        if (this.hasGmailUnsubscribeHeader(email)) {
-            console.log('[CategoryManager] 🔔 Bouton désabonnement Gmail détecté');
+        // ÉTAPE 1: Toujours vérifier les newsletters en premier
+        const newsletterCheck = this.checkNewsletter(email);
+        if (newsletterCheck.isNewsletter) {
             return {
                 category: 'marketing_news',
-                score: 200,
-                confidence: 0.99,
-                matchedPatterns: [{ keyword: 'gmail_unsubscribe_button', type: 'absolute', score: 200 }],
+                score: newsletterCheck.score,
+                confidence: newsletterCheck.confidence,
+                matchedPatterns: newsletterCheck.patterns,
                 hasAbsolute: true,
-                gmailUnsubscribe: true
+                gmailUnsubscribe: newsletterCheck.gmailUnsubscribe || false
             };
         }
         
+        // ÉTAPE 2: Vérifications standards
         if (this.shouldExcludeSpam() && this.isSpamEmail(email)) {
             return { category: 'spam', score: 0, confidence: 0, isSpam: true };
         }
@@ -1314,22 +1299,11 @@ class CategoryManager {
             }
         }
         
+        // ÉTAPE 3: Vérifier si en copie
         const isMainRecipient = this.isMainRecipient(email);
         const isInCC = this.isInCC(email);
         
         if (this.shouldDetectCC() && isInCC && !isMainRecipient) {
-            const marketingCheck = this.analyzeCategory(content, this.weightedKeywords.marketing_news);
-            if (marketingCheck.score >= 80) {
-                return {
-                    category: 'marketing_news',
-                    score: marketingCheck.total,
-                    confidence: this.calculateConfidence(marketingCheck),
-                    matchedPatterns: marketingCheck.matches,
-                    hasAbsolute: marketingCheck.hasAbsolute,
-                    originallyCC: true
-                };
-            }
-            
             const allResults = this.analyzeAllCategories(content);
             const bestNonCC = Object.values(allResults)
                 .filter(r => r.category !== 'cc')
@@ -1356,8 +1330,9 @@ class CategoryManager {
             };
         }
         
+        // ÉTAPE 4: Analyse normale des autres catégories
         const allResults = this.analyzeAllCategories(content);
-        const selectedResult = this.selectByPriorityWithThreshold(allResults);
+        const selectedResult = this.selectBestCategory(allResults);
         
         if (!selectedResult || selectedResult.category === 'other' || selectedResult.score === 0) {
             return {
@@ -1373,40 +1348,81 @@ class CategoryManager {
         return selectedResult;
     }
 
-    // NOUVELLE MÉTHODE: Détecter le bouton de désabonnement Gmail
-    hasGmailUnsubscribeHeader(email) {
-        // Vérifier les headers spécifiques Gmail
-        if (email.internetMessageHeaders) {
-            const unsubscribeHeader = email.internetMessageHeaders.find(
-                h => h.name.toLowerCase() === 'list-unsubscribe' || 
-                     h.name.toLowerCase() === 'list-unsubscribe-post'
-            );
-            if (unsubscribeHeader) {
-                return true;
+    // NOUVELLE MÉTHODE: Vérification newsletter prioritaire
+    checkNewsletter(email) {
+        const patterns = [];
+        let score = 0;
+        let hasUnsubscribe = false;
+        let gmailUnsubscribe = false;
+        
+        // 1. Vérifier le bouton Gmail (EmailScanner s'en occupe déjà)
+        if (email.hasGmailUnsubscribe) {
+            gmailUnsubscribe = true;
+            score += 200;
+            patterns.push({ keyword: 'gmail_unsubscribe_button', type: 'absolute', score: 200 });
+            hasUnsubscribe = true;
+        }
+        
+        // 2. Extraire le contenu complet
+        const content = this.extractCompleteContent(email);
+        const text = content.text.toLowerCase();
+        
+        // 3. Vérifier les mots-clés de désabonnement
+        const unsubscribeKeywords = [
+            'unsubscribe', 'se désinscrire', 'se desinscrire', 'désabonner', 'opt-out',
+            'opt out', 'gérer vos préférences', 'manage preferences', 'email preferences',
+            'ne plus recevoir', 'stop emails', 'update subscription'
+        ];
+        
+        for (const keyword of unsubscribeKeywords) {
+            if (text.includes(keyword)) {
+                score += 100;
+                patterns.push({ keyword, type: 'absolute', score: 100 });
+                hasUnsubscribe = true;
+                break;
             }
         }
         
-        // Vérifier si Gmail a ajouté des tags de désabonnement
-        if (email.categories && Array.isArray(email.categories)) {
-            const hasPromotionCategory = email.categories.some(cat => 
-                cat.toLowerCase().includes('promotions') ||
-                cat.toLowerCase().includes('updates') ||
-                cat.toLowerCase().includes('forums')
-            );
-            if (hasPromotionCategory) {
-                return true;
+        // 4. Vérifier les patterns typiques de newsletter
+        const newsletterPatterns = [
+            'newsletter', 'mailing list', 'this email was sent to',
+            'you are receiving this', 'promotional email', 'marketing email',
+            'sent on behalf of', 'why am i receiving this'
+        ];
+        
+        for (const pattern of newsletterPatterns) {
+            if (text.includes(pattern)) {
+                score += 50;
+                patterns.push({ keyword: pattern, type: 'strong', score: 50 });
             }
         }
         
-        // Vérifier les propriétés Gmail spécifiques
-        if (email.gmailCategories) {
-            const promotionalCategories = ['PROMOTIONS', 'UPDATES', 'FORUMS', 'SOCIAL'];
-            if (promotionalCategories.includes(email.gmailCategories)) {
-                return true;
+        // 5. Vérifier les domaines marketing connus
+        const marketingDomains = [
+            'mailchimp', 'sendinblue', 'mailjet', 'campaign', 'newsletter',
+            'marketing', 'promo', 'deals', 'shop', 'store'
+        ];
+        
+        const domain = content.domain;
+        for (const marketingDomain of marketingDomains) {
+            if (domain.includes(marketingDomain)) {
+                score += 40;
+                patterns.push({ keyword: `${marketingDomain}_domain`, type: 'domain', score: 40 });
+                break;
             }
         }
         
-        return false;
+        // Décision finale
+        const isNewsletter = hasUnsubscribe || score >= 100;
+        const confidence = isNewsletter ? Math.min(0.99, 0.5 + (score / 400)) : 0;
+        
+        return {
+            isNewsletter,
+            score,
+            confidence,
+            patterns,
+            gmailUnsubscribe
+        };
     }
 
     isPersonalEmail(content, email) {
@@ -1469,15 +1485,16 @@ class CategoryManager {
             console.log('  - Catégories personnalisées:', customCategoryIds);
         }
         
+        // Analyser toutes les catégories (sauf marketing_news déjà vérifié)
         const allCategoriesToAnalyze = new Set([
-            ...Object.keys(this.weightedKeywords),
+            ...Object.keys(this.weightedKeywords).filter(cat => cat !== 'marketing_news'),
             ...customCategoryIds
         ]);
         
         for (const categoryId of allCategoriesToAnalyze) {
             const isActive = activeCategories.includes(categoryId);
             const isCustom = customCategoryIds.includes(categoryId);
-            const isSpecial = ['marketing_news', 'cc'].includes(categoryId);
+            const isSpecial = ['cc'].includes(categoryId);
             
             if (!isActive && !isCustom && !isSpecial) {
                 continue;
@@ -1513,7 +1530,6 @@ class CategoryManager {
                 hasAbsolute: score.hasAbsolute,
                 matches: score.matches,
                 confidence: this.calculateConfidence(score),
-                priority: this.categories[categoryId]?.priority || 50,
                 isCustom: isCustom
             };
             
@@ -1533,27 +1549,25 @@ class CategoryManager {
         );
     }
 
-    selectByPriorityWithThreshold(results) {
+    selectBestCategory(results) {
         const MIN_SCORE_THRESHOLD = 30;
         const MIN_CONFIDENCE_THRESHOLD = 0.5;
         
         const sortedResults = Object.values(results)
             .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
             .sort((a, b) => {
+                // Priorité aux mots absolus
                 if (a.hasAbsolute && !b.hasAbsolute) return -1;
                 if (!a.hasAbsolute && b.hasAbsolute) return 1;
                 
-                if (a.priority !== b.priority) {
-                    return b.priority - a.priority;
-                }
-                
+                // Ensuite par score
                 return b.score - a.score;
             });
         
         if (this.debugMode) {
             console.log('[CategoryManager] 📊 Scores par catégorie:');
             sortedResults.forEach(r => {
-                console.log(`  - ${r.category}: ${r.score}pts (priority: ${r.priority}, confidence: ${r.confidence}, hasAbsolute: ${r.hasAbsolute})`);
+                console.log(`  - ${r.category}: ${r.score}pts (confidence: ${r.confidence}, hasAbsolute: ${r.hasAbsolute})`);
             });
         }
         
@@ -1567,22 +1581,6 @@ class CategoryManager {
                 confidence: bestResult.confidence,
                 matchedPatterns: bestResult.matches,
                 hasAbsolute: bestResult.hasAbsolute
-            };
-        }
-        
-        const allSorted = Object.values(results)
-            .filter(r => r.score > 0)
-            .sort((a, b) => b.score - a.score);
-        
-        if (allSorted.length > 0 && allSorted[0].score >= 20 && allSorted[0].confidence >= 0.4) {
-            const fallback = allSorted[0];
-            console.log(`[CategoryManager] 📌 Utilisation fallback: ${fallback.category} (${fallback.score}pts, ${Math.round(fallback.confidence * 100)}%)`);
-            return {
-                category: fallback.category,
-                score: fallback.score,
-                confidence: fallback.confidence,
-                matchedPatterns: fallback.matches,
-                hasAbsolute: fallback.hasAbsolute
             };
         }
         
@@ -1603,77 +1601,13 @@ class CategoryManager {
         const matches = [];
         const text = content.text;
         
-        // Pénalité forte pour les catégories professionnelles si email personnel détecté
+        // Pénalité pour contenu personnel
         const personalIndicators = ['papa', 'maman', 'bises', 'bisous', 'famille'];
         const hasPersonalContent = personalIndicators.some(indicator => text.includes(indicator));
         
         if (hasPersonalContent && ['internal', 'hr', 'meetings', 'commercial'].includes(categoryId)) {
             totalScore -= 50;
             matches.push({ keyword: 'personal_content_penalty', type: 'penalty', score: -50 });
-        }
-        
-        // Bonus de base pour certaines catégories
-        const categoryBonus = {
-            'project': 10,
-            'cc': 5,
-            'security': 10,
-            'hr': 15, // Bonus augmenté pour HR
-            'tasks': 15,
-            'finance': 10,
-            'marketing_news': 5
-        };
-        
-        if (categoryBonus[categoryId]) {
-            totalScore += categoryBonus[categoryId];
-            matches.push({ keyword: 'category_bonus', type: 'bonus', score: categoryBonus[categoryId] });
-        }
-        
-        // Bonus spécial pour RH si domaine de recrutement détecté
-        if (categoryId === 'hr') {
-            const recruitmentDomains = ['linkedin', 'indeed', 'monster', 'glassdoor', 'welcometothejungle', 'recruitment'];
-            const hasRecruitmentDomain = recruitmentDomains.some(domain => content.domain.includes(domain));
-            if (hasRecruitmentDomain) {
-                totalScore += 50;
-                matches.push({ keyword: 'recruitment_domain', type: 'domain', score: 50 });
-            }
-        }
-        
-        // Bonus spécial pour "disable notifications" en marketing_news
-        if (categoryId === 'marketing_news') {
-            const notificationKeywords = [
-                'disable these notifications',
-                'turn off notifications',
-                'manage notifications',
-                'notification settings',
-                'email preferences',
-                'unsubscribe from'
-            ];
-            
-            notificationKeywords.forEach(keyword => {
-                if (text.includes(keyword)) {
-                    totalScore += 50;
-                    matches.push({ keyword: keyword, type: 'notification_keyword', score: 50 });
-                }
-            });
-        }
-        
-        // Détection spéciale pour les corrections de documents
-        if (categoryId === 'project' || categoryId === 'tasks') {
-            const correctionKeywords = [
-                'document corrigé',
-                'corrections',
-                'corrigé',
-                'modifié',
-                'ci-joint',
-                'présentation'
-            ];
-            
-            correctionKeywords.forEach(keyword => {
-                if (text.includes(keyword)) {
-                    totalScore += 30;
-                    matches.push({ keyword: keyword, type: 'correction_keyword', score: 30 });
-                }
-            });
         }
         
         // Test des exclusions en premier
@@ -1749,7 +1683,7 @@ class CategoryManager {
         }
         
         // Appliquer bonus de domaine
-        this.applyEnhancedDomainBonus(content, categoryId, matches, totalScore);
+        this.applyDomainBonus(content, categoryId, matches, totalScore);
         
         return { 
             total: Math.max(0, totalScore), 
@@ -1758,7 +1692,7 @@ class CategoryManager {
         };
     }
 
-    applyEnhancedDomainBonus(content, categoryId, matches, totalScore) {
+    applyDomainBonus(content, categoryId, matches, totalScore) {
         const domainBonuses = {
             security: ['microsoft', 'google', 'apple', 'security', 'auth', '2fa', 'verification'],
             finance: ['gouv.fr', 'impots', 'bank', 'paypal', 'stripe', 'invoice', 'billing'],
@@ -1786,10 +1720,6 @@ class CategoryManager {
     // ================================================
     // MÉTHODES UTILITAIRES
     // ================================================
-    analyzeCategory(content, keywords) {
-        return this.calculateScore(content, keywords, 'single');
-    }
-
     extractCompleteContent(email) {
         let allText = '';
         let subject = '';
@@ -1880,7 +1810,6 @@ class CategoryManager {
             clues += ' commerce order commande achat vente ';
         }
         
-        // NOUVEAU: Indices pour RH/recrutement
         if (body.match(/\b(cv|resume|candidature|application|entretien|interview|poste|position)\b/i)) {
             clues += ' recruitment recrutement hr rh candidat ';
         }
@@ -1940,7 +1869,9 @@ class CategoryManager {
     }
 
     escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\        if (allSorted.length > 0 && allS');
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\    getTaskPreselectedCategories() {
+        const now = Date.now();
+        const CACHE_DURATION = 10000');
     }
 
     calculateConfidence(score) {
@@ -2261,7 +2192,6 @@ class CategoryManager {
             
             console.log(`\n${cat.icon} ${cat.name} (${catId}):`);
             console.log('  - Active:', isActive ? '✅' : '❌');
-            console.log('  - Priorité:', cat.priority);
             console.log('  - Mots-clés:', keywordCount);
             
             if (keywordCount === 0) {
@@ -2617,14 +2547,14 @@ if (window.categoryManager) {
     window.categoryManager.destroy?.();
 }
 
-console.log('[CategoryManager] 🚀 Création nouvelle instance v21.0...');
+console.log('[CategoryManager] 🚀 Création nouvelle instance v22.0...');
 window.categoryManager = new CategoryManager();
 
 // ================================================
 // MÉTHODES DE TEST GLOBALES
 // ================================================
 window.testCategoryManager = function() {
-    console.group('🧪 TEST CategoryManager v21.0');
+    console.group('🧪 TEST CategoryManager v22.0');
     
     const tests = [
         { subject: "Newsletter hebdomadaire - Désabonnez-vous ici", expected: "marketing_news" },
@@ -2634,7 +2564,8 @@ window.testCategoryManager = function() {
         { subject: "Réunion équipe prévue pour demain", expected: "meetings" },
         { subject: "Offre d'emploi: Développeur Senior", from: "recrutement@entreprise.com", expected: "hr" },
         { subject: "Nouvelle opportunité commerciale", from: "commercial@client.com", expected: "commercial" },
-        { subject: "Votre candidature a été retenue", body: "Nous avons le plaisir de vous informer que votre CV a retenu notre attention", expected: "hr" }
+        { subject: "Votre candidature a été retenue", body: "Nous avons le plaisir de vous informer que votre CV a retenu notre attention", expected: "hr" },
+        { subject: "Promotion spéciale", body: "Cliquez ici pour vous désinscrire de nos emails", expected: "marketing_news" }
     ];
     
     tests.forEach(test => {
@@ -2651,7 +2582,7 @@ window.testCategoryManager = function() {
 };
 
 window.debugCategoryKeywords = function() {
-    console.group('🔍 DEBUG Mots-clés v21.0');
+    console.group('🔍 DEBUG Mots-clés v22.0');
     const allKeywords = window.categoryManager.getAllKeywords();
     
     Object.entries(allKeywords).forEach(([categoryId, keywords]) => {
@@ -2680,4 +2611,4 @@ window.forceCategorySync = function() {
     return { success: true, message: 'Synchronisation forcée effectuée' };
 };
 
-console.log('✅ CategoryManager v21.0 loaded - Détection RH/Commercial et désabonnement améliorée');
+console.log('✅ CategoryManager v22.0 loaded - Détection Newsletter Prioritaire!');
