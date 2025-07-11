@@ -1,6 +1,6 @@
-// PageManagerGmail.js - Version 22.0 - Gestionnaire Gmail Complet et Unifié
+// PageManagerGmail.js - Version 23.0 - Sans Scanner Intégré ni Emails de Démo
 
-console.log('[PageManagerGmail] 🚀 Loading v22.0 - Complete Gmail Manager...');
+console.log('[PageManagerGmail] 🚀 Loading v23.0 - Gmail Manager (No Scanner/Demo)...');
 
 class PageManagerGmail {
     constructor() {
@@ -28,7 +28,7 @@ class PageManagerGmail {
         this._taskCategoriesCache = null;
         this._taskCategoriesCacheTime = 0;
         
-        console.log('[PageManagerGmail] ✅ Initialized v22.0');
+        console.log('[PageManagerGmail] ✅ Initialized v23.0');
         this.init();
     }
 
@@ -52,7 +52,7 @@ class PageManagerGmail {
             this.addStyles();
             
             this.isInitialized = true;
-            console.log('[PageManagerGmail] ✅ Ready - Complete Gmail Manager');
+            console.log('[PageManagerGmail] ✅ Ready - Gmail Manager v23.0');
             
         } catch (error) {
             console.error('[PageManagerGmail] ❌ Init error:', error);
@@ -182,10 +182,9 @@ class PageManagerGmail {
                     maxResults: 500
                 });
             }
-            // Via simulation
+            // Aucun service disponible
             else {
-                console.warn('[PageManagerGmail] Services non disponibles, génération d\'emails de test');
-                this.emails = this.generateTestEmails();
+                throw new Error('Aucun service de récupération d\'emails disponible');
             }
             
             console.log(`[PageManagerGmail] ✅ ${this.emails.length} emails récupérés`);
@@ -247,51 +246,6 @@ class PageManagerGmail {
         } catch (error) {
             console.error('[PageManagerGmail] Erreur sauvegarde locale:', error);
         }
-    }
-
-    generateTestEmails() {
-        const testEmails = [];
-        const senders = [
-            { name: 'Jean Dupont', email: 'jean.dupont@example.com' },
-            { name: 'Marie Martin', email: 'marie.martin@company.fr' },
-            { name: 'Support Google', email: 'support@google.com' },
-            { name: 'Amazon', email: 'noreply@amazon.fr' },
-            { name: 'LinkedIn', email: 'notifications@linkedin.com' }
-        ];
-        
-        const subjects = [
-            'Réunion projet demain à 14h',
-            'Votre commande a été expédiée',
-            'Nouvelle connexion à votre compte',
-            'Invitation: Webinar marketing digital',
-            'Rappel: Renouvellement abonnement'
-        ];
-        
-        for (let i = 0; i < 20; i++) {
-            const sender = senders[Math.floor(Math.random() * senders.length)];
-            const subject = subjects[Math.floor(Math.random() * subjects.length)];
-            
-            testEmails.push({
-                id: `test-email-${Date.now()}-${i}`,
-                subject: subject,
-                from: {
-                    emailAddress: {
-                        name: sender.name,
-                        address: sender.email
-                    }
-                },
-                receivedDateTime: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-                bodyPreview: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit...',
-                bodyText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
-                hasAttachments: Math.random() > 0.7,
-                importance: Math.random() > 0.8 ? 'high' : 'normal',
-                isRead: Math.random() > 0.3,
-                provider: 'gmail',
-                webSimulated: true
-            });
-        }
-        
-        return testEmails;
     }
 
     // ================================================
@@ -359,7 +313,8 @@ class PageManagerGmail {
                     break;
                     
                 case 'scanner':
-                    await this.renderScannerPage(container);
+                    // Déléguer au scanner unifié
+                    await this.delegateToUnifiedScanner(container);
                     break;
                     
                 default:
@@ -375,6 +330,45 @@ class PageManagerGmail {
         } catch (error) {
             console.error(`[PageManagerGmail] ❌ Erreur chargement ${pageName}:`, error);
             this.showError(container, error.message);
+        }
+    }
+
+    // ================================================
+    // DÉLÉGATION AU SCANNER UNIFIÉ
+    // ================================================
+    async delegateToUnifiedScanner(container) {
+        console.log('[PageManagerGmail] 🔍 Delegating to unified scanner...');
+        
+        if (window.unifiedScanModule || window.scanStartModule) {
+            const scanner = window.unifiedScanModule || window.scanStartModule;
+            
+            // Configurer le scanner pour Gmail
+            scanner.currentProvider = 'gmail';
+            scanner.isAuthenticated = await this.checkAuthentication();
+            
+            // Rendre le scanner unifié
+            await scanner.render(container);
+            
+            console.log('[PageManagerGmail] ✅ Scanner unifié rendu pour Gmail');
+        } else {
+            // Si aucun scanner disponible, rediriger vers la page scan principale
+            if (window.pageManager?.loadPage) {
+                window.pageManager.loadPage('scan');
+            } else {
+                container.innerHTML = `
+                    <div class="error-state">
+                        <div class="error-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h2>Scanner non disponible</h2>
+                        <p>Le module de scan n'est pas chargé.</p>
+                        <button class="btn btn-primary" onclick="pageManagerGmail.loadPage('emails')">
+                            <i class="fas fa-arrow-left"></i>
+                            Retour aux emails
+                        </button>
+                    </div>
+                `;
+            }
         }
     }
 
@@ -801,238 +795,6 @@ class PageManagerGmail {
                 </div>
             </div>
         `;
-    }
-
-    // ================================================
-    // PAGE SCANNER
-    // ================================================
-    async renderScannerPage(container) {
-        console.log('[PageManagerGmail] 🔍 Rendering scanner page...');
-        
-        const isAuth = await this.checkAuthentication();
-        const hasEmails = this.emails.length > 0;
-        const emailCount = this.emails.length;
-        
-        // Interface cohérente avec Outlook - pas de section auth séparée
-        container.innerHTML = `
-            <div class="gmail-page-modern scanner-page-unified">
-                <!-- Header moderne unifié comme Outlook -->
-                <div class="scanner-header-modern">
-                    <div class="header-content">
-                        <div class="header-icon gmail-icon">
-                            <i class="fab fa-google"></i>
-                        </div>
-                        <div class="header-text">
-                            <h1>Scanner d'emails Gmail</h1>
-                            <p>Synchronisez et analysez vos emails Gmail pour créer des tâches automatiquement</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Contenu principal -->
-                <div class="scanner-main-content">
-                    <!-- Status Cards -->
-                    <div class="status-cards">
-                        <div class="status-card ${isAuth ? 'connected' : 'disconnected'}">
-                            <div class="status-icon">
-                                <i class="fas ${isAuth ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-                            </div>
-                            <div class="status-info">
-                                <h3>${isAuth ? 'Connecté' : 'Non connecté'}</h3>
-                                <p>${isAuth ? 'Compte Google actif' : 'Connexion requise'}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="status-card">
-                            <div class="status-icon">
-                                <i class="fas fa-envelope"></i>
-                            </div>
-                            <div class="status-info">
-                                <h3>${emailCount}</h3>
-                                <p>Emails disponibles</p>
-                            </div>
-                        </div>
-                        
-                        <div class="status-card">
-                            <div class="status-icon">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <div class="status-info">
-                                <h3>${this.syncState.lastSync ? this.formatDate(this.syncState.lastSync) : 'Jamais'}</h3>
-                                <p>Dernière synchronisation</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Scan Control -->
-                    <div class="scan-control-card">
-                        <div class="scan-illustration">
-                            <div class="scan-icon-wrapper gmail-gradient">
-                                <i class="fab fa-google"></i>
-                                <div class="scan-pulse"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="scan-content">
-                            <h2>Synchronisation Gmail</h2>
-                            ${!isAuth ? `
-                                <div class="auth-warning">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <p>Vous devez vous connecter à Google pour scanner vos emails</p>
-                                </div>
-                            ` : `
-                                <p>Récupérez vos emails Gmail pour les analyser et créer des tâches automatiquement</p>
-                            `}
-                            
-                            <div class="scan-options ${!isAuth ? 'disabled' : ''}">
-                                <label class="scan-option">
-                                    <input type="checkbox" checked ${!isAuth ? 'disabled' : ''}>
-                                    <span>Inclure les emails des 7 derniers jours</span>
-                                </label>
-                                <label class="scan-option">
-                                    <input type="checkbox" checked ${!isAuth ? 'disabled' : ''}>
-                                    <span>Catégoriser automatiquement avec l'IA</span>
-                                </label>
-                                <label class="scan-option">
-                                    <input type="checkbox" ${!isAuth ? 'disabled' : ''}>
-                                    <span>Créer des tâches pour les emails importants</span>
-                                </label>
-                            </div>
-                            
-                            <div class="scan-actions">
-                                ${!isAuth ? `
-                                    <button class="btn btn-primary btn-large" onclick="pageManagerGmail.login()">
-                                        <i class="fab fa-google"></i>
-                                        <span>Se connecter avec Google</span>
-                                    </button>
-                                ` : `
-                                    <button class="btn btn-primary btn-large" onclick="pageManagerGmail.startScan()">
-                                        <i class="fas fa-sync"></i>
-                                        <span>Lancer la synchronisation</span>
-                                    </button>
-                                `}
-                                
-                                ${hasEmails ? `
-                                    <button class="btn btn-secondary" onclick="pageManagerGmail.loadPage('emails')">
-                                        <i class="fas fa-eye"></i>
-                                        <span>Voir les ${emailCount} emails</span>
-                                    </button>
-                                ` : ''}
-                                
-                                ${isAuth ? `
-                                    <button class="btn btn-secondary disconnect" onclick="pageManagerGmail.disconnect()">
-                                        <i class="fas fa-sign-out-alt"></i>
-                                        <span>Déconnecter</span>
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Résultats de scan (si disponibles) -->
-                    ${this.syncState.lastSync && hasEmails ? `
-                        <div class="scan-results">
-                            <h3>Dernière synchronisation</h3>
-                            <div class="results-grid">
-                                <div class="result-item">
-                                    <span class="result-label">Emails synchronisés:</span>
-                                    <span class="result-value">${emailCount}</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">Catégories détectées:</span>
-                                    <span class="result-value">${Object.keys(this.calculateCategoryCounts(this.emails)).length}</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">Emails avec pièces jointes:</span>
-                                    <span class="result-value">${this.emails.filter(e => e.hasAttachments).length}</span>
-                                </div>
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-
-                <!-- Features Section comme Outlook -->
-                <div class="features-section">
-                    <h2>Fonctionnalités Gmail</h2>
-                    <div class="features-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon gmail-feature">
-                                <i class="fas fa-shield-alt"></i>
-                            </div>
-                            <h3>OAuth 2.0</h3>
-                            <p>Authentification sécurisée avec Google OAuth</p>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <div class="feature-icon gmail-feature">
-                                <i class="fas fa-robot"></i>
-                            </div>
-                            <h3>IA Intégrée</h3>
-                            <p>Catégorisation intelligente par Claude AI</p>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <div class="feature-icon gmail-feature">
-                                <i class="fas fa-tasks"></i>
-                            </div>
-                            <h3>Tâches Auto</h3>
-                            <p>Création automatique de tâches à partir des emails</p>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <div class="feature-icon gmail-feature">
-                                <i class="fas fa-bolt"></i>
-                            </div>
-                            <h3>Synchronisation</h3>
-                            <p>Import rapide via l'API Gmail</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    async disconnect() {
-        try {
-            if (window.googleAuthService?.logout) {
-                await window.googleAuthService.logout();
-            }
-            
-            // Effacer l'état local
-            this.syncState.authenticated = false;
-            this.emails = [];
-            this.selectedEmails.clear();
-            this.createdTasks.clear();
-            
-            // Effacer le stockage local
-            this.setLocalStorageItem('gmailEmails', '[]');
-            this.setLocalStorageItem('googleAuthToken', '');
-            
-            this.showToast('Déconnecté de Google', 'success');
-            this.loadPage('scanner');
-            
-        } catch (error) {
-            console.error('[PageManagerGmail] Erreur déconnexion:', error);
-            this.showToast('Erreur lors de la déconnexion', 'error');
-        }
-    }
-
-    async startScan() {
-        console.log('[PageManagerGmail] 🚀 Starting Gmail scan...');
-        
-        try {
-            await this.fetchEmails();
-            this.showToast(`${this.emails.length} emails synchronisés!`, 'success');
-            
-            // Rediriger vers la page emails
-            setTimeout(() => {
-                this.loadPage('emails');
-            }, 1000);
-            
-        } catch (error) {
-            console.error('[PageManagerGmail] Scan error:', error);
-            this.showToast('Erreur lors du scan: ' + error.message, 'error');
-        }
     }
 
     // ================================================
@@ -2954,468 +2716,6 @@ class PageManagerGmail {
                 align-items: center;
             }
 
-            /* Page scanner unifiée */
-            .scanner-page-unified {
-                padding: 0;
-                background: #f8fafc;
-                min-height: 100vh;
-            }
-
-            /* Header moderne */
-            .scanner-header-modern {
-                background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
-                color: white;
-                padding: 60px 20px;
-                text-align: center;
-                position: relative;
-                overflow: hidden;
-            }
-
-            .scanner-header-modern::before {
-                content: '';
-                position: absolute;
-                top: -50%;
-                right: -50%;
-                width: 200%;
-                height: 200%;
-                background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-                animation: pulse 4s ease-in-out infinite;
-            }
-
-            .header-content {
-                position: relative;
-                z-index: 1;
-                max-width: 800px;
-                margin: 0 auto;
-            }
-
-            .header-icon {
-                font-size: 64px;
-                margin-bottom: 20px;
-                animation: float 3s ease-in-out infinite;
-            }
-
-            .header-text h1 {
-                font-size: 36px;
-                font-weight: 700;
-                margin-bottom: 12px;
-            }
-
-            .header-text p {
-                font-size: 18px;
-                opacity: 0.9;
-                max-width: 600px;
-                margin: 0 auto;
-            }
-
-            /* Section authentification */
-            .auth-section {
-                padding: 40px 20px;
-                max-width: 500px;
-                margin: 0 auto;
-            }
-
-            .auth-card {
-                background: white;
-                border-radius: 16px;
-                padding: 48px;
-                text-align: center;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-                border: 1px solid #e5e7eb;
-            }
-
-            .auth-icon-large {
-                width: 80px;
-                height: 80px;
-                background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 0 auto 24px;
-                font-size: 40px;
-                color: white;
-                box-shadow: 0 8px 24px rgba(66, 133, 244, 0.3);
-            }
-
-            .auth-card h2 {
-                font-size: 24px;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 12px;
-            }
-
-            .auth-card p {
-                color: #6b7280;
-                font-size: 16px;
-                margin-bottom: 32px;
-                line-height: 1.6;
-            }
-
-            /* Contenu principal scanner */
-            .scanner-main-content {
-                padding: 40px 20px;
-                max-width: 1200px;
-                margin: 0 auto;
-            }
-
-            /* Status Cards */
-            .status-cards {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 20px;
-                margin-bottom: 40px;
-            }
-
-            .status-card {
-                background: white;
-                border-radius: 12px;
-                padding: 24px;
-                display: flex;
-                align-items: center;
-                gap: 16px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-                border: 1px solid #e5e7eb;
-                transition: all 0.3s ease;
-            }
-
-            .status-card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            }
-
-            .status-icon {
-                width: 48px;
-                height: 48px;
-                background: #e0e7ff;
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #4285f4;
-                font-size: 20px;
-            }
-
-            .status-info h3 {
-                font-size: 24px;
-                font-weight: 700;
-                color: #1f2937;
-                margin: 0;
-            }
-
-            .status-info p {
-                font-size: 14px;
-                color: #6b7280;
-                margin: 0;
-            }
-
-            /* Scan Control Card */
-            .scan-control-card {
-                background: white;
-                border-radius: 16px;
-                padding: 48px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-                border: 1px solid #e5e7eb;
-                display: flex;
-                gap: 48px;
-                align-items: center;
-                margin-bottom: 40px;
-            }
-
-            .scan-illustration {
-                flex-shrink: 0;
-            }
-
-            .scan-icon-wrapper {
-                width: 120px;
-                height: 120px;
-                background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                position: relative;
-            }
-
-            .scan-icon-wrapper i {
-                font-size: 48px;
-                color: #4285f4;
-            }
-
-            .scan-pulse {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                border-radius: 50%;
-                border: 2px solid #4285f4;
-                animation: pulse-ring 2s ease-out infinite;
-            }
-
-            .scan-content {
-                flex: 1;
-            }
-
-            .scan-content h2 {
-                font-size: 28px;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 12px;
-            }
-
-            .scan-content p {
-                font-size: 16px;
-                color: #6b7280;
-                margin-bottom: 24px;
-                line-height: 1.6;
-            }
-
-            .scan-options {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-                margin-bottom: 32px;
-            }
-
-            .scan-option {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                cursor: pointer;
-                color: #374151;
-                font-size: 14px;
-            }
-
-            .scan-option input[type="checkbox"] {
-                width: 20px;
-                height: 20px;
-                border: 2px solid #d1d5db;
-                border-radius: 4px;
-                cursor: pointer;
-            }
-
-            .scan-option input[type="checkbox"]:checked {
-                background: #4285f4;
-                border-color: #4285f4;
-            }
-
-            .scan-actions {
-                display: flex;
-                gap: 12px;
-                flex-wrap: wrap;
-            }
-
-            /* Features Section */
-            .features-section {
-                padding: 60px 20px;
-                background: #f9fafb;
-                text-align: center;
-            }
-
-            .features-section h2 {
-                font-size: 32px;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 40px;
-            }
-
-            .features-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 30px;
-                max-width: 1200px;
-                margin: 0 auto;
-            }
-
-            .feature-card {
-                background: white;
-                border-radius: 12px;
-                padding: 40px 30px;
-                text-align: center;
-                transition: all 0.3s ease;
-                border: 1px solid #e5e7eb;
-            }
-
-            .feature-card:hover {
-                transform: translateY(-8px);
-                box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
-            }
-
-            .feature-icon {
-                width: 64px;
-                height: 64px;
-                background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-                border-radius: 16px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 0 auto 20px;
-                font-size: 28px;
-                color: #4285f4;
-            }
-
-            .feature-card h3 {
-                font-size: 20px;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 12px;
-            }
-
-            .feature-card p {
-                font-size: 14px;
-                color: #6b7280;
-                line-height: 1.6;
-            }
-
-            /* Styles spécifiques Gmail */
-            .gmail-icon {
-                background: linear-gradient(135deg, #4285f4 0%, #34a853 25%, #fbbc04 50%, #ea4335 75%);
-            }
-
-            .gmail-gradient {
-                background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%) !important;
-            }
-
-            .gmail-feature {
-                background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%) !important;
-                color: #1a73e8 !important;
-            }
-
-            .status-card.connected .status-icon {
-                background: #e6f4ea;
-                color: #34a853;
-            }
-
-            .status-card.disconnected .status-icon {
-                background: #fce8e6;
-                color: #ea4335;
-            }
-
-            .auth-warning {
-                background: #fef7e0;
-                border: 1px solid #fbbc04;
-                border-radius: 8px;
-                padding: 16px;
-                margin-bottom: 20px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                color: #5f6368;
-            }
-
-            .auth-warning i {
-                color: #fbbc04;
-                font-size: 20px;
-            }
-
-            .scan-options.disabled {
-                opacity: 0.5;
-                pointer-events: none;
-            }
-
-            .btn.disconnect {
-                background: #fce8e6;
-                color: #ea4335;
-                border-color: #fadbd8;
-            }
-
-            .btn.disconnect:hover {
-                background: #ea4335;
-                color: white;
-                border-color: #ea4335;
-            }
-
-            /* Résultats de scan */
-            .scan-results {
-                background: white;
-                border-radius: 12px;
-                padding: 24px;
-                margin-top: 20px;
-                border: 1px solid #e5e7eb;
-            }
-
-            .scan-results h3 {
-                font-size: 18px;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 16px;
-            }
-
-            .results-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
-            }
-
-            .result-item {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 12px 16px;
-                background: #f8fafc;
-                border-radius: 8px;
-                border: 1px solid #e5e7eb;
-            }
-
-            .result-label {
-                font-size: 14px;
-                color: #6b7280;
-            }
-
-            .result-value {
-                font-size: 18px;
-                font-weight: 700;
-                color: #1a73e8;
-            }
-
-            /* Responsive Scanner Page */
-            @media (max-width: 768px) {
-                .scanner-header-modern {
-                    padding: 40px 20px;
-                }
-
-                .header-text h1 {
-                    font-size: 28px;
-                }
-
-                .header-text p {
-                    font-size: 16px;
-                }
-
-                .header-icon {
-                    font-size: 48px;
-                }
-
-                .scan-control-card {
-                    flex-direction: column;
-                    padding: 32px 24px;
-                    text-align: center;
-                }
-
-                .scan-icon-wrapper {
-                    width: 100px;
-                    height: 100px;
-                }
-
-                .scan-content h2 {
-                    font-size: 24px;
-                }
-
-                .status-cards {
-                    grid-template-columns: 1fr;
-                }
-
-                .features-grid {
-                    grid-template-columns: 1fr;
-                    gap: 20px;
-                }
-
-                .feature-card {
-                    padding: 30px 20px;
-                }
-            }
-
             /* Error state */
             .error-state {
                 text-align: center;
@@ -3830,14 +3130,6 @@ class PageManagerGmail {
                 .category-tab {
                     height: 52px;
                 }
-
-                .scanner-info {
-                    grid-template-columns: 1fr;
-                }
-
-                .scan-status {
-                    grid-template-columns: 1fr;
-                }
             }
         `;
         
@@ -3855,4 +3147,4 @@ if (window.pageManagerGmail) {
 
 window.pageManagerGmail = new PageManagerGmail();
 
-console.log('✅ PageManagerGmail v22.0 loaded - Complete Gmail Manager');
+console.log('✅ PageManagerGmail v23.0 loaded - Sans Scanner ni Démo');
