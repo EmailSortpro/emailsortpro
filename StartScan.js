@@ -1,3 +1,7 @@
+// Debug: Vérifier l'état au chargement
+console.log('[UnifiedScan] Chargement du fichier startscan.js');
+console.log('[UnifiedScan] CategoryManager disponible:', !!window.categoryManager);
+
 class UnifiedScan {
     constructor() {
         this.categoryManager = null;
@@ -85,22 +89,27 @@ class UnifiedScan {
     async initialize() {
         console.log('[UnifiedScan] 🚀 Initialisation...');
         
-        // Récupérer le CategoryManager
-        this.categoryManager = window.categoryManager;
-        if (!this.categoryManager) {
-            throw new Error('CategoryManager non disponible');
-        }
+        try {
+            // Récupérer le CategoryManager
+            this.categoryManager = window.categoryManager;
+            if (!this.categoryManager) {
+                throw new Error('CategoryManager non disponible');
+            }
 
-        // Charger les catégories pré-sélectionnées
-        await this.loadPreselectedCategories();
-        
-        // Rendre l'interface
-        this.render();
-        
-        // Configurer les interactions
-        this.setupInteractions();
-        
-        console.log('[UnifiedScan] ✅ Initialisation terminée');
+            // Charger les catégories pré-sélectionnées
+            await this.loadPreselectedCategories();
+            
+            // Rendre l'interface
+            this.render();
+            
+            // Configurer les interactions
+            this.setupInteractions();
+            
+            console.log('[UnifiedScan] ✅ Initialisation terminée');
+        } catch (error) {
+            console.error('[UnifiedScan] ❌ Erreur:', error);
+            throw error;
+        }
     }
 
     // Charger les catégories pré-sélectionnées
@@ -795,6 +804,26 @@ const scanStyles = `
         margin-top: 10px;
     }
 
+    .error-message {
+        text-align: center;
+        padding: 50px;
+        color: #d32f2f;
+    }
+
+    .error-message i {
+        color: #d32f2f;
+        margin-bottom: 20px;
+    }
+
+    .error-message h2 {
+        margin: 20px 0;
+    }
+
+    .error-message p {
+        margin: 10px 0;
+        color: #666;
+    }
+
     .categories-selection {
         background: #f5f5f5;
         padding: 20px;
@@ -1165,31 +1194,102 @@ if (!document.getElementById('unifiedScanStyles')) {
     document.head.appendChild(styleElement);
 }
 
-// Initialiser le scan unifié
+// Ajouter les styles au document
+if (!document.getElementById('unifiedScanStyles')) {
+    const styleElement = document.createElement('style');
+    styleElement.id = 'unifiedScanStyles';
+    styleElement.textContent = scanStyles;
+    document.head.appendChild(styleElement);
+}
+
+// Initialiser automatiquement si on est sur la bonne page
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('[UnifiedScan] DOM chargé, vérification...');
+    
     // Attendre que CategoryManager soit disponible
     let attempts = 0;
-    const waitForCategoryManager = setInterval(async () => {
+    const checkAndInit = async () => {
         attempts++;
         
-        if (window.categoryManager || attempts > 50) {
-            clearInterval(waitForCategoryManager);
+        if (window.categoryManager) {
+            console.log('[UnifiedScan] CategoryManager trouvé, initialisation...');
             
-            if (window.categoryManager) {
+            try {
                 const unifiedScan = new UnifiedScan();
                 window.unifiedScan = unifiedScan;
+                await unifiedScan.initialize();
+                console.log('[UnifiedScan] ✅ Initialisation réussie');
+            } catch (error) {
+                console.error('[UnifiedScan] ❌ Erreur initialisation:', error);
                 
-                try {
-                    await unifiedScan.initialize();
-                } catch (error) {
-                    console.error('[UnifiedScan] Erreur initialisation:', error);
+                // Afficher l'erreur dans la page
+                const container = document.querySelector('.container');
+                if (container) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 50px; color: #d32f2f;">
+                            <i class="fas fa-exclamation-triangle fa-3x"></i>
+                            <h2>Erreur d'initialisation</h2>
+                            <p>${error.message}</p>
+                            <button class="btn btn-primary" onclick="location.reload()">
+                                <i class="fas fa-sync"></i> Recharger
+                            </button>
+                        </div>
+                    `;
                 }
-            } else {
-                console.error('[UnifiedScan] CategoryManager non disponible');
+            }
+        } else if (attempts < 50) {
+            // Réessayer après 100ms
+            setTimeout(checkAndInit, 100);
+        } else {
+            console.error('[UnifiedScan] ❌ CategoryManager non trouvé après 5 secondes');
+            
+            const container = document.querySelector('.container');
+            if (container) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 50px; color: #d32f2f;">
+                        <i class="fas fa-exclamation-triangle fa-3x"></i>
+                        <h2>Erreur de chargement</h2>
+                        <p>Le système de catégorisation n'est pas disponible.</p>
+                        <p>Veuillez vérifier que tous les composants sont chargés.</p>
+                        <button class="btn btn-primary" onclick="location.reload()">
+                            <i class="fas fa-sync"></i> Recharger
+                        </button>
+                    </div>
+                `;
             }
         }
-    }, 100);
+    };
+    
+    // Démarrer la vérification
+    checkAndInit();
 });
 
 // Exporter la classe
 window.UnifiedScan = UnifiedScan;
+
+// Fonction globale pour initialisation manuelle
+window.startUnifiedScan = async function() {
+    console.log('[UnifiedScan] Initialisation manuelle...');
+    
+    const container = document.querySelector('.container');
+    if (!container) {
+        console.error('[UnifiedScan] Container .container non trouvé');
+        return;
+    }
+    
+    if (!window.categoryManager) {
+        console.error('[UnifiedScan] CategoryManager non disponible');
+        container.innerHTML = '<div style="text-align:center;padding:50px;"><h2>CategoryManager non chargé</h2><p>Veuillez recharger la page</p></div>';
+        return;
+    }
+    
+    try {
+        const scan = new UnifiedScan();
+        window.unifiedScan = scan;
+        await scan.initialize();
+        console.log('[UnifiedScan] ✅ Scan démarré avec succès');
+    } catch (error) {
+        console.error('[UnifiedScan] ❌ Erreur:', error);
+        container.innerHTML = `<div style="text-align:center;padding:50px;"><h2>Erreur</h2><p>${error.message}</p></div>`;
+    }
+};
