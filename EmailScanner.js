@@ -246,10 +246,12 @@ class EmailScanner {
         };
         
         // Ajouter le filtre de date si spécifié
-        if (options.days && options.days > 0) {
-            const date = new Date();
-            date.setDate(date.getDate() - options.days);
-            mailOptions.filter = `receivedDateTime ge ${date.toISOString()}`;
+        if (options.days && options.days > 0 && options.days !== -1) {
+            // Pour MailService, on peut passer directement days
+            mailOptions.days = options.days;
+        } else if (options.days === -1) {
+            // -1 signifie tous les emails
+            mailOptions.maxResults = 1000; // Limite raisonnable
         }
         
         const emails = await window.mailService.getMessages(options.folder || 'inbox', mailOptions);
@@ -263,52 +265,327 @@ class EmailScanner {
     async fetchGmailEmails(options) {
         console.log('[EmailScanner] 📧 Récupération emails Gmail...');
         
-        if (!window.googleAuthService?.fetchEmails) {
-            throw new Error('GoogleAuthService non disponible');
+        // Vérifier si on a un token Google valide
+        if (!window.googleAuthService?.isAuthenticated()) {
+            throw new Error('Non authentifié avec Google');
         }
         
-        const gmailOptions = {
-            maxResults: options.maxEmails || 500,
-            q: ''
-        };
+        // Utiliser MailService qui gère Gmail correctement
+        if (window.mailService) {
+            console.log('[EmailScanner] Utilisation de MailService pour Gmail...');
+            
+            // S'assurer que MailService est sur Gmail
+            const currentProvider = window.mailService.getCurrentProvider();
+            if (currentProvider !== 'google' && currentProvider !== 'gmail') {
+                await window.mailService.setProvider('google');
+            }
+            
+            // Options pour MailService
+            const mailOptions = {
+                maxResults: options.maxEmails || 500,
+                includeSpam: options.includeSpam === true
+            };
+            
+            // Ajouter le filtre de date
+            if (options.days && options.days > 0) {
+                mailOptions.days = options.days;
+            }
+            
+            const emails = await window.mailService.getMessages('INBOX', mailOptions);
+            console.log(`[EmailScanner] ✅ ${emails.length} emails Gmail récupérés via MailService`);
+            
+            return emails.map(email => ({
+                ...this.normalizeEmail(email),
+                provider: 'gmail'
+            }));
+        }
         
-        // Construire la query Gmail
+        // Fallback : utiliser l'API Gmail directement
+        console.log('[EmailScanner] Fallback: API Gmail directe...');
+        const token = await window.googleAuthService.getAccessToken();
+        if (!token) {
+            throw new Error('Pas de token Google disponible');
+        }
+        
+        // Construire la requête Gmail
+        const params = new URLSearchParams({
+            maxResults: Math.min(options.maxEmails || 500, 500).toString()
+        });
+        
+        // Construire la query
+        let query = '';
         if (options.days && options.days > 0) {
-            gmailOptions.q = `newer_than:${options.days}d`;
+            const date = new Date();
+            date.setDate(date.getDate() - options.days);
+            query = `after:${date.toISOString().split('T')[0]}`;
         }
         
         if (!options.includeSpam) {
-            gmailOptions.q += ' -in:spam';
+            query = query ? `${query} -in:spam` : '-in:spam';
         }
         
-        const emails = await window.googleAuthService.fetchEmails(gmailOptions);
+        if (query) {
+            params.append('q', query);
+        }
+        
+        // Récupérer la liste des messages
+        const listResponse = await fetch(
+            `https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            }
+        );
+        
+        if (!listResponse.ok) {
+            throw new Error(`Gmail API error: ${listResponse.status}`);
+        }
+        
+        const listData = await listResponse.json();
+        const messageIds = listData.messages || [];
+        
+        console.log(`[EmailScanner] ${messageIds.length} messages trouvés`);
+        
+        // Récupérer les détails de chaque message
+        const emails = [];
+        for (let i = 0; i < messageIds.length; i += 5) {
+            const batch = messageIds.slice(i, i + 5);
+            const promises = batch.map(msg => this.fetchGmailMessage(msg.id, token));
+            const results = await Promise.all(promises);
+            emails.push(...results.filter(e => e !== null));
+            
+            // Mise à jour progression
+            const progress = Math.round((i / messageIds.length) * 100);
+            this.updateProgress(progress, `Récupération ${i}/${messageIds.length} emails`, 'fetch');
+        }
+        
         console.log(`[EmailScanner] ✅ ${emails.length} emails Gmail récupérés`);
         
         return emails.map(email => ({
-            ...this.normalizeEmail(email),
+            ...email,
             provider: 'gmail'
         }));
+    }
+    
+    async fetchGmailMessage(messageId, token) {
+        try {
+            const response = await fetch(
+                `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                }
+            );
+            
+            if (!response.ok) {
+                return null;
+            }
+            
+            const message = await response.json();
+            return this.convertGmailMessage(message);
+            
+        } catch (error) {
+            console.error(`[EmailScanner] Erreur message ${messageId}:`, error);
+            return null;
+        }
+    }
+    
+    convertGmailMessage(gmailMessage) {
+        const headers = gmailMessage.payload?.headers || [];
+        const getHeader = (name) => headers.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || '';
+        
+        // Extraire le contenu
+        const content = this.extractGmailContent(gmailMessage.payload);
+        
+        // Parser les adresses email
+        const fromHeader = getHeader('From');
+        const fromParsed = this.parseEmailAddress(fromHeader);
+        
+        return {
+            id: gmailMessage.id,
+            subject: getHeader('Subject') || 'Sans sujet',
+            from: {
+                emailAddress: {
+                    name: fromParsed.name,
+                    address: fromParsed.address
+                }
+            },
+            toRecipients: this.parseRecipients(getHeader('To')),
+            ccRecipients: this.parseRecipients(getHeader('Cc')),
+            receivedDateTime: new Date(parseInt(gmailMessage.internalDate)).toISOString(),
+            bodyPreview: gmailMessage.snippet || '',
+            body: {
+                content: content.html || content.text || '',
+                contentType: content.html ? 'html' : 'text'
+            },
+            hasAttachments: content.hasAttachments,
+            importance: gmailMessage.labelIds?.includes('IMPORTANT') ? 'high' : 'normal',
+            isRead: !gmailMessage.labelIds?.includes('UNREAD')
+        };
+    }
+    
+    extractGmailContent(payload) {
+        let text = '';
+        let html = '';
+        let hasAttachments = false;
+        
+        if (!payload) return { text, html, hasAttachments };
+        
+        const extractFromPart = (part) => {
+            if (part.filename && part.filename.length > 0) {
+                hasAttachments = true;
+                return;
+            }
+            
+            if (part.body?.data) {
+                const decoded = this.base64Decode(part.body.data);
+                if (part.mimeType === 'text/plain') {
+                    text = decoded;
+                } else if (part.mimeType === 'text/html') {
+                    html = decoded;
+                }
+            }
+            
+            if (part.parts && Array.isArray(part.parts)) {
+                part.parts.forEach(subPart => extractFromPart(subPart));
+            }
+        };
+        
+        extractFromPart(payload);
+        
+        return { text, html, hasAttachments };
+    }
+    
+    base64Decode(data) {
+        try {
+            const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+            const padded = base64 + '=='.substring(0, (4 - base64.length % 4) % 4);
+            return decodeURIComponent(escape(atob(padded)));
+        } catch (error) {
+            console.error('[EmailScanner] Erreur décodage base64:', error);
+            return '';
+        }
+    }
+    
+    parseEmailAddress(emailString) {
+        if (!emailString) return { name: '', address: '' };
+        
+        const match = emailString.match(/^"?([^"<]*?)"?\s*<?([^>]+)>?$/);
+        
+        if (match) {
+            return {
+                name: match[1].trim(),
+                address: match[2].trim()
+            };
+        }
+        
+        return {
+            name: '',
+            address: emailString.trim()
+        };
+    }
+    
+    parseRecipients(recipientString) {
+        if (!recipientString) return [];
+        
+        const recipients = [];
+        const parts = recipientString.split(',');
+        
+        parts.forEach(part => {
+            const parsed = this.parseEmailAddress(part.trim());
+            if (parsed.address) {
+                recipients.push({
+                    emailAddress: {
+                        name: parsed.name,
+                        address: parsed.address
+                    }
+                });
+            }
+        });
+        
+        return recipients;
     }
 
     async fetchOutlookEmails(options) {
         console.log('[EmailScanner] 📧 Récupération emails Outlook...');
         
-        if (!window.authService?.fetchEmails) {
-            throw new Error('AuthService non disponible');
+        // Vérifier l'authentification
+        if (!window.authService?.isAuthenticated()) {
+            throw new Error('Non authentifié avec Microsoft');
         }
         
-        const outlookOptions = {
-            top: options.maxEmails || 500,
-            folder: options.folder || 'inbox'
-        };
+        // Utiliser MailService qui gère Outlook correctement
+        if (window.mailService) {
+            console.log('[EmailScanner] Utilisation de MailService pour Outlook...');
+            
+            // S'assurer que MailService est sur Outlook
+            const currentProvider = window.mailService.getCurrentProvider();
+            if (currentProvider !== 'microsoft' && currentProvider !== 'outlook') {
+                await window.mailService.setProvider('microsoft');
+            }
+            
+            // Options pour MailService
+            const mailOptions = {
+                maxResults: options.maxEmails || 500,
+                includeSpam: options.includeSpam === true
+            };
+            
+            // Ajouter le filtre de date
+            if (options.days && options.days > 0) {
+                mailOptions.days = options.days;
+            }
+            
+            const emails = await window.mailService.getMessages(options.folder || 'inbox', mailOptions);
+            console.log(`[EmailScanner] ✅ ${emails.length} emails Outlook récupérés via MailService`);
+            
+            return emails.map(email => ({
+                ...this.normalizeEmail(email),
+                provider: 'outlook'
+            }));
+        }
         
+        // Fallback : utiliser l'API Graph directement
+        console.log('[EmailScanner] Fallback: API Graph directe...');
+        const token = await window.authService.getAccessToken();
+        if (!token) {
+            throw new Error('Pas de token Microsoft disponible');
+        }
+        
+        // Construire les paramètres
+        const params = new URLSearchParams({
+            '$top': Math.min(options.maxEmails || 500, 999).toString(),
+            '$select': 'id,conversationId,receivedDateTime,subject,body,bodyPreview,importance,isRead,hasAttachments,from,toRecipients,ccRecipients',
+            '$orderby': 'receivedDateTime desc'
+        });
+        
+        // Ajouter le filtre de date
         if (options.days && options.days > 0) {
             const date = new Date();
             date.setDate(date.getDate() - options.days);
-            outlookOptions.filter = `receivedDateTime ge ${date.toISOString()}`;
+            params.append('$filter', `receivedDateTime ge ${date.toISOString()}`);
         }
         
-        const emails = await window.authService.fetchEmails(outlookOptions);
+        const response = await fetch(
+            `https://graph.microsoft.com/v1.0/me/mailFolders/${options.folder || 'inbox'}/messages?${params}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`Microsoft Graph API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const emails = data.value || [];
+        
         console.log(`[EmailScanner] ✅ ${emails.length} emails Outlook récupérés`);
         
         return emails.map(email => ({
