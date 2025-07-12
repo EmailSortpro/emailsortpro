@@ -1,7 +1,7 @@
-// PageManagerGmail.js - Version 24.0 - Optimisé pour Gmail avec Style PageManager
-// Affichage instantané, sans limite d'emails, sans démo
+// PageManagerGmail.js - Version 25.0 - Corrigé avec affichage "other"
+// Affichage instantané des résultats, sans limite d'emails, catégorie "other" visible
 
-console.log('[PageManagerGmail] 🚀 Loading v24.0 - Gmail Manager Optimisé...');
+console.log('[PageManagerGmail] 🚀 Loading v25.0 - Gmail Manager avec catégorie "other"...');
 
 class PageManagerGmail {
     constructor() {
@@ -29,7 +29,7 @@ class PageManagerGmail {
         this._taskCategoriesCache = null;
         this._taskCategoriesCacheTime = 0;
         
-        console.log('[PageManagerGmail] ✅ Initialized v24.0 - Optimisé');
+        console.log('[PageManagerGmail] ✅ Initialized v25.0 - Avec catégorie "other"');
         this.init();
     }
 
@@ -53,7 +53,7 @@ class PageManagerGmail {
             this.addStyles();
             
             this.isInitialized = true;
-            console.log('[PageManagerGmail] ✅ Ready - Gmail Manager v24.0');
+            console.log('[PageManagerGmail] ✅ Ready - Gmail Manager v25.0');
             
         } catch (error) {
             console.error('[PageManagerGmail] ❌ Init error:', error);
@@ -429,7 +429,7 @@ class PageManagerGmail {
     }
 
     // ================================================
-    // PAGE EMAILS OPTIMISÉE
+    // PAGE EMAILS OPTIMISÉE AVEC CATÉGORIE "OTHER"
     // ================================================
     async renderEmailsPage(container) {
         console.log('[PageManagerGmail] 🎨 Rendering emails page...');
@@ -599,13 +599,23 @@ class PageManagerGmail {
             }
         ];
         
-        // Ajouter les autres catégories
+        // IMPORTANT: Ajouter les catégories existantes dans les emails
+        const existingCategories = new Set();
+        this.emails.forEach(email => {
+            if (email.category) {
+                existingCategories.add(email.category);
+            }
+        });
+        
+        // Ajouter les catégories connues
         Object.entries(categories).forEach(([catId, category]) => {
             if (catId === 'all') return;
             
             const count = categoryCounts[catId] || 0;
-            if (count > 0 || catId === 'other') {
-                const isPreselected = preselectedCategories.includes(catId);
+            const isPreselected = preselectedCategories.includes(catId);
+            
+            // Inclure si: a des emails OU est présélectionnée OU est "other"
+            if (count > 0 || isPreselected || catId === 'other') {
                 tabs.push({
                     id: catId,
                     name: category.name,
@@ -615,6 +625,29 @@ class PageManagerGmail {
                     isPreselected: isPreselected
                 });
             }
+        });
+        
+        // IMPORTANT: S'assurer que "other" est toujours présent même avec count 0
+        const hasOther = tabs.some(tab => tab.id === 'other');
+        if (!hasOther) {
+            const otherCategory = categories['other'] || { name: 'Non classé', icon: '❓', color: '#64748b' };
+            tabs.push({
+                id: 'other',
+                name: otherCategory.name,
+                icon: otherCategory.icon,
+                color: otherCategory.color,
+                count: categoryCounts['other'] || 0,
+                isPreselected: false
+            });
+        }
+        
+        // Trier les tabs : all en premier, puis par count décroissant, other en dernier
+        tabs.sort((a, b) => {
+            if (a.id === 'all') return -1;
+            if (b.id === 'all') return 1;
+            if (a.id === 'other') return 1;
+            if (b.id === 'other') return -1;
+            return b.count - a.count;
         });
         
         // Diviser en lignes de 6 boutons maximum
@@ -729,7 +762,7 @@ class PageManagerGmail {
         return `
             <div class="${cardClasses}" 
                  data-email-id="${email.id}"
-                 data-category="${email.category}">
+                 data-category="${email.category || 'other'}">
                 
                 <input type="checkbox" 
                        class="email-checkbox" 
@@ -770,7 +803,7 @@ class PageManagerGmail {
                     <div class="email-sender">
                         <i class="fas fa-envelope"></i>
                         <span class="sender-name">${this.escapeHtml(senderName)}</span>
-                        ${email.category && email.category !== 'other' ? `
+                        ${email.category ? `
                             <span class="category-badge" 
                                   style="background: ${this.getCategoryColor(email.category)}20; 
                                          color: ${this.getCategoryColor(email.category)};">
@@ -1707,22 +1740,40 @@ class PageManagerGmail {
             return this._categoriesCache;
         }
         
+        // Obtenir les catégories depuis CategoryManager
         if (window.categoryManager?.getCategories) {
-            this._categoriesCache = window.categoryManager.getCategories();
-            return this._categoriesCache;
+            const categories = window.categoryManager.getCategories();
+            
+            // IMPORTANT: S'assurer que "other" existe toujours
+            if (!categories['other']) {
+                categories['other'] = { 
+                    name: 'Non classé', 
+                    icon: '❓', 
+                    color: '#64748b',
+                    description: 'Emails non catégorisés'
+                };
+            }
+            
+            this._categoriesCache = categories;
+            return categories;
         }
         
+        // Catégories par défaut si CategoryManager non disponible
         const defaultCategories = {
-            'work': { name: 'Travail', icon: '💼', color: '#3b82f6' },
-            'personal': { name: 'Personnel', icon: '👤', color: '#10b981' },
-            'shopping': { name: 'Shopping', icon: '🛒', color: '#f59e0b' },
-            'finance': { name: 'Finance', icon: '💰', color: '#8b5cf6' },
-            'travel': { name: 'Voyage', icon: '✈️', color: '#ec4899' },
-            'health': { name: 'Santé', icon: '🏥', color: '#ef4444' },
-            'education': { name: 'Éducation', icon: '🎓', color: '#14b8a6' },
-            'news': { name: 'Actualités', icon: '📰', color: '#64748b' },
-            'social': { name: 'Social', icon: '👥', color: '#0ea5e9' },
-            'other': { name: 'Autre', icon: '📌', color: '#6b7280' }
+            'marketing_news': { name: 'Marketing & News', icon: '📰', color: '#8b5cf6' },
+            'security': { name: 'Sécurité', icon: '🔒', color: '#991b1b' },
+            'finance': { name: 'Finance', icon: '💰', color: '#dc2626' },
+            'tasks': { name: 'Actions Requises', icon: '✅', color: '#ef4444' },
+            'commercial': { name: 'Commercial', icon: '💼', color: '#059669' },
+            'meetings': { name: 'Réunions', icon: '📅', color: '#f59e0b' },
+            'support': { name: 'Support', icon: '🛠️', color: '#f59e0b' },
+            'reminders': { name: 'Relances', icon: '🔄', color: '#10b981' },
+            'project': { name: 'Projets', icon: '📊', color: '#3b82f6' },
+            'hr': { name: 'RH', icon: '👥', color: '#10b981' },
+            'internal': { name: 'Communication Interne', icon: '📢', color: '#0ea5e9' },
+            'notifications': { name: 'Notifications', icon: '🔔', color: '#94a3b8' },
+            'cc': { name: 'En Copie', icon: '📋', color: '#64748b' },
+            'other': { name: 'Non classé', icon: '❓', color: '#64748b' }
         };
         
         this._categoriesCache = defaultCategories;
@@ -1731,17 +1782,17 @@ class PageManagerGmail {
 
     getCategoryName(categoryId) {
         const categories = this.getCategories();
-        return categories[categoryId]?.name || categoryId;
+        return categories[categoryId]?.name || 'Non classé';
     }
 
     getCategoryIcon(categoryId) {
         const categories = this.getCategories();
-        return categories[categoryId]?.icon || '📁';
+        return categories[categoryId]?.icon || '❓';
     }
 
     getCategoryColor(categoryId) {
         const categories = this.getCategories();
-        return categories[categoryId]?.color || '#6b7280';
+        return categories[categoryId]?.color || '#64748b';
     }
 
     getTaskPreselectedCategories() {
@@ -1760,7 +1811,7 @@ class PageManagerGmail {
             categories = window.categoryManager.getTaskPreselectedCategories();
         } else {
             // Catégories par défaut pour les tâches
-            categories = ['work', 'finance', 'travel'];
+            categories = ['tasks', 'meetings', 'commercial'];
         }
         
         this._taskCategoriesCache = [...categories];
@@ -3475,4 +3526,4 @@ if (window.pageManagerGmail) {
 
 window.pageManagerGmail = new PageManagerGmail();
 
-console.log('✅ PageManagerGmail v24.0 loaded - Optimisé pour Gmail');
+console.log('✅ PageManagerGmail v25.0 loaded - Avec catégorie "other" visible');
