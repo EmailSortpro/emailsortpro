@@ -405,7 +405,20 @@ class EmailScanner {
         const fromHeader = getHeader('From');
         const fromParsed = this.parseEmailAddress(fromHeader);
         
-        return {
+        // IMPORTANT: Détecter les headers de désabonnement
+        const listUnsubscribe = getHeader('List-Unsubscribe');
+        const listUnsubscribePost = getHeader('List-Unsubscribe-Post');
+        const hasUnsubscribeHeader = !!(listUnsubscribe || listUnsubscribePost);
+        
+        // Ajouter les labels Gmail pour améliorer la détection
+        const labels = gmailMessage.labelIds || [];
+        const hasPromotionsLabel = labels.includes('CATEGORY_PROMOTIONS');
+        const hasUpdatesLabel = labels.includes('CATEGORY_UPDATES');
+        const hasForumsLabel = labels.includes('CATEGORY_FORUMS');
+        const hasSocialLabel = labels.includes('CATEGORY_SOCIAL');
+        
+        // Créer un email normalisé
+        const normalizedEmail = {
             id: gmailMessage.id,
             subject: getHeader('Subject') || 'Sans sujet',
             from: {
@@ -424,8 +437,23 @@ class EmailScanner {
             },
             hasAttachments: content.hasAttachments,
             importance: gmailMessage.labelIds?.includes('IMPORTANT') ? 'high' : 'normal',
-            isRead: !gmailMessage.labelIds?.includes('UNREAD')
+            isRead: !gmailMessage.labelIds?.includes('UNREAD'),
+            // Nouveaux champs pour améliorer la détection
+            hasUnsubscribeHeader: hasUnsubscribeHeader,
+            gmailLabels: labels,
+            isPromotional: hasPromotionsLabel || hasUpdatesLabel,
+            listHeaders: {
+                unsubscribe: listUnsubscribe,
+                unsubscribePost: listUnsubscribePost
+            }
         };
+        
+        // Si on a un header de désabonnement, ajouter une indication dans le contenu pour la catégorisation
+        if (hasUnsubscribeHeader) {
+            normalizedEmail._unsubscribeIndicator = '[HAS_UNSUBSCRIBE_HEADER]';
+        }
+        
+        return normalizedEmail;
     }
     
     extractGmailContent(payload) {
@@ -596,7 +624,7 @@ class EmailScanner {
 
     normalizeEmail(email) {
         // S'assurer que l'email a une structure cohérente
-        return {
+        const normalized = {
             id: email.id || email.messageId || `email_${Date.now()}_${Math.random()}`,
             subject: email.subject || 'Sans sujet',
             from: email.from || { emailAddress: { address: 'unknown@unknown.com' } },
@@ -609,6 +637,12 @@ class EmailScanner {
             importance: email.importance || 'normal',
             isRead: email.isRead !== false,
             provider: email.provider || this.detectProvider(),
+            // Préserver les indicateurs de newsletter/marketing
+            hasUnsubscribeHeader: email.hasUnsubscribeHeader || false,
+            gmailLabels: email.gmailLabels || [],
+            isPromotional: email.isPromotional || false,
+            listHeaders: email.listHeaders || {},
+            _unsubscribeIndicator: email._unsubscribeIndicator || '',
             // Champs de catégorisation (seront remplis plus tard)
             category: null,
             categoryScore: 0,
@@ -616,6 +650,8 @@ class EmailScanner {
             isPreselectedForTasks: false,
             aiAnalysis: null
         };
+        
+        return normalized;
     }
 
     // ================================================
@@ -634,6 +670,7 @@ class EmailScanner {
         const breakdown = {};
         let categorizedCount = 0;
         let preselectedCount = 0;
+        let newsletterCount = 0;
         const errors = [];
         
         for (let i = 0; i < this.emails.length; i++) {
@@ -650,8 +687,11 @@ class EmailScanner {
                     email.categoryScore = cached.score;
                     email.categoryConfidence = cached.confidence;
                 } else {
+                    // AMÉLIORATION: Pré-traiter l'email pour la détection newsletter
+                    const enhancedEmail = this.enhanceEmailForCategorization(email);
+                    
                     // Analyser l'email
-                    const analysis = window.categoryManager.analyzeEmail(email);
+                    const analysis = window.categoryManager.analyzeEmail(enhancedEmail);
                     
                     // IMPORTANT: S'assurer qu'on a toujours une catégorie
                     email.category = analysis.category || 'other';
@@ -678,10 +718,13 @@ class EmailScanner {
                 if (email.isPreselectedForTasks) {
                     preselectedCount++;
                 }
+                if (email.category === 'marketing_news') {
+                    newsletterCount++;
+                }
                 
-                // Log pour debug si catégorie importante
-                if (email.category === 'other' && email.categoryScore > 0) {
-                    console.log(`[EmailScanner] ⚠️ Email classé "other" avec score ${email.categoryScore}:`, email.subject);
+                // Log pour debug si newsletter détectée via header
+                if (email.hasUnsubscribeHeader && email.category !== 'marketing_news') {
+                    console.log(`[EmailScanner] ⚠️ Email avec header unsubscribe mais catégorie ${email.category}:`, email.subject);
                 }
                 
             } catch (error) {
@@ -703,6 +746,7 @@ class EmailScanner {
         // Afficher le résumé
         console.log('[EmailScanner] ✅ === CATÉGORISATION TERMINÉE ===');
         console.log('[EmailScanner] 📊 Distribution:', breakdown);
+        console.log('[EmailScanner] 📰 Newsletters détectées:', newsletterCount);
         console.log('[EmailScanner] ⭐ Total pré-sélectionnés:', preselectedCount);
         console.log('[EmailScanner] ⚠️ Erreurs:', errors.length);
         
@@ -724,6 +768,38 @@ class EmailScanner {
             preselectedForTasks: preselectedCount,
             errors
         };
+    }
+
+    enhanceEmailForCategorization(email) {
+        // Créer une copie de l'email pour ne pas modifier l'original
+        const enhanced = { ...email };
+        
+        // Si l'email a un header de désabonnement, ajouter des indicateurs forts
+        if (email.hasUnsubscribeHeader) {
+            // Ajouter des mots-clés au sujet et au corps pour forcer la détection
+            enhanced.subject = `[NEWSLETTER] ${email.subject || ''}`;
+            enhanced.bodyPreview = `[UNSUBSCRIBE_HEADER_DETECTED] ${email.bodyPreview || ''}`;
+            
+            // Enrichir le contenu du corps
+            if (enhanced.body && enhanced.body.content) {
+                enhanced.body.content = `[HAS_UNSUBSCRIBE_HEADER] [NEWSLETTER] ${enhanced.body.content}`;
+            }
+        }
+        
+        // Si l'email a des labels Gmail promotionnels
+        if (email.isPromotional || (email.gmailLabels && 
+            (email.gmailLabels.includes('CATEGORY_PROMOTIONS') || 
+             email.gmailLabels.includes('CATEGORY_UPDATES')))) {
+            enhanced.subject = `[PROMOTIONAL] ${enhanced.subject || ''}`;
+            enhanced.bodyPreview = `[GMAIL_PROMOTIONAL] ${enhanced.bodyPreview || ''}`;
+        }
+        
+        // Ajouter l'indicateur de désabonnement s'il existe
+        if (email._unsubscribeIndicator) {
+            enhanced.bodyPreview = `${email._unsubscribeIndicator} ${enhanced.bodyPreview || ''}`;
+        }
+        
+        return enhanced;
     }
 
     getCategorizationCacheKey(email) {
