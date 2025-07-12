@@ -3365,38 +3365,4 @@ window.forceCategorySync = function() {
     return { success: true, message: 'Synchronisation forcée effectuée' };
 };
 
-// Test spécifique pour l'email problématique
-window.testLeonGrosseEmail = function() {
-    console.group('🧪 TEST Email Léon Grosse');
-    
-    const result = window.categoryManager.testEmail(
-        "Groupe Léon Grosse : votre candidature",
-        "Bonjour, Nous vous remercions vivement pour l'intérêt que vous portez à notre Groupe. Nous avons attentivement étudié votre candidature, et nous sommes au regret de ne pas pouvoir y apporter une suite favorable. Service recrutement",
-        "eloise.hoffmann@leongrosse.teamtailor-mail.com",
-        "hr"
-    );
-    
-    // Analyser en détail pourquoi il est catégorisé
-    console.log('\n📊 Analyse détaillée:');
-    const content = {
-        text: "groupe léon grosse votre candidature nous vous remercions vivement intérêt notre groupe candidature regret suite favorable service recrutement teamtailor",
-        subject: "groupe léon grosse : votre candidature",
-        domain: "leongrosse.teamtailor-mail.com"
-    };
-    
-    // Tester chaque catégorie
-    ['hr', 'commercial', 'internal', 'other'].forEach(catId => {
-        const keywords = window.categoryManager.getCategoryKeywords(catId);
-        const score = window.categoryManager.calculateScore(content, keywords, catId);
-        console.log(`\n${catId}: ${score.total}pts`);
-        if (score.matches.length > 0) {
-            console.log('Matches:', score.matches);
-        }
-    });
-    
-    console.groupEnd();
-    return result;
-};
-
 console.log('✅ CategoryManager v21.0 loaded - Catégories densifiées et uniques');
-console.log('💡 Testez avec: testLeonGrosseEmail() pour vérifier la catégorisation HR');
