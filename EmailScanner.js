@@ -1,7 +1,7 @@
-// EmailScanner.js - Version 11.0 - Scanner d'emails corrigé
-// Catégorisation plus précise, gestion des emails "other"
+// EmailScanner.js - Version 12.0 - Catégorisation corrigée
+// Priorité à marketing_news, détection améliorée
 
-console.log('[EmailScanner] 🚀 Loading EmailScanner.js v11.0 - Catégorisation corrigée...');
+console.log('[EmailScanner] 🚀 Loading EmailScanner.js v12.0 - Catégorisation corrigée...');
 
 class EmailScanner {
     constructor() {
@@ -34,7 +34,7 @@ class EmailScanner {
             preselectedForTasks: 0
         };
         
-        console.log('[EmailScanner] ✅ Scanner v11.0 initialized - Catégorisation corrigée');
+        console.log('[EmailScanner] ✅ Scanner v12.0 initialized');
         this.initialize();
     }
 
@@ -118,7 +118,7 @@ class EmailScanner {
             return null;
         }
         
-        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v11.0 ===');
+        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v12.0 ===');
         console.log('[EmailScanner] 📊 Options:', options);
         
         try {
@@ -247,10 +247,8 @@ class EmailScanner {
         
         // Ajouter le filtre de date si spécifié
         if (options.days && options.days > 0 && options.days !== -1) {
-            // Pour MailService, on peut passer directement days
             mailOptions.days = options.days;
         } else if (options.days === -1) {
-            // -1 signifie tous les emails
             mailOptions.maxResults = 1000; // Limite raisonnable
         }
         
@@ -448,11 +446,6 @@ class EmailScanner {
             }
         };
         
-        // Si on a un header de désabonnement, ajouter une indication dans le contenu pour la catégorisation
-        if (hasUnsubscribeHeader) {
-            normalizedEmail._unsubscribeIndicator = '[HAS_UNSUBSCRIBE_HEADER]';
-        }
-        
         return normalizedEmail;
     }
     
@@ -642,7 +635,6 @@ class EmailScanner {
             gmailLabels: email.gmailLabels || [],
             isPromotional: email.isPromotional || false,
             listHeaders: email.listHeaders || {},
-            _unsubscribeIndicator: email._unsubscribeIndicator || '',
             // Champs de catégorisation (seront remplis plus tard)
             category: null,
             categoryScore: 0,
@@ -655,10 +647,10 @@ class EmailScanner {
     }
 
     // ================================================
-    // CATÉGORISATION AMÉLIORÉE
+    // CATÉGORISATION CORRIGÉE V12.0
     // ================================================
     async categorizeEmails(options) {
-        console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION ===');
+        console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION v12.0 ===');
         console.log('[EmailScanner] 📊 Total emails:', this.emails.length);
         console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
         
@@ -689,31 +681,45 @@ class EmailScanner {
                     email.categoryScore = cached.score;
                     email.categoryConfidence = cached.confidence;
                 } else {
-                    // AMÉLIORATION: Pré-traiter l'email pour la détection newsletter
-                    const enhancedEmail = this.enhanceEmailForCategorization(email);
+                    // NOUVELLE LOGIQUE : Vérifier d'abord marketing_news
+                    const emailContent = this.prepareEmailForCategorization(email);
                     
-                    // Analyser l'email
-                    const analysis = window.categoryManager.analyzeEmail(enhancedEmail);
-                    
-                    // IMPORTANT: S'assurer qu'on a toujours une catégorie
-                    email.category = analysis.category || 'other';
-                    email.categoryScore = analysis.score || 0;
-                    email.categoryConfidence = analysis.confidence || 0;
-                    
-                    // Collecter des échantillons pour debug
-                    if ((email.hasUnsubscribeHeader && email.category !== 'marketing_news') ||
-                        (email.category === 'other' && email.categoryScore > 20) ||
-                        (debugSamples.length < 5 && email.category === 'other')) {
+                    // 1. Vérifier explicitement marketing_news en priorité
+                    if (this.isMarketingNewsletter(emailContent)) {
+                        email.category = 'marketing_news';
+                        email.categoryScore = 200; // Score élevé pour priorité
+                        email.categoryConfidence = 0.95;
+                        
                         debugSamples.push({
                             subject: email.subject,
                             from: email.from?.emailAddress?.address,
-                            category: email.category,
-                            score: email.categoryScore,
-                            hasUnsubscribeHeader: email.hasUnsubscribeHeader,
-                            isPromotional: email.isPromotional,
-                            gmailLabels: email.gmailLabels,
-                            matchedPatterns: analysis.matchedPatterns || []
+                            category: 'marketing_news',
+                            reason: 'Détection prioritaire newsletter'
                         });
+                    } else {
+                        // 2. Analyser normalement avec CategoryManager
+                        const analysis = window.categoryManager.analyzeEmail(email);
+                        
+                        // 3. Double vérification pour éviter les faux positifs
+                        if (analysis.category === 'hr' && this.containsUnsubscribePattern(emailContent)) {
+                            // C'est probablement une newsletter d'emploi
+                            email.category = 'marketing_news';
+                            email.categoryScore = 180;
+                            email.categoryConfidence = 0.90;
+                            
+                            debugSamples.push({
+                                subject: email.subject,
+                                from: email.from?.emailAddress?.address,
+                                category: 'marketing_news',
+                                reason: 'Newsletter emploi (contient désabonnement)',
+                                originalCategory: analysis.category
+                            });
+                        } else {
+                            // Utiliser l'analyse normale
+                            email.category = analysis.category || 'other';
+                            email.categoryScore = analysis.score || 0;
+                            email.categoryConfidence = analysis.confidence || 0;
+                        }
                     }
                     
                     // Mettre en cache
@@ -808,80 +814,74 @@ class EmailScanner {
         };
     }
 
-    enhanceEmailForCategorization(email) {
-        // Créer une copie de l'email pour ne pas modifier l'original
-        const enhanced = { ...email };
+    // NOUVELLE MÉTHODE : Préparer l'email pour la catégorisation
+    prepareEmailForCategorization(email) {
+        let content = '';
         
-        // AMÉLIORATION : Créer un contenu combiné pour l'analyse
-        let combinedContent = '';
-        
-        // 1. Headers de désabonnement Gmail
-        if (email.hasUnsubscribeHeader) {
-            combinedContent += '[HAS_UNSUBSCRIBE_HEADER] [NEWSLETTER] [UNSUBSCRIBE] ';
-            enhanced.subject = `[NEWSLETTER] ${email.subject || ''}`;
+        // Sujet
+        if (email.subject) {
+            content += email.subject.toLowerCase() + ' ';
         }
         
-        // 2. Labels Gmail promotionnels
-        if (email.isPromotional || (email.gmailLabels && 
-            (email.gmailLabels.includes('CATEGORY_PROMOTIONS') || 
-             email.gmailLabels.includes('CATEGORY_UPDATES') || 
-             email.gmailLabels.includes('CATEGORY_SOCIAL') ||
-             email.gmailLabels.includes('CATEGORY_FORUMS')))) {
-            combinedContent += '[PROMOTIONAL] [MARKETING] ';
-            enhanced.subject = `[PROMOTIONAL] ${enhanced.subject || ''}`;
+        // Corps
+        if (email.bodyPreview) {
+            content += email.bodyPreview.toLowerCase() + ' ';
         }
         
-        // 3. Analyser le domaine de l'expéditeur
-        const senderDomain = email.from?.emailAddress?.address?.split('@')[1]?.toLowerCase() || '';
-        const marketingDomains = ['mailchimp', 'sendinblue', 'mailjet', 'constantcontact', 'campaign', 
-                                  'newsletter', 'notifications', 'noreply', 'no-reply', 'donotreply'];
-        
-        if (marketingDomains.some(domain => senderDomain.includes(domain))) {
-            combinedContent += `[MARKETING_DOMAIN:${senderDomain}] `;
+        if (email.body?.content) {
+            const cleanBody = email.body.content
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/&[^;]+;/g, ' ')
+                .toLowerCase();
+            content += cleanBody + ' ';
         }
         
-        // 4. Vérifier les patterns dans l'adresse expéditeur
-        const senderEmail = email.from?.emailAddress?.address?.toLowerCase() || '';
-        if (senderEmail.includes('noreply') || senderEmail.includes('no-reply') || 
-            senderEmail.includes('newsletter') || senderEmail.includes('notification')) {
-            combinedContent += '[AUTOMATED_SENDER] ';
+        // Adresse expéditeur
+        if (email.from?.emailAddress?.address) {
+            content += email.from.emailAddress.address.toLowerCase() + ' ';
         }
         
-        // 5. Enrichir le contenu pour la catégorisation
-        enhanced.bodyPreview = combinedContent + (email.bodyPreview || '');
-        
-        if (enhanced.body && enhanced.body.content) {
-            // Ajouter les indicateurs au début du contenu
-            enhanced.body.content = combinedContent + enhanced.body.content;
-        }
-        
-        // 6. Analyser le sujet pour des patterns typiques
-        const subjectLower = (email.subject || '').toLowerCase();
+        return content;
+    }
+
+    // NOUVELLE MÉTHODE : Détection prioritaire marketing/newsletter
+    isMarketingNewsletter(content) {
+        // Patterns très spécifiques pour les newsletters
         const newsletterPatterns = [
-            'newsletter', 'news', 'update', 'bulletin', 'digest',
-            'weekly', 'monthly', 'daily', 'hebdo', 'mensuel',
-            'promo', 'offer', 'deal', 'sale', 'solde',
-            'new in', 'nouveauté', 'découvrez', 'discover',
-            '% off', '% de réduction', 'limited time', 'offre limitée'
+            'se désinscrire',
+            'se desinscrire',
+            'unsubscribe',
+            'opt out',
+            'opt-out',
+            'gérer vos préférences',
+            'gérer les paramètres',
+            'email preferences',
+            'stop receiving',
+            'ne plus recevoir',
+            'désabonner',
+            'this email was sent to',
+            'you are receiving this',
+            'mailing list',
+            'newsletter',
+            'notification settings',
+            'manage notifications'
         ];
         
-        if (newsletterPatterns.some(pattern => subjectLower.includes(pattern))) {
-            enhanced.subject = `[NEWSLETTER_PATTERN] ${enhanced.subject}`;
-        }
+        // Vérifier si au moins un pattern est présent
+        return newsletterPatterns.some(pattern => content.includes(pattern));
+    }
+
+    // NOUVELLE MÉTHODE : Vérifier les patterns de désabonnement
+    containsUnsubscribePattern(content) {
+        const unsubscribePatterns = [
+            'désinscrire',
+            'unsubscribe',
+            'désabonner',
+            'gérer les paramètres',
+            'politique de confidentialité'
+        ];
         
-        // 7. Log pour debug
-        if (email.hasUnsubscribeHeader || email.isPromotional) {
-            console.log(`[EmailScanner] 📧 Email enrichi pour catégorisation:`, {
-                subject: email.subject,
-                from: email.from?.emailAddress?.address,
-                hasUnsubscribeHeader: email.hasUnsubscribeHeader,
-                isPromotional: email.isPromotional,
-                gmailLabels: email.gmailLabels,
-                enrichedSubject: enhanced.subject
-            });
-        }
-        
-        return enhanced;
+        return unsubscribePatterns.some(pattern => content.includes(pattern));
     }
 
     getCategorizationCacheKey(email) {
@@ -1231,101 +1231,57 @@ class EmailScanner {
             isPromotional: email.isPromotional
         });
         
-        // Enrichir l'email
-        const enhanced = this.enhanceEmailForCategorization(email);
-        console.log('Email enrichi:', {
-            subject: enhanced.subject,
-            bodyPreview: enhanced.bodyPreview?.substring(0, 200) + '...'
-        });
+        // Préparer l'email
+        const content = this.prepareEmailForCategorization(email);
+        console.log('Contenu préparé (100 premiers caractères):', content.substring(0, 100) + '...');
+        
+        // Test newsletter
+        const isNewsletter = this.isMarketingNewsletter(content);
+        console.log('Est une newsletter?', isNewsletter);
+        
+        // Test désabonnement
+        const hasUnsubscribe = this.containsUnsubscribePattern(content);
+        console.log('Contient pattern désabonnement?', hasUnsubscribe);
         
         // Analyser avec CategoryManager
         if (window.categoryManager?.analyzeEmail) {
-            const analysis = window.categoryManager.analyzeEmail(enhanced);
-            console.log('Résultat analyse:', {
+            const analysis = window.categoryManager.analyzeEmail(email);
+            console.log('Résultat analyse CategoryManager:', {
                 category: analysis.category,
                 score: analysis.score,
                 confidence: analysis.confidence,
                 matchedPatterns: analysis.matchedPatterns
             });
-            
-            // Tester chaque catégorie individuellement
-            if (window.categoryManager.debugMode) {
-                window.categoryManager.setDebugMode(true);
-                console.log('Analyse détaillée par catégorie:');
-                window.categoryManager.analyzeEmail(enhanced);
-                window.categoryManager.setDebugMode(false);
-            }
         }
         
         console.groupEnd();
     }
     
-    // Méthode pour débugger la catégorisation des newsletters
-    debugNewsletterDetection() {
-        console.group('[EmailScanner] 📰 DEBUG NEWSLETTERS');
+    // Méthode pour débugger les emails mal catégorisés
+    debugMiscategorized() {
+        console.group('[EmailScanner] 🔍 DEBUG EMAILS MAL CATÉGORISÉS');
         
-        const newsletters = this.emails.filter(email => 
-            email.hasUnsubscribeHeader || 
-            email.isPromotional ||
-            (email.gmailLabels && email.gmailLabels.some(label => 
-                label.includes('PROMOTIONS') || label.includes('UPDATES')
-            ))
-        );
+        // Chercher les emails HR qui contiennent "désinscrire"
+        const suspectEmails = this.emails.filter(email => {
+            const content = this.prepareEmailForCategorization(email);
+            return email.category !== 'marketing_news' && this.containsUnsubscribePattern(content);
+        });
         
-        console.log(`Emails avec indicateurs newsletter: ${newsletters.length}`);
+        console.log(`Emails suspects (contiennent désabonnement mais pas en marketing_news): ${suspectEmails.length}`);
         
-        // Analyser les 5 premiers
-        newsletters.slice(0, 5).forEach((email, index) => {
-            console.log(`\n📧 Newsletter ${index + 1}:`, {
+        suspectEmails.slice(0, 5).forEach((email, index) => {
+            console.log(`\n📧 Email suspect ${index + 1}:`, {
                 subject: email.subject,
                 from: email.from?.emailAddress?.address,
                 category: email.category,
                 score: email.categoryScore,
-                hasUnsubscribeHeader: email.hasUnsubscribeHeader,
-                isPromotional: email.isPromotional,
-                gmailLabels: email.gmailLabels
+                bodyPreview: email.bodyPreview?.substring(0, 100) + '...'
             });
         });
-        
-        // Stats par catégorie
-        const byCategory = {};
-        newsletters.forEach(email => {
-            byCategory[email.category] = (byCategory[email.category] || 0) + 1;
-        });
-        
-        console.log('\n📊 Distribution des newsletters par catégorie:', byCategory);
         
         console.groupEnd();
     }
     
-    // Méthode pour recatégoriser un email spécifique
-    recategorizeEmail(emailId) {
-        const email = this.emails.find(e => e.id === emailId);
-        if (!email) {
-            console.log('[EmailScanner] Email non trouvé:', emailId);
-            return;
-        }
-        
-        console.log('[EmailScanner] Recatégorisation de:', email.subject);
-        
-        // Forcer la recatégorisation
-        const enhanced = this.enhanceEmailForCategorization(email);
-        const analysis = window.categoryManager.analyzeEmail(enhanced);
-        
-        email.category = analysis.category || 'other';
-        email.categoryScore = analysis.score || 0;
-        email.categoryConfidence = analysis.confidence || 0;
-        email.isPreselectedForTasks = this.taskPreselectedCategories.includes(email.category);
-        
-        console.log('[EmailScanner] Nouvelle catégorie:', {
-            category: email.category,
-            score: email.categoryScore,
-            confidence: email.categoryConfidence,
-            isPreselectedForTasks: email.isPreselectedForTasks
-        });
-        
-        return email;
-    }
     getEmails() {
         return [...this.emails];
     }
@@ -1377,4 +1333,4 @@ if (window.emailScanner) {
 
 window.emailScanner = new EmailScanner();
 
-console.log('✅ EmailScanner v11.0 loaded - Catégorisation corrigée');
+console.log('✅ EmailScanner v12.0 loaded - Catégorisation corrigée avec priorité marketing_news');
