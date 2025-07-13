@@ -209,7 +209,7 @@ class CategoryManager {
     // ================================================
     initializeWeightedDetection() {
         this.weightedKeywords = {
-            // Marketing & Newsletters - Mots-clés étendus v20.0
+            // Marketing & Newsletters - Mots-clés renforcés pour Twitch
             marketing_news: {
                 absolute: [
                     'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
@@ -217,6 +217,7 @@ class CategoryManager {
                     'gérer vos préférences', 'gérer la réception', 'gérer mes préférences',
                     'email preferences', 'préférences email', 'preferences email',
                     'ne plus recevoir', 'stop emails', 'arreter les emails',
+                    'stop receiving emails', 'to stop receiving emails',
                     'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
                     'paramétrez vos choix', 'parametrez vos choix',
                     'newsletter', 'mailing list', 'mailing',
@@ -227,7 +228,9 @@ class CategoryManager {
                     'disable these notifications', 'turn off notifications',
                     'manage notifications', 'notification settings',
                     'email settings', 'communication preferences',
-                    'update your preferences', 'modify your subscription'
+                    'update your preferences', 'modify your subscription',
+                    'watch now', 'shop now', 'buy now', 'acheter maintenant',
+                    'is live', 'went live', 'streaming now'
                 ],
                 strong: [
                     'promo', 'deal', 'offer', 'sale', 'discount', 'réduction',
@@ -236,18 +239,20 @@ class CategoryManager {
                     'boutique', 'shopping', 'acheter', 'commander',
                     'offre', 'promotion', 'remise', 'solde',
                     'notifications', 'alerts', 'updates', 'subscribe',
-                    'découvrez', 'discover', 'shop now', 'nouveauté'
+                    'découvrez', 'discover', 'shop now', 'nouveauté',
+                    'streaming', 'live', 'broadcast', 'diffusion'
                 ],
                 weak: [
                     'update', 'discover', 'new', 'nouveauté', 'découvrir',
                     'news', 'actualité', 'information', 'cette semaine', 'this week'
                 ],
                 exclusions: [
-                    'facture', 'invoice', 'payment', 'urgent', 'action requise'
+                    'facture', 'invoice', 'payment', 'urgent', 'action requise',
+                    'password reset', 'security alert', 'meeting invite'
                 ]
             },
 
-            // Sécurité - Mots-clés complets
+            // Sécurité - Mots-clés renforcés pour GitHub
             security: {
                 absolute: [
                     'alerte de connexion', 'alert connexion', 'nouvelle connexion',
@@ -258,18 +263,25 @@ class CategoryManager {
                     'two-factor', '2fa', 'authentification', 'authentication',
                     'authentification à deux facteurs', 'two-factor authentication',
                     'password reset', 'réinitialisation mot de passe',
-                    'security alert', 'alerte de sécurité'
+                    'your password was reset', 'mot de passe réinitialisé',
+                    'security alert', 'alerte de sécurité',
+                    'secure your account', 'sécuriser votre compte',
+                    'security events', 'événements de sécurité',
+                    'unauthorized access', 'accès non autorisé',
+                    'recover access', 'récupérer l\'accès'
                 ],
                 strong: [
                     'sécurité', 'security', 'vérification', 'verify',
                     'authentification', 'password', 'mot de passe',
-                    'compte', 'account', 'accès', 'access', 'protection', 'protect'
+                    'compte', 'account', 'accès', 'access', 'protection', 'protect',
+                    'secure', 'sécuriser', 'reset', 'réinitialiser'
                 ],
                 weak: [
                     'connexion', 'login', 'sign in', 'utilisateur', 'user'
                 ],
                 exclusions: [
-                    'newsletter', 'unsubscribe', 'promotion', 'marketing'
+                    'newsletter', 'unsubscribe', 'promotion', 'marketing',
+                    'meeting', 'invoice', 'project update'
                 ]
             },
 
@@ -333,35 +345,40 @@ class CategoryManager {
                 ]
             },
 
-            // Réunions et Rendez-vous - Mots-clés enrichis
+            // Réunions et Rendez-vous - Mots-clés enrichis pour Trustpair
             meetings: {
                 absolute: [
                     'demande de réunion', 'meeting request', 'réunion',
-                    'invitation à une réunion', 'meeting invitation',
+                    'invitation à une réunion', 'meeting invitation', 'meeting invite',
                     'nouvelle réunion planifiée', 'schedule a meeting',
                     'planifier une réunion', 'invitation réunion',
                     'invitation teams', 'teams meeting', 'zoom meeting',
                     'google meet', 'rendez-vous', 'appointment', 'rdv',
                     'confirmer votre présence', 'confirm attendance',
-                    'réunion annulée', 'meeting cancelled'
+                    'réunion annulée', 'meeting cancelled',
+                    'first call', 'premier appel', 'entretien téléphonique',
+                    'requested to reschedule', 'demande de reprogrammation',
+                    'reschedule meeting', 'reprogrammer la réunion'
                 ],
                 strong: [
                     'meeting', 'réunion', 'schedule', 'planifier',
                     'calendar', 'calendrier', 'appointment', 'agenda',
                     'conférence', 'conference', 'call', 'visioconférence',
-                    'video call', 'planning'
+                    'video call', 'planning', 'reschedule', 'reprogrammer',
+                    'disponibilité', 'availability', 'slot', 'créneau'
                 ],
                 weak: [
                     'présentation', 'agenda', 'disponible', 'available',
-                    'date', 'heure', 'time', 'durée', 'duration'
+                    'date', 'heure', 'time', 'durée', 'duration',
+                    'week', 'semaine', 'thursday', 'jeudi'
                 ],
                 exclusions: [
                     'newsletter', 'promotion', 'marketing', 'papa', 
-                    'maman', 'famille', 'facture'
+                    'maman', 'famille', 'facture', 'password', 'security'
                 ]
             },
 
-            // Ressources Humaines - Mots-clés complets
+            // Ressources Humaines - Mots-clés renforcés pour recrutement
             hr: {
                 absolute: [
                     'votre candidature', 'your application', 'job application',
@@ -372,26 +389,33 @@ class CategoryManager {
                     'service recrutement', 'recruitment team', 'équipe rh',
                     'contrat de travail', 'onboarding',
                     'entretien annuel', 'performance review',
-                    'ressources humaines', 'human resources'
+                    'ressources humaines', 'human resources',
+                    'recruiting powered by', 'recrutement via',
+                    'customer success manager', 'responsable succès client',
+                    'first call', 'premier entretien', 'entretien initial',
+                    'other processes', 'autres processus', 'candidatures'
                 ],
                 strong: [
                     'rh', 'hr', 'salaire', 'salary', 'candidature',
                     'ressources humaines', 'human resources', 'recrutement',
                     'contrat', 'paie', 'congés', 'vacation', 'recruitment',
-                    'emploi', 'job', 'recruitment', 'formation', 'entretien', 'interview'
+                    'emploi', 'job', 'recruitment', 'formation', 'entretien', 'interview',
+                    'poste', 'position', 'process', 'processus', 'candidate', 'candidat'
                 ],
                 weak: [
-                    'employee', 'staff', 'personnel', 'équipe', 'poste'
+                    'employee', 'staff', 'personnel', 'équipe', 'poste',
+                    'team', 'manager', 'responsable'
                 ],
                 exclusions: [
                     'newsletter', 'marketing', 'famille', 'family', 
                     'personnel', 'personal', 'papa', 'maman',
                     'présentation', 'document', 'correction',
-                    'bises', 'bisous', 'familial', 'client', 'vente'
+                    'bises', 'bisous', 'familial', 'client', 'vente',
+                    'password', 'security', 'invoice'
                 ]
             },
 
-            // Gestion de Projet - Mots-clés étendus
+            // Gestion de Projet - Mots-clés sans GitHub password
             project: {
                 absolute: [
                     'projet xx', 'project update', 'milestone',
@@ -401,13 +425,16 @@ class CategoryManager {
                     'kickoff', 'retrospective', 'roadmap',
                     'document corrigé', 'version corrigée', 'corrections apportées',
                     'ticket jira', 'jira ticket', 'github issue',
-                    'sprint planning', 'release note', 'déploiement'
+                    'sprint planning', 'release note', 'déploiement',
+                    'pull request', 'merge request', 'code review',
+                    'feature branch', 'development update'
                 ],
                 strong: [
                     'projet', 'project', 'milestone', 'sprint',
                     'agile', 'scrum', 'kanban', 'jira',
                     'development', 'développement', 'deliverable',
-                    'document', 'présentation', 'correction', 'release'
+                    'document', 'présentation', 'correction', 'release',
+                    'deploy', 'deployment', 'feature', 'bug fix'
                 ],
                 weak: [
                     'development', 'phase', 'étape', 'planning', 
@@ -415,7 +442,8 @@ class CategoryManager {
                 ],
                 exclusions: [
                     'newsletter', 'marketing', 'promotion', 'papa', 
-                    'maman', 'famille', 'bises', 'facture', 'candidature', 'recrutement'
+                    'maman', 'famille', 'bises', 'facture', 'candidature', 'recrutement',
+                    'password reset', 'security', 'account security', 'unauthorized access'
                 ]
             },
 
@@ -532,24 +560,27 @@ class CategoryManager {
                 ]
             },
 
-            // Notifications Système - Mots-clés complets
+            // Notifications Système - Mots-clés corrigés (sans domaines)
             notifications: {
                 absolute: [
-                    'do not reply', 'ne pas répondre', 'noreply@',
-                    'message automatique', 'automated message',
-                    'notification automatique', 'system notification',
-                    'ceci est un message automatique', 'automated message',
-                    'no-reply@', 'donotreply@', 'notification système'
+                    'ceci est un message automatique', 'this is an automated message',
+                    'notification système', 'system notification',
+                    'alerte système', 'system alert',
+                    'message généré automatiquement', 'automatically generated message',
+                    'notification automatique du système', 'automated system notification'
                 ],
                 strong: [
-                    'automated', 'automatic', 'system', 'automatique',
-                    'notification', 'alert', 'système'
+                    'automated message', 'message automatique',
+                    'système', 'system', 'automatisé', 'automated',
+                    'notification automatique', 'automatic notification'
                 ],
                 weak: [
                     'notification', 'alert', 'info', 'confirmé', 'update', 'status'
                 ],
                 exclusions: [
-                    'newsletter', 'marketing', 'urgent', 'action required', 'important'
+                    'newsletter', 'marketing', 'urgent', 'action required', 'important',
+                    'stop receiving', 'unsubscribe', 'click here', 'watch now',
+                    'password', 'security', 'meeting', 'invoice', 'facture'
                 ]
             },
 
@@ -763,10 +794,8 @@ class CategoryManager {
         // Bonus de domaine pour certaines catégories
         const domainBonuses = {
             hr: ['teamtailor', 'workday', 'welcometothejungle', 'indeed'],
-            project: ['github', 'gitlab', 'jira', 'asana', 'trello'],
             finance: ['paypal', 'stripe', 'invoice', 'billing'],
-            marketing_news: ['mailchimp', 'sendinblue', 'campaign', 'newsletter'],
-            notifications: ['noreply', 'no-reply', 'donotreply', 'notification']
+            notifications: ['system', 'automated', 'bot']
         };
         
         if (domainBonuses[categoryId]) {
