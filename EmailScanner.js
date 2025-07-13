@@ -661,15 +661,10 @@ class EmailScanner {
             return { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
         }
 
-        // 4. PRIORITÉ ABSOLUE: Toujours vérifier marketing_news en premier
-        console.log(`[EmailScanner] Analyse email: ${email.subject?.substring(0, 50)}...`);
-        
+        // 4. TOUJOURS vérifier marketing_news EN PREMIER
         const marketingAnalysis = this.analyzeForCategory(content, 'marketing_news');
-        console.log(`[EmailScanner] Score marketing_news: ${marketingAnalysis.score}, hasAbsolute: ${marketingAnalysis.hasAbsolute}`);
-        
-        // Si on trouve des mots-clés de désabonnement, c'est forcément du marketing
-        if (marketingAnalysis.hasAbsolute || marketingAnalysis.score >= 50) {
-            console.log(`[EmailScanner] ✅ Catégorisé comme marketing_news (score: ${marketingAnalysis.score})`);
+        if (marketingAnalysis.score > 0) {
+            // Si on trouve quoi que ce soit lié au marketing/newsletter, on catégorise directement
             return {
                 category: 'marketing_news',
                 score: marketingAnalysis.score,
@@ -679,62 +674,43 @@ class EmailScanner {
             };
         }
 
-        // 5. Analyser toutes les autres catégories
+        // 5. Analyser TOUTES les autres catégories SANS PRIORITÉ
         const allCategories = window.categoryManager.getActiveCategories();
-        let bestResult = null;
-        let highestScore = 0;
+        let bestCategory = null;
+        let bestScore = 0;
+        let bestAnalysis = null;
 
         for (const categoryId of allCategories) {
             if (categoryId === 'marketing_news') continue; // Déjà vérifié
             
             const analysis = this.analyzeForCategory(content, categoryId);
             
-            if (analysis.score > 0) {
-                console.log(`[EmailScanner] Score ${categoryId}: ${analysis.score}, hasAbsolute: ${analysis.hasAbsolute}`);
-            }
-            
-            // Prioriser les mots-clés absolus
-            if (analysis.hasAbsolute && (!bestResult || !bestResult.hasAbsolute || analysis.score > bestResult.score)) {
-                bestResult = {
-                    category: categoryId,
-                    score: analysis.score,
-                    confidence: this.calculateConfidence(analysis),
-                    matchedPatterns: analysis.matches,
-                    hasAbsolute: analysis.hasAbsolute
-                };
-                highestScore = analysis.score;
-            }
-            // Si pas de mot-clé absolu, prendre le meilleur score
-            else if (!bestResult?.hasAbsolute && analysis.score > highestScore) {
-                bestResult = {
-                    category: categoryId,
-                    score: analysis.score,
-                    confidence: this.calculateConfidence(analysis),
-                    matchedPatterns: analysis.matches,
-                    hasAbsolute: analysis.hasAbsolute
-                };
-                highestScore = analysis.score;
+            // Simple : on prend celle avec le meilleur score
+            if (analysis.score > bestScore) {
+                bestCategory = categoryId;
+                bestScore = analysis.score;
+                bestAnalysis = analysis;
             }
         }
 
-        // 6. Seuil minimum pour éviter les faux positifs
-        const MIN_SCORE_THRESHOLD = 30;
-        const MIN_CONFIDENCE_THRESHOLD = 0.4;
-
-        if (bestResult && bestResult.score >= MIN_SCORE_THRESHOLD && bestResult.confidence >= MIN_CONFIDENCE_THRESHOLD) {
-            console.log(`[EmailScanner] ✅ Catégorisé comme ${bestResult.category} (score: ${bestResult.score})`);
-            return bestResult;
+        // 6. Si on a trouvé une catégorie avec un score minimum
+        if (bestCategory && bestScore >= 30) {
+            return {
+                category: bestCategory,
+                score: bestScore,
+                confidence: this.calculateConfidence(bestAnalysis),
+                matchedPatterns: bestAnalysis.matches,
+                hasAbsolute: bestAnalysis.hasAbsolute
+            };
         }
 
-        // 7. Si aucune catégorie ne correspond, retourner "other"
-        console.log(`[EmailScanner] ❌ Aucune catégorie trouvée, classé comme "other"`);
+        // 7. Sinon, c'est "other"
         return {
             category: 'other',
             score: 0,
             confidence: 0,
             matchedPatterns: [],
-            hasAbsolute: false,
-            reason: 'no_category_matched'
+            hasAbsolute: false
         };
     }
 
@@ -762,19 +738,13 @@ class EmailScanner {
             }
         }
 
-        // Test des mots-clés absolus (priorité maximale)
+        // Test des mots-clés absolus
         if (keywords.absolute && keywords.absolute.length > 0) {
             for (const keyword of keywords.absolute) {
                 if (this.findInText(text, keyword)) {
                     totalScore += 100;
                     hasAbsolute = true;
                     matches.push({ keyword, type: 'absolute', score: 100 });
-                    
-                    // Bonus si dans le sujet
-                    if (content.subject && this.findInText(content.subject, keyword)) {
-                        totalScore += 50;
-                        matches.push({ keyword: keyword + ' (sujet)', type: 'bonus', score: 50 });
-                    }
                 }
             }
         }
@@ -785,12 +755,6 @@ class EmailScanner {
                 if (this.findInText(text, keyword)) {
                     totalScore += 40;
                     matches.push({ keyword, type: 'strong', score: 40 });
-                    
-                    // Bonus si dans le sujet
-                    if (content.subject && this.findInText(content.subject, keyword)) {
-                        totalScore += 20;
-                        matches.push({ keyword: keyword + ' (sujet)', type: 'bonus', score: 20 });
-                    }
                 }
             }
         }
