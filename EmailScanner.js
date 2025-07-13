@@ -930,6 +930,82 @@ class EmailScanner {
         return normalizedText.includes(normalizedKeyword);
     }
 
+    isUserInCC(email) {
+        if (!email.ccRecipients || !Array.isArray(email.ccRecipients) || email.ccRecipients.length === 0) {
+            return false;
+        }
+        
+        const currentUserEmail = this.getCurrentUserEmail();
+        if (!currentUserEmail) {
+            return false;
+        }
+        
+        // Vérifier si l'utilisateur est dans la liste CC
+        return email.ccRecipients.some(recipient => {
+            const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
+            return recipientEmail === currentUserEmail.toLowerCase();
+        });
+    }
+
+    isUserMainRecipient(email) {
+        if (!email.toRecipients || !Array.isArray(email.toRecipients)) {
+            return false;
+        }
+        
+        const currentUserEmail = this.getCurrentUserEmail();
+        if (!currentUserEmail) {
+            return email.toRecipients.length > 0;
+        }
+        
+        // Vérifier si l'utilisateur est dans la liste TO
+        return email.toRecipients.some(recipient => {
+            const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
+            return recipientEmail === currentUserEmail.toLowerCase();
+        });
+    }
+
+    getCurrentUserEmail() {
+        try {
+            // Essayer plusieurs sources pour Gmail
+            
+            // 1. Depuis les infos utilisateur stockées
+            const userInfo = localStorage.getItem('currentUserInfo');
+            if (userInfo) {
+                const parsed = JSON.parse(userInfo);
+                return parsed.email || parsed.userPrincipalName || parsed.mail;
+            }
+            
+            // 2. Depuis Google Auth
+            if (window.googleAuthService?.getCurrentUser) {
+                const user = window.googleAuthService.getCurrentUser();
+                if (user?.email) return user.email;
+            }
+            
+            // 3. Depuis le token Google
+            const googleToken = localStorage.getItem('googleAuthToken');
+            if (googleToken) {
+                try {
+                    const tokenData = JSON.parse(googleToken);
+                    if (tokenData.email) return tokenData.email;
+                } catch (e) {}
+            }
+            
+            // 4. Depuis MSAL (si utilisé pour Gmail aussi)
+            const msalAccounts = JSON.parse(localStorage.getItem('msal.account.keys') || '[]');
+            if (msalAccounts.length > 0) {
+                const firstAccount = localStorage.getItem(msalAccounts[0]);
+                if (firstAccount) {
+                    const account = JSON.parse(firstAccount);
+                    return account.username || account.preferred_username;
+                }
+            }
+            
+        } catch (e) {
+            console.warn('[EmailScanner] Impossible de récupérer l\'email utilisateur:', e);
+        }
+        return null;
+    }
+
     calculateConfidence(analysis) {
         if (analysis.hasAbsolute) return 0.95;
         if (analysis.score >= 200) return 0.90;
