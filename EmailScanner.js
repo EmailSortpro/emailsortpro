@@ -1,4 +1,4 @@
-// EmailScanner.js - Version 10.0 - Intégration complète avec MailService
+// EmailScanner.js - Version 11.0 - Catégorisation corrigée avec CategoryManager
 
 class EmailScanner {
     constructor() {
@@ -25,7 +25,7 @@ class EmailScanner {
             preselectedCount: 0
         };
         
-        console.log('[EmailScanner] ✅ Version 10.0 - Synchronisation MailService');
+        console.log('[EmailScanner] ✅ Version 11.0 - Catégorisation corrigée');
         this.initializeWithSync();
     }
 
@@ -332,7 +332,7 @@ class EmailScanner {
     // MÉTHODE SCAN PRINCIPALE AVEC MAILSERVICE
     // ================================================
     async scan(options = {}) {
-        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v10.0 ===');
+        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v11.0 ===');
         
         // Synchronisation pré-scan
         if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
@@ -524,7 +524,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // CATÉGORISATION DES EMAILS
+    // CATÉGORISATION DES EMAILS - MÉTHODE CORRIGÉE
     // ================================================
     async categorizeEmails(overridePreselectedCategories = null) {
         const total = this.emails.length;
@@ -551,7 +551,7 @@ class EmailScanner {
             
             for (const email of batch) {
                 try {
-                    // Analyser l'email
+                    // IMPORTANT: Utiliser CategoryManager directement pour l'analyse
                     const analysis = window.categoryManager.analyzeEmail(email);
                     
                     // Appliquer les résultats
@@ -579,6 +579,17 @@ class EmailScanner {
                     this.categorizedEmails[finalCategory].push(email);
                     
                     categoryStats[finalCategory] = (categoryStats[finalCategory] || 0) + 1;
+
+                    // Log détaillé pour debug si nécessaire
+                    if (this.debugMode && analysis.category !== 'other') {
+                        console.log(`[EmailScanner] 📧 Email catégorisé:`, {
+                            subject: email.subject?.substring(0, 50),
+                            category: analysis.category,
+                            score: analysis.score,
+                            confidence: analysis.confidence,
+                            patterns: analysis.matchedPatterns?.length || 0
+                        });
+                    }
 
                 } catch (error) {
                     console.error('[EmailScanner] ❌ Erreur catégorisation:', error);
@@ -1129,7 +1140,7 @@ class EmailScanner {
             scanMetrics: this.scanMetrics,
             startScanSynced: this.startScanSynced,
             changeListener: !!this.changeListener,
-            version: '10.0'
+            version: '11.0'
         };
     }
 
@@ -1205,6 +1216,14 @@ class EmailScanner {
         this.startScanSynced = false;
         console.log('[EmailScanner] ❌ Instance détruite');
     }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Activer le mode debug
+    // ================================================
+    setDebugMode(enabled) {
+        this.debugMode = enabled;
+        console.log(`[EmailScanner] Mode debug ${enabled ? 'activé' : 'désactivé'}`);
+    }
 }
 
 // ================================================
@@ -1215,14 +1234,14 @@ if (window.emailScanner) {
     window.emailScanner.destroy?.();
 }
 
-console.log('[EmailScanner] 🚀 Création nouvelle instance v10.0...');
+console.log('[EmailScanner] 🚀 Création nouvelle instance v11.0...');
 window.emailScanner = new EmailScanner();
 
 // ================================================
 // FONCTIONS UTILITAIRES GLOBALES
 // ================================================
 window.testEmailScanner = function() {
-    console.group('🧪 TEST EmailScanner v10.0');
+    console.group('🧪 TEST EmailScanner v11.0');
     
     const testEmails = [
         {
@@ -1235,6 +1254,18 @@ window.testEmailScanner = function() {
             subject: "Action requise: Confirmer votre commande urgent",
             from: { emailAddress: { address: "orders@shop.com", name: "Shop Orders" } },
             bodyPreview: "Veuillez compléter votre commande dans les plus brefs délais",
+            receivedDateTime: new Date().toISOString()
+        },
+        {
+            subject: "RMCsport is live: 🥊🔴 MMA GRATUIT JUSQU'A 21h",
+            from: { emailAddress: { address: "no-reply@twitch.tv", name: "Twitch" } },
+            bodyPreview: "Hey, vivlabinouze! RMCsport is live! Watch Now",
+            receivedDateTime: new Date().toISOString()
+        },
+        {
+            subject: "Groupe Léon Grosse : votre candidature",
+            from: { emailAddress: { address: "eloise.hoffmann@leongrosse.teamtailor-mail.com", name: "Eloïse Hoffmann, Léon Grosse" } },
+            bodyPreview: "Nous vous remercions vivement pour l'intérêt que vous portez à notre Groupe",
             receivedDateTime: new Date().toISOString()
         }
     ];
@@ -1251,7 +1282,7 @@ window.testEmailScanner = function() {
 };
 
 window.debugEmailCategories = function() {
-    console.group('📊 DEBUG Catégories v10.0');
+    console.group('📊 DEBUG Catégories v11.0');
     console.log('Settings:', window.emailScanner.settings);
     console.log('Task Preselected Categories:', window.emailScanner.taskPreselectedCategories);
     console.log('Emails total:', window.emailScanner.emails.length);
@@ -1287,4 +1318,28 @@ window.forceEmailScannerSync = function() {
     return { success: true, message: 'Synchronisation EmailScanner forcée' };
 };
 
-console.log('✅ EmailScanner v10.0 loaded - Synchronisation MailService complète!');
+// Nouvelle fonction pour debug détaillé
+window.debugEmailCategorization = function(emailId) {
+    const email = window.emailScanner.getEmailById(emailId);
+    if (!email) {
+        console.error('Email non trouvé');
+        return;
+    }
+    
+    console.group('🔍 DEBUG CATÉGORISATION DÉTAILLÉE');
+    console.log('Email:', email);
+    console.log('Catégorie actuelle:', email.category);
+    console.log('Score:', email.categoryScore);
+    console.log('Confiance:', email.categoryConfidence);
+    console.log('Patterns matchés:', email.matchedPatterns);
+    
+    // Re-analyser avec debug
+    window.emailScanner.setDebugMode(true);
+    const newAnalysis = window.categoryManager.analyzeEmail(email);
+    console.log('Nouvelle analyse:', newAnalysis);
+    window.emailScanner.setDebugMode(false);
+    
+    console.groupEnd();
+};
+
+console.log('✅ EmailScanner v11.0 loaded - Catégorisation corrigée avec CategoryManager!');
