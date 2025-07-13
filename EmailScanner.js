@@ -661,9 +661,15 @@ class EmailScanner {
             return { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
         }
 
-        // 4. PRIORITÉ 1: Toujours vérifier marketing_news en premier
+        // 4. PRIORITÉ ABSOLUE: Toujours vérifier marketing_news en premier
+        console.log(`[EmailScanner] Analyse email: ${email.subject?.substring(0, 50)}...`);
+        
         const marketingAnalysis = this.analyzeForCategory(content, 'marketing_news');
-        if (marketingAnalysis.hasAbsolute || marketingAnalysis.score >= 80) {
+        console.log(`[EmailScanner] Score marketing_news: ${marketingAnalysis.score}, hasAbsolute: ${marketingAnalysis.hasAbsolute}`);
+        
+        // Si on trouve des mots-clés de désabonnement, c'est forcément du marketing
+        if (marketingAnalysis.hasAbsolute || marketingAnalysis.score >= 50) {
+            console.log(`[EmailScanner] ✅ Catégorisé comme marketing_news (score: ${marketingAnalysis.score})`);
             return {
                 category: 'marketing_news',
                 score: marketingAnalysis.score,
@@ -682,6 +688,10 @@ class EmailScanner {
             if (categoryId === 'marketing_news') continue; // Déjà vérifié
             
             const analysis = this.analyzeForCategory(content, categoryId);
+            
+            if (analysis.score > 0) {
+                console.log(`[EmailScanner] Score ${categoryId}: ${analysis.score}, hasAbsolute: ${analysis.hasAbsolute}`);
+            }
             
             // Prioriser les mots-clés absolus
             if (analysis.hasAbsolute && (!bestResult || !bestResult.hasAbsolute || analysis.score > bestResult.score)) {
@@ -712,10 +722,12 @@ class EmailScanner {
         const MIN_CONFIDENCE_THRESHOLD = 0.4;
 
         if (bestResult && bestResult.score >= MIN_SCORE_THRESHOLD && bestResult.confidence >= MIN_CONFIDENCE_THRESHOLD) {
+            console.log(`[EmailScanner] ✅ Catégorisé comme ${bestResult.category} (score: ${bestResult.score})`);
             return bestResult;
         }
 
         // 7. Si aucune catégorie ne correspond, retourner "other"
+        console.log(`[EmailScanner] ❌ Aucune catégorie trouvée, classé comme "other"`);
         return {
             category: 'other',
             score: 0,
@@ -890,15 +902,21 @@ class EmailScanner {
     findInText(text, keyword) {
         if (!text || !keyword) return false;
         
-        // Normalisation pour gérer les accents
-        const normalizedText = text.toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '');
+        // Normalisation pour gérer les accents et caractères spéciaux
+        const normalizeText = (str) => {
+            return str.toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/['']/g, "'")
+                .replace(/[-_]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        };
         
-        const normalizedKeyword = keyword.toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '');
+        const normalizedText = normalizeText(text);
+        const normalizedKeyword = normalizeText(keyword);
         
+        // Recherche exacte
         return normalizedText.includes(normalizedKeyword);
     }
 
