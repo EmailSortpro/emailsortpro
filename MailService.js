@@ -1,6 +1,6 @@
-// MailService.js - Version 12.0 - Service Email Multi-Provider avec corrections HTTP 400
+// MailService.js - Version 11.0 - Service Email Multi-Provider avec Fix HTTP 400
 
-console.log('[MailService] 🚀 Loading MailService.js v12.0 - HTTP 400 Fixed...');
+console.log('[MailService] 🚀 Loading MailService.js v11.0 - Fixed HTTP 400...');
 
 class MailService {
     constructor() {
@@ -11,21 +11,7 @@ class MailService {
         this.emailCache = new Map();
         this.userEmail = null;
         
-        // Limites API par provider
-        this.apiLimits = {
-            gmail: {
-                maxPerPage: 100,      // Maximum par requête
-                maxTotal: 10000,      // Maximum total supporté
-                defaultLimit: 500     // Limite par défaut
-            },
-            microsoft: {
-                maxPerPage: 50,       // Maximum par requête
-                maxTotal: 1000,       // Maximum total supporté
-                defaultLimit: 500     // Limite par défaut
-            }
-        };
-        
-        console.log('[MailService] ✅ Service v12.0 initialized - HTTP 400 Fixed');
+        console.log('[MailService] ✅ Service v11.0 initialized');
     }
 
     // ================================================
@@ -356,22 +342,18 @@ class MailService {
     }
 
     // ================================================
-    // RÉCUPÉRATION DES MESSAGES - CORRIGÉ
+    // RÉCUPÉRATION DES MESSAGES
     // ================================================
     async getMessages(folderId = 'inbox', options = {}) {
         console.log(`[MailService] 📬 Récupération des messages depuis ${folderId}...`);
-        console.log('[MailService] Options originales:', options);
+        console.log('[MailService] Options:', options);
         
         if (!this.initialized) {
             await this.initialize();
         }
         
-        // IMPORTANT: Valider et corriger les options
-        const validatedOptions = this.validateOptions(options);
-        console.log('[MailService] Options validées:', validatedOptions);
-        
         // Vérifier le cache
-        const cacheKey = this.getCacheKey(folderId, validatedOptions);
+        const cacheKey = this.getCacheKey(folderId, options);
         const cached = this.getFromCache(cacheKey);
         if (cached) {
             return cached;
@@ -381,9 +363,9 @@ class MailService {
             let messages = [];
             
             if (this.currentProvider === 'google') {
-                messages = await this.getGmailMessages(folderId, validatedOptions);
+                messages = await this.getGmailMessages(folderId, options);
             } else if (this.currentProvider === 'microsoft') {
-                messages = await this.getOutlookMessages(folderId, validatedOptions);
+                messages = await this.getOutlookMessages(folderId, options);
             }
             
             // Mettre en cache
@@ -403,48 +385,14 @@ class MailService {
                 
                 // Réessayer une fois
                 if (this.currentProvider === 'google') {
-                    return await this.getGmailMessages(folderId, validatedOptions);
+                    return await this.getGmailMessages(folderId, options);
                 } else if (this.currentProvider === 'microsoft') {
-                    return await this.getOutlookMessages(folderId, validatedOptions);
+                    return await this.getOutlookMessages(folderId, options);
                 }
             }
             
             throw error;
         }
-    }
-
-    // NOUVELLE MÉTHODE: Valider et corriger les options
-    validateOptions(options) {
-        const validated = { ...options };
-        
-        // Gérer maxResults
-        if (validated.maxResults === -1 || validated.maxResults === '-1') {
-            // -1 signifie "tous les emails", on utilise la limite max du provider
-            const limits = this.apiLimits[this.currentProvider] || this.apiLimits.gmail;
-            validated.maxResults = limits.maxTotal;
-            console.log(`[MailService] Conversion maxResults: -1 → ${validated.maxResults}`);
-        } else if (!validated.maxResults || validated.maxResults <= 0) {
-            // Valeur par défaut
-            const limits = this.apiLimits[this.currentProvider] || this.apiLimits.gmail;
-            validated.maxResults = limits.defaultLimit;
-        } else {
-            // S'assurer que c'est un nombre
-            validated.maxResults = parseInt(validated.maxResults);
-            
-            // Vérifier les limites
-            const limits = this.apiLimits[this.currentProvider] || this.apiLimits.gmail;
-            if (validated.maxResults > limits.maxTotal) {
-                console.warn(`[MailService] maxResults (${validated.maxResults}) dépasse la limite (${limits.maxTotal})`);
-                validated.maxResults = limits.maxTotal;
-            }
-        }
-        
-        // S'assurer que c'est un nombre positif
-        if (isNaN(validated.maxResults) || validated.maxResults <= 0) {
-            validated.maxResults = 500; // Fallback sûr
-        }
-        
-        return validated;
     }
 
     // ================================================
@@ -457,18 +405,13 @@ class MailService {
         
         const allMessages = [];
         let pageToken = null;
-        
-        // Limites pour Gmail
-        const limits = this.apiLimits.gmail;
-        const pageSize = Math.min(options.maxResults || limits.defaultLimit, limits.maxPerPage);
-        const totalMax = Math.min(options.maxResults || limits.defaultLimit, limits.maxTotal);
-        
-        console.log(`[MailService] Limites: pageSize=${pageSize}, totalMax=${totalMax}`);
+        const maxResults = Math.min(options.maxResults || 100, 100); // Limiter à 100 par page
+        const totalMax = options.maxResults || 500;
         
         // Construire la query pour Gmail
         let query = '';
         
-        // Ajouter le label
+        // Ajouter le label (ATTENTION: syntaxe spéciale pour Gmail)
         if (labelId && labelId !== 'all') {
             if (labelId === 'INBOX') {
                 query = 'in:inbox';
@@ -486,7 +429,7 @@ class MailService {
         }
         
         // Ajouter le filtre de date si spécifié
-        if (options.days && options.days > 0) {
+        if (options.days) {
             const dateFilter = `after:${this.getDateFilter(options.days)}`;
             query = query ? `${query} ${dateFilter}` : dateFilter;
         }
@@ -505,9 +448,9 @@ class MailService {
         
         do {
             try {
-                // Construire les paramètres - IMPORTANT: s'assurer que maxResults est valide
+                // Construire les paramètres
                 const params = new URLSearchParams({
-                    maxResults: pageSize.toString() // Toujours convertir en string
+                    maxResults: maxResults.toString()
                 });
                 
                 // Ajouter la query seulement si elle n'est pas vide
@@ -572,12 +515,6 @@ class MailService {
                     break;
                 }
                 
-                // Mise à jour de la progression
-                if (options.onProgress) {
-                    const progress = Math.round((allMessages.length / totalMax) * 100);
-                    options.onProgress(progress, `${allMessages.length}/${totalMax} emails`);
-                }
-                
             } catch (error) {
                 console.error('[MailService] Erreur dans la boucle Gmail:', error);
                 throw error;
@@ -585,7 +522,6 @@ class MailService {
             
         } while (pageToken && allMessages.length < totalMax);
         
-        // Retourner uniquement le nombre demandé
         return allMessages.slice(0, totalMax);
     }
 
@@ -617,9 +553,9 @@ class MailService {
                 }
             });
             
-            // Petit délai entre les batches pour éviter le rate limiting
+            // Petit délai entre les batches
             if (i + 5 < messageIds.length) {
-                await new Promise(resolve => setTimeout(resolve, 50));
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
         }
         
@@ -663,14 +599,6 @@ class MailService {
         const fromHeader = getHeader('From');
         const fromParsed = this.parseEmailAddress(fromHeader);
         
-        // Détecter les headers de désabonnement
-        const listUnsubscribe = getHeader('List-Unsubscribe');
-        const listUnsubscribePost = getHeader('List-Unsubscribe-Post');
-        const hasUnsubscribeHeader = !!(listUnsubscribe || listUnsubscribePost);
-        
-        // Labels Gmail
-        const labels = message.labelIds || [];
-        
         return {
             id: message.id,
             threadId: message.threadId,
@@ -693,17 +621,9 @@ class MailService {
             bodyHtml: content.html,
             bodyText: content.text,
             hasAttachments: content.hasAttachments,
-            labels: labels,
-            isRead: !labels.includes('UNREAD'),
-            importance: labels.includes('IMPORTANT') ? 'high' : 'normal',
-            // Infos supplémentaires pour la catégorisation
-            hasUnsubscribeHeader: hasUnsubscribeHeader,
-            gmailLabels: labels,
-            isPromotional: labels.some(l => ['CATEGORY_PROMOTIONS', 'CATEGORY_UPDATES', 'CATEGORY_SOCIAL'].includes(l)),
-            listHeaders: {
-                unsubscribe: listUnsubscribe,
-                unsubscribePost: listUnsubscribePost
-            }
+            labels: message.labelIds || [],
+            isRead: !message.labelIds?.includes('UNREAD'),
+            importance: message.labelIds?.includes('IMPORTANT') ? 'high' : 'normal'
         };
     }
 
@@ -748,22 +668,15 @@ class MailService {
     // ================================================
     async getOutlookMessages(folderId = 'inbox', options = {}) {
         console.log(`[MailService] 📂 Récupération emails Outlook...`);
-        console.log('[MailService] Options Outlook:', options);
         
         const allMessages = [];
         let nextLink = null;
-        
-        // Limites pour Outlook
-        const limits = this.apiLimits.microsoft;
-        const pageSize = Math.min(options.maxResults || limits.defaultLimit, limits.maxPerPage);
-        const totalMax = Math.min(options.maxResults || limits.defaultLimit, limits.maxTotal);
-        
-        console.log(`[MailService] Limites Outlook: pageSize=${pageSize}, totalMax=${totalMax}`);
+        const maxResults = options.maxResults || 500;
         
         // Construire le filtre pour Outlook
         let filter = '';
         
-        if (options.days && options.days > 0) {
+        if (options.days) {
             const date = new Date();
             date.setDate(date.getDate() - options.days);
             filter = `receivedDateTime ge ${date.toISOString()}`;
@@ -779,10 +692,9 @@ class MailService {
             if (nextLink) {
                 url = nextLink;
             } else {
-                const remainingCount = totalMax - allMessages.length;
                 const params = new URLSearchParams({
-                    '$top': Math.min(remainingCount, pageSize).toString(),
-                    '$select': 'id,conversationId,receivedDateTime,subject,body,bodyPreview,importance,isRead,hasAttachments,from,toRecipients,ccRecipients,internetMessageHeaders',
+                    '$top': Math.min(maxResults - allMessages.length, 50).toString(),
+                    '$select': 'id,conversationId,receivedDateTime,subject,body,bodyPreview,importance,isRead,hasAttachments,from,toRecipients,ccRecipients',
                     '$orderby': 'receivedDateTime desc'
                 });
                 
@@ -792,8 +704,6 @@ class MailService {
                 
                 url = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages?${params}`;
             }
-            
-            console.log('[MailService] URL Outlook:', url);
             
             const response = await fetch(url, {
                 headers: {
@@ -817,34 +727,12 @@ class MailService {
             
             nextLink = data['@odata.nextLink'];
             
-            // Mise à jour de la progression
-            if (options.onProgress) {
-                const progress = Math.round((allMessages.length / totalMax) * 100);
-                options.onProgress(progress, `${allMessages.length}/${totalMax} emails`);
-            }
-            
-            // Petit délai pour éviter le rate limiting
-            if (nextLink && allMessages.length < totalMax) {
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
-            
-        } while (nextLink && allMessages.length < totalMax);
+        } while (nextLink && allMessages.length < maxResults);
         
-        return allMessages.slice(0, totalMax);
+        return allMessages.slice(0, maxResults);
     }
 
     normalizeOutlookMessage(message) {
-        // Chercher les headers de désabonnement
-        let hasUnsubscribeHeader = false;
-        const headers = message.internetMessageHeaders || [];
-        
-        headers.forEach(header => {
-            if (header.name.toLowerCase() === 'list-unsubscribe' || 
-                header.name.toLowerCase() === 'list-unsubscribe-post') {
-                hasUnsubscribeHeader = true;
-            }
-        });
-        
         return {
             id: message.id,
             conversationId: message.conversationId,
@@ -861,10 +749,7 @@ class MailService {
             hasAttachments: message.hasAttachments || false,
             importance: message.importance,
             isRead: message.isRead,
-            categories: message.categories || [],
-            // Infos supplémentaires
-            hasUnsubscribeHeader: hasUnsubscribeHeader,
-            outlookCategories: message.categories || []
+            categories: message.categories || []
         };
     }
 
@@ -997,22 +882,6 @@ class MailService {
         this.emailCache.clear();
     }
 
-    async authenticate(provider) {
-        console.log(`[MailService] 🔐 Authentification ${provider}...`);
-        
-        if (provider === 'google' && window.googleAuthService) {
-            await window.googleAuthService.login();
-        } else if (provider === 'microsoft' && window.authService) {
-            await window.authService.login();
-        } else {
-            throw new Error(`Provider ${provider} non supporté`);
-        }
-        
-        // Réinitialiser et détecter le nouveau provider
-        await this.reset();
-        await this.initialize();
-    }
-
     // ================================================
     // CACHE
     // ================================================
@@ -1046,51 +915,6 @@ class MailService {
         console.log('[MailService] 🧹 Vidage du cache');
         this.emailCache.clear();
     }
-
-    // ================================================
-    // MÉTHODES DE DIAGNOSTIC
-    // ================================================
-    getDiagnosticInfo() {
-        return {
-            initialized: this.initialized,
-            currentProvider: this.currentProvider,
-            hasAccessToken: !!this.accessToken,
-            userEmail: this.userEmail,
-            foldersCount: this.folders.length,
-            cacheSize: this.emailCache.size,
-            apiLimits: this.apiLimits[this.currentProvider] || null,
-            version: 'v12.0'
-        };
-    }
-
-    async testConnection() {
-        console.log('[MailService] 🧪 Test de connexion...');
-        
-        try {
-            if (!this.initialized) {
-                await this.initialize();
-            }
-            
-            // Tester en récupérant 1 seul message
-            const messages = await this.getMessages('inbox', { maxResults: 1 });
-            
-            return {
-                success: true,
-                provider: this.currentProvider,
-                userEmail: this.userEmail,
-                testMessageCount: messages.length,
-                message: 'Connexion réussie'
-            };
-            
-        } catch (error) {
-            return {
-                success: false,
-                provider: this.currentProvider,
-                error: error.message,
-                message: 'Échec de connexion'
-            };
-        }
-    }
 }
 
 // ================================================
@@ -1103,46 +927,4 @@ if (window.mailService) {
 
 window.mailService = new MailService();
 
-console.log('✅ MailService v12.0 loaded - HTTP 400 Fixed');
-
-// ================================================
-// FONCTIONS DE TEST
-// ================================================
-window.testMailService = async function() {
-    console.group('🧪 TEST MAILSERVICE v12.0');
-    
-    try {
-        // Diagnostic
-        console.log('📊 Diagnostic:', window.mailService.getDiagnosticInfo());
-        
-        // Test de connexion
-        const testResult = await window.mailService.testConnection();
-        console.log('🔌 Test connexion:', testResult);
-        
-        // Test avec différentes valeurs
-        const testCases = [
-            { maxResults: -1, expected: 'Converti en limite max' },
-            { maxResults: 10, expected: '10 emails' },
-            { maxResults: 150, expected: '100 max par page Gmail' },
-            { maxResults: 5000, expected: 'Limité à max du provider' }
-        ];
-        
-        console.log('\n📧 Tests de récupération:');
-        for (const test of testCases) {
-            try {
-                const messages = await window.mailService.getMessages('inbox', { 
-                    maxResults: test.maxResults,
-                    days: 1
-                });
-                console.log(`✅ maxResults=${test.maxResults}: ${messages.length} emails récupérés (${test.expected})`);
-            } catch (error) {
-                console.error(`❌ maxResults=${test.maxResults}: ${error.message}`);
-            }
-        }
-        
-    } catch (error) {
-        console.error('❌ Erreur test:', error);
-    }
-    
-    console.groupEnd();
-};
+console.log('✅ MailService v11.0 loaded - Fixed HTTP 400 Error');
