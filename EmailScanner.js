@@ -1,4 +1,4 @@
-// EmailScanner.js - Version 11.0 - Catégorisation corrigée avec CategoryManager
+// EmailScanner.js - Version 12.0 - Catégorisation corrigée avec debug amélioré
 
 class EmailScanner {
     constructor() {
@@ -16,16 +16,26 @@ class EmailScanner {
         this.syncInterval = null;
         this.changeListener = null;
         
+        // Mode debug pour tracer les catégorisations
+        this.debugMode = false;
+        this.categorizationLog = [];
+        
         // Métriques de performance
         this.scanMetrics = {
             startTime: null,
             categorizedCount: 0,
             keywordMatches: {},
             categoryDistribution: {},
-            preselectedCount: 0
+            preselectedCount: 0,
+            debugInfo: {
+                totalAnalyzed: 0,
+                correctCategories: 0,
+                wrongCategories: 0,
+                uncategorized: 0
+            }
         };
         
-        console.log('[EmailScanner] ✅ Version 11.0 - Catégorisation corrigée');
+        console.log('[EmailScanner] ✅ Version 12.0 - Catégorisation corrigée avec debug');
         this.initializeWithSync();
     }
 
@@ -332,7 +342,7 @@ class EmailScanner {
     // MÉTHODE SCAN PRINCIPALE AVEC MAILSERVICE
     // ================================================
     async scan(options = {}) {
-        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v11.0 ===');
+        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v12.0 ===');
         
         // Synchronisation pré-scan
         if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
@@ -434,7 +444,8 @@ class EmailScanner {
             console.log('[EmailScanner] 📊 Résultats:', {
                 total: results.total,
                 categorized: results.categorized,
-                preselectedForTasks: results.stats.preselectedForTasks
+                preselectedForTasks: results.stats.preselectedForTasks,
+                debugInfo: this.scanMetrics.debugInfo
             });
 
             if (this.scanProgress) {
@@ -524,7 +535,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // CATÉGORISATION DES EMAILS - MÉTHODE CORRIGÉE
+    // CATÉGORISATION DES EMAILS - MÉTHODE CORRIGÉE AVEC DEBUG
     // ================================================
     async categorizeEmails(overridePreselectedCategories = null) {
         const total = this.emails.length;
@@ -533,12 +544,14 @@ class EmailScanner {
 
         const taskPreselectedCategories = overridePreselectedCategories || this.taskPreselectedCategories || [];
         
-        console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION ===');
+        console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION v12.0 ===');
         console.log('[EmailScanner] 📊 Total emails:', total);
         console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', taskPreselectedCategories);
+        console.log('[EmailScanner] 🐛 Mode debug:', this.debugMode);
 
         const categoryStats = {};
         const preselectedStats = {};
+        this.categorizationLog = []; // Reset log
         
         // Initialiser les statistiques
         taskPreselectedCategories.forEach(catId => {
@@ -551,8 +564,28 @@ class EmailScanner {
             
             for (const email of batch) {
                 try {
+                    // DEBUG: Log email avant analyse
+                    if (this.debugMode || this.shouldDebugEmail(email)) {
+                        console.log(`\n[EmailScanner] 🔍 Analyse email:`, {
+                            subject: email.subject?.substring(0, 80),
+                            from: email.from?.emailAddress?.address,
+                            bodyPreview: email.bodyPreview?.substring(0, 100)
+                        });
+                    }
+
                     // IMPORTANT: Utiliser CategoryManager directement pour l'analyse
                     const analysis = window.categoryManager.analyzeEmail(email);
+                    
+                    // DEBUG: Log résultat analyse
+                    if (this.debugMode || this.shouldDebugEmail(email)) {
+                        console.log(`[EmailScanner] 📊 Résultat analyse:`, {
+                            category: analysis.category,
+                            score: analysis.score,
+                            confidence: analysis.confidence,
+                            hasAbsolute: analysis.hasAbsolute,
+                            matchedPatterns: analysis.matchedPatterns?.slice(0, 3) // Top 3
+                        });
+                    }
                     
                     // Appliquer les résultats
                     const finalCategory = analysis.category || 'other';
@@ -580,16 +613,22 @@ class EmailScanner {
                     
                     categoryStats[finalCategory] = (categoryStats[finalCategory] || 0) + 1;
 
-                    // Log détaillé pour debug si nécessaire
-                    if (this.debugMode && analysis.category !== 'other') {
-                        console.log(`[EmailScanner] 📧 Email catégorisé:`, {
-                            subject: email.subject?.substring(0, 50),
-                            category: analysis.category,
-                            score: analysis.score,
-                            confidence: analysis.confidence,
-                            patterns: analysis.matchedPatterns?.length || 0
+                    // Log de catégorisation pour debug
+                    if (this.debugMode || this.shouldDebugEmail(email)) {
+                        this.categorizationLog.push({
+                            emailId: email.id,
+                            subject: email.subject,
+                            from: email.from?.emailAddress?.address,
+                            expectedCategory: this.getExpectedCategory(email),
+                            actualCategory: finalCategory,
+                            score: email.categoryScore,
+                            confidence: email.categoryConfidence,
+                            patterns: email.matchedPatterns?.slice(0, 3)
                         });
                     }
+
+                    // Vérifier si catégorisation correcte (pour métriques)
+                    this.updateCategorizationMetrics(email, finalCategory);
 
                 } catch (error) {
                     console.error('[EmailScanner] ❌ Erreur catégorisation:', error);
@@ -641,6 +680,7 @@ class EmailScanner {
         console.log('[EmailScanner] 📊 Distribution:', categoryStats);
         console.log('[EmailScanner] ⭐ Total pré-sélectionnés:', preselectedCount);
         console.log('[EmailScanner] ⚠️ Erreurs:', errors);
+        console.log('[EmailScanner] 🐛 Métriques debug:', this.scanMetrics.debugInfo);
         
         // Log des pré-sélectionnés par catégorie
         Object.entries(preselectedStats).forEach(([catId, count]) => {
@@ -648,6 +688,101 @@ class EmailScanner {
                 console.log(`[EmailScanner] ⭐ ${catId}: ${count} emails pré-sélectionnés`);
             }
         });
+
+        // Si en mode debug, afficher les erreurs de catégorisation
+        if (this.debugMode && this.categorizationLog.length > 0) {
+            this.showCategorizationDebugInfo();
+        }
+    }
+
+    // ================================================
+    // MÉTHODES DE DEBUG
+    // ================================================
+    shouldDebugEmail(email) {
+        // Emails spécifiques à débugger
+        const debugPatterns = [
+            'twitch', 'rmcsport', 'candidature', 'platform.sh', 'sekoia'
+        ];
+        
+        const subject = (email.subject || '').toLowerCase();
+        const from = (email.from?.emailAddress?.address || '').toLowerCase();
+        
+        return debugPatterns.some(pattern => 
+            subject.includes(pattern) || from.includes(pattern)
+        );
+    }
+
+    getExpectedCategory(email) {
+        // Catégories attendues pour les emails de test
+        const subject = (email.subject || '').toLowerCase();
+        const from = (email.from?.emailAddress?.address || '').toLowerCase();
+        
+        if (from.includes('twitch') || subject.includes('is live')) {
+            return 'marketing_news';
+        }
+        if (subject.includes('candidature') || subject.includes('recrutement')) {
+            return 'hr';
+        }
+        if (subject.includes('applying') || subject.includes('position')) {
+            return 'hr';
+        }
+        
+        return null;
+    }
+
+    updateCategorizationMetrics(email, actualCategory) {
+        this.scanMetrics.debugInfo.totalAnalyzed++;
+        
+        const expected = this.getExpectedCategory(email);
+        if (expected) {
+            if (expected === actualCategory) {
+                this.scanMetrics.debugInfo.correctCategories++;
+            } else {
+                this.scanMetrics.debugInfo.wrongCategories++;
+                
+                if (this.debugMode) {
+                    console.warn(`[EmailScanner] ❌ Mauvaise catégorisation:`, {
+                        subject: email.subject?.substring(0, 50),
+                        expected: expected,
+                        actual: actualCategory,
+                        score: email.categoryScore
+                    });
+                }
+            }
+        }
+        
+        if (actualCategory === 'other') {
+            this.scanMetrics.debugInfo.uncategorized++;
+        }
+    }
+
+    showCategorizationDebugInfo() {
+        console.group('[EmailScanner] 🐛 DEBUG - Résultats de catégorisation');
+        
+        const wrongCategories = this.categorizationLog.filter(log => 
+            log.expectedCategory && log.expectedCategory !== log.actualCategory
+        );
+        
+        if (wrongCategories.length > 0) {
+            console.warn('❌ Emails mal catégorisés:', wrongCategories.length);
+            wrongCategories.forEach(log => {
+                console.log(`
+📧 ${log.subject}
+   De: ${log.from}
+   Attendu: ${log.expectedCategory}
+   Obtenu: ${log.actualCategory} (score: ${log.score}, conf: ${Math.round(log.confidence * 100)}%)
+   Patterns: ${log.patterns?.map(p => p.keyword).join(', ') || 'aucun'}
+                `);
+            });
+        }
+        
+        console.log('\n📊 Statistiques globales:');
+        console.log(`- Total analysé: ${this.scanMetrics.debugInfo.totalAnalyzed}`);
+        console.log(`- Corrects: ${this.scanMetrics.debugInfo.correctCategories}`);
+        console.log(`- Incorrects: ${this.scanMetrics.debugInfo.wrongCategories}`);
+        console.log(`- Non catégorisés: ${this.scanMetrics.debugInfo.uncategorized}`);
+        
+        console.groupEnd();
     }
 
     // ================================================
@@ -783,7 +918,8 @@ class EmailScanner {
                 preselectedForTasks: totalPreselected,
                 spamFiltered: totalSpam,
                 excluded: totalExcluded,
-                scanDuration: scanDuration
+                scanDuration: scanDuration,
+                debugInfo: this.scanMetrics.debugInfo
             },
             emails: this.emails,
             settings: this.settings,
@@ -809,6 +945,12 @@ class EmailScanner {
         this.scanMetrics.startTime = Date.now();
         this.scanMetrics.categorizedCount = 0;
         this.scanMetrics.categoryDistribution = {};
+        this.scanMetrics.debugInfo = {
+            totalAnalyzed: 0,
+            correctCategories: 0,
+            wrongCategories: 0,
+            uncategorized: 0
+        };
         
         // Vider les catégories actuelles
         Object.keys(this.categorizedEmails).forEach(cat => {
@@ -874,13 +1016,20 @@ class EmailScanner {
         
         this.emails = [];
         this.categorizedEmails = {};
+        this.categorizationLog = [];
         
         this.scanMetrics = {
             startTime: Date.now(),
             categorizedCount: 0,
             keywordMatches: {},
             categoryDistribution: {},
-            preselectedCount: 0
+            preselectedCount: 0,
+            debugInfo: {
+                totalAnalyzed: 0,
+                correctCategories: 0,
+                wrongCategories: 0,
+                uncategorized: 0
+            }
         };
         
         // Initialiser avec toutes les catégories
@@ -1140,7 +1289,9 @@ class EmailScanner {
             scanMetrics: this.scanMetrics,
             startScanSynced: this.startScanSynced,
             changeListener: !!this.changeListener,
-            version: '11.0'
+            debugMode: this.debugMode,
+            categorizationLog: this.categorizationLog.length,
+            version: '12.0'
         };
     }
 
@@ -1198,12 +1349,19 @@ class EmailScanner {
         this.categorizedEmails = {};
         this.taskPreselectedCategories = [];
         this.scanProgress = null;
+        this.categorizationLog = [];
         this.scanMetrics = { 
             startTime: null, 
             categorizedCount: 0, 
             keywordMatches: {}, 
             categoryDistribution: {},
-            preselectedCount: 0
+            preselectedCount: 0,
+            debugInfo: {
+                totalAnalyzed: 0,
+                correctCategories: 0,
+                wrongCategories: 0,
+                uncategorized: 0
+            }
         };
         
         console.log('[EmailScanner] ✅ Nettoyage terminé');
@@ -1214,15 +1372,24 @@ class EmailScanner {
         this.settings = {};
         this.isScanning = false;
         this.startScanSynced = false;
+        this.debugMode = false;
         console.log('[EmailScanner] ❌ Instance détruite');
     }
 
     // ================================================
-    // NOUVELLE MÉTHODE: Activer le mode debug
+    // MÉTHODES: Mode debug
     // ================================================
     setDebugMode(enabled) {
         this.debugMode = enabled;
         console.log(`[EmailScanner] Mode debug ${enabled ? 'activé' : 'désactivé'}`);
+        
+        if (enabled && window.categoryManager) {
+            window.categoryManager.setDebugMode(true);
+        }
+    }
+
+    getCategorizationLog() {
+        return [...this.categorizationLog];
     }
 }
 
@@ -1234,38 +1401,41 @@ if (window.emailScanner) {
     window.emailScanner.destroy?.();
 }
 
-console.log('[EmailScanner] 🚀 Création nouvelle instance v11.0...');
+console.log('[EmailScanner] 🚀 Création nouvelle instance v12.0...');
 window.emailScanner = new EmailScanner();
 
 // ================================================
 // FONCTIONS UTILITAIRES GLOBALES
 // ================================================
 window.testEmailScanner = function() {
-    console.group('🧪 TEST EmailScanner v11.0');
+    console.group('🧪 TEST EmailScanner v12.0');
+    
+    // Activer le mode debug
+    window.emailScanner.setDebugMode(true);
     
     const testEmails = [
         {
-            subject: "Newsletter hebdomadaire - Désabonnez-vous ici",
-            from: { emailAddress: { address: "newsletter@example.com", name: "Example News" } },
-            bodyPreview: "Voici votre newsletter avec un lien pour vous désinscrire",
-            receivedDateTime: new Date().toISOString()
-        },
-        {
-            subject: "Action requise: Confirmer votre commande urgent",
-            from: { emailAddress: { address: "orders@shop.com", name: "Shop Orders" } },
-            bodyPreview: "Veuillez compléter votre commande dans les plus brefs délais",
-            receivedDateTime: new Date().toISOString()
-        },
-        {
-            subject: "RMCsport is live: 🥊🔴 MMA GRATUIT JUSQU'A 21h",
+            subject: "RMCsport is live: 🥊🔴 MMA GRATUIT JUSQU'A 21h - CW 192 avec @kabiiwoo",
             from: { emailAddress: { address: "no-reply@twitch.tv", name: "Twitch" } },
-            bodyPreview: "Hey, vivlabinouze! RMCsport is live! Watch Now",
+            bodyPreview: "Hey, vivlabinouze! RMCsport is live! Watch Now Or click this link: https://www.twitch.tv/rmcsport You're receiving this email because you're a valued member of the Twitch community. To stop receiving emails about RMCsport, click here",
             receivedDateTime: new Date().toISOString()
         },
         {
-            subject: "Groupe Léon Grosse : votre candidature",
-            from: { emailAddress: { address: "eloise.hoffmann@leongrosse.teamtailor-mail.com", name: "Eloïse Hoffmann, Léon Grosse" } },
-            bodyPreview: "Nous vous remercions vivement pour l'intérêt que vous portez à notre Groupe",
+            subject: "Responsable Equipe Satisfaction Client F/H - Suite de votre candidature",
+            from: { emailAddress: { address: "candidature.2z4wng22y47b86k@message.digitalrecruiters.com", name: "ADENES" } },
+            bodyPreview: "Bonjour Monsieur Hastings, Nous vous remercions de nous avoir fait parvenir votre candidature pour le poste de Responsable Equipe Satisfaction Client F/H. Aujourd'hui, nous ne sommes malheureusement pas en mesure d'y donner une suite favorable.",
+            receivedDateTime: new Date().toISOString()
+        },
+        {
+            subject: "Thanks for Applying to Platform.sh | Let's #DeployFriday Together! 🌍🚀",
+            from: { emailAddress: { address: "no-reply@platform.sh", name: "Platform.sh" } },
+            bodyPreview: "Thank you for expressing interest in the Customer Success Manager position at Platform.sh. Your application has landed with us, and we're excited to dive into it.",
+            receivedDateTime: new Date().toISOString()
+        },
+        {
+            subject: "Sekoia.io - Ta candidature pour le poste de Customer Support Engineer",
+            from: { emailAddress: { address: "sekoi-bb128286538fb5f43a6b22dc@candidates.welcomekit.co", name: "Clémentine Scolan - Sekoia.io" } },
+            bodyPreview: "Bonjour VIANNEY, Merci pour ta candidature et ton intérêt pour Sekoia.io. Malheureusement nous ne pouvons pas y répondre favorablement car ton profil ne correspond pas aux besoins de l'équipe",
             receivedDateTime: new Date().toISOString()
         }
     ];
@@ -1277,18 +1447,22 @@ window.testEmailScanner = function() {
     console.log('Debug Info:', window.emailScanner.getDebugInfo());
     console.log('Catégories pré-sélectionnées:', window.emailScanner.getTaskPreselectedCategories());
     
+    // Désactiver le mode debug
+    window.emailScanner.setDebugMode(false);
+    
     console.groupEnd();
     return { success: true, testsRun: testEmails.length };
 };
 
 window.debugEmailCategories = function() {
-    console.group('📊 DEBUG Catégories v11.0');
+    console.group('📊 DEBUG Catégories v12.0');
     console.log('Settings:', window.emailScanner.settings);
     console.log('Task Preselected Categories:', window.emailScanner.taskPreselectedCategories);
     console.log('Emails total:', window.emailScanner.emails.length);
     console.log('Emails pré-sélectionnés:', window.emailScanner.getPreselectedEmails().length);
     console.log('Breakdown:', window.emailScanner.getDetailedResults().breakdown);
     console.log('Debug complet:', window.emailScanner.getDebugInfo());
+    console.log('Categorization Log:', window.emailScanner.getCategorizationLog());
     console.groupEnd();
 };
 
@@ -1342,4 +1516,30 @@ window.debugEmailCategorization = function(emailId) {
     console.groupEnd();
 };
 
-console.log('✅ EmailScanner v11.0 loaded - Catégorisation corrigée avec CategoryManager!');
+// Fonction pour forcer le mode debug sur une catégorisation
+window.debugCategorizationBatch = function(emails) {
+    console.group('🔍 DEBUG BATCH CATÉGORISATION');
+    
+    window.emailScanner.setDebugMode(true);
+    
+    const results = [];
+    emails.forEach(email => {
+        const analysis = window.emailScanner.testCategorization(email);
+        results.push({
+            subject: email.subject,
+            expected: window.emailScanner.getExpectedCategory(email),
+            actual: analysis.category,
+            correct: window.emailScanner.getExpectedCategory(email) === analysis.category
+        });
+    });
+    
+    const correctCount = results.filter(r => r.correct).length;
+    console.log(`\n📊 Résultats: ${correctCount}/${results.length} corrects (${Math.round(correctCount/results.length*100)}%)`);
+    
+    window.emailScanner.setDebugMode(false);
+    console.groupEnd();
+    
+    return results;
+};
+
+console.log('✅ EmailScanner v12.0 loaded - Catégorisation corrigée avec debug amélioré!');
