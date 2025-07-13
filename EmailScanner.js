@@ -35,7 +35,17 @@ class EmailScanner {
         };
         
         console.log('[EmailScanner] ✅ Scanner v13.0 initialized - Catégorisation refaite');
-        this.initialize();
+        
+        // Initialisation immédiate pour éviter les problèmes de timing
+        this.initialize().then(() => {
+            // Notifier que le scanner est prêt
+            window.dispatchEvent(new CustomEvent('emailScannerReady', {
+                detail: { 
+                    scanner: this,
+                    initialized: true 
+                }
+            }));
+        });
     }
 
     // ================================================
@@ -448,8 +458,12 @@ class EmailScanner {
             
             console.log('[EmailScanner] ✅ Initialization complete');
             
+            // Marquer comme prêt pour EmailDeduplicationManager
+            this.isReady = true;
+            
         } catch (error) {
             console.error('[EmailScanner] ❌ Initialization error:', error);
+            this.isReady = false;
         }
     }
 
