@@ -661,34 +661,44 @@ class EmailScanner {
             return { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
         }
 
-        // 4. TOUJOURS vérifier marketing_news EN PREMIER
-        const marketingAnalysis = this.analyzeForCategory(content, 'marketing_news');
-        if (marketingAnalysis.hasAbsolute || marketingAnalysis.score >= 50) {
-            // Si mot-clé absolu ou score élevé en marketing
+        // 4. Analyser TOUTES les catégories en une seule passe
+        const allCategories = window.categoryManager.getActiveCategories();
+        const categoryScores = {};
+        let hasMarketingKeywords = false;
+        
+        // Analyser chaque catégorie
+        for (const categoryId of allCategories) {
+            const analysis = this.analyzeForCategory(content, categoryId);
+            if (analysis.score > 0) {
+                categoryScores[categoryId] = analysis;
+                
+                // Marquer si on trouve des mots marketing
+                if (categoryId === 'marketing_news' && (analysis.hasAbsolute || analysis.score >= 50)) {
+                    hasMarketingKeywords = true;
+                }
+            }
+        }
+
+        // 5. Si on a des mots-clés marketing forts, prioriser marketing_news
+        if (hasMarketingKeywords && categoryScores.marketing_news) {
             return {
                 category: 'marketing_news',
-                score: marketingAnalysis.score,
-                confidence: this.calculateConfidence(marketingAnalysis),
-                matchedPatterns: marketingAnalysis.matches,
-                hasAbsolute: marketingAnalysis.hasAbsolute
+                score: categoryScores.marketing_news.score,
+                confidence: this.calculateConfidence(categoryScores.marketing_news),
+                matchedPatterns: categoryScores.marketing_news.matches,
+                hasAbsolute: categoryScores.marketing_news.hasAbsolute
             };
         }
 
-        // 5. Analyser TOUTES les autres catégories
-        const allCategories = window.categoryManager.getActiveCategories();
+        // 6. Trouver la meilleure catégorie parmi toutes
         let bestCategory = null;
         let bestScore = 0;
         let bestAnalysis = null;
         let hasAbsoluteMatch = false;
 
-        for (const categoryId of allCategories) {
-            if (categoryId === 'marketing_news') continue; // Déjà vérifié
-            
-            const analysis = this.analyzeForCategory(content, categoryId);
-            
-            // Si on trouve un mot-clé absolu
+        for (const [categoryId, analysis] of Object.entries(categoryScores)) {
+            // Priorité aux mots-clés absolus
             if (analysis.hasAbsolute) {
-                // Prendre celui avec le meilleur score parmi les absolus
                 if (!hasAbsoluteMatch || analysis.score > bestScore) {
                     bestCategory = categoryId;
                     bestScore = analysis.score;
@@ -696,7 +706,7 @@ class EmailScanner {
                     hasAbsoluteMatch = true;
                 }
             }
-            // Si pas encore de mot-clé absolu trouvé
+            // Si pas de mot-clé absolu trouvé
             else if (!hasAbsoluteMatch && analysis.score > bestScore) {
                 bestCategory = categoryId;
                 bestScore = analysis.score;
@@ -704,49 +714,24 @@ class EmailScanner {
             }
         }
 
-        // 6. Vérifier si on doit quand même prendre marketing_news
-        if (!hasAbsoluteMatch && marketingAnalysis.score > 0 && marketingAnalysis.score >= bestScore) {
-            // Si marketing a un meilleur score que les autres sans absolu
-            return {
-                category: 'marketing_news',
-                score: marketingAnalysis.score,
-                confidence: this.calculateConfidence(marketingAnalysis),
-                matchedPatterns: marketingAnalysis.matches,
-                hasAbsolute: false
-            };
+        // 7. Vérifications spéciales pour certaines catégories
+        if (bestCategory === 'reminders') {
+            // Vérifier si c'est vraiment une relance (RE:, suite à, etc.)
+            const isReply = content.subject.match(/^(re:|fwd:|tr:|fw:)/i);
+            const hasFollowUp = content.text.includes('comme convenu') || 
+                               content.text.includes('suite à') || 
+                               content.text.includes('following up');
+            
+            if (!isReply && !hasFollowUp && categoryScores.hr?.score > 20) {
+                // Si pas vraiment une relance et qu'on a du contenu RH, prendre RH
+                bestCategory = 'hr';
+                bestScore = categoryScores.hr.score;
+                bestAnalysis = categoryScores.hr;
+            }
         }
 
-        // 7. Si on a trouvé une catégorie avec un score suffisant
+        // 8. Si on a trouvé une catégorie avec un score suffisant
         if (bestCategory && bestScore >= 30) {
-            // Vérifier la détection CC si activée
-            if (this.settings.preferences?.detectCC !== false && categoryId === 'cc') {
-                const isInCC = this.isUserInCC(email);
-                const isMainRecipient = this.isUserMainRecipient(email);
-                
-                // Ne mettre en CC que si vraiment en CC et pas destinataire principal
-                if (!isInCC || isMainRecipient) {
-                    // Chercher la deuxième meilleure catégorie
-                    let secondBest = null;
-                    let secondScore = 0;
-                    
-                    for (const categoryId of allCategories) {
-                        if (categoryId === 'marketing_news' || categoryId === 'cc') continue;
-                        
-                        const analysis = this.analyzeForCategory(content, categoryId);
-                        if (analysis.score > secondScore) {
-                            secondBest = categoryId;
-                            secondScore = analysis.score;
-                        }
-                    }
-                    
-                    if (secondBest && secondScore >= 30) {
-                        bestCategory = secondBest;
-                        bestScore = secondScore;
-                        bestAnalysis = this.analyzeForCategory(content, secondBest);
-                    }
-                }
-            }
-            
             return {
                 category: bestCategory,
                 score: bestScore,
@@ -756,7 +741,7 @@ class EmailScanner {
             };
         }
 
-        // 8. Sinon, c'est "other"
+        // 9. Sinon, c'est "other"
         return {
             category: 'other',
             score: 0,
@@ -818,6 +803,67 @@ class EmailScanner {
                     totalScore += 15;
                     matches.push({ keyword, type: 'weak', score: 15 });
                 }
+            }
+        }
+
+        // DÉTECTIONS SPÉCIALES PAR CATÉGORIE
+        
+        // Marketing & News - Détection renforcée
+        if (categoryId === 'marketing_news') {
+            // Domaine de notification automatique
+            if (content.domain && content.domain.includes('notifications@')) {
+                totalScore += 30;
+                matches.push({ keyword: 'notifications@domain', type: 'domain', score: 30 });
+            }
+            
+            // Patterns de désabonnement en français
+            const frenchUnsubPatterns = [
+                'ne plus recevoir',
+                'se désinscrire',
+                'se désabonner',
+                'gérer vos préférences',
+                'stop emails',
+                'arrêter les emails'
+            ];
+            
+            for (const pattern of frenchUnsubPatterns) {
+                if (this.findInText(text, pattern)) {
+                    totalScore += 80;
+                    hasAbsolute = true;
+                    matches.push({ keyword: pattern, type: 'unsubscribe_fr', score: 80 });
+                    break;
+                }
+            }
+        }
+        
+        // HR - Détection améliorée
+        if (categoryId === 'hr') {
+            // Patterns spécifiques RH
+            const hrPatterns = [
+                'entretien',
+                'candidature',
+                'recrutement',
+                'poste',
+                'customer success manager',
+                'ressources humaines',
+                'bamboohr'
+            ];
+            
+            for (const pattern of hrPatterns) {
+                if (this.findInText(text, pattern)) {
+                    totalScore += 30;
+                    matches.push({ keyword: pattern, type: 'hr_pattern', score: 30 });
+                }
+            }
+        }
+        
+        // Reminders - Éviter les faux positifs
+        if (categoryId === 'reminders') {
+            // Pénaliser si c'est un premier contact
+            if (this.findInText(text, 'premier contact') || 
+                this.findInText(text, 'prise de contact')) {
+                totalScore -= 30;
+                matches.push({ keyword: 'first_contact', type: 'penalty', score: -30 });
             }
         }
 
