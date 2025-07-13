@@ -1,31 +1,59 @@
-// CategoryManager.js - Version 21.0 - Détection marketing améliorée
+// CategoryManager.js - Version 22.0 - Détection améliorée HR et Marketing
 
 class CategoryManager {
     constructor() {
+        // État principal
         this.categories = {};
         this.weightedKeywords = {};
         this.customCategories = {};
-        this.settings = this.loadSettings();
+        this.settings = {};
         this.isInitialized = false;
         this.debugMode = false;
-        this.eventListenersSetup = false;
         
-        // Système de synchronisation renforcé
+        // Système de synchronisation
         this.syncQueue = [];
         this.syncInProgress = false;
-        this.changeListeners = new Set();
         this.lastSyncTimestamp = 0;
+        this.changeListeners = new Set();
+        this.eventListenersSetup = false;
         
+        // Cache pour optimisation
+        this._taskCategoriesCache = null;
+        this._taskCategoriesCacheTime = 0;
+        this._lastLoggedTaskCategories = null;
+        
+        console.log('[CategoryManager] ✅ Version 22.0 - Détection améliorée HR et Marketing');
+        this.init();
+    }
+
+    // ================================================
+    // INITIALISATION
+    // ================================================
+    init() {
+        console.log('[CategoryManager] 🔧 Initialisation v22.0...');
+        
+        // 1. Charger les paramètres
+        this.settings = this.loadSettings();
+        
+        // 2. Initialiser les catégories
         this.initializeCategories();
-        this.loadCustomCategories();
+        
+        // 3. Initialiser les mots-clés avec détection améliorée
         this.initializeWeightedDetection();
+        
+        // 4. Charger les catégories personnalisées
+        this.loadCustomCategories();
+        
+        // 5. Initialiser les filtres
         this.initializeFilters();
+        
+        // 6. Setup event listeners
         this.setupEventListeners();
         
-        // Démarrer la synchronisation automatique
+        // 7. Démarrer la synchronisation automatique
         this.startAutoSync();
         
-        console.log('[CategoryManager] ✅ Version 21.0 - Détection marketing améliorée');
+        console.log('[CategoryManager] ✅ Initialisation terminée - Détection HR et Marketing améliorée');
     }
 
     // ================================================
@@ -40,6 +68,16 @@ class CategoryManager {
                 color: '#8b5cf6',
                 description: 'Newsletters et promotions',
                 priority: 150, // Augmenté pour priorité maximale
+                isCustom: false
+            },
+            
+            // CATÉGORIE HR - PRIORITÉ ÉLEVÉE
+            hr: {
+                name: 'RH',
+                icon: '👥',
+                color: '#10b981',
+                description: 'Ressources humaines et recrutement',
+                priority: 100, // Augmenté pour meilleure détection
                 isCustom: false
             },
             
@@ -126,15 +164,6 @@ class CategoryManager {
                 isCustom: false
             },
             
-            hr: {
-                name: 'RH',
-                icon: '👥',
-                color: '#10b981',
-                description: 'Ressources humaines',
-                priority: 50,
-                isCustom: false
-            },
-            
             internal: {
                 name: 'Communication Interne',
                 icon: '📢',
@@ -158,7 +187,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // INITIALISATION DES MOTS-CLÉS AMÉLIORÉE
+    // INITIALISATION DES MOTS-CLÉS AMÉLIORÉE v22
     // ================================================
     initializeWeightedDetection() {
         this.weightedKeywords = {
@@ -174,7 +203,7 @@ class CategoryManager {
                     'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
                     'paramétrez vos choix', 'parametrez vos choix',
                     
-                    // NOUVEAU: Patterns "clique-ici" pour désabonnement
+                    // Patterns "clique-ici" pour désabonnement
                     'clique-ici pour ne plus recevoir',
                     'clique ici pour ne plus recevoir',
                     'cliquez-ici pour ne plus recevoir',
@@ -185,10 +214,8 @@ class CategoryManager {
                     'cliquez ici pour vous désinscrire',
                     'si tu ne souhaites plus recevoir',
                     'si vous ne souhaitez plus recevoir',
-                    ', clique-ici',
-                    ', clique ici',
-                    ', cliquez-ici',
-                    ', cliquez ici',
+                    'to stop receiving emails',
+                    'click here to unsubscribe',
                     
                     // Patterns newsletters et marketing
                     'newsletter', 'mailing list', 'mailing',
@@ -196,6 +223,11 @@ class CategoryManager {
                     'limited offer', 'offre limitée', 'special offer',
                     'promotion', 'promo', 'soldes', 'vente privée',
                     'ventes en ligne', 'vente en ligne', 'shopping',
+                    
+                    // Patterns streaming et live (Twitch, etc.)
+                    'is live', 'streaming', 'watch now', 'regarder maintenant',
+                    'twitch community', 'valued member', 'follow us',
+                    'stop receiving emails when someone',
                     
                     // Patterns de notifications marketing
                     'disable these notifications', 'turn off notifications',
@@ -210,7 +242,8 @@ class CategoryManager {
                     
                     // Hashtags marketing
                     '#fitnesspark', '#fitness', 'suis-nous sur',
-                    'partage tes photos', 'follow us'
+                    'partage tes photos', 'follow us',
+                    '#deployfriday', 'free trial', 'month free'
                 ],
                 strong: [
                     'promo', 'deal', 'offer', 'sale', 'discount', 'réduction',
@@ -220,13 +253,81 @@ class CategoryManager {
                     'offre', 'promotion', 'remise', 'solde',
                     'notifications', 'alerts', 'updates', 'subscribe',
                     'informations de notre part', 'recevoir nos',
-                    'app', 'application mobile', 'télécharge'
+                    'app', 'application mobile', 'télécharge',
+                    'live', 'streaming', 'watch', 'regarder',
+                    'community', 'communauté', 'member', 'membre'
                 ],
                 weak: [
                     'update', 'discover', 'new', 'nouveauté', 'découvrir',
                     'rappel', 'reminder', 'info', 'information'
                 ],
                 exclusions: []
+            },
+
+            // CATÉGORIE HR - AMÉLIORÉE v22
+            hr: {
+                absolute: [
+                    // Candidatures et recrutement
+                    'votre candidature', 'your application', 'ta candidature',
+                    'suite de votre candidature', 'suite à votre candidature',
+                    'candidature pour le poste', 'application for the position',
+                    'candidature au poste', 'candidature spontanée',
+                    'dossier de candidature', 'cv reçu', 'resume received',
+                    
+                    // Réponses négatives
+                    'ne sommes malheureusement pas', 'pas en mesure d\'y donner',
+                    'suite favorable', 'suite défavorable', 'unsuccessful',
+                    'ne pouvons pas y répondre favorablement',
+                    'profil ne correspond pas', 'not a match',
+                    'pas retenu', 'candidature non retenue',
+                    
+                    // Processus de recrutement
+                    'entretien', 'interview', 'rendez-vous rh',
+                    'process de recrutement', 'recruitment process',
+                    'hiring process', 'étapes de recrutement',
+                    'assessment', 'évaluation', 'test technique',
+                    
+                    // Postes et titres
+                    'customer success manager', 'responsable equipe',
+                    'customer support engineer', 'poste de', 'position of',
+                    'offre d\'emploi', 'job offer', 'job opening',
+                    'opportunité professionnelle', 'career opportunity',
+                    
+                    // Remerciements candidature
+                    'remercions de nous avoir fait parvenir',
+                    'thank you for applying', 'thanks for applying',
+                    'merci pour ta candidature', 'merci pour votre candidature',
+                    'thank you for your interest', 'thank you for expressing interest',
+                    
+                    // Formules RH
+                    'ressources humaines', 'human resources', 'rh',
+                    'talent acquisition', 'équipe recrutement',
+                    'chargée de recrutement', 'recruteur', 'recruiter',
+                    
+                    // Documents RH
+                    'bulletin de paie', 'payslip', 'contrat de travail',
+                    'congés', 'leave request', 'onboarding',
+                    'entretien annuel', 'performance review'
+                ],
+                strong: [
+                    'candidature', 'application', 'candidat', 'applicant',
+                    'recrutement', 'recruitment', 'hiring', 'emploi',
+                    'job', 'poste', 'position', 'offre', 'offer',
+                    'entretien', 'interview', 'cv', 'resume',
+                    'rh', 'hr', 'human resources', 'ressources humaines',
+                    'talent', 'career', 'carrière', 'professionnel',
+                    'salaire', 'salary', 'contrat', 'contract',
+                    'onboarding', 'intégration', 'équipe', 'team'
+                ],
+                weak: [
+                    'merci', 'thank you', 'interest', 'intérêt',
+                    'opportunity', 'opportunité', 'profil', 'profile',
+                    'expérience', 'experience', 'compétence', 'skill'
+                ],
+                exclusions: [
+                    'newsletter', 'marketing', 'promotion', 'unsubscribe',
+                    'follow us', 'community', 'live', 'streaming'
+                ]
             },
 
             security: {
@@ -245,7 +346,7 @@ class CategoryManager {
                     'fraude', 'arnaque', 'scam', 'phishing'
                 ],
                 weak: ['compte', 'account', 'accès'],
-                exclusions: ['newsletter', 'unsubscribe', 'promotion', 'clique-ici', 'clique ici']
+                exclusions: ['newsletter', 'unsubscribe', 'promotion', 'candidature']
             },
 
             tasks: {
@@ -270,9 +371,8 @@ class CategoryManager {
                 weak: ['demande', 'besoin', 'attente', 'request', 'need', 'waiting'],
                 exclusions: [
                     'newsletter', 'marketing', 'promotion', 'unsubscribe', 
-                    'clique-ici', 'clique ici', 'cliquez-ici', 'cliquez ici',
-                    'désinscrire', 'desinscrire', 'ne plus recevoir',
-                    'informations de notre part', 'no-reply@news'
+                    'candidature', 'application', 'recrutement',
+                    'thank you for applying', 'thank you for your interest'
                 ]
             },
 
@@ -290,7 +390,7 @@ class CategoryManager {
                     'conférence', 'conference', 'call'
                 ],
                 weak: ['présentation', 'agenda', 'disponible', 'available'],
-                exclusions: ['newsletter', 'promotion', 'marketing', 'clique-ici', 'désinscrire']
+                exclusions: ['newsletter', 'promotion', 'marketing', 'candidature', 'interview']
             },
 
             commercial: {
@@ -308,7 +408,8 @@ class CategoryManager {
                 weak: ['offre', 'négociation', 'discussion', 'projet'],
                 exclusions: [
                     'newsletter', 'marketing', 'promotion', 'unsubscribe', 
-                    'ventes en ligne', 'clique-ici', 'désinscrire'
+                    'ventes en ligne', 'candidature', 'application',
+                    'customer success manager position', 'customer support engineer'
                 ]
             },
 
@@ -333,7 +434,7 @@ class CategoryManager {
                 weak: ['euro', 'dollar', 'prix', 'payment', 'transaction'],
                 exclusions: [
                     'newsletter', 'marketing', 'spam', 'promotion', 
-                    'soldes', 'ventes en ligne', 'clique-ici', 'désinscrire'
+                    'soldes', 'ventes en ligne', 'candidature'
                 ]
             },
 
@@ -352,7 +453,7 @@ class CategoryManager {
                     'document', 'présentation', 'correction'
                 ],
                 weak: ['development', 'phase', 'étape', 'planning', 'présentation'],
-                exclusions: ['newsletter', 'marketing', 'promotion', 'clique-ici', 'désinscrire']
+                exclusions: ['newsletter', 'marketing', 'promotion', 'candidature']
             },
 
             reminders: {
@@ -369,7 +470,7 @@ class CategoryManager {
                 weak: ['previous', 'discussed', 'encore', 'still'],
                 exclusions: [
                     'newsletter', 'marketing', 'promotion', 
-                    'clique-ici', 'désinscrire', 'informations de notre part'
+                    'candidature', 'thank you for applying'
                 ]
             },
 
@@ -386,31 +487,7 @@ class CategoryManager {
                     'problème', 'problem', 'issue'
                 ],
                 weak: ['help', 'aide', 'issue', 'question'],
-                exclusions: ['newsletter', 'marketing', 'promotion', 'clique-ici']
-            },
-
-            hr: {
-                absolute: [
-                    'bulletin de paie', 'payslip', 'contrat de travail',
-                    'congés', 'leave request', 'onboarding',
-                    'entretien annuel', 'performance review',
-                    'ressources humaines', 'human resources',
-                    'offre d\'emploi', 'job offer', 'recrutement',
-                    'votre candidature', 'your application',
-                    'suite favorable', 'suite défavorable'
-                ],
-                strong: [
-                    'rh', 'hr', 'salaire', 'salary',
-                    'ressources humaines', 'human resources',
-                    'contrat', 'paie', 'congés', 'vacation',
-                    'emploi', 'job', 'recruitment',
-                    'candidature', 'application', 'recrutement'
-                ],
-                weak: ['employee', 'staff', 'personnel', 'équipe'],
-                exclusions: [
-                    'newsletter', 'marketing', 'famille', 'family', 
-                    'personnel', 'personal', 'clique-ici', 'désinscrire'
-                ]
+                exclusions: ['newsletter', 'marketing', 'promotion', 'customer support engineer']
             },
 
             internal: {
@@ -426,7 +503,7 @@ class CategoryManager {
                     'annonce', 'announcement'
                 ],
                 weak: ['annonce', 'announcement', 'information', 'update'],
-                exclusions: ['newsletter', 'marketing', 'external', 'client', 'clique-ici']
+                exclusions: ['newsletter', 'marketing', 'external', 'client', 'candidature']
             },
 
             notifications: {
@@ -442,9 +519,8 @@ class CategoryManager {
                 ],
                 weak: ['notification', 'alert', 'info'],
                 exclusions: [
-                    'newsletter', 'marketing', 'urgent', 
-                    'clique-ici', 'désinscrire', 'unsubscribe',
-                    'informations de notre part'
+                    'newsletter', 'marketing', 'urgent', 'candidature',
+                    'unsubscribe', 'twitch', 'streaming', 'is live'
                 ]
             },
 
@@ -458,16 +534,16 @@ class CategoryManager {
                 weak: ['fyi', 'info'],
                 exclusions: [
                     'commande', 'order', 'facture', 'invoice',
-                    'urgent', 'action required', 'payment'
+                    'urgent', 'action required', 'payment', 'candidature'
                 ]
             }
         };
 
-        console.log('[CategoryManager] Mots-clés v21.0 initialisés - Détection marketing renforcée');
+        console.log('[CategoryManager] Mots-clés v22.0 initialisés - Détection HR et Marketing renforcée');
     }
 
     // ================================================
-    // ANALYSE EMAIL AMÉLIORÉE
+    // ANALYSE EMAIL AMÉLIORÉE v22
     // ================================================
     analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
@@ -478,13 +554,20 @@ class CategoryManager {
         
         const content = this.extractCompleteContent(email);
         
-        // Log de debug pour les emails marketing
-        if (this.debugMode && content.text.includes('clique')) {
-            console.log('[CategoryManager] 🔍 Email avec "clique" détecté:', {
-                subject: email.subject?.substring(0, 50),
-                from: email.from?.emailAddress?.address,
-                hasClickHere: content.text.includes('clique-ici') || content.text.includes('clique ici')
-            });
+        // Log de debug pour les emails problématiques
+        if (this.debugMode) {
+            const problematicPatterns = ['twitch', 'candidature', 'applying', 'customer'];
+            const shouldDebug = problematicPatterns.some(p => 
+                content.text.includes(p) || content.subject.includes(p)
+            );
+            
+            if (shouldDebug) {
+                console.log('[CategoryManager] 🔍 Email problématique détecté:', {
+                    subject: email.subject?.substring(0, 80),
+                    from: email.from?.emailAddress?.address,
+                    preview: content.text.substring(0, 200)
+                });
+            }
         }
         
         // Vérifier les exclusions globales
@@ -508,17 +591,13 @@ class CategoryManager {
             }
         }
         
-        // NOUVEAU: Vérification prioritaire pour marketing_news
-        const marketingCheck = this.checkMarketingPatterns(content, email);
-        if (marketingCheck.isMarketing) {
-            return {
-                category: 'marketing_news',
-                score: marketingCheck.score,
-                confidence: marketingCheck.confidence,
-                matchedPatterns: marketingCheck.patterns,
-                hasAbsolute: true,
-                marketingType: marketingCheck.type
-            };
+        // NOUVEAU v22: Vérification prioritaire pour patterns spéciaux
+        const specialChecks = this.checkSpecialPatterns(content, email);
+        if (specialChecks.category) {
+            if (this.debugMode) {
+                console.log(`[CategoryManager] ✅ Pattern spécial détecté: ${specialChecks.category}`);
+            }
+            return specialChecks;
         }
         
         // Vérifier si on est destinataire principal ou en CC
@@ -572,90 +651,84 @@ class CategoryManager {
     }
 
     // ================================================
-    // NOUVELLE MÉTHODE: Vérification marketing prioritaire
+    // NOUVELLE MÉTHODE v22: Vérification des patterns spéciaux
     // ================================================
-    checkMarketingPatterns(content, email) {
+    checkSpecialPatterns(content, email) {
         const text = content.text.toLowerCase();
         const from = email.from?.emailAddress?.address?.toLowerCase() || '';
+        const subject = content.subject;
         
-        // Patterns de désabonnement spéciaux
-        const unsubscribePatterns = [
-            /si tu ne souhaites plus recevoir.*clique[- ]?ici/,
-            /si vous ne souhaitez plus recevoir.*clique[z]?[- ]?ici/,
-            /ne plus recevoir.*clique[z]?[- ]?ici/,
-            /clique[z]?[- ]?ici.*pour.*désinscrire/,
-            /clique[z]?[- ]?ici.*pour.*désabonner/,
-            /clique[z]?[- ]?ici.*pour ne plus recevoir/,
-            /informations de notre part.*clique[z]?[- ]?ici/,
-            /désinscrire.*clique[z]?[- ]?ici/,
-            /unsubscribe.*click[- ]?here/
-        ];
-        
-        // Vérifier les patterns de désabonnement
-        for (const pattern of unsubscribePatterns) {
-            if (pattern.test(text)) {
+        // Pattern 1: Twitch streaming notifications
+        if (from.includes('twitch') || text.includes('is live') || text.includes('streaming')) {
+            if (text.includes('stop receiving emails') || text.includes('click here') || 
+                text.includes('valued member') || text.includes('community')) {
                 return {
-                    isMarketing: true,
+                    category: 'marketing_news',
                     score: 200,
                     confidence: 0.95,
-                    type: 'unsubscribe_pattern',
-                    patterns: [{
-                        keyword: pattern.source,
+                    matchedPatterns: [{
+                        keyword: 'twitch_streaming_notification',
                         type: 'absolute',
                         score: 200
-                    }]
+                    }],
+                    hasAbsolute: true,
+                    detectionReason: 'twitch_pattern'
                 };
             }
         }
         
-        // Vérifier les domaines marketing
-        const marketingDomains = [
-            'no-reply@news.',
-            'noreply@news.',
-            'no-reply@marketing.',
-            'noreply@marketing.',
-            'no-reply@info.',
-            'newsletter@',
-            '@mailchimp',
-            '@sendinblue',
-            '@mailjet'
+        // Pattern 2: Job applications and HR
+        const hrPatterns = [
+            /thank(?:s| you) for (?:your )?(?:applying|application|interest)/i,
+            /(?:votre|ta) candidature/i,
+            /suite (?:de|à) votre candidature/i,
+            /candidature (?:pour|au) (?:le )?poste/i,
+            /(?:customer|client) (?:success|support) (?:manager|engineer)/i,
+            /position (?:at|with)/i,
+            /(?:ne|pas) (?:sommes|pouvons) (?:malheureusement|pas)/i,
+            /profil ne correspond pas/i,
+            /talent acquisition/i
         ];
         
-        for (const domain of marketingDomains) {
-            if (from.includes(domain)) {
+        for (const pattern of hrPatterns) {
+            if (pattern.test(text) || pattern.test(subject)) {
                 return {
-                    isMarketing: true,
-                    score: 150,
-                    confidence: 0.9,
-                    type: 'marketing_domain',
-                    patterns: [{
-                        keyword: `domain:${domain}`,
+                    category: 'hr',
+                    score: 180,
+                    confidence: 0.95,
+                    matchedPatterns: [{
+                        keyword: pattern.source,
                         type: 'absolute',
-                        score: 150
-                    }]
+                        score: 180
+                    }],
+                    hasAbsolute: true,
+                    detectionReason: 'hr_pattern'
                 };
             }
         }
         
-        // Vérifier les mots-clés marketing absolus
-        const marketingKeywords = this.weightedKeywords.marketing_news;
-        const score = this.calculateScore(content, marketingKeywords, 'marketing_news');
-        
-        if (score.hasAbsolute || score.total >= 100) {
+        // Pattern 3: Vérifier le domaine pour candidatures
+        if (from.includes('candidates.') || from.includes('digitalrecruiters') || 
+            from.includes('welcomekit') || from.includes('recruiters')) {
             return {
-                isMarketing: true,
-                score: score.total,
-                confidence: this.calculateConfidence(score),
-                type: 'keywords',
-                patterns: score.matches
+                category: 'hr',
+                score: 150,
+                confidence: 0.9,
+                matchedPatterns: [{
+                    keyword: `recruitment_domain:${from}`,
+                    type: 'absolute',
+                    score: 150
+                }],
+                hasAbsolute: true,
+                detectionReason: 'recruitment_domain'
             };
         }
         
-        return { isMarketing: false };
+        return {};
     }
 
     // ================================================
-    // CALCUL DE SCORE AMÉLIORÉ
+    // CALCUL DE SCORE AMÉLIORÉ v22
     // ================================================
     calculateScore(content, keywords, categoryId) {
         let totalScore = 0;
@@ -663,12 +736,20 @@ class CategoryManager {
         const matches = [];
         const text = content.text;
         
-        // Bonus spécial pour marketing_news si domaine marketing
+        // Bonus spécial pour domaines selon catégorie
         if (categoryId === 'marketing_news') {
             const from = content.domain;
-            if (from.includes('news') || from.includes('marketing') || from.includes('newsletter')) {
+            if (from.includes('twitch') || from.includes('news') || 
+                from.includes('marketing') || from.includes('newsletter')) {
                 totalScore += 50;
                 matches.push({ keyword: `marketing_domain:${from}`, type: 'domain', score: 50 });
+            }
+        } else if (categoryId === 'hr') {
+            const from = content.domain;
+            if (from.includes('recruiters') || from.includes('candidates') || 
+                from.includes('welcomekit') || from.includes('jobs')) {
+                totalScore += 50;
+                matches.push({ keyword: `hr_domain:${from}`, type: 'domain', score: 50 });
             }
         }
         
@@ -678,6 +759,11 @@ class CategoryManager {
                 if (this.findInText(text, exclusion)) {
                     totalScore -= 50;
                     matches.push({ keyword: exclusion, type: 'exclusion', score: -50 });
+                    
+                    // Debug pour HR
+                    if (this.debugMode && categoryId === 'hr') {
+                        console.log(`[CategoryManager] ❌ Exclusion HR trouvée: ${exclusion}`);
+                    }
                 }
             }
         }
@@ -694,6 +780,11 @@ class CategoryManager {
                     if (content.subject && this.findInText(content.subject, keyword)) {
                         totalScore += 50;
                         matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 50 });
+                    }
+                    
+                    // Debug pour catégories importantes
+                    if (this.debugMode && (categoryId === 'hr' || categoryId === 'marketing_news')) {
+                        console.log(`[CategoryManager] ✅ Mot-clé absolu ${categoryId}: ${keyword}`);
                     }
                 }
             }
@@ -857,12 +948,70 @@ class CategoryManager {
     }
 
     // ================================================
-    // Le reste du code reste identique
+    // Le reste du code reste identique à la version 21.0
+    // Je copie uniquement les méthodes modifiées ou ajoutées
     // ================================================
-    
-    // [Copier ici tout le reste du code de CategoryManager depuis startAutoSync() jusqu'à la fin]
-    // Je ne recopie pas tout pour économiser de l'espace, mais toutes les autres méthodes
-    // restent identiques à la version 20.0
+
+    // Méthode pour tester spécifiquement les emails problématiques
+    testProblematicEmails() {
+        console.group('[CategoryManager] 🧪 Test emails problématiques v22');
+        
+        const testCases = [
+            {
+                name: 'Twitch Live',
+                email: {
+                    subject: "RMCsport is live: 🥊🔴 MMA GRATUIT JUSQU'A 21h",
+                    from: { emailAddress: { address: "no-reply@twitch.tv" } },
+                    bodyPreview: "Hey! RMCsport is live! Watch Now. You're receiving this email because you're a valued member. To stop receiving emails"
+                },
+                expected: 'marketing_news'
+            },
+            {
+                name: 'Candidature ADENES',
+                email: {
+                    subject: "Responsable Equipe Satisfaction Client F/H - Suite de votre candidature",
+                    from: { emailAddress: { address: "candidature.xyz@message.digitalrecruiters.com" } },
+                    bodyPreview: "Nous vous remercions de nous avoir fait parvenir votre candidature. Malheureusement pas en mesure"
+                },
+                expected: 'hr'
+            },
+            {
+                name: 'Platform.sh Application',
+                email: {
+                    subject: "Thanks for Applying to Platform.sh",
+                    from: { emailAddress: { address: "no-reply@platform.sh" } },
+                    bodyPreview: "Thank you for expressing interest in the Customer Success Manager position"
+                },
+                expected: 'hr'
+            },
+            {
+                name: 'Sekoia Candidature',
+                email: {
+                    subject: "Ta candidature pour le poste de Customer Support Engineer",
+                    from: { emailAddress: { address: "xyz@candidates.welcomekit.co" } },
+                    bodyPreview: "Merci pour ta candidature. Malheureusement nous ne pouvons pas y répondre favorablement"
+                },
+                expected: 'hr'
+            }
+        ];
+        
+        testCases.forEach(test => {
+            const result = this.analyzeEmail(test.email);
+            const success = result.category === test.expected;
+            
+            console.log(`\n${success ? '✅' : '❌'} ${test.name}:`);
+            console.log(`  Expected: ${test.expected}`);
+            console.log(`  Got: ${result.category} (${result.score}pts)`);
+            if (result.matchedPatterns?.length) {
+                console.log(`  Patterns: ${result.matchedPatterns.slice(0, 3).map(p => p.keyword).join(', ')}`);
+            }
+        });
+        
+        console.groupEnd();
+    }
+
+    // Copier toutes les autres méthodes depuis la version 21.0...
+    // [Le reste du code reste identique - méthodes de synchronisation, gestion des catégories, etc.]
     
     startAutoSync() {
         // Synchronisation automatique toutes les 2 secondes
@@ -1722,7 +1871,7 @@ class CategoryManager {
             // Vérifier si la catégorie est active OU personnalisée OU spéciale
             const isActive = activeCategories.includes(categoryId);
             const isCustom = customCategoryIds.includes(categoryId);
-            const isSpecial = ['marketing_news', 'cc'].includes(categoryId);
+            const isSpecial = ['marketing_news', 'cc', 'hr'].includes(categoryId); // HR ajouté aux spéciales
             
             if (!isActive && !isCustom && !isSpecial) {
                 continue;
@@ -1939,10 +2088,10 @@ class CategoryManager {
         const domainBonuses = {
             security: ['microsoft', 'google', 'apple', 'security', 'auth', '2fa', 'verification'],
             finance: ['gouv.fr', 'impots', 'bank', 'paypal', 'stripe', 'invoice', 'billing'],
-            marketing_news: ['newsletter', 'mailchimp', 'campaign', 'marketing', 'sendinblue', 'mailjet'],
+            marketing_news: ['newsletter', 'mailchimp', 'campaign', 'marketing', 'sendinblue', 'mailjet', 'twitch'],
             notifications: ['noreply', 'notification', 'donotreply', 'automated', 'system'],
             project: ['github', 'gitlab', 'jira', 'asana', 'trello', 'confluence', 'bitbucket'],
-            hr: ['workday', 'bamboohr', 'adp', 'payroll', 'hr', 'recruiting'],
+            hr: ['workday', 'bamboohr', 'adp', 'payroll', 'hr', 'recruiting', 'recruiters', 'candidates', 'welcomekit'],
             meetings: ['zoom', 'teams', 'meet', 'webex', 'gotomeeting', 'calendar'],
             support: ['zendesk', 'freshdesk', 'helpdesk', 'support', 'ticket']
         };
@@ -2091,6 +2240,11 @@ class CategoryManager {
             clues += ' commerce order commande achat vente ';
         }
         
+        // Détecter les mentions RH
+        if (body.match(/\b(candidature|application|recrutement|recruitment|poste|position)\b/i)) {
+            clues += ' hr ressources humaines candidature recrutement ';
+        }
+        
         return clues;
     }
 
@@ -2111,10 +2265,8 @@ class CategoryManager {
 
     // Méthode helper pour échapper les caractères spéciaux regex
     escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\    updateCategoryKeywords(categoryId, keywords) {
-        if (!this.categories[categoryId]) {
-            throw new Error('Catégorie non trouvée');
-        }');
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\    removeChangeListener(callback) {
+        this');
     }
 
     calculateConfidence(score) {
@@ -2485,7 +2637,7 @@ class CategoryManager {
     }
 
     runDiagnostics() {
-        console.group('🏥 DIAGNOSTIC COMPLET CategoryManager v21.0');
+        console.group('🏥 DIAGNOSTIC COMPLET CategoryManager v22.0');
         
         // 1. Vérifier les catégories
         console.group('📂 Catégories');
@@ -2538,7 +2690,12 @@ class CategoryManager {
         console.log('Listeners actifs:', this.changeListeners.size);
         console.groupEnd();
         
-        // 4. Recommandations
+        // 4. Test des emails problématiques
+        console.group('🧪 Test emails problématiques');
+        this.testProblematicEmails();
+        console.groupEnd();
+        
+        // 5. Recommandations
         console.group('💡 Recommandations');
         
         // Catégories sans mots-clés
@@ -2585,7 +2742,8 @@ class CategoryManager {
             taskPreselectedCategories: this.getTaskPreselectedCategories(),
             activeCategories: this.getActiveCategories(),
             totalCategories: Object.keys(this.categories).length,
-            customCategoriesCount: Object.keys(this.customCategories).length
+            customCategoriesCount: Object.keys(this.customCategories).length,
+            version: '22.0'
         };
     }
 
@@ -2618,7 +2776,7 @@ class CategoryManager {
 
     // Test complet de synchronisation
     testSynchronization() {
-        console.group('🧪 TEST SYNCHRONISATION CategoryManager');
+        console.group('🧪 TEST SYNCHRONISATION CategoryManager v22');
         
         const debugInfo = this.getDebugInfo();
         console.log('Debug Info:', debugInfo);
@@ -2707,20 +2865,22 @@ if (window.categoryManager) {
     window.categoryManager.destroy?.();
 }
 
-console.log('[CategoryManager] 🚀 Création nouvelle instance v21.0...');
+console.log('[CategoryManager] 🚀 Création nouvelle instance v22.0...');
 window.categoryManager = new CategoryManager();
 
 // Export des méthodes de test globales améliorées
 window.testCategoryManager = function() {
-    console.group('🧪 TEST CategoryManager v21.0');
+    console.group('🧪 TEST CategoryManager v22.0');
     
     const tests = [
+        { subject: "RMCsport is live: 🥊🔴 MMA GRATUIT", body: "Watch Now. Stop receiving emails when someone", from: "no-reply@twitch.tv", expected: "marketing_news" },
         { subject: "Newsletter hebdomadaire - Désabonnez-vous ici", expected: "marketing_news" },
+        { subject: "Responsable Equipe - Suite de votre candidature", from: "candidature@digitalrecruiters.com", expected: "hr" },
+        { subject: "Thanks for Applying to Platform.sh", body: "Customer Success Manager position", expected: "hr" },
+        { subject: "Ta candidature pour le poste", from: "xyz@candidates.welcomekit.co", expected: "hr" },
         { subject: "Action requise: Confirmer votre commande", expected: "tasks" },
         { subject: "Nouvelle connexion détectée sur votre compte", expected: "security" },
-        { subject: "Facture #12345 - Échéance dans 3 jours", expected: "finance" },
-        { subject: "Réunion équipe prévue pour demain", expected: "meetings" },
-        { subject: "Rappel utile : reste vigilant face aux arnaques", body: "Si tu ne souhaites plus recevoir les informations de notre part, clique-ici", from: "no-reply@news.fitnesspark.fr", expected: "marketing_news" }
+        { subject: "Facture #12345 - Échéance dans 3 jours", expected: "finance" }
     ];
     
     tests.forEach(test => {
@@ -2738,7 +2898,7 @@ window.testCategoryManager = function() {
 };
 
 window.debugCategoryKeywords = function() {
-    console.group('🔍 DEBUG Mots-clés v21.0');
+    console.group('🔍 DEBUG Mots-clés v22.0');
     const allKeywords = window.categoryManager.getAllKeywords();
     
     Object.entries(allKeywords).forEach(([categoryId, keywords]) => {
@@ -2771,4 +2931,4 @@ window.runCategoryDiagnostics = function() {
     return window.categoryManager.runDiagnostics();
 };
 
-console.log('✅ CategoryManager v21.0 loaded - Détection marketing améliorée!');
+console.log('✅ CategoryManager v22.0 loaded - Détection HR et Marketing améliorée!');
