@@ -1,7 +1,7 @@
-// EmailScanner.js - Version 12.0 - Catégorisation corrigée
-// Priorité à marketing_news, détection améliorée
+// EmailScanner.js - Version 13.0 - Catégorisation complètement refaite
+// Correction complète du système de catégorisation avec priorités strictes
 
-console.log('[EmailScanner] 🚀 Loading EmailScanner.js v12.0 - Catégorisation corrigée...');
+console.log('[EmailScanner] 🚀 Loading EmailScanner.js v13.0 - Catégorisation refaite...');
 
 class EmailScanner {
     constructor() {
@@ -11,8 +11,8 @@ class EmailScanner {
         this.currentProgress = null;
         this.onProgressCallback = null;
         
-        // Cache de catégorisation
-        this.categorizationCache = new Map();
+        // Nouveau système de catégorisation avec patterns exclusifs
+        this.categorizationRules = this.initCategorizationRules();
         
         // Paramètres par défaut
         this.defaultOptions = {
@@ -34,8 +34,403 @@ class EmailScanner {
             preselectedForTasks: 0
         };
         
-        console.log('[EmailScanner] ✅ Scanner v12.0 initialized');
+        console.log('[EmailScanner] ✅ Scanner v13.0 initialized - Catégorisation refaite');
         this.initialize();
+    }
+
+    // ================================================
+    // NOUVEAU SYSTÈME DE CATÉGORISATION
+    // ================================================
+    initCategorizationRules() {
+        // Règles avec priorités et patterns exclusifs
+        return [
+            // PRIORITÉ 1: Marketing & Newsletters - DOIT ÊTRE VÉRIFIÉ EN PREMIER
+            {
+                category: 'marketing_news',
+                priority: 1,
+                name: 'Marketing & Newsletters',
+                icon: '📰',
+                color: '#8b5cf6',
+                // Patterns qui FORCENT cette catégorie
+                mustHavePatterns: [
+                    // Patterns de désabonnement (TRÈS IMPORTANT)
+                    /se\s+d[eé]sabonner/i,
+                    /se\s+d[eé]sinscrire/i,
+                    /d[eé]sabonner/i,
+                    /d[eé]sinscrire/i,
+                    /unsubscribe/i,
+                    /opt[\s-]?out/i,
+                    /stop\s+receiving/i,
+                    /ne\s+plus\s+recevoir/i,
+                    /g[eé]rer\s+(vos\s+)?pr[eé]f[eé]rences/i,
+                    /g[eé]rer\s+les\s+param[eè]tres/i,
+                    /email\s+preferences/i,
+                    /notification\s+settings/i,
+                    /manage\s+notifications/i,
+                    /update\s+your\s+preferences/i,
+                    /modify\s+your\s+subscription/i,
+                    /newsletter/i,
+                    /mailing\s+list/i,
+                    /this\s+email\s+was\s+sent\s+to/i,
+                    /you\s+are\s+receiving\s+this/i,
+                    /vous\s+ne\s+souhaitez\s+plus\s+recevoir/i,
+                    /param[eé]trez\s+vos\s+choix/i,
+                    /politique\s+de\s+confidentialit[eé]/i,
+                    /privacy\s+policy/i
+                ],
+                // Headers spéciaux
+                headerIndicators: [
+                    'List-Unsubscribe',
+                    'List-Unsubscribe-Post',
+                    'X-Campaign-Id',
+                    'X-Mailchimp-Campaign'
+                ],
+                // Labels Gmail
+                gmailLabels: ['CATEGORY_PROMOTIONS', 'CATEGORY_UPDATES', 'CATEGORY_SOCIAL', 'CATEGORY_FORUMS'],
+                // Domaines typiques
+                domainPatterns: [
+                    /mailchimp/i,
+                    /sendgrid/i,
+                    /mailgun/i,
+                    /campaign/i,
+                    /newsletter/i,
+                    /marketing/i,
+                    /promo/i,
+                    /noreply/i,
+                    /no-reply/i,
+                    /donotreply/i
+                ]
+            },
+
+            // PRIORITÉ 2: Ressources Humaines (après Marketing pour éviter les faux positifs)
+            {
+                category: 'hr',
+                priority: 2,
+                name: 'Ressources Humaines',
+                icon: '👥',
+                color: '#10b981',
+                mustHavePatterns: [
+                    /votre\s+candidature/i,
+                    /your\s+application/i,
+                    /suite\s+(de\s+)?votre\s+candidature/i,
+                    /processus\s+de\s+recrutement/i,
+                    /recruitment\s+process/i,
+                    /offre\s+d'emploi/i,
+                    /job\s+offer/i,
+                    /poste\s+(de|à\s+pourvoir)/i,
+                    /entretien/i,
+                    /interview/i,
+                    /customer\s+success\s+manager/i,
+                    /responsable\s+succ[eè]s\s+client/i,
+                    /charg[eé]e?\s+de\s+recrutement/i,
+                    /ressources\s+humaines/i,
+                    /human\s+resources/i,
+                    /bulletin\s+de\s+paie/i,
+                    /fiche\s+de\s+paie/i,
+                    /payslip/i,
+                    /cong[eé]s/i,
+                    /onboarding/i
+                ],
+                // NE PAS catégoriser en HR si ces patterns sont présents
+                excludeIfContains: [
+                    /se\s+d[eé]sabonner/i,
+                    /unsubscribe/i,
+                    /newsletter/i,
+                    /vous\s+recevez\s+ce/i,
+                    /this\s+email\s+was\s+sent/i
+                ]
+            },
+
+            // PRIORITÉ 3: Finance & Comptabilité
+            {
+                category: 'finance',
+                priority: 3,
+                name: 'Finance & Comptabilité',
+                icon: '💰',
+                color: '#f59e0b',
+                mustHavePatterns: [
+                    /facture\s*(n[°o]|num[eé]ro)/i,
+                    /invoice\s*(number|#)/i,
+                    /montant.*€/i,
+                    /total.*€/i,
+                    /paiement/i,
+                    /payment/i,
+                    /virement/i,
+                    /pr[eé]l[eè]vement/i,
+                    /remboursement/i,
+                    /refund/i,
+                    /relev[eé]\s+bancaire/i,
+                    /bank\s+statement/i,
+                    /commande\s*(n[°o]|num[eé]ro)/i,
+                    /order\s*(number|#)/i,
+                    /facture.*disponible/i,
+                    /invoice.*available/i
+                ],
+                excludeIfContains: [
+                    /se\s+d[eé]sabonner/i,
+                    /unsubscribe/i,
+                    /newsletter/i
+                ]
+            },
+
+            // PRIORITÉ 4: Réunions & Rendez-vous
+            {
+                category: 'meetings',
+                priority: 4,
+                name: 'Réunions & Rendez-vous',
+                icon: '📅',
+                color: '#3b82f6',
+                mustHavePatterns: [
+                    /invitation\s+[àa]\s+une\s+r[eé]union/i,
+                    /meeting\s+invitation/i,
+                    /meeting\s+request/i,
+                    /teams\s+meeting/i,
+                    /zoom\s+meeting/i,
+                    /google\s+meet/i,
+                    /rendez-vous/i,
+                    /appointment/i,
+                    /agenda/i,
+                    /ordre\s+du\s+jour/i,
+                    /conf[eé]rence/i,
+                    /visioconf[eé]rence/i,
+                    /video\s+call/i,
+                    /calendrier/i,
+                    /calendar/i,
+                    /planifier/i,
+                    /schedule/i
+                ],
+                excludeIfContains: [
+                    /se\s+d[eé]sabonner/i,
+                    /unsubscribe/i,
+                    /newsletter/i,
+                    /facture/i,
+                    /invoice/i
+                ]
+            },
+
+            // PRIORITÉ 5: Sécurité
+            {
+                category: 'security',
+                priority: 5,
+                name: 'Sécurité',
+                icon: '🔒',
+                color: '#dc2626',
+                mustHavePatterns: [
+                    /alerte\s+de\s+connexion/i,
+                    /nouvelle\s+connexion/i,
+                    /new\s+sign[\s-]?in/i,
+                    /activit[eé]\s+suspecte/i,
+                    /suspicious\s+activity/i,
+                    /code\s+de\s+v[eé]rification/i,
+                    /verification\s+code/i,
+                    /two[\s-]?factor/i,
+                    /2fa/i,
+                    /authentification/i,
+                    /authentication/i,
+                    /password\s+reset/i,
+                    /r[eé]initialisation.*mot\s+de\s+passe/i,
+                    /security\s+alert/i,
+                    /alerte\s+de\s+s[eé]curit[eé]/i
+                ]
+            },
+
+            // PRIORITÉ 6: Actions & Tâches
+            {
+                category: 'tasks',
+                priority: 6,
+                name: 'Actions & Tâches',
+                icon: '✅',
+                color: '#ef4444',
+                mustHavePatterns: [
+                    /action\s+requise/i,
+                    /action\s+required/i,
+                    /action\s+needed/i,
+                    /veuillez\s+compl[eé]ter/i,
+                    /please\s+complete/i,
+                    /t[âa]che\s+assign[eé]e/i,
+                    /task\s+assigned/i,
+                    /[eé]ch[eé]ance/i,
+                    /deadline/i,
+                    /due\s+date/i,
+                    /urgent/i,
+                    /asap/i,
+                    /prioritaire/i,
+                    /validation\s+requise/i,
+                    /approval\s+needed/i,
+                    /signature\s+requise/i
+                ],
+                excludeIfContains: [
+                    /se\s+d[eé]sabonner/i,
+                    /unsubscribe/i,
+                    /newsletter/i
+                ]
+            },
+
+            // PRIORITÉ 7: Commercial & Ventes
+            {
+                category: 'commercial',
+                priority: 7,
+                name: 'Commercial & Ventes',
+                icon: '💼',
+                color: '#059669',
+                mustHavePatterns: [
+                    /opportunit[eé]\s+commerciale/i,
+                    /business\s+opportunity/i,
+                    /demande\s+de\s+devis/i,
+                    /quote\s+request/i,
+                    /proposition\s+commerciale/i,
+                    /contrat\s+commercial/i,
+                    /sales\s+contract/i,
+                    /bon\s+de\s+commande/i,
+                    /purchase\s+order/i,
+                    /offre\s+commerciale/i
+                ]
+            },
+
+            // PRIORITÉ 8: Support & Assistance
+            {
+                category: 'support',
+                priority: 8,
+                name: 'Support & Assistance',
+                icon: '🛠️',
+                color: '#ea580c',
+                mustHavePatterns: [
+                    /ticket\s*[#n°]/i,
+                    /ticket\s+(de\s+)?support/i,
+                    /support\s+ticket/i,
+                    /case\s*[#n°]/i,
+                    /incident\s*[#n°]/i,
+                    /probl[eè]me\s+r[eé]solu/i,
+                    /issue\s+resolved/i,
+                    /demande\s+d'assistance/i,
+                    /support\s+request/i
+                ]
+            },
+
+            // PRIORITÉ 9: Projets
+            {
+                category: 'project',
+                priority: 9,
+                name: 'Gestion de Projet',
+                icon: '📊',
+                color: '#06b6d4',
+                mustHavePatterns: [
+                    /projet\s+\w+/i,
+                    /project\s+update/i,
+                    /milestone/i,
+                    /avancement\s+du\s+projet/i,
+                    /project\s+status/i,
+                    /sprint/i,
+                    /livrable/i,
+                    /gantt/i,
+                    /kickoff/i,
+                    /roadmap/i,
+                    /jira/i,
+                    /github\s+issue/i,
+                    /pull\s+request/i,
+                    /merge\s+request/i
+                ]
+            },
+
+            // PRIORITÉ 10: Notifications
+            {
+                category: 'notifications',
+                priority: 10,
+                name: 'Notifications Système',
+                icon: '🔔',
+                color: '#94a3b8',
+                mustHavePatterns: [
+                    /ceci\s+est\s+un\s+message\s+automatique/i,
+                    /this\s+is\s+an\s+automated\s+message/i,
+                    /notification\s+syst[eè]me/i,
+                    /system\s+notification/i,
+                    /alerte\s+syst[eè]me/i,
+                    /message\s+g[eé]n[eé]r[eé]\s+automatiquement/i,
+                    /automatically\s+generated/i
+                ]
+            },
+
+            // PRIORITÉ 11: Rappels
+            {
+                category: 'reminders',
+                priority: 11,
+                name: 'Rappels & Relances',
+                icon: '🔄',
+                color: '#22c55e',
+                mustHavePatterns: [
+                    /^reminder:/i,
+                    /^rappel:/i,
+                    /follow[\s-]?up/i,
+                    /relance/i,
+                    /rappel\s+amical/i,
+                    /friendly\s+reminder/i,
+                    /gentle\s+reminder/i,
+                    /je\s+reviens\s+vers\s+vous/i,
+                    /circling\s+back/i,
+                    /comme\s+convenu/i,
+                    /as\s+discussed/i
+                ]
+            },
+
+            // PRIORITÉ 12: Logistique
+            {
+                category: 'logistics',
+                priority: 12,
+                name: 'Logistique & Livraisons',
+                icon: '📦',
+                color: '#84cc16',
+                mustHavePatterns: [
+                    /commande\s+exp[eé]di[eé]e/i,
+                    /order\s+shipped/i,
+                    /colis\s+exp[eé]di[eé]/i,
+                    /num[eé]ro\s+de\s+suivi/i,
+                    /tracking\s+number/i,
+                    /livraison\s+pr[eé]vue/i,
+                    /delivery\s+scheduled/i,
+                    /colis\s+livr[eé]/i,
+                    /package\s+delivered/i
+                ]
+            },
+
+            // PRIORITÉ 13: Communication Interne
+            {
+                category: 'internal',
+                priority: 13,
+                name: 'Communication Interne',
+                icon: '📢',
+                color: '#0ea5e9',
+                mustHavePatterns: [
+                    /all\s+staff/i,
+                    /tout\s+le\s+personnel/i,
+                    /annonce\s+interne/i,
+                    /[àa]\s+tous\s+les\s+collaborateurs/i,
+                    /to\s+all\s+employees/i,
+                    /communication\s+interne/i,
+                    /company\s+announcement/i,
+                    /note\s+de\s+service/i,
+                    /message\s+de\s+la\s+direction/i
+                ]
+            },
+
+            // PRIORITÉ 14: En Copie
+            {
+                category: 'cc',
+                priority: 14,
+                name: 'En Copie (CC)',
+                icon: '📋',
+                color: '#64748b',
+                mustHavePatterns: [
+                    /copie\s+pour\s+information/i,
+                    /for\s+your\s+information/i,
+                    /\bfyi\b/i,
+                    /pour\s+information/i,
+                    /en\s+copie\s+pour\s+information/i,
+                    /cc\s*:\s*pour\s+info/i,
+                    /mis\s+en\s+copie/i,
+                    /courtesy\s+copy/i
+                ]
+            }
+        ];
     }
 
     // ================================================
@@ -118,7 +513,7 @@ class EmailScanner {
             return null;
         }
         
-        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v12.0 ===');
+        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v13.0 ===');
         console.log('[EmailScanner] 📊 Options:', options);
         
         try {
@@ -256,7 +651,7 @@ class EmailScanner {
         
         console.log(`[EmailScanner] ✅ ${emails.length} emails récupérés depuis MailService`);
         
-        // Normaliser les emails
+        // Normaliser les emails et enrichir avec les infos supplémentaires
         return emails.map(email => this.normalizeEmail(email));
     }
 
@@ -415,7 +810,7 @@ class EmailScanner {
         const hasForumsLabel = labels.includes('CATEGORY_FORUMS');
         const hasSocialLabel = labels.includes('CATEGORY_SOCIAL');
         
-        // Créer un email normalisé
+        // Créer un email normalisé avec toutes les infos
         const normalizedEmail = {
             id: gmailMessage.id,
             subject: getHeader('Subject') || 'Sans sujet',
@@ -436,13 +831,16 @@ class EmailScanner {
             hasAttachments: content.hasAttachments,
             importance: gmailMessage.labelIds?.includes('IMPORTANT') ? 'high' : 'normal',
             isRead: !gmailMessage.labelIds?.includes('UNREAD'),
-            // Nouveaux champs pour améliorer la détection
-            hasUnsubscribeHeader: hasUnsubscribeHeader,
-            gmailLabels: labels,
-            isPromotional: hasPromotionsLabel || hasUpdatesLabel,
-            listHeaders: {
-                unsubscribe: listUnsubscribe,
-                unsubscribePost: listUnsubscribePost
+            // Informations pour améliorer la catégorisation
+            _categorizationHints: {
+                hasUnsubscribeHeader,
+                gmailLabels: labels,
+                isPromotional: hasPromotionsLabel || hasUpdatesLabel || hasSocialLabel || hasForumsLabel,
+                listHeaders: {
+                    unsubscribe: listUnsubscribe,
+                    unsubscribePost: listUnsubscribePost
+                },
+                allHeaders: headers
             }
         };
         
@@ -579,7 +977,7 @@ class EmailScanner {
         // Construire les paramètres
         const params = new URLSearchParams({
             '$top': Math.min(options.maxEmails || 500, 999).toString(),
-            '$select': 'id,conversationId,receivedDateTime,subject,body,bodyPreview,importance,isRead,hasAttachments,from,toRecipients,ccRecipients',
+            '$select': 'id,conversationId,receivedDateTime,subject,body,bodyPreview,importance,isRead,hasAttachments,from,toRecipients,ccRecipients,internetMessageHeaders',
             '$orderby': 'receivedDateTime desc'
         });
         
@@ -630,11 +1028,8 @@ class EmailScanner {
             importance: email.importance || 'normal',
             isRead: email.isRead !== false,
             provider: email.provider || this.detectProvider(),
-            // Préserver les indicateurs de newsletter/marketing
-            hasUnsubscribeHeader: email.hasUnsubscribeHeader || false,
-            gmailLabels: email.gmailLabels || [],
-            isPromotional: email.isPromotional || false,
-            listHeaders: email.listHeaders || {},
+            // Préserver les hints de catégorisation s'ils existent
+            _categorizationHints: email._categorizationHints || {},
             // Champs de catégorisation (seront remplis plus tard)
             category: null,
             categoryScore: 0,
@@ -647,22 +1042,17 @@ class EmailScanner {
     }
 
     // ================================================
-    // CATÉGORISATION CORRIGÉE V12.0
+    // NOUVELLE MÉTHODE DE CATÉGORISATION V13.0
     // ================================================
     async categorizeEmails(options) {
-        console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION v12.0 ===');
+        console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION v13.0 ===');
         console.log('[EmailScanner] 📊 Total emails:', this.emails.length);
         console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
-        
-        if (!window.categoryManager?.analyzeEmail) {
-            console.warn('[EmailScanner] ⚠️ CategoryManager non disponible');
-            return;
-        }
         
         const breakdown = {};
         let categorizedCount = 0;
         let preselectedCount = 0;
-        let newsletterCount = 0;
+        let marketingNewsCount = 0;
         let otherCount = 0;
         const errors = [];
         const debugSamples = [];
@@ -671,65 +1061,17 @@ class EmailScanner {
             const email = this.emails[i];
             
             try {
-                // Vérifier le cache d'abord
-                const cacheKey = this.getCategorizationCacheKey(email);
-                const cached = this.categorizationCache.get(cacheKey);
+                // Extraire tout le contenu pour analyse
+                const emailContent = this.extractFullEmailContent(email);
                 
-                if (cached && cached.version === window.categoryManager.version) {
-                    // Utiliser le résultat en cache
-                    email.category = cached.category;
-                    email.categoryScore = cached.score;
-                    email.categoryConfidence = cached.confidence;
-                } else {
-                    // NOUVELLE LOGIQUE : Vérifier d'abord marketing_news
-                    const emailContent = this.prepareEmailForCategorization(email);
-                    
-                    // 1. Vérifier explicitement marketing_news en priorité
-                    if (this.isMarketingNewsletter(emailContent)) {
-                        email.category = 'marketing_news';
-                        email.categoryScore = 200; // Score élevé pour priorité
-                        email.categoryConfidence = 0.95;
-                        
-                        debugSamples.push({
-                            subject: email.subject,
-                            from: email.from?.emailAddress?.address,
-                            category: 'marketing_news',
-                            reason: 'Détection prioritaire newsletter'
-                        });
-                    } else {
-                        // 2. Analyser normalement avec CategoryManager
-                        const analysis = window.categoryManager.analyzeEmail(email);
-                        
-                        // 3. Double vérification pour éviter les faux positifs
-                        if (analysis.category === 'hr' && this.containsUnsubscribePattern(emailContent)) {
-                            // C'est probablement une newsletter d'emploi
-                            email.category = 'marketing_news';
-                            email.categoryScore = 180;
-                            email.categoryConfidence = 0.90;
-                            
-                            debugSamples.push({
-                                subject: email.subject,
-                                from: email.from?.emailAddress?.address,
-                                category: 'marketing_news',
-                                reason: 'Newsletter emploi (contient désabonnement)',
-                                originalCategory: analysis.category
-                            });
-                        } else {
-                            // Utiliser l'analyse normale
-                            email.category = analysis.category || 'other';
-                            email.categoryScore = analysis.score || 0;
-                            email.categoryConfidence = analysis.confidence || 0;
-                        }
-                    }
-                    
-                    // Mettre en cache
-                    this.categorizationCache.set(cacheKey, {
-                        category: email.category,
-                        score: email.categoryScore,
-                        confidence: email.categoryConfidence,
-                        version: window.categoryManager.version || 1
-                    });
-                }
+                // Appliquer le nouveau système de catégorisation
+                const category = this.categorizeEmail(emailContent, email);
+                
+                // Assigner la catégorie
+                email.category = category.id;
+                email.categoryScore = category.score;
+                email.categoryConfidence = category.confidence;
+                email.categoryMatchReason = category.matchReason;
                 
                 // Vérifier si pré-sélectionné pour tâches
                 email.isPreselectedForTasks = this.taskPreselectedCategories.includes(email.category);
@@ -743,10 +1085,25 @@ class EmailScanner {
                     preselectedCount++;
                 }
                 if (email.category === 'marketing_news') {
-                    newsletterCount++;
+                    marketingNewsCount++;
                 }
                 if (email.category === 'other') {
                     otherCount++;
+                }
+                
+                // Debug: collecter des échantillons pour vérification
+                if (debugSamples.length < 10 && (
+                    email.category === 'marketing_news' || 
+                    (email.category === 'hr' && emailContent.toLowerCase().includes('désabonner'))
+                )) {
+                    debugSamples.push({
+                        subject: email.subject,
+                        from: email.from?.emailAddress?.address,
+                        category: email.category,
+                        reason: email.categoryMatchReason,
+                        hasUnsubscribe: emailContent.toLowerCase().includes('désabonner') || 
+                                       emailContent.toLowerCase().includes('unsubscribe')
+                    });
                 }
                 
             } catch (error) {
@@ -769,7 +1126,7 @@ class EmailScanner {
         // Afficher le résumé
         console.log('[EmailScanner] ✅ === CATÉGORISATION TERMINÉE ===');
         console.log('[EmailScanner] 📊 Distribution complète:', breakdown);
-        console.log('[EmailScanner] 📰 Newsletters (marketing_news):', newsletterCount);
+        console.log('[EmailScanner] 📰 Marketing & Newsletters:', marketingNewsCount);
         console.log('[EmailScanner] ❓ Non classés (other):', otherCount);
         console.log('[EmailScanner] ⭐ Total pré-sélectionnés:', preselectedCount);
         console.log('[EmailScanner] ⚠️ Erreurs:', errors.length);
@@ -789,12 +1146,6 @@ class EmailScanner {
             }
         });
         
-        // Avertissement si beaucoup d'emails non classés
-        const otherPercentage = (otherCount / this.emails.length) * 100;
-        if (otherPercentage > 30) {
-            console.warn(`[EmailScanner] ⚠️ ATTENTION: ${otherPercentage.toFixed(1)}% des emails sont non classés (other)`);
-        }
-        
         // Mettre à jour les stats
         this.stats.categorized = categorizedCount;
         this.stats.preselectedForTasks = preselectedCount;
@@ -806,88 +1157,141 @@ class EmailScanner {
             preselectedForTasks: preselectedCount,
             errors,
             debugInfo: {
-                newsletterCount,
+                marketingNewsCount,
                 otherCount,
-                otherPercentage: otherPercentage.toFixed(1) + '%',
                 samples: debugSamples
             }
         };
     }
 
-    // NOUVELLE MÉTHODE : Préparer l'email pour la catégorisation
-    prepareEmailForCategorization(email) {
+    // NOUVELLE MÉTHODE : Extraction complète du contenu
+    extractFullEmailContent(email) {
         let content = '';
         
-        // Sujet
+        // Sujet (très important, répété pour plus de poids)
         if (email.subject) {
-            content += email.subject.toLowerCase() + ' ';
+            content += (email.subject + ' ').repeat(3);
         }
         
-        // Corps
+        // Corps de l'email
         if (email.bodyPreview) {
-            content += email.bodyPreview.toLowerCase() + ' ';
+            content += email.bodyPreview + ' ';
         }
         
         if (email.body?.content) {
             const cleanBody = email.body.content
                 .replace(/<[^>]+>/g, ' ')
-                .replace(/&[^;]+;/g, ' ')
-                .toLowerCase();
+                .replace(/&[^;]+;/g, ' ');
             content += cleanBody + ' ';
         }
         
         // Adresse expéditeur
         if (email.from?.emailAddress?.address) {
-            content += email.from.emailAddress.address.toLowerCase() + ' ';
+            content += email.from.emailAddress.address + ' ';
         }
         
-        return content;
-    }
-
-    // NOUVELLE MÉTHODE : Détection prioritaire marketing/newsletter
-    isMarketingNewsletter(content) {
-        // Patterns très spécifiques pour les newsletters
-        const newsletterPatterns = [
-            'se désinscrire',
-            'se desinscrire',
-            'unsubscribe',
-            'opt out',
-            'opt-out',
-            'gérer vos préférences',
-            'gérer les paramètres',
-            'email preferences',
-            'stop receiving',
-            'ne plus recevoir',
-            'désabonner',
-            'this email was sent to',
-            'you are receiving this',
-            'mailing list',
-            'newsletter',
-            'notification settings',
-            'manage notifications'
-        ];
+        // Inclure les hints de catégorisation s'ils existent
+        if (email._categorizationHints) {
+            // Headers de désabonnement
+            if (email._categorizationHints.listHeaders?.unsubscribe) {
+                content += ' unsubscribe_header_present ';
+            }
+            
+            // Labels Gmail
+            if (email._categorizationHints.gmailLabels) {
+                content += email._categorizationHints.gmailLabels.join(' ') + ' ';
+            }
+            
+            // Indicateur promotionnel
+            if (email._categorizationHints.isPromotional) {
+                content += ' promotional_indicator ';
+            }
+        }
         
-        // Vérifier si au moins un pattern est présent
-        return newsletterPatterns.some(pattern => content.includes(pattern));
+        return content.toLowerCase();
     }
 
-    // NOUVELLE MÉTHODE : Vérifier les patterns de désabonnement
-    containsUnsubscribePattern(content) {
-        const unsubscribePatterns = [
-            'désinscrire',
-            'unsubscribe',
-            'désabonner',
-            'gérer les paramètres',
-            'politique de confidentialité'
-        ];
+    // NOUVELLE MÉTHODE : Catégorisation avec règles prioritaires
+    categorizeEmail(content, email) {
+        // Parcourir les règles dans l'ordre de priorité
+        for (const rule of this.categorizationRules) {
+            // Vérifier d'abord les exclusions
+            if (rule.excludeIfContains) {
+                let excluded = false;
+                for (const excludePattern of rule.excludeIfContains) {
+                    if (excludePattern.test(content)) {
+                        excluded = true;
+                        break;
+                    }
+                }
+                if (excluded) continue;
+            }
+            
+            // Vérifier les patterns obligatoires
+            for (const pattern of rule.mustHavePatterns) {
+                if (pattern.test(content)) {
+                    return {
+                        id: rule.category,
+                        score: 100,
+                        confidence: 0.95,
+                        matchReason: `Pattern match: ${pattern.source}`
+                    };
+                }
+            }
+            
+            // Vérifier les headers spéciaux (pour marketing_news)
+            if (rule.headerIndicators && email._categorizationHints?.allHeaders) {
+                const headers = email._categorizationHints.allHeaders;
+                for (const headerName of rule.headerIndicators) {
+                    if (headers.some(h => h.name.toLowerCase() === headerName.toLowerCase())) {
+                        return {
+                            id: rule.category,
+                            score: 95,
+                            confidence: 0.93,
+                            matchReason: `Header indicator: ${headerName}`
+                        };
+                    }
+                }
+            }
+            
+            // Vérifier les labels Gmail (pour marketing_news)
+            if (rule.gmailLabels && email._categorizationHints?.gmailLabels) {
+                const emailLabels = email._categorizationHints.gmailLabels;
+                for (const label of rule.gmailLabels) {
+                    if (emailLabels.includes(label)) {
+                        return {
+                            id: rule.category,
+                            score: 90,
+                            confidence: 0.90,
+                            matchReason: `Gmail label: ${label}`
+                        };
+                    }
+                }
+            }
+            
+            // Vérifier les patterns de domaine
+            if (rule.domainPatterns && email.from?.emailAddress?.address) {
+                const fromAddress = email.from.emailAddress.address.toLowerCase();
+                for (const domainPattern of rule.domainPatterns) {
+                    if (domainPattern.test(fromAddress)) {
+                        return {
+                            id: rule.category,
+                            score: 85,
+                            confidence: 0.88,
+                            matchReason: `Domain pattern: ${domainPattern.source}`
+                        };
+                    }
+                }
+            }
+        }
         
-        return unsubscribePatterns.some(pattern => content.includes(pattern));
-    }
-
-    getCategorizationCacheKey(email) {
-        // Créer une clé unique basée sur le contenu important de l'email
-        const key = `${email.subject}_${email.from?.emailAddress?.address}_${email.bodyPreview?.substring(0, 100)}`;
-        return key.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        // Si aucune règle ne correspond, catégoriser comme "other"
+        return {
+            id: 'other',
+            score: 0,
+            confidence: 0.5,
+            matchReason: 'No pattern matched'
+        };
     }
 
     // ================================================
@@ -1060,6 +1464,7 @@ class EmailScanner {
                 category: email.category,
                 categoryScore: email.categoryScore,
                 categoryConfidence: email.categoryConfidence,
+                categoryMatchReason: email.categoryMatchReason,
                 isPreselectedForTasks: email.isPreselectedForTasks,
                 hasAttachments: email.hasAttachments,
                 importance: email.importance,
@@ -1077,7 +1482,7 @@ class EmailScanner {
     exportToCSV() {
         const headers = [
             'Date', 'Sujet', 'Expéditeur', 'Email Expéditeur', 
-            'Catégorie', 'Score', 'Confiance', 'Pré-sélectionné',
+            'Catégorie', 'Score', 'Confiance', 'Raison', 'Pré-sélectionné',
             'Pièces jointes', 'Importance', 'Lu', 
             'Tâche suggérée', 'Titre tâche', 'Priorité'
         ];
@@ -1090,6 +1495,7 @@ class EmailScanner {
             email.category || 'other',
             email.categoryScore || 0,
             Math.round((email.categoryConfidence || 0) * 100) + '%',
+            this.escapeCSV(email.categoryMatchReason || ''),
             email.isPreselectedForTasks ? 'Oui' : 'Non',
             email.hasAttachments ? 'Oui' : 'Non',
             email.importance || 'normal',
@@ -1198,11 +1604,6 @@ class EmailScanner {
             taskSuggestions: 0
         };
         
-        // Nettoyer le cache de catégorisation périodiquement
-        if (this.categorizationCache.size > 1000) {
-            this.categorizationCache.clear();
-        }
-        
         console.log('[EmailScanner] ✅ Réinitialisation terminée');
     }
 
@@ -1226,45 +1627,67 @@ class EmailScanner {
             subject: email.subject,
             from: email.from?.emailAddress?.address,
             bodyPreview: email.bodyPreview?.substring(0, 100) + '...',
-            hasUnsubscribeHeader: email.hasUnsubscribeHeader,
-            gmailLabels: email.gmailLabels,
-            isPromotional: email.isPromotional
+            _categorizationHints: email._categorizationHints
         });
         
-        // Préparer l'email
-        const content = this.prepareEmailForCategorization(email);
-        console.log('Contenu préparé (100 premiers caractères):', content.substring(0, 100) + '...');
+        // Extraire le contenu complet
+        const content = this.extractFullEmailContent(email);
+        console.log('Contenu extrait (200 premiers caractères):', content.substring(0, 200) + '...');
         
-        // Test newsletter
-        const isNewsletter = this.isMarketingNewsletter(content);
-        console.log('Est une newsletter?', isNewsletter);
-        
-        // Test désabonnement
-        const hasUnsubscribe = this.containsUnsubscribePattern(content);
-        console.log('Contient pattern désabonnement?', hasUnsubscribe);
-        
-        // Analyser avec CategoryManager
-        if (window.categoryManager?.analyzeEmail) {
-            const analysis = window.categoryManager.analyzeEmail(email);
-            console.log('Résultat analyse CategoryManager:', {
-                category: analysis.category,
-                score: analysis.score,
-                confidence: analysis.confidence,
-                matchedPatterns: analysis.matchedPatterns
-            });
+        // Tester chaque règle
+        console.log('\n📋 Test des règles de catégorisation:');
+        for (const rule of this.categorizationRules) {
+            console.group(`Règle: ${rule.category} (priorité ${rule.priority})`);
+            
+            // Vérifier les exclusions
+            if (rule.excludeIfContains) {
+                for (const excludePattern of rule.excludeIfContains) {
+                    if (excludePattern.test(content)) {
+                        console.log('❌ EXCLU par pattern:', excludePattern.source);
+                        console.groupEnd();
+                        continue;
+                    }
+                }
+            }
+            
+            // Vérifier les patterns
+            let matched = false;
+            for (const pattern of rule.mustHavePatterns) {
+                if (pattern.test(content)) {
+                    console.log('✅ MATCH pattern:', pattern.source);
+                    matched = true;
+                    break;
+                }
+            }
+            
+            if (!matched) {
+                console.log('❌ Aucun pattern matché');
+            }
+            
+            console.groupEnd();
         }
+        
+        // Résultat final
+        const category = this.categorizeEmail(content, email);
+        console.log('\n📊 Résultat final:', {
+            category: category.id,
+            score: category.score,
+            confidence: category.confidence,
+            reason: category.matchReason
+        });
         
         console.groupEnd();
     }
     
-    // Méthode pour débugger les emails mal catégorisés
+    // Méthode pour vérifier les emails mal catégorisés
     debugMiscategorized() {
         console.group('[EmailScanner] 🔍 DEBUG EMAILS MAL CATÉGORISÉS');
         
-        // Chercher les emails HR qui contiennent "désinscrire"
+        // Chercher les emails qui contiennent des patterns de désabonnement
         const suspectEmails = this.emails.filter(email => {
-            const content = this.prepareEmailForCategorization(email);
-            return email.category !== 'marketing_news' && this.containsUnsubscribePattern(content);
+            const content = this.extractFullEmailContent(email);
+            const hasUnsubscribe = /d[eé]sabonner|unsubscribe|newsletter/i.test(content);
+            return hasUnsubscribe && email.category !== 'marketing_news';
         });
         
         console.log(`Emails suspects (contiennent désabonnement mais pas en marketing_news): ${suspectEmails.length}`);
@@ -1275,11 +1698,53 @@ class EmailScanner {
                 from: email.from?.emailAddress?.address,
                 category: email.category,
                 score: email.categoryScore,
+                reason: email.categoryMatchReason,
                 bodyPreview: email.bodyPreview?.substring(0, 100) + '...'
             });
         });
         
+        // Statistiques par catégorie
+        console.log('\n📊 Distribution des catégories:');
+        const distribution = {};
+        this.emails.forEach(email => {
+            distribution[email.category] = (distribution[email.category] || 0) + 1;
+        });
+        
+        Object.entries(distribution)
+            .sort((a, b) => b[1] - a[1])
+            .forEach(([category, count]) => {
+                const percentage = ((count / this.emails.length) * 100).toFixed(1);
+                console.log(`${category}: ${count} emails (${percentage}%)`);
+            });
+        
         console.groupEnd();
+    }
+    
+    // Méthode pour tester un email spécifique
+    testEmail(emailData) {
+        console.group('[EmailScanner] 🧪 TEST EMAIL');
+        
+        const testEmail = {
+            subject: emailData.subject || '',
+            bodyPreview: emailData.body || '',
+            body: { content: emailData.body || '' },
+            from: { 
+                emailAddress: { 
+                    address: emailData.from || 'test@example.com' 
+                } 
+            },
+            _categorizationHints: emailData.hints || {}
+        };
+        
+        const content = this.extractFullEmailContent(testEmail);
+        const category = this.categorizeEmail(content, testEmail);
+        
+        console.log('Email de test:', testEmail);
+        console.log('Résultat catégorisation:', category);
+        
+        console.groupEnd();
+        
+        return category;
     }
     
     getEmails() {
@@ -1322,15 +1787,3 @@ class EmailScanner {
         return this.currentProgress;
     }
 }
-
-// ================================================
-// INSTANCE GLOBALE
-// ================================================
-if (window.emailScanner) {
-    console.log('[EmailScanner] 🔄 Nettoyage ancienne instance...');
-    window.emailScanner.reset?.();
-}
-
-window.emailScanner = new EmailScanner();
-
-console.log('✅ EmailScanner v12.0 loaded - Catégorisation corrigée avec priorité marketing_news');
