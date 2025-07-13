@@ -661,10 +661,13 @@ class EmailScanner {
             return { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
         }
 
-        // 4. TOUJOURS vérifier marketing_news EN PREMIER
+        // 4. Vérifier si l'utilisateur est en CC (uniquement si détection CC activée)
+        const isInCC = this.isUserInCC(email);
+        const isMainRecipient = this.isUserMainRecipient(email);
+        
+        // 5. TOUJOURS vérifier marketing_news EN PREMIER
         const marketingAnalysis = this.analyzeForCategory(content, 'marketing_news');
         if (marketingAnalysis.score > 0) {
-            // Si on trouve quoi que ce soit lié au marketing/newsletter, on catégorise directement
             return {
                 category: 'marketing_news',
                 score: marketingAnalysis.score,
@@ -674,37 +677,80 @@ class EmailScanner {
             };
         }
 
-        // 5. Analyser TOUTES les autres catégories SANS PRIORITÉ
+        // 6. Analyser TOUTES les autres catégories
         const allCategories = window.categoryManager.getActiveCategories();
+        const categoryAnalyses = {};
+        
+        for (const categoryId of allCategories) {
+            if (categoryId === 'marketing_news' || categoryId === 'cc') continue;
+            
+            const analysis = this.analyzeForCategory(content, categoryId);
+            if (analysis.score > 0) {
+                categoryAnalyses[categoryId] = analysis;
+            }
+        }
+
+        // 7. Trouver la meilleure catégorie
         let bestCategory = null;
         let bestScore = 0;
         let bestAnalysis = null;
 
-        for (const categoryId of allCategories) {
-            if (categoryId === 'marketing_news') continue; // Déjà vérifié
-            
-            const analysis = this.analyzeForCategory(content, categoryId);
-            
-            // Simple : on prend celle avec le meilleur score
-            if (analysis.score > bestScore) {
+        for (const [categoryId, analysis] of Object.entries(categoryAnalyses)) {
+            // Priorité aux mots-clés absolus
+            if (analysis.hasAbsolute) {
+                if (!bestAnalysis || !bestAnalysis.hasAbsolute || analysis.score > bestScore) {
+                    bestCategory = categoryId;
+                    bestScore = analysis.score;
+                    bestAnalysis = analysis;
+                }
+            }
+            // Sinon, meilleur score
+            else if (!bestAnalysis?.hasAbsolute && analysis.score > bestScore) {
                 bestCategory = categoryId;
                 bestScore = analysis.score;
                 bestAnalysis = analysis;
             }
         }
 
-        // 6. Si on a trouvé une catégorie avec un score minimum
+        // 8. Si une catégorie est trouvée avec un score suffisant
         if (bestCategory && bestScore >= 30) {
+            // Si l'utilisateur est en CC ET que la détection CC est activée, vérifier si on doit forcer CC
+            if (this.settings.preferences?.detectCC !== false && isInCC && !isMainRecipient) {
+                // Seulement si le score n'est pas très élevé et pas de mot-clé absolu
+                if (bestScore < 100 && !bestAnalysis.hasAbsolute) {
+                    return {
+                        category: 'cc',
+                        score: 90,
+                        confidence: 0.85,
+                        matchedPatterns: [{ keyword: 'user_in_cc', type: 'detected', score: 90 }],
+                        hasAbsolute: false,
+                        originalCategory: bestCategory
+                    };
+                }
+            }
+            
             return {
                 category: bestCategory,
                 score: bestScore,
                 confidence: this.calculateConfidence(bestAnalysis),
                 matchedPatterns: bestAnalysis.matches,
-                hasAbsolute: bestAnalysis.hasAbsolute
+                hasAbsolute: bestAnalysis.hasAbsolute,
+                isCC: isInCC
             };
         }
 
-        // 7. Sinon, c'est "other"
+        // 9. Si l'utilisateur est en CC sans autre catégorie trouvée
+        if (this.settings.preferences?.detectCC !== false && isInCC && !isMainRecipient) {
+            return {
+                category: 'cc',
+                score: 90,
+                confidence: 0.85,
+                matchedPatterns: [{ keyword: 'user_in_cc', type: 'detected', score: 90 }],
+                hasAbsolute: false
+            };
+        }
+
+        // 10. Sinon, c'est "other"
         return {
             category: 'other',
             score: 0,
