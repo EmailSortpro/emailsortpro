@@ -209,7 +209,7 @@ class CategoryManager {
     // ================================================
     initializeWeightedDetection() {
         this.weightedKeywords = {
-            // Marketing & Newsletters - Mots-clés renforcés pour Twitch
+            // Marketing & Newsletters - Mots-clés uniques
             marketing_news: {
                 absolute: [
                     'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
@@ -223,8 +223,7 @@ class CategoryManager {
                     'newsletter', 'mailing list', 'mailing',
                     'this email was sent to', 'you are receiving this',
                     'limited offer', 'offre limitée', 'special offer',
-                    'promotion', 'promo', 'soldes', 'vente privée',
-                    'ventes en ligne', 'vente en ligne', 'shopping',
+                    'vente privée', 'ventes en ligne', 'vente en ligne',
                     'disable these notifications', 'turn off notifications',
                     'manage notifications', 'notification settings',
                     'email settings', 'communication preferences',
@@ -234,25 +233,16 @@ class CategoryManager {
                 ],
                 strong: [
                     'promo', 'deal', 'offer', 'sale', 'discount', 'réduction',
-                    'newsletter', 'mailing', 'campaign', 'marketing',
-                    'exclusive', 'special', 'limited', 'new', 'nouveau',
+                    'campaign', 'marketing', 'exclusive', 'special', 'limited',
                     'boutique', 'shopping', 'acheter', 'commander',
-                    'offre', 'promotion', 'remise', 'solde',
-                    'notifications', 'alerts', 'updates', 'subscribe',
-                    'découvrez', 'discover', 'shop now', 'nouveauté',
+                    'promotion', 'remise', 'solde', 'soldes',
+                    'subscribe', 'découvrez', 'discover', 'nouveauté',
                     'streaming', 'live', 'broadcast', 'diffusion'
                 ],
-                weak: [
-                    'update', 'discover', 'new', 'nouveauté', 'découvrir',
-                    'news', 'actualité', 'information', 'cette semaine', 'this week'
-                ],
-                exclusions: [
-                    'facture', 'invoice', 'payment', 'urgent', 'action requise',
-                    'password reset', 'security alert', 'meeting invite'
-                ]
+                weak: []
             },
 
-            // Sécurité - Mots-clés renforcés pour GitHub
+            // Sécurité - Mots-clés uniques
             security: {
                 absolute: [
                     'alerte de connexion', 'alert connexion', 'nouvelle connexion',
@@ -273,19 +263,13 @@ class CategoryManager {
                 strong: [
                     'sécurité', 'security', 'vérification', 'verify',
                     'authentification', 'password', 'mot de passe',
-                    'compte', 'account', 'accès', 'access', 'protection', 'protect',
-                    'secure', 'sécuriser', 'reset', 'réinitialiser'
+                    'protection', 'protect', 'secure', 'sécuriser', 
+                    'reset', 'réinitialiser'
                 ],
-                weak: [
-                    'connexion', 'login', 'sign in', 'utilisateur', 'user'
-                ],
-                exclusions: [
-                    'newsletter', 'unsubscribe', 'promotion', 'marketing',
-                    'meeting', 'invoice', 'project update'
-                ]
+                weak: []
             },
 
-            // Tâches et Actions - Mots-clés enrichis
+            // Actions & Tâches - Mots-clés uniques
             tasks: {
                 absolute: [
                     'action required', 'action requise', 'action needed',
@@ -300,55 +284,40 @@ class CategoryManager {
                     'approval required', 'signature requise'
                 ],
                 strong: [
-                    'urgent', 'asap', 'priority', 'priorité', 'prioritaire',
-                    'complete', 'compléter', 'action', 'faire', 'effectuer',
-                    'update', 'mise à jour', 'demande', 'request',
-                    'task', 'tâche', 'todo', 'à faire', 'rapidement', 'quickly',
-                    'correction', 'corriger', 'modifier', 'révision', 'execute'
+                    'asap', 'prioritaire', 'rapidement', 'quickly',
+                    'correction', 'corriger', 'modifier', 'révision', 'execute',
+                    'immediately', 'immédiatement', 'impératif'
                 ],
-                weak: [
-                    'demande', 'besoin', 'attente', 'request', 'need', 'waiting'
-                ],
-                exclusions: [
-                    'newsletter', 'marketing', 'promotion', 'unsubscribe', 
-                    'papa', 'maman', 'famille', 'pour info', 'fyi', 'copie'
-                ]
+                weak: []
             },
 
-            // Finance et Comptabilité - Mots-clés complets
+            // Finance et Comptabilité - Mots-clés uniques
             finance: {
                 absolute: [
-                    'facture', 'invoice', 'payment', 'paiement',
                     'facture n°', 'invoice number', 'invoice #',
                     'paiement effectué', 'payment received', 'virement reçu',
-                    'virement', 'transfer', 'remboursement', 'refund',
+                    'virement bancaire', 'bank transfer', 'remboursement', 'refund',
                     'relevé bancaire', 'bank statement', 'relevé de compte',
                     'déclaration fiscale', 'tax declaration', 'bilan comptable',
                     'n°commande', 'numéro commande', 'order number',
                     'numéro de commande', 'commande n°', 'commande numéro',
-                    'livraison commande', 'commande expédiée',
-                    'confirmation commande', 'order confirmation'
+                    'confirmation commande', 'order confirmation',
+                    'montant à payer', 'amount due', 'total à régler',
+                    'échéance de paiement', 'payment deadline'
                 ],
                 strong: [
                     'montant', 'amount', 'total', 'facture', 'invoice',
                     'fiscal', 'bancaire', 'bank', 'finance', 'comptabilité',
-                    'commande', 'order', 'achat', 'vente', 'accounting',
-                    'livraison', 'delivery', 'expédition', 'shipping',
-                    'prix', 'price', 'coût', 'cost', 'échéance', 'due'
+                    'accounting', 'tva', 'taxe', 'tax', 'règlement', 'settlement',
+                    'paiement', 'payment', 'virement', 'transfer'
                 ],
-                weak: [
-                    'euro', 'dollar', 'prix', 'payment', 'transaction'
-                ],
-                exclusions: [
-                    'newsletter', 'marketing', 'spam', 'promotion', 
-                    'soldes', 'ventes en ligne', 'offre commerciale'
-                ]
+                weak: []
             },
 
-            // Réunions et Rendez-vous - Mots-clés enrichis pour Trustpair
+            // Réunions et Rendez-vous - Mots-clés uniques
             meetings: {
                 absolute: [
-                    'demande de réunion', 'meeting request', 'réunion',
+                    'demande de réunion', 'meeting request',
                     'invitation à une réunion', 'meeting invitation', 'meeting invite',
                     'nouvelle réunion planifiée', 'schedule a meeting',
                     'planifier une réunion', 'invitation réunion',
@@ -356,66 +325,57 @@ class CategoryManager {
                     'google meet', 'rendez-vous', 'appointment', 'rdv',
                     'confirmer votre présence', 'confirm attendance',
                     'réunion annulée', 'meeting cancelled',
-                    'first call', 'premier appel', 'entretien téléphonique',
                     'requested to reschedule', 'demande de reprogrammation',
-                    'reschedule meeting', 'reprogrammer la réunion'
+                    'reschedule meeting', 'reprogrammer la réunion',
+                    'agenda de la réunion', 'meeting agenda',
+                    'ordre du jour', 'meeting minutes'
                 ],
                 strong: [
                     'meeting', 'réunion', 'schedule', 'planifier',
-                    'calendar', 'calendrier', 'appointment', 'agenda',
-                    'conférence', 'conference', 'call', 'visioconférence',
-                    'video call', 'planning', 'reschedule', 'reprogrammer',
+                    'calendar', 'calendrier', 'agenda',
+                    'conférence', 'conference', 'visioconférence',
+                    'video call', 'reschedule', 'reprogrammer',
                     'disponibilité', 'availability', 'slot', 'créneau'
                 ],
-                weak: [
-                    'présentation', 'agenda', 'disponible', 'available',
-                    'date', 'heure', 'time', 'durée', 'duration',
-                    'week', 'semaine', 'thursday', 'jeudi'
-                ],
-                exclusions: [
-                    'newsletter', 'promotion', 'marketing', 'papa', 
-                    'maman', 'famille', 'facture', 'password', 'security'
-                ]
+                weak: []
             },
 
-            // Ressources Humaines - Mots-clés renforcés pour recrutement
+            // Ressources Humaines - Mots-clés uniques
             hr: {
                 absolute: [
                     'votre candidature', 'your application', 'job application',
+                    'suite de votre candidature', 'suite favorable', 'suite défavorable',
                     'processus de recrutement', 'recruitment process',
                     'offre d\'emploi', 'job offer', 'poste à pourvoir',
+                    'poste de', 'pour le poste de', 'candidature pour le poste',
                     'bulletin de paie', 'payslip', 'fiche de paie',
                     'demande de congés', 'leave request', 'congés validés',
                     'service recrutement', 'recruitment team', 'équipe rh',
-                    'contrat de travail', 'onboarding',
+                    'contrat de travail', 'onboarding', 'cdi', 'cdd',
                     'entretien annuel', 'performance review',
                     'ressources humaines', 'human resources',
+                    'responsable ressources humaines', 'responsable rh',
                     'recruiting powered by', 'recrutement via',
                     'customer success manager', 'responsable succès client',
                     'first call', 'premier entretien', 'entretien initial',
-                    'other processes', 'autres processus', 'candidatures'
+                    'other processes', 'autres processus', 'candidatures',
+                    'chargée de recrutement', 'chargé de recrutement',
+                    'responsable recrutement', 'recruteur', 'recruiter',
+                    'salaire selon expérience', 'salary according to experience',
+                    'compétences requises', 'required skills'
                 ],
                 strong: [
                     'rh', 'hr', 'salaire', 'salary', 'candidature',
-                    'ressources humaines', 'human resources', 'recrutement',
-                    'contrat', 'paie', 'congés', 'vacation', 'recruitment',
-                    'emploi', 'job', 'recruitment', 'formation', 'entretien', 'interview',
-                    'poste', 'position', 'process', 'processus', 'candidate', 'candidat'
+                    'recrutement', 'recruitment', 'paie', 'congés', 'vacation',
+                    'emploi', 'job', 'formation', 'entretien', 'interview',
+                    'poste', 'position', 'process', 'processus', 'candidate', 'candidat',
+                    'cv', 'resume', 'profil', 'profile', 'compétences', 'skills',
+                    'mission', 'responsabilités', 'responsibilities'
                 ],
-                weak: [
-                    'employee', 'staff', 'personnel', 'équipe', 'poste',
-                    'team', 'manager', 'responsable'
-                ],
-                exclusions: [
-                    'newsletter', 'marketing', 'famille', 'family', 
-                    'personnel', 'personal', 'papa', 'maman',
-                    'présentation', 'document', 'correction',
-                    'bises', 'bisous', 'familial', 'client', 'vente',
-                    'password', 'security', 'invoice'
-                ]
+                weak: []
             },
 
-            // Gestion de Projet - Mots-clés sans GitHub password
+            // Gestion de Projet - Mots-clés uniques
             project: {
                 absolute: [
                     'projet xx', 'project update', 'milestone',
@@ -433,21 +393,13 @@ class CategoryManager {
                     'projet', 'project', 'milestone', 'sprint',
                     'agile', 'scrum', 'kanban', 'jira',
                     'development', 'développement', 'deliverable',
-                    'document', 'présentation', 'correction', 'release',
+                    'document', 'présentation', 'release',
                     'deploy', 'deployment', 'feature', 'bug fix'
                 ],
-                weak: [
-                    'development', 'phase', 'étape', 'planning', 
-                    'présentation', 'task', 'ticket', 'issue'
-                ],
-                exclusions: [
-                    'newsletter', 'marketing', 'promotion', 'papa', 
-                    'maman', 'famille', 'bises', 'facture', 'candidature', 'recrutement',
-                    'password reset', 'security', 'account security', 'unauthorized access'
-                ]
+                weak: []
             },
 
-            // Commercial et Ventes - Mots-clés enrichis
+            // Commercial et Ventes - Mots-clés uniques
             commercial: {
                 absolute: [
                     'opportunité commerciale', 'business opportunity',
@@ -455,49 +407,36 @@ class CategoryManager {
                     'contrat commercial', 'sales contract', 'bon de commande',
                     'signature du contrat', 'contract signature',
                     'devis', 'quotation', 'proposal', 'proposition',
-                    'contrat', 'contract', 'purchase order',
-                    'offre commerciale', 'opportunity', 'opportunité', 'lead'
+                    'purchase order', 'offre commerciale', 'opportunity', 
+                    'opportunité', 'lead'
                 ],
                 strong: [
-                    'client', 'customer', 'prospect', 'opportunity',
-                    'commercial', 'business', 'marché', 'deal',
-                    'vente', 'sales', 'négociation', 'devis',
-                    'quote', 'contrat', 'contract', 'offre'
+                    'commercial', 'vente', 'sales', 'client', 'customer',
+                    'prospect', 'marché', 'deal', 'négociation',
+                    'business', 'partenariat'
                 ],
-                weak: [
-                    'offre', 'négociation', 'discussion', 'projet', 'marché'
-                ],
-                exclusions: [
-                    'newsletter', 'marketing', 'promotion', 'unsubscribe', 
-                    'ventes en ligne', 'candidature', 'recrutement', 'rh', 
-                    'paie', 'formation'
-                ]
+                weak: []
             },
 
-            // Support et Assistance - Mots-clés complets
+            // Support et Assistance - Mots-clés uniques
             support: {
                 absolute: [
                     'ticket #', 'ticket number', 'numéro de ticket',
                     'ticket de support', 'support ticket', 'ticket n°',
                     'case #', 'case number', 'incident #',
-                    'problème résolu', 'issue resolved', 'ticket résolu', 'ticket closed',
-                    'demande d\'assistance', 'support request',
+                    'problème résolu', 'issue resolved', 'ticket résolu', 
+                    'ticket closed', 'demande d\'assistance', 'support request',
                     'demande de support'
                 ],
                 strong: [
                     'support', 'assistance', 'help desk', 'ticket',
-                    'technical support', 'ticket', 'incident',
-                    'problème', 'problem', 'issue', 'bug', 'résolution'
+                    'technical support', 'incident', 'problème', 
+                    'problem', 'issue', 'bug', 'résolution'
                 ],
-                weak: [
-                    'help', 'aide', 'issue', 'question', 'information'
-                ],
-                exclusions: [
-                    'newsletter', 'marketing', 'promotion', 'facture', 'commande'
-                ]
+                weak: []
             },
 
-            // Logistique et Livraisons - Mots-clés étendus
+            // Logistique et Livraisons - Mots-clés uniques
             logistics: {
                 absolute: [
                     'commande expédiée', 'order shipped', 'colis expédié',
@@ -508,40 +447,28 @@ class CategoryManager {
                     'livraison', 'delivery', 'expédition', 'shipping',
                     'colis', 'package', 'transport', 'tracking'
                 ],
-                weak: [
-                    'envoi', 'commande', 'retour', 'échange'
-                ],
-                exclusions: [
-                    'newsletter', 'facture', 'devis'
-                ]
+                weak: []
             },
 
-            // Communication Interne - Mots-clés complets
+            // Communication Interne - Mots-clés uniques
             internal: {
                 absolute: [
                     'all staff', 'tout le personnel', 'annonce interne',
                     'à tous les collaborateurs', 'to all employees',
                     'communication interne', 'internal communication',
                     'company announcement', 'memo interne',
-                    'note de service', 'message de la direction', 'management message',
-                    'à tous', 'to all employees'
+                    'note de service', 'message de la direction', 
+                    'management message', 'à tous', 'to all employees'
                 ],
                 strong: [
                     'internal', 'interne', 'company wide', 'entreprise',
-                    'personnel', 'staff', 'équipe', 'team',
-                    'annonce', 'announcement', 'collaborateur', 'employee'
+                    'personnel', 'staff', 'annonce', 'announcement', 
+                    'collaborateur', 'employee'
                 ],
-                weak: [
-                    'annonce', 'announcement', 'information', 'update',
-                    'message', 'nouvelle', 'changement'
-                ],
-                exclusions: [
-                    'newsletter', 'marketing', 'external', 'client', 
-                    'papa', 'maman', 'famille', 'bises', 'commercial'
-                ]
+                weak: []
             },
 
-            // Juridique et Conformité - Mots-clés enrichis
+            // Juridique et Conformité - Mots-clés uniques
             legal: {
                 absolute: [
                     'contrat juridique', 'legal contract', 'conditions générales',
@@ -550,17 +477,12 @@ class CategoryManager {
                 ],
                 strong: [
                     'juridique', 'legal', 'conformité', 'compliance',
-                    'contrat', 'contract', 'clause', 'réglementaire'
+                    'clause', 'réglementaire'
                 ],
-                weak: [
-                    'document', 'accord', 'termes', 'conditions'
-                ],
-                exclusions: [
-                    'newsletter', 'facture', 'livraison'
-                ]
+                weak: []
             },
 
-            // Notifications Système - Mots-clés corrigés (sans domaines)
+            // Notifications Système - Mots-clés uniques
             notifications: {
                 absolute: [
                     'ceci est un message automatique', 'this is an automated message',
@@ -574,17 +496,10 @@ class CategoryManager {
                     'système', 'system', 'automatisé', 'automated',
                     'notification automatique', 'automatic notification'
                 ],
-                weak: [
-                    'notification', 'alert', 'info', 'confirmé', 'update', 'status'
-                ],
-                exclusions: [
-                    'newsletter', 'marketing', 'urgent', 'action required', 'important',
-                    'stop receiving', 'unsubscribe', 'click here', 'watch now',
-                    'password', 'security', 'meeting', 'invoice', 'facture'
-                ]
+                weak: []
             },
 
-            // Rappels et Relances - Mots-clés complets
+            // Rappels et Relances - Mots-clés uniques
             reminders: {
                 absolute: [
                     'reminder:', 'rappel:', 'follow up', 'relance',
@@ -598,34 +513,21 @@ class CategoryManager {
                     'suite', 'convenu', 'discussed', 'pending',
                     'attente', 'waiting', 'précédent', 'previous'
                 ],
-                weak: [
-                    'previous', 'discussed', 'encore', 'still', 'déjà', 'already'
-                ],
-                exclusions: [
-                    'newsletter', 'marketing', 'promotion', 'première fois', 'nouveau', 'initial'
-                ]
+                weak: []
             },
 
-            // En Copie (CC) - Mots-clés optimisés
+            // En Copie (CC) - Mots-clés uniques
             cc: {
                 absolute: [
                     'copie pour information', 'for your information', 'fyi',
-                    'pour information', 'for your information', 
-                    'en copie pour information', 'cc pour info',
-                    'mis en copie', 'cc:', 'courtesy copy',
+                    'pour information', 'en copie pour information', 
+                    'cc pour info', 'mis en copie', 'cc:', 'courtesy copy',
                     'pour info', 'pour votre information', 'en copie', 'in copy'
                 ],
                 strong: [
                     'information', 'copie', 'copy', 'cc'
                 ],
-                weak: [
-                    'fyi', 'info', 'suivi', 'connaissance'
-                ],
-                exclusions: [
-                    'commande', 'order', 'facture', 'invoice',
-                    'urgent', 'action required', 'payment',
-                    'action requise', 'merci de'
-                ]
+                weak: []
             }
         };
 
@@ -781,15 +683,7 @@ class CategoryManager {
             }
         }
         
-        // Test des exclusions (-50 points)
-        if (keywords.exclusions) {
-            for (const keyword of keywords.exclusions) {
-                if (this.containsKeyword(content.text, keyword)) {
-                    totalScore -= 50;
-                    matches.push({ keyword, type: 'exclusion', score: -50 });
-                }
-            }
-        }
+        // Plus d'exclusions - système supprimé
         
         // Bonus de domaine pour certaines catégories
         const domainBonuses = {
@@ -826,12 +720,8 @@ class CategoryManager {
                 if (a.hasAbsolute && !b.hasAbsolute) return -1;
                 if (!a.hasAbsolute && b.hasAbsolute) return 1;
                 
-                // Puis par priorité de catégorie
-                if (a.priority !== b.priority) {
-                    return b.priority - a.priority;
-                }
-                
-                // Enfin par score
+                // SUPPRESSION de la priorité par catégorie
+                // Seulement par score
                 return b.score - a.score;
             });
         
@@ -1078,6 +968,40 @@ class CategoryManager {
                 }
             }
         });
+    }
+
+    // ================================================
+    // VÉRIFICATION DES DOUBLONS DE MOTS-CLÉS
+    // ================================================
+    checkDuplicateKeywords() {
+        const allKeywords = new Map();
+        const duplicates = [];
+        
+        Object.entries(this.weightedKeywords).forEach(([categoryId, keywords]) => {
+            ['absolute', 'strong', 'weak'].forEach(type => {
+                if (keywords[type]) {
+                    keywords[type].forEach(keyword => {
+                        const normalizedKeyword = this.normalizeText(keyword);
+                        if (allKeywords.has(normalizedKeyword)) {
+                            const existing = allKeywords.get(normalizedKeyword);
+                            duplicates.push({
+                                keyword: keyword,
+                                categories: [existing.category, categoryId],
+                                types: [existing.type, type]
+                            });
+                        } else {
+                            allKeywords.set(normalizedKeyword, { category: categoryId, type });
+                        }
+                    });
+                }
+            });
+        });
+        
+        if (duplicates.length > 0) {
+            console.warn('[CategoryManager] ⚠️ Mots-clés en double détectés:', duplicates);
+        }
+        
+        return duplicates;
     }
 
     // ================================================
