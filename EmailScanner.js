@@ -24,7 +24,7 @@ class EmailScanner {
             'reminders': 50,
             'project': 50,
             'internal': 50,
-            'notifications': 30  // Priorité plus basse pour notifications
+            'notifications': 40
         };
         
         // Métriques de performance
@@ -77,40 +77,29 @@ class EmailScanner {
         // 5. Analyser toutes les catégories avec les mots-clés de CategoryManager
         const categoryScores = this.analyzeAllCategories(content);
         
-        // 6. Si c'est un noreply ET qu'on trouve aussi des patterns marketing forts, prioriser marketing
-        if (isNoreply && categoryScores.marketing_news && categoryScores.marketing_news.score >= 100) {
-            // Boost le score marketing pour qu'il gagne
-            categoryScores.marketing_news.score += 100;
-            categoryScores.marketing_news.matches.push({ 
-                keyword: 'noreply_with_marketing', 
-                type: 'bonus', 
-                score: 100 
-            });
-        }
-        
-        // 7. Si c'est un noreply sans marketing fort, forcer notifications
-        else if (isNoreply) {
-            // Si notifications a déjà un score, le booster
+        // 6. Si c'est un noreply, booster notifications sauf si marketing fort
+        if (isNoreply) {
             if (categoryScores.notifications) {
-                categoryScores.notifications.score += 100;
-                categoryScores.notifications.priority = 95; // Augmenter temporairement la priorité
-            } else {
-                // Créer une entrée notifications
+                categoryScores.notifications.score += 50;
+            }
+            // Si marketing_news a un score faible et noreply, c'est probablement notifications
+            if ((!categoryScores.marketing_news || categoryScores.marketing_news.score < 100) && 
+                (!categoryScores.notifications || categoryScores.notifications.score < 50)) {
                 categoryScores.notifications = {
                     category: 'notifications',
-                    score: 150,
-                    confidence: 0.90,
-                    matches: [{ keyword: 'noreply_email', type: 'detected', score: 150 }],
+                    score: 100,
+                    confidence: 0.85,
+                    matches: [{ keyword: 'noreply_email', type: 'detected', score: 100 }],
                     hasAbsolute: true,
-                    priority: 95
+                    priority: this.categoryPriorities.notifications
                 };
             }
         }
         
-        // 8. Sélectionner la meilleure catégorie
+        // 7. Sélectionner la meilleure catégorie
         const bestCategory = this.selectBestCategory(categoryScores);
         
-        // 9. Gestion spéciale CC - seulement si vraiment en CC et pas d'autre catégorie forte
+        // 8. Gestion spéciale CC - seulement si vraiment en CC
         if (isCC && this.settings.preferences?.detectCC !== false) {
             if (!bestCategory || bestCategory.score < 100) {
                 return {
@@ -124,7 +113,7 @@ class EmailScanner {
             }
         }
         
-        // 10. Retourner le résultat
+        // 9. Retourner le résultat
         if (bestCategory && bestCategory.score >= 30) {
             return {
                 category: bestCategory.category,
