@@ -1,7 +1,7 @@
-// EmailScanner.js - Version 17.0 - Scanner Entreprise avec Détection par Contenu
-// Détection basée uniquement sur les mots-clés et le contenu, sans domaines prédéfinis
+// EmailScanner.js - Version 17.0 - Scanner avec Mots-clés CategoryManager Uniquement
+// Détection basée exclusivement sur les mots-clés définis dans CategoryManager
 
-console.log('[EmailScanner] 🚀 Loading EmailScanner.js v17.0 - Enterprise Content Detection...');
+console.log('[EmailScanner] 🚀 Loading EmailScanner.js v17.0 - CategoryManager Keywords Only...');
 
 class EmailScanner {
     constructor() {
@@ -18,8 +18,7 @@ class EmailScanner {
             categorizationDelay: 0,
             maxConcurrentAnalysis: 10,
             cacheCategories: true,
-            debugMode: false,
-            enhancedDetection: true
+            debugMode: false
         };
         
         // Cache de catégorisation
@@ -32,14 +31,10 @@ class EmailScanner {
             cacheHits: 0,
             cacheMisses: 0,
             errors: 0,
-            avgCategorizeTime: 0,
-            detectionStats: {}
+            avgCategorizeTime: 0
         };
         
-        // Patterns de détection améliorés
-        this.detectionPatterns = this.initializeDetectionPatterns();
-        
-        console.log('[EmailScanner] ✅ Version 17.0 initialized - Enhanced Detection');
+        console.log('[EmailScanner] ✅ Version 17.0 initialized - CategoryManager Keywords Only');
         this.initializeWithSync();
     }
 
@@ -105,7 +100,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // ANALYSE D'EMAIL AMÉLIORÉE v17
+    // ANALYSE D'EMAIL AVEC MOTS-CLÉS CATEGORYMANAGER
     // ================================================
     analyzeEmail(email) {
         if (!email) {
@@ -130,18 +125,10 @@ class EmailScanner {
             return result;
         }
 
-        // 2. Détection améliorée basée sur les patterns
-        const patternDetection = this.detectByPatterns(email);
-        if (patternDetection && patternDetection.confidence >= 0.8) {
-            this.categoryCache.set(cacheKey, patternDetection);
-            this.updateMetrics(startTime);
-            return patternDetection;
-        }
-
-        // 3. Extraction du contenu
+        // 2. Extraction du contenu
         const content = this.extractContentOptimized(email);
         
-        // 4. Détection CC
+        // 3. Détection CC
         if (this.settings.preferences?.detectCC !== false && this.isDefinitelyInCC(email)) {
             const result = {
                 category: 'cc',
@@ -156,22 +143,21 @@ class EmailScanner {
             return result;
         }
         
-        // 5. Analyse multi-catégories avec pondération améliorée
-        const categoryScores = this.analyzeCategoriesEnhanced(content, email);
+        // 4. Analyse avec les mots-clés CategoryManager uniquement
+        const categoryScores = this.analyzeCategoriesWithKeywords(content, email);
         
-        // 6. Sélection intelligente de la catégorie
-        const bestCategory = this.selectBestCategoryIntelligent(categoryScores, email);
+        // 5. Sélection de la meilleure catégorie
+        const bestCategory = this.selectBestCategory(categoryScores);
         
-        // 7. Résultat final
+        // 6. Résultat final
         let result;
-        if (bestCategory && bestCategory.score >= 25) { // Seuil abaissé pour plus de sensibilité
+        if (bestCategory && bestCategory.score >= 30) {
             result = {
                 category: bestCategory.category,
                 score: bestCategory.score,
                 confidence: bestCategory.confidence,
                 matchedPatterns: bestCategory.matches || [],
-                hasAbsolute: bestCategory.hasAbsolute || false,
-                detectionMethod: bestCategory.detectionMethod || 'keywords'
+                hasAbsolute: bestCategory.hasAbsolute || false
             };
         } else {
             result = { category: 'other', score: 0, confidence: 0 };
@@ -185,7 +171,7 @@ class EmailScanner {
         this.updateMetrics(startTime);
         
         if (this.config.debugMode && result.category !== 'other') {
-            console.log(`[EmailScanner] Categorized "${email.subject?.substring(0, 50)}..." as ${result.category} (score: ${result.score}, method: ${result.detectionMethod})`);
+            console.log(`[EmailScanner] Categorized "${email.subject?.substring(0, 50)}..." as ${result.category} (score: ${result.score})`);
         }
         
         return result;
@@ -780,9 +766,9 @@ class EmailScanner {
                 return this.buildResults(scanOptions);
             }
 
-            // Étape 2: Catégorisation améliorée
+            // Étape 2: Catégorisation avec mots-clés CategoryManager
             if (scanOptions.autoCategrize) {
-                await this.categorizeEmailsEnhanced();
+                await this.categorizeEmails();
             }
 
             // Étape 3: Analyse IA (optionnelle)
@@ -800,8 +786,7 @@ class EmailScanner {
                 categorized: results.categorized,
                 preselected: results.stats.preselectedForTasks,
                 cacheHits: this.metrics.cacheHits,
-                cacheMisses: this.metrics.cacheMisses,
-                detectionStats: this.metrics.detectionStats
+                cacheMisses: this.metrics.cacheMisses
             });
 
             if (this.scanProgress) {
@@ -840,21 +825,13 @@ class EmailScanner {
         }
     }
 
-    async categorizeEmailsEnhanced() {
+    async categorizeEmails() {
         const total = this.emails.length;
-        console.log(`[EmailScanner] 🏷️ === CATEGORIZING ${total} EMAILS (Enhanced) ===`);
+        console.log(`[EmailScanner] 🏷️ === CATEGORIZING ${total} EMAILS (Keywords Only) ===`);
         console.log('[EmailScanner] ⭐ Preselected categories:', this.taskPreselectedCategories);
 
         let processed = 0;
         const batchSize = this.config.batchSize;
-        
-        // Initialiser les stats de détection
-        this.metrics.detectionStats = {
-            byPattern: 0,
-            byKeywords: 0,
-            byContext: 0,
-            uncategorized: 0
-        };
         
         // Traiter par batches
         for (let i = 0; i < total; i += batchSize) {
@@ -872,18 +849,6 @@ class EmailScanner {
                     email.hasAbsolute = analysis.hasAbsolute || false;
                     email.isSpam = analysis.isSpam || false;
                     email.isCC = analysis.isCC || false;
-                    email.detectionMethod = analysis.detectionMethod || 'unknown';
-                    
-                    // Stats de détection
-                    if (analysis.category === 'other') {
-                        this.metrics.detectionStats.uncategorized++;
-                    } else if (analysis.detectionMethod?.includes('pattern')) {
-                        this.metrics.detectionStats.byPattern++;
-                    } else if (analysis.detectionMethod?.includes('context')) {
-                        this.metrics.detectionStats.byContext++;
-                    } else {
-                        this.metrics.detectionStats.byKeywords++;
-                    }
                     
                     // Vérifier si pré-sélectionné pour tâches
                     email.isPreselectedForTasks = this.taskPreselectedCategories.includes(analysis.category);
@@ -931,7 +896,6 @@ class EmailScanner {
         }
 
         console.log('[EmailScanner] ✅ Categorization complete');
-        console.log('[EmailScanner] 📊 Detection stats:', this.metrics.detectionStats);
         console.log(`[EmailScanner] 📊 Cache stats: ${this.metrics.cacheHits} hits, ${this.metrics.cacheMisses} misses`);
     }
 
@@ -1103,8 +1067,7 @@ class EmailScanner {
                 preselectedForTasks: totalPreselected,
                 scanDuration: scanDuration,
                 cacheHits: this.metrics.cacheHits,
-                cacheMisses: this.metrics.cacheMisses,
-                detectionStats: this.metrics.detectionStats
+                cacheMisses: this.metrics.cacheMisses
             },
             emails: this.emails,
             settings: this.settings,
@@ -1126,8 +1089,7 @@ class EmailScanner {
             cacheHits: 0,
             cacheMisses: 0,
             errors: 0,
-            avgCategorizeTime: 0,
-            detectionStats: {}
+            avgCategorizeTime: 0
         };
         
         // Initialiser les catégories
@@ -1245,8 +1207,7 @@ class EmailScanner {
             emails: this.emails,
             breakdown: this.getCategoryBreakdown(),
             taskPreselectedCategories: this.taskPreselectedCategories,
-            preselectedCount: this.emails.filter(e => e.isPreselectedForTasks).length,
-            detectionStats: this.metrics.detectionStats
+            preselectedCount: this.emails.filter(e => e.isPreselectedForTasks).length
         });
     }
 
@@ -1401,7 +1362,7 @@ if (window.emailScanner) {
 
 window.emailScanner = new EmailScanner();
 
-console.log('✅ EmailScanner v17.0 loaded - Enterprise Content Detection');
-console.log('🎯 Detection based on content analysis and keywords only');
-console.log('📧 No predefined domain patterns - suitable for enterprise use');
-console.log('🔍 Context-aware categorization with business keyword detection');
+console.log('✅ EmailScanner v17.0 loaded - CategoryManager Keywords Only');
+console.log('🎯 Detection based exclusively on CategoryManager keywords');
+console.log('📧 No predefined patterns - pure keyword matching');
+console.log('🔍 Optimized for enterprise use with customizable categories');
