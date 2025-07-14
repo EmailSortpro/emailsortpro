@@ -310,6 +310,44 @@ class EmailScanner {
                '';
     }
 
+    getCurrentUserEmail() {
+        if (this._currentUserEmail) {
+            return this._currentUserEmail;
+        }
+        
+        try {
+            const userInfo = localStorage.getItem('currentUserInfo');
+            if (userInfo) {
+                const parsed = JSON.parse(userInfo);
+                this._currentUserEmail = parsed.email || parsed.userPrincipalName || parsed.mail;
+                return this._currentUserEmail;
+            }
+            
+            const msalAccounts = JSON.parse(localStorage.getItem('msal.account.keys') || '[]');
+            if (msalAccounts.length > 0) {
+                const firstAccount = localStorage.getItem(msalAccounts[0]);
+                if (firstAccount) {
+                    const account = JSON.parse(firstAccount);
+                    this._currentUserEmail = account.username || account.preferred_username;
+                    return this._currentUserEmail;
+                }
+            }
+            
+            if (window.authService?.getAccount) {
+                const account = window.authService.getAccount();
+                if (account?.username) {
+                    this._currentUserEmail = account.username;
+                    return this._currentUserEmail;
+                }
+            }
+            
+        } catch (e) {
+            console.warn('[EmailScanner] Unable to get user email:', e);
+        }
+        
+        return null;
+    }
+
     // ================================================
     // ANALYSE DES CATÉGORIES AMÉLIORÉE
     // ================================================
@@ -684,42 +722,11 @@ class EmailScanner {
         return inCC && !inTO;
     }
 
-    getCurrentUserEmail() {
-        if (this._currentUserEmail) {
-            return this._currentUserEmail;
-        }
-        
-        try {
-            const userInfo = localStorage.getItem('currentUserInfo');
-            if (userInfo) {
-                const parsed = JSON.parse(userInfo);
-                this._currentUserEmail = parsed.email || parsed.userPrincipalName || parsed.mail;
-                return this._currentUserEmail;
-            }
-            
-            const msalAccounts = JSON.parse(localStorage.getItem('msal.account.keys') || '[]');
-            if (msalAccounts.length > 0) {
-                const firstAccount = localStorage.getItem(msalAccounts[0]);
-                if (firstAccount) {
-                    const account = JSON.parse(firstAccount);
-                    this._currentUserEmail = account.username || account.preferred_username;
-                    return this._currentUserEmail;
-                }
-            }
-            
-            if (window.authService?.getAccount) {
-                const account = window.authService.getAccount();
-                if (account?.username) {
-                    this._currentUserEmail = account.username;
-                    return this._currentUserEmail;
-                }
-            }
-            
-        } catch (e) {
-            console.warn('[EmailScanner] Unable to get user email:', e);
-        }
-        
-        return null;
+    getEmailBodyContent(email) {
+        return email.bodyPreview || 
+               email.body?.content || 
+               email.bodyText || 
+               '';
     }
 
     extractDomain(email) {
