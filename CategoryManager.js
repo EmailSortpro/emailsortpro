@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 21.0 - Complet et optimisé
+// CategoryManager.js - Version 22.0 - Mots-clés Améliorés pour Détection Optimale
 
 class CategoryManager {
     constructor() {
@@ -31,7 +31,7 @@ class CategoryManager {
         // Démarrer la synchronisation automatique
         this.startAutoSync();
         
-        console.log('[CategoryManager] ✅ Version 21.0 - Complet et optimisé');
+        console.log('[CategoryManager] ✅ Version 22.0 - Mots-clés améliorés pour entreprise');
     }
 
     // ================================================
@@ -165,345 +165,604 @@ class CategoryManager {
     }
 
     // ================================================
-    // MOTS-CLÉS PONDÉRÉS v21
+    // MOTS-CLÉS PONDÉRÉS v22 - AMÉLIORÉS
     // ================================================
     initializeWeightedDetection() {
         this.weightedKeywords = {
-            // MARKETING & NEWS - Patterns améliorés
+            // MARKETING & NEWS - Détection améliorée
             marketing_news: {
                 absolute: [
-                    // Patterns de désabonnement très forts
+                    // Patterns de désabonnement très forts (universels)
                     'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
                     'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
                     'gérer vos préférences', 'gérer la réception', 'gérer mes préférences',
-                    'email preferences', 'préférences email', 'preferences email',
-                    'ne plus recevoir', 'stop emails', 'arreter les emails',
-                    'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
-                    'clique-ici', 'cliquez-ici', 'click here to unsubscribe',
                     'manage preferences', 'update preferences', 'notification settings',
+                    'email preferences', 'préférences email', 'preferences email',
+                    'ne plus recevoir', 'stop emails', 'arrêter les emails',
+                    'stop receiving emails', 'to stop receiving',
+                    'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
+                    'click here to unsubscribe', 'cliquez ici pour vous désabonner',
+                    'manage your subscription', 'gérer votre abonnement',
                     'disable these notifications', 'turn off notifications',
                     'manage notifications', 'email settings', 'communication preferences',
-                    // Patterns newsletter
+                    'update your email preferences', 'mettre à jour vos préférences',
+                    
+                    // Patterns newsletter/marketing spécifiques
                     'newsletter', 'mailing list', 'mailing', 'bulletin',
                     'this email was sent to', 'you are receiving this',
                     'you received this email', 'vous recevez ce message',
+                    'you\'re receiving this email', 'why am i receiving this',
+                    'sent to you by', 'envoyé par', 'sent from',
+                    
                     // Patterns promotionnels
                     'limited offer', 'offre limitée', 'special offer', 'offre spéciale',
                     'promotion', 'promo', 'soldes', 'vente privée',
                     'black friday', 'cyber monday', 'ventes flash',
-                    // Patterns de contact commercial
+                    'exclusive deal', 'offre exclusive', 'bon plan',
+                    
+                    // Patterns de contact automatique
                     'no-reply@', 'noreply@', 'donotreply@', 'ne-pas-repondre@',
-                    'news@', 'newsletter@', 'info@', 'contact@', 'marketing@'
+                    'news@', 'newsletter@', 'info@', 'contact@', 'marketing@',
+                    'notification@', 'notifications@', 'alerts@', 'updates@',
+                    
+                    // Patterns streaming/social media
+                    'is live', 'went live', 'started streaming', 'is streaming',
+                    'new video', 'new episode', 'uploaded', 'posted',
+                    'shared a post', 'commented on', 'liked your',
+                    'mentioned you', 'tagged you', 'followed you',
+                    
+                    // Footer patterns
+                    'all rights reserved', 'tous droits réservés',
+                    'copyright ©', '© 20', 'privacy policy', 'politique de confidentialité',
+                    'terms of service', 'conditions d\'utilisation'
                 ],
                 strong: [
+                    'subscribe', 'abonnez-vous', 'inscription', 'sign up',
+                    'follow', 'suivre', 'like', 'share', 'partager',
                     'deal', 'offer', 'sale', 'discount', 'réduction', 'remise',
                     'exclusive', 'special', 'limited', 'new', 'nouveau',
                     'boutique', 'shopping', 'acheter', 'commander', 'shop',
                     'save', 'économiser', 'free', 'gratuit', 'cadeau',
-                    'notifications', 'alerts', 'updates', 'subscribe', 'inscription',
-                    'campagne', 'campaign', 'announcement', 'annonce'
+                    'promo code', 'code promo', 'coupon', 'voucher',
+                    'early access', 'accès anticipé', 'preview',
+                    'announcement', 'annonce', 'news', 'actualité',
+                    'update', 'mise à jour', 'what\'s new', 'nouveautés'
                 ],
                 weak: [
-                    'update', 'discover', 'nouveauté', 'découvrir', 'collection',
-                    'available', 'disponible', 'nouveau', 'news', 'actualité'
+                    'discover', 'découvrir', 'explore', 'explorer',
+                    'learn more', 'en savoir plus', 'read more', 'lire plus',
+                    'available', 'disponible', 'now', 'maintenant',
+                    'today', 'aujourd\'hui', 'this week', 'cette semaine',
+                    'featured', 'à la une', 'trending', 'tendance',
+                    'popular', 'populaire', 'recommended', 'recommandé'
                 ],
-                exclusions: ['urgent', 'action required', 'fraude', 'sécurité', 'alerte']
+                exclusions: [
+                    'urgent', 'action required', 'action requise',
+                    'deadline', 'échéance', 'payment due', 'paiement dû',
+                    'security alert', 'alerte sécurité', 'fraude', 'fraud'
+                ]
             },
 
-            // SÉCURITÉ - Patterns renforcés pour fraude/phishing
-            security: {
+            // NOTIFICATIONS - Patterns améliorés
+            notifications: {
                 absolute: [
-                    // Alertes de fraude et phishing
-                    'fraude', 'fraud', 'arnaque', 'scam', 'phishing', 'hameçonnage',
-                    'vigilant', 'vigilance', 'restons vigilants', 'restez vigilant',
-                    'fraudeurs', 'frauduleux', 'malveillant', 'malicious',
-                    'faux site', 'fake site', 'site frauduleux', 'imitation site',
-                    'se faire passer pour', 'usurpation', 'tentative de fraude',
-                    'arnaques liées', 'protéger face', 'te protéger',
-                    // Alertes de connexion
-                    'alerte de connexion', 'alert connexion', 'nouvelle connexion',
-                    'activité suspecte', 'suspicious activity', 'login alert',
-                    'new sign-in', 'sign in detected', 'connexion détectée',
-                    'connexion inhabituelle', 'unusual login', 'unauthorized access',
-                    // Codes et authentification
-                    'code de vérification', 'verification code', 'security code',
-                    'two-factor', '2fa', 'authentification', 'authentication',
-                    'password reset', 'réinitialisation mot de passe',
-                    'changer votre mot de passe', 'change your password'
+                    // Messages automatiques
+                    'do not reply', 'ne pas répondre', 'no-reply',
+                    'automated message', 'message automatique',
+                    'automatic notification', 'notification automatique',
+                    'system notification', 'notification système',
+                    'this is an automated', 'ceci est un message automatique',
+                    'automatically generated', 'généré automatiquement',
+                    
+                    // Patterns de notification
+                    'you have a new', 'vous avez un nouveau',
+                    'new activity', 'nouvelle activité',
+                    'new notification', 'nouvelle notification',
+                    'reminder:', 'rappel:', 'alert:', 'alerte:',
+                    
+                    // Expéditeurs automatiques
+                    'system@', 'automated@', 'auto@', 'bot@',
+                    'notification-service@', 'email-robot@'
                 ],
                 strong: [
-                    'sécurité', 'security', 'vérification', 'verify', 'alerte',
-                    'alert', 'warning', 'avertissement', 'attention', 'danger',
-                    'risque', 'risk', 'menace', 'threat', 'protect', 'protéger',
-                    'authentifier', 'authenticate', 'confirmer', 'confirm',
-                    'identité', 'identity', 'compte compromis', 'account compromised'
+                    'notification', 'alert', 'alerte', 'update',
+                    'activity', 'activité', 'reminder', 'rappel',
+                    'automated', 'automatic', 'automatique', 'system',
+                    'generated', 'généré', 'scheduled', 'programmé',
+                    'trigger', 'triggered', 'déclenché'
                 ],
                 weak: [
-                    'compte', 'account', 'accès', 'access', 'connexion', 'login',
-                    'sécurisé', 'secure', 'privé', 'private', 'confidentiel'
+                    'info', 'message', 'sent', 'envoyé',
+                    'received', 'reçu', 'processed', 'traité',
+                    'status', 'statut', 'report', 'rapport'
                 ],
-                exclusions: ['newsletter', 'promotion', 'offre', 'deal', 'shopping']
+                exclusions: [
+                    'urgent', 'marketing', 'promotion', 'newsletter',
+                    'unsubscribe', 'désabonner', 'fraude', 'sécurité'
+                ]
             },
 
-            // COMMERCIAL - Patterns pour recrutement et opportunités
+            // COMMERCIAL - Détection recrutement/business améliorée
             commercial: {
                 absolute: [
                     // Recrutement et candidatures
                     'we have received your application', 'application received',
                     'thank you for applying', 'merci pour votre candidature',
                     'nous avons reçu votre candidature', 'candidature reçue',
+                    'votre candidature a été', 'your application has been',
                     'postulation', 'job application', 'application for',
-                    'poste de', 'role of', 'position of', 'opportunité',
+                    'candidature pour le poste', 'application for the position',
+                    'poste de', 'role of', 'position of', 'position:',
+                    'offre d\'emploi', 'job offer', 'job opening',
+                    'nous recherchons', 'we are looking for', 'we\'re hiring',
+                    'rejoignez notre équipe', 'join our team',
+                    
+                    // Patterns de sites d'emploi
+                    'nouvelle offre d\'emploi', 'new job alert',
+                    'emplois qui correspondent', 'jobs that match',
+                    'postulez maintenant', 'apply now', 'postuler',
+                    
                     // Business et ventes
-                    'devis', 'quotation', 'proposal', 'proposition',
-                    'contrat', 'contract', 'bon de commande', 'purchase order',
+                    'devis', 'quotation', 'quote', 'proposal', 'proposition',
+                    'contrat', 'contract', 'agreement', 'accord',
+                    'bon de commande', 'purchase order', 'commande client',
                     'offre commerciale', 'business proposal', 'commercial offer',
-                    'opportunity', 'opportunité', 'lead', 'prospect'
+                    'opportunity', 'opportunité', 'lead', 'prospect',
+                    'nouveau client', 'new customer', 'new client'
                 ],
                 strong: [
-                    'client', 'customer', 'prospect', 'opportunity', 'candidature',
-                    'application', 'applying', 'recruitment', 'recrutement',
-                    'commercial', 'business', 'marché', 'deal', 'négociation',
-                    'vente', 'sales', 'partnership', 'partenariat', 'collaboration',
-                    'poste', 'job', 'emploi', 'career', 'carrière'
+                    'emploi', 'job', 'poste', 'position', 'vacancy',
+                    'candidature', 'application', 'candidat', 'candidate',
+                    'cv', 'resume', 'curriculum', 'profil', 'profile',
+                    'entretien', 'interview', 'rendez-vous', 'meeting',
+                    'recrutement', 'recruitment', 'recruiter', 'recruteur',
+                    'talent', 'compétences', 'skills', 'expérience',
+                    'commercial', 'business', 'client', 'customer',
+                    'marché', 'market', 'deal', 'négociation',
+                    'vente', 'sales', 'achat', 'purchase',
+                    'partnership', 'partenariat', 'collaboration'
                 ],
                 weak: [
-                    'offre', 'offer', 'discussion', 'projet', 'interest',
-                    'intérêt', 'meeting', 'rendez-vous', 'contact'
+                    'opportunité', 'opportunity', 'carrière', 'career',
+                    'offre', 'offer', 'disponible', 'available',
+                    'intéressé', 'interested', 'contact', 'discussion',
+                    'projet', 'project', 'besoin', 'need',
+                    'service', 'produit', 'product', 'solution'
                 ],
-                exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe', 'fraude']
+                exclusions: [
+                    'newsletter', 'unsubscribe', 'marketing', 'promotion',
+                    'notification', 'automated', 'fraude', 'spam'
+                ]
             },
 
-            // FINANCE - Patterns améliorés
+            // SÉCURITÉ - Patterns renforcés
+            security: {
+                absolute: [
+                    // Alertes de fraude et phishing
+                    'fraude', 'fraud', 'arnaque', 'scam', 'phishing', 'hameçonnage',
+                    'frauduleux', 'fraudulent', 'malveillant', 'malicious',
+                    'faux site', 'fake site', 'site frauduleux', 'imitation site',
+                    'usurpation', 'identity theft', 'vol d\'identité',
+                    'tentative de fraude', 'fraud attempt', 'arnaque détectée',
+                    
+                    // Vigilance et protection
+                    'vigilant', 'vigilance', 'restons vigilants', 'restez vigilant',
+                    'soyez vigilant', 'be vigilant', 'stay alert',
+                    'protégez-vous', 'protect yourself', 'protéger vos données',
+                    'ne communiquez jamais', 'never share', 'ne partagez pas',
+                    
+                    // Alertes de connexion
+                    'alerte de connexion', 'connexion alert', 'login alert',
+                    'nouvelle connexion', 'new sign-in', 'new login',
+                    'activité suspecte', 'suspicious activity', 'activité inhabituelle',
+                    'connexion inhabituelle', 'unusual login', 'unusual sign-in',
+                    'connexion détectée', 'sign-in detected', 'login detected',
+                    'unauthorized access', 'accès non autorisé',
+                    
+                    // Codes et authentification
+                    'code de vérification', 'verification code', 'security code',
+                    'code de sécurité', 'authentication code', 'code d\'authentification',
+                    'two-factor', '2fa', 'double authentification',
+                    'password reset', 'réinitialisation mot de passe',
+                    'changer votre mot de passe', 'change your password',
+                    'mot de passe compromis', 'password compromised'
+                ],
+                strong: [
+                    'sécurité', 'security', 'sécurisé', 'secure',
+                    'vérification', 'verify', 'vérifier', 'verification',
+                    'alerte', 'alert', 'warning', 'avertissement',
+                    'attention', 'danger', 'risque', 'risk',
+                    'menace', 'threat', 'protect', 'protéger',
+                    'authentifier', 'authenticate', 'authentification',
+                    'confirmer', 'confirm', 'confirmation',
+                    'identité', 'identity', 'compte', 'account',
+                    'compromis', 'compromised', 'breach', 'violation'
+                ],
+                weak: [
+                    'connexion', 'login', 'sign in', 'accès', 'access',
+                    'privé', 'private', 'confidentiel', 'confidential',
+                    'données', 'data', 'information', 'personnel', 'personal'
+                ],
+                exclusions: [
+                    'newsletter', 'promotion', 'offre', 'deal',
+                    'shopping', 'marketing', 'commercial'
+                ]
+            },
+
+            // FINANCE - Patterns étendus
             finance: {
                 absolute: [
-                    'facture', 'invoice', 'payment', 'paiement', 'billing',
-                    'virement', 'transfer', 'remboursement', 'refund',
+                    // Documents financiers
+                    'facture', 'invoice', 'facture n°', 'invoice #',
+                    'payment', 'paiement', 'payment due', 'paiement dû',
+                    'billing', 'facturation', 'bill', 'note',
+                    'virement', 'transfer', 'wire transfer', 'bank transfer',
+                    'remboursement', 'refund', 'reimbursement',
                     'relevé bancaire', 'bank statement', 'relevé de compte',
-                    'déclaration fiscale', 'tax declaration', 'impôts',
-                    'n°commande', 'numéro commande', 'order number',
+                    'déclaration fiscale', 'tax declaration', 'impôts', 'taxes',
+                    
+                    // Commandes et achats
+                    'n°commande', 'numéro commande', 'order number', 'order #',
                     'numéro de commande', 'commande n°', 'commande numéro',
                     'livraison commande', 'commande expédiée', 'order shipped',
                     'confirmation commande', 'order confirmation',
-                    'carte cadeau', 'gift card', 'avoir', 'crédit'
+                    'tracking number', 'numéro de suivi', 'colis expédié',
+                    
+                    // Crédits et avoirs
+                    'carte cadeau', 'gift card', 'avoir', 'credit note',
+                    'crédit', 'credit', 'solde', 'balance',
+                    'échéance', 'due date', 'date limite de paiement'
                 ],
                 strong: [
-                    'montant', 'amount', 'total', 'prix', 'price', 'coût', 'cost',
+                    'montant', 'amount', 'total', 'prix', 'price',
+                    'coût', 'cost', 'tarif', 'rate', 'frais', 'fees',
                     'fiscal', 'bancaire', 'bank', 'finance', 'financier',
                     'commande', 'order', 'achat', 'purchase', 'vente', 'sale',
                     'livraison', 'delivery', 'expédition', 'shipping',
-                    'transaction', 'opération', 'règlement', 'payment'
+                    'transaction', 'opération', 'règlement', 'settlement',
+                    'payé', 'paid', 'impayé', 'unpaid', 'en attente', 'pending'
                 ],
                 weak: [
-                    'euro', 'dollar', '€', '$', 'devise', 'currency',
-                    'date', 'échéance', 'deadline', 'terme'
+                    'euro', 'dollar', '€', '$', '£', 'devise', 'currency',
+                    'date', 'terme', 'délai', 'period', 'mois', 'month',
+                    'référence', 'reference', 'numéro', 'number'
                 ],
-                exclusions: ['newsletter', 'marketing', 'promotion', 'fraude', 'arnaque']
+                exclusions: [
+                    'newsletter', 'marketing', 'promotion', 'fraude', 'arnaque',
+                    'emploi', 'candidature', 'recrutement'
+                ]
             },
 
             // TASKS - Actions requises
             tasks: {
                 absolute: [
+                    // Demandes d'action explicites
                     'action required', 'action requise', 'action needed',
-                    'please complete', 'veuillez compléter', 'to do', 'à faire',
-                    'task assigned', 'tâche assignée', 'deadline', 'échéance',
-                    'due date', 'date limite', 'livrable', 'deliverable',
-                    'urgence', 'urgent', 'très urgent', 'high priority',
-                    'demande update', 'update request', 'mise à jour demandée',
-                    'demande de mise à jour', 'update needed', 'mise a jour requise',
-                    'correction requise', 'à corriger', 'please review',
-                    'merci de valider', 'validation requise', 'approval needed',
-                    'réponse attendue', 'response required', 'action immédiate'
+                    'action nécessaire', 'immediate action', 'action immédiate',
+                    'urgent action', 'action urgente', 'requires your action',
+                    
+                    // Complétions et validations
+                    'please complete', 'veuillez compléter', 'merci de compléter',
+                    'please review', 'veuillez vérifier', 'merci de vérifier',
+                    'please approve', 'veuillez approuver', 'merci d\'approuver',
+                    'please confirm', 'veuillez confirmer', 'merci de confirmer',
+                    'validation requise', 'approval needed', 'confirmation requise',
+                    
+                    // Tâches et deadlines
+                    'to do', 'à faire', 'todo', 'task assigned', 'tâche assignée',
+                    'deadline:', 'échéance:', 'due date:', 'date limite:',
+                    'due by', 'à rendre avant', 'before:', 'avant:',
+                    'livrable', 'deliverable', 'à livrer', 'to deliver',
+                    
+                    // Urgence
+                    'urgent:', 'urgence:', 'très urgent', 'very urgent',
+                    'high priority', 'haute priorité', 'priorité élevée',
+                    'asap', 'dès que possible', 'au plus vite',
+                    
+                    // Mises à jour demandées
+                    'update required', 'mise à jour requise', 'update needed',
+                    'correction requise', 'à corriger', 'needs correction',
+                    'modification requise', 'à modifier', 'needs modification',
+                    'réponse attendue', 'response required', 'reply needed'
                 ],
                 strong: [
-                    'urgent', 'asap', 'priority', 'priorité', 'important',
-                    'complete', 'compléter', 'action', 'faire', 'finir',
-                    'update', 'mise à jour', 'demande', 'request', 'besoin',
-                    'task', 'tâche', 'todo', 'mission', 'assignment',
-                    'correction', 'corriger', 'modifier', 'révision', 'review'
+                    'urgent', 'urgence', 'priority', 'priorité', 'important',
+                    'deadline', 'échéance', 'due', 'limite', 'delai',
+                    'complete', 'compléter', 'finish', 'finir', 'terminer',
+                    'action', 'faire', 'do', 'effectuer', 'réaliser',
+                    'update', 'mettre à jour', 'mise à jour', 'actualiser',
+                    'review', 'vérifier', 'check', 'contrôler', 'examiner',
+                    'approve', 'approuver', 'valider', 'validate', 'confirm',
+                    'task', 'tâche', 'mission', 'assignment', 'travail',
+                    'request', 'demande', 'besoin', 'need', 'require'
                 ],
                 weak: [
-                    'attente', 'waiting', 'pending', 'need', 'nécessaire',
-                    'souhaité', 'required', 'requested', 'asked'
+                    'attente', 'waiting', 'pending', 'en cours',
+                    'nécessaire', 'necessary', 'required', 'requis',
+                    'souhaité', 'requested', 'demandé', 'asked',
+                    'possible', 'svp', 'please', 's\'il vous plaît'
                 ],
-                exclusions: ['newsletter', 'marketing', 'promotion', 'spam']
+                exclusions: [
+                    'newsletter', 'marketing', 'promotion', 'spam',
+                    'notification', 'automated', 'unsubscribe'
+                ]
             },
 
             // MEETINGS - Réunions
             meetings: {
                 absolute: [
-                    'demande de réunion', 'meeting request', 'réunion prévue',
+                    // Invitations de réunion
+                    'invitation:', 'invitation à', 'meeting invitation',
+                    'invitation réunion', 'réunion:', 'meeting:',
+                    'vous êtes invité', 'you are invited', 'invitation pour',
+                    
+                    // Demandes de réunion
+                    'demande de réunion', 'meeting request', 'réunion demandée',
                     'schedule a meeting', 'planifier une réunion',
-                    'invitation réunion', 'meeting invitation', 'calendar invite',
-                    'teams meeting', 'zoom meeting', 'google meet', 'webex',
-                    'rendez-vous', 'appointment', 'rdv', 'entretien',
-                    'conférence téléphonique', 'conference call', 'visio'
+                    'organiser une réunion', 'organize a meeting',
+                    'proposer un rendez-vous', 'propose a meeting',
+                    
+                    // Outils de réunion
+                    'teams meeting', 'réunion teams', 'zoom meeting',
+                    'google meet', 'webex', 'skype meeting',
+                    'conférence téléphonique', 'conference call',
+                    'visioconférence', 'video conference', 'visio',
+                    
+                    // Calendrier
+                    'calendar invite', 'invitation calendrier',
+                    'ajouté à votre calendrier', 'added to calendar',
+                    'save the date', 'réserver la date'
                 ],
                 strong: [
-                    'meeting', 'réunion', 'schedule', 'planifier', 'agenda',
-                    'calendar', 'calendrier', 'appointment', 'disponibilité',
-                    'conférence', 'conference', 'call', 'appel', 'session',
-                    'présentation', 'demo', 'démonstration', 'workshop'
+                    'meeting', 'réunion', 'rendez-vous', 'rdv', 'appointment',
+                    'schedule', 'planifier', 'programmer', 'organiser',
+                    'agenda', 'calendar', 'calendrier', 'planning',
+                    'disponibilité', 'availability', 'disponible', 'available',
+                    'conférence', 'conference', 'call', 'appel',
+                    'présentation', 'presentation', 'demo', 'démonstration',
+                    'workshop', 'atelier', 'séance', 'session',
+                    'entretien', 'interview', 'discussion', 'échange'
                 ],
                 weak: [
-                    'disponible', 'available', 'slot', 'créneau', 'horaire',
-                    'date', 'heure', 'time', 'durée', 'duration'
+                    'date', 'heure', 'time', 'horaire', 'créneau', 'slot',
+                    'durée', 'duration', 'lieu', 'location', 'salle', 'room',
+                    'participants', 'attendees', 'invités', 'guests'
                 ],
-                exclusions: ['newsletter', 'marketing', 'spam']
+                exclusions: [
+                    'newsletter', 'marketing', 'spam', 'notification',
+                    'automated', 'promotion'
+                ]
             },
 
             // HR - Ressources humaines
             hr: {
                 absolute: [
+                    // Documents RH
                     'bulletin de paie', 'payslip', 'fiche de paie',
+                    'bulletin de salaire', 'salary slip', 'paystub',
                     'contrat de travail', 'employment contract', 'work contract',
-                    'congés', 'leave request', 'vacation request', 'absence',
-                    'onboarding', 'intégration', 'welcome aboard',
+                    'avenant', 'amendment', 'modification contrat',
+                    
+                    // Congés et absences
+                    'congés', 'leave request', 'demande de congés',
+                    'vacation request', 'absence', 'arrêt de travail',
+                    'sick leave', 'congé maladie', 'rtt',
+                    
+                    // Processus RH
+                    'onboarding', 'intégration', 'bienvenue dans l\'équipe',
+                    'welcome aboard', 'premier jour', 'first day',
                     'entretien annuel', 'performance review', 'evaluation',
+                    'entretien professionnel', 'career review',
+                    
+                    // RH général
                     'ressources humaines', 'human resources', 'département rh',
-                    'offre d\'emploi', 'job offer', 'job posting', 'recrutement'
+                    'service rh', 'hr department', 'équipe rh'
                 ],
                 strong: [
                     'rh', 'hr', 'salaire', 'salary', 'paie', 'payroll',
-                    'emploi', 'job', 'poste', 'position', 'carrière', 'career',
+                    'emploi', 'employment', 'travail', 'work', 'job',
+                    'contrat', 'contract', 'convention', 'agreement',
                     'formation', 'training', 'développement', 'development',
-                    'équipe', 'team', 'personnel', 'staff', 'employé', 'employee'
+                    'carrière', 'career', 'évolution', 'progression',
+                    'équipe', 'team', 'personnel', 'staff', 'employé', 'employee',
+                    'manager', 'management', 'direction', 'leadership',
+                    'avantages', 'benefits', 'prime', 'bonus'
                 ],
                 weak: [
-                    'bienvenue', 'welcome', 'nouveau', 'new', 'rejoindre', 'join',
-                    'opportunité', 'opportunity', 'évolution', 'growth'
+                    'bienvenue', 'welcome', 'nouveau', 'new', 'arrivée',
+                    'départ', 'departure', 'mobilité', 'mobility',
+                    'opportunité', 'opportunity', 'poste', 'position'
                 ],
-                exclusions: ['newsletter', 'marketing', 'personal', 'famille']
+                exclusions: [
+                    'newsletter', 'marketing', 'commercial', 'client',
+                    'external', 'externe', 'candidature', 'application'
+                ]
             },
 
-            // CC - En copie
+            // SUPPORT - Assistance technique
+            support: {
+                absolute: [
+                    // Tickets et références
+                    'ticket #', 'ticket number', 'numéro de ticket',
+                    'ticket:', 'case #', 'case number', 'dossier #',
+                    'incident #', 'incident number', 'référence:',
+                    'support ticket', 'ticket de support', 'demande #',
+                    
+                    // Statuts de résolution
+                    'problème résolu', 'issue resolved', 'resolved:',
+                    'ticket fermé', 'ticket closed', 'case closed',
+                    'solution apportée', 'solution provided',
+                    
+                    // Demandes de support
+                    'demande de support', 'support request', 'assistance request',
+                    'demande d\'assistance', 'help request', 'besoin d\'aide'
+                ],
+                strong: [
+                    'support', 'assistance', 'help', 'aide', 'helpdesk',
+                    'technical', 'technique', 'it support', 'support it',
+                    'ticket', 'incident', 'case', 'dossier', 'demande',
+                    'problème', 'problem', 'issue', 'bug', 'erreur', 'error',
+                    'panne', 'failure', 'dysfonctionnement', 'malfunction',
+                    'résolution', 'resolution', 'solution', 'fix', 'correction',
+                    'diagnostic', 'troubleshooting', 'dépannage'
+                ],
+                weak: [
+                    'help', 'aide', 'question', 'request', 'besoin',
+                    'service', 'équipe', 'team', 'contact', 'joindre',
+                    'status', 'statut', 'update', 'mise à jour'
+                ],
+                exclusions: [
+                    'newsletter', 'marketing', 'promotion', 'commercial',
+                    'sales', 'vente'
+                ]
+            },
+
+            // REMINDERS - Relances et suivis
+            reminders: {
+                absolute: [
+                    // Patterns de relance
+                    'reminder:', 'rappel:', 'gentle reminder', 'rappel amical',
+                    'friendly reminder', 'petit rappel', 'just a reminder',
+                    'this is a reminder', 'ceci est un rappel',
+                    
+                    // Suivis
+                    'follow up', 'follow-up', 'following up', 'relance',
+                    'suite à', 'following our', 'comme convenu', 'as discussed',
+                    'as agreed', 'as mentioned', 'comme mentionné',
+                    
+                    // Retours
+                    'je reviens vers vous', 'i\'m following up',
+                    'circling back', 'coming back to', 'retour sur',
+                    'ping', 'quick reminder', 'rappel rapide'
+                ],
+                strong: [
+                    'reminder', 'rappel', 'relance', 'follow', 'suivre',
+                    'suite', 'convenu', 'agreed', 'discussed', 'discuté',
+                    'pending', 'en attente', 'waiting', 'attendu',
+                    'précédent', 'previous', 'dernier', 'last',
+                    'encore', 'still', 'toujours', 'yet', 'déjà', 'already'
+                ],
+                weak: [
+                    'update', 'mise à jour', 'status', 'statut', 'point',
+                    'avancement', 'progress', 'progression', 'évolution',
+                    'where', 'où', 'when', 'quand', 'comment', 'how'
+                ],
+                exclusions: [
+                    'newsletter', 'marketing', 'new', 'nouveau', 'première',
+                    'first', 'initial', 'spam'
+                ]
+            },
+
+            // PROJECT - Gestion de projet
+            project: {
+                absolute: [
+                    // Documents projet
+                    'project update', 'mise à jour projet', 'update projet',
+                    'project status', 'statut projet', 'état du projet',
+                    'project:', 'projet:', 'project name:', 'nom du projet:',
+                    
+                    // Livrables et jalons
+                    'milestone', 'jalon', 'livrable', 'deliverable',
+                    'sprint', 'iteration', 'release', 'version',
+                    'gantt', 'roadmap', 'planning projet', 'project plan',
+                    
+                    // Méthodologies
+                    'kickoff', 'kick-off', 'lancement projet',
+                    'retrospective', 'rétrospective', 'post mortem',
+                    'sprint review', 'sprint planning', 'daily standup',
+                    
+                    // Documents corrigés
+                    'document corrigé', 'version corrigée', 'corrections apportées',
+                    'revised version', 'version révisée', 'v2', 'v3'
+                ],
+                strong: [
+                    'projet', 'project', 'programme', 'program', 'initiative',
+                    'phase', 'étape', 'stage', 'milestone', 'jalon',
+                    'planning', 'plan', 'schedule', 'timeline', 'calendrier',
+                    'avancement', 'progress', 'advancement', 'progression',
+                    'livrable', 'deliverable', 'output', 'résultat',
+                    'équipe projet', 'project team', 'chef de projet', 'pm',
+                    'agile', 'scrum', 'kanban', 'waterfall',
+                    'jira', 'asana', 'trello', 'monday', 'notion'
+                ],
+                weak: [
+                    'status', 'statut', 'update', 'point', 'avancement',
+                    'tâche', 'task', 'activité', 'activity', 'action',
+                    'risque', 'risk', 'issue', 'problème', 'blocage'
+                ],
+                exclusions: [
+                    'newsletter', 'marketing', 'personal', 'personnel',
+                    'spam', 'notification'
+                ]
+            },
+
+            // INTERNAL - Communications internes
+            internal: {
+                absolute: [
+                    // Annonces générales
+                    'all staff', 'tout le personnel', 'all hands',
+                    'à tous', 'to all', 'tous les employés', 'all employees',
+                    'toute l\'équipe', 'whole team', 'entire team',
+                    
+                    // Communications officielles
+                    'annonce interne', 'internal announcement',
+                    'company announcement', 'annonce entreprise',
+                    'communication interne', 'internal communication',
+                    'note de service', 'memo', 'internal memo',
+                    'message de la direction', 'management message',
+                    
+                    // Updates entreprise
+                    'company update', 'mise à jour entreprise',
+                    'organisation update', 'changement organisationnel',
+                    'nouvelle procédure', 'new procedure', 'new policy'
+                ],
+                strong: [
+                    'internal', 'interne', 'company', 'entreprise', 'société',
+                    'organisation', 'organization', 'corporate', 'corporatif',
+                    'personnel', 'staff', 'employés', 'employees', 'équipe',
+                    'annonce', 'announcement', 'communication', 'message',
+                    'information', 'update', 'changement', 'change',
+                    'procédure', 'procedure', 'politique', 'policy',
+                    'direction', 'management', 'leadership', 'exécutif'
+                ],
+                weak: [
+                    'info', 'news', 'nouvelle', 'important', 'attention',
+                    'noter', 'note', 'savoir', 'know', 'aware'
+                ],
+                exclusions: [
+                    'external', 'externe', 'client', 'customer', 'public',
+                    'newsletter', 'marketing', 'commercial'
+                ]
+            },
+
+            // CC - En copie (détection par contexte, pas de mots-clés spécifiques)
             cc: {
                 absolute: [
                     'copie pour information', 'for your information', 'fyi',
                     'en copie', 'in copy', 'cc:', 'courtesy copy',
-                    'pour info', 'pour information', 'à titre informatif'
+                    'pour info', 'pour information', 'à titre informatif',
+                    'copie conforme', 'carbon copy'
                 ],
                 strong: [
                     'information', 'copie', 'copy', 'cc', 'partage',
-                    'sharing', 'diffusion', 'circulation'
+                    'sharing', 'diffusion', 'circulation', 'transmission'
                 ],
-                weak: ['info', 'note', 'mention'],
+                weak: [
+                    'info', 'note', 'mention', 'référence', 'voir'
+                ],
                 exclusions: [
                     'urgent', 'action required', 'payment', 'fraude',
-                    'facture', 'deadline', 'reply', 'répondre'
+                    'facture', 'deadline', 'reply', 'répondre',
+                    'please complete', 'veuillez', 'merci de'
                 ]
-            },
-
-            // SUPPORT - Assistance
-            support: {
-                absolute: [
-                    'ticket #', 'ticket number', 'numéro de ticket',
-                    'case #', 'case number', 'incident #', 'dossier #',
-                    'problème résolu', 'issue resolved', 'resolved',
-                    'support ticket', 'demande de support', 'assistance request'
-                ],
-                strong: [
-                    'support', 'assistance', 'help desk', 'helpdesk',
-                    'technical support', 'ticket', 'incident', 'case',
-                    'problème', 'problem', 'issue', 'bug', 'erreur', 'error'
-                ],
-                weak: [
-                    'help', 'aide', 'question', 'request', 'demande',
-                    'résolution', 'resolution', 'fix', 'solution'
-                ],
-                exclusions: ['newsletter', 'marketing', 'promotion']
-            },
-
-            // REMINDERS - Relances
-            reminders: {
-                absolute: [
-                    'reminder:', 'rappel:', 'follow up', 'relance',
-                    'gentle reminder', 'rappel amical', 'following up',
-                    'je reviens vers vous', 'circling back', 'ping',
-                    'comme convenu', 'as discussed', 'as agreed'
-                ],
-                strong: [
-                    'reminder', 'rappel', 'follow', 'relance', 'suite',
-                    'convenu', 'discussed', 'pending', 'attente',
-                    'précédent', 'previous', 'encore', 'still', 'toujours'
-                ],
-                weak: [
-                    'update', 'mise à jour', 'status', 'statut', 'avancement',
-                    'progression', 'where', 'où', 'when', 'quand'
-                ],
-                exclusions: ['newsletter', 'marketing', 'new', 'nouveau']
-            },
-
-            // PROJECT - Projets
-            project: {
-                absolute: [
-                    'projet', 'project update', 'milestone', 'jalon',
-                    'sprint', 'livrable projet', 'project deliverable',
-                    'gantt', 'roadmap', 'planning projet', 'project plan',
-                    'avancement projet', 'project status', 'project progress',
-                    'kickoff', 'retrospective', 'post mortem',
-                    'document corrigé', 'version corrigée', 'corrections apportées'
-                ],
-                strong: [
-                    'projet', 'project', 'milestone', 'sprint', 'phase',
-                    'agile', 'scrum', 'kanban', 'jira', 'asana', 'trello',
-                    'development', 'développement', 'release', 'version',
-                    'document', 'présentation', 'correction', 'révision'
-                ],
-                weak: [
-                    'planning', 'plan', 'étape', 'step', 'avancement',
-                    'progress', 'status', 'update', 'point'
-                ],
-                exclusions: ['newsletter', 'marketing', 'personal']
-            },
-
-            // INTERNAL - Communication interne
-            internal: {
-                absolute: [
-                    'all staff', 'tout le personnel', 'all hands',
-                    'annonce interne', 'internal announcement',
-                    'company announcement', 'memo interne', 'internal memo',
-                    'communication interne', 'note de service',
-                    'à tous', 'to all employees', 'team update'
-                ],
-                strong: [
-                    'internal', 'interne', 'company wide', 'entreprise',
-                    'personnel', 'staff', 'équipe', 'team', 'employés',
-                    'annonce', 'announcement', 'communication', 'memo'
-                ],
-                weak: [
-                    'information', 'update', 'news', 'nouvelle', 'changement',
-                    'change', 'important', 'attention'
-                ],
-                exclusions: ['newsletter', 'external', 'client', 'marketing']
-            },
-
-            // NOTIFICATIONS - Automatiques
-            notifications: {
-                absolute: [
-                    'do not reply', 'ne pas répondre', 'noreply@',
-                    'automated message', 'notification automatique',
-                    'system notification', 'ceci est un message automatique',
-                    'no-reply@', 'donotreply@', 'automatic notification'
-                ],
-                strong: [
-                    'automated', 'automatic', 'automatique', 'system',
-                    'notification', 'alert', 'alerte', 'generated',
-                    'généré', 'scheduled', 'programmé'
-                ],
-                weak: [
-                    'notification', 'info', 'message', 'sent', 'envoyé',
-                    'received', 'reçu', 'processed', 'traité'
-                ],
-                exclusions: ['urgent', 'marketing', 'fraude', 'sécurité']
             }
         };
 
-        console.log('[CategoryManager] ✅ Mots-clés v21 initialisés pour', Object.keys(this.weightedKeywords).length, 'catégories');
+        console.log('[CategoryManager] ✅ Mots-clés v22 initialisés pour', Object.keys(this.weightedKeywords).length, 'catégories');
     }
 
     // ================================================
-    // ANALYSE D'EMAIL
+    // ANALYSE D'EMAIL (méthode principale)
     // ================================================
     analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
@@ -2159,7 +2418,7 @@ class CategoryManager {
             activeCategories: this.getActiveCategories(),
             totalCategories: Object.keys(this.categories).length,
             customCategoriesCount: Object.keys(this.customCategories).length,
-            version: '21.0'
+            version: '22.0'
         };
     }
 
@@ -2279,23 +2538,43 @@ if (window.categoryManager) {
     window.categoryManager.destroy?.();
 }
 
-console.log('[CategoryManager] 🚀 Création nouvelle instance v21.0...');
+console.log('[CategoryManager] 🚀 Création nouvelle instance v22.0...');
 window.categoryManager = new CategoryManager();
 
 // Export des méthodes de test globales
 window.testCategoryManager = function() {
-    console.group('🧪 TEST CategoryManager v21.0');
+    console.group('🧪 TEST CategoryManager v22.0');
     
     const tests = [
-        { subject: "Rappel utile : reste vigilant face aux arnaques", body: "restons vigilants face aux arnaques tentative de fraude", expected: "security" },
-        { subject: "Newsletter hebdomadaire - Désabonnez-vous ici", expected: "marketing_news" },
-        { subject: "We have received your application!", expected: "commercial" },
-        { subject: "Action requise: Confirmer votre commande", expected: "tasks" },
-        { subject: "Facture #12345 - Échéance dans 3 jours", expected: "finance" }
+        { 
+            subject: "RMCsport is live: CDM DES CLUBS", 
+            body: "Hey, vivlabinze! RMCsport is live! Watch Now click here To stop receiving emails when someone you follow goes live",
+            from: "no-reply@twitch.tv",
+            expected: "marketing_news" 
+        },
+        { 
+            subject: "Un poste comme Space Manager & Customer Success chez SnapDesk", 
+            body: "Customer Success Manager postulez maintenant offre d'emploi",
+            from: "noreply@glassdoor.com",
+            expected: "commercial" 
+        },
+        { 
+            subject: "Rappel utile : reste vigilant face aux arnaques", 
+            body: "restons vigilants face aux arnaques tentative de fraude", 
+            expected: "security" 
+        },
+        { 
+            subject: "Action requise: Confirmer votre commande", 
+            expected: "tasks" 
+        },
+        { 
+            subject: "Facture #12345 - Échéance dans 3 jours", 
+            expected: "finance" 
+        }
     ];
     
     tests.forEach(test => {
-        window.categoryManager.testEmail(test.subject, test.body || '', 'test@example.com', test.expected);
+        window.categoryManager.testEmail(test.subject, test.body || '', test.from || 'test@example.com', test.expected);
     });
     
     console.log('Stats:', window.categoryManager.getCategoryStats());
@@ -2308,7 +2587,7 @@ window.testCategoryManager = function() {
 };
 
 window.debugCategoryKeywords = function() {
-    console.group('🔍 DEBUG Mots-clés v21.0');
+    console.group('🔍 DEBUG Mots-clés v22.0');
     const allKeywords = window.categoryManager.getAllKeywords();
     
     Object.entries(allKeywords).forEach(([categoryId, keywords]) => {
@@ -2317,11 +2596,19 @@ window.debugCategoryKeywords = function() {
                      (keywords.weak?.length || 0) + (keywords.exclusions?.length || 0);
         
         if (total > 0) {
-            console.log(`${category?.icon || '📂'} ${category?.name || categoryId}: ${total} mots-clés`);
-            if (keywords.absolute?.length) console.log(`  Absolus: ${keywords.absolute.join(', ')}`);
-            if (keywords.strong?.length) console.log(`  Forts: ${keywords.strong.join(', ')}`);
-            if (keywords.weak?.length) console.log(`  Faibles: ${keywords.weak.join(', ')}`);
-            if (keywords.exclusions?.length) console.log(`  Exclusions: ${keywords.exclusions.join(', ')}`);
+            console.log(`\n${category?.icon || '📂'} ${category?.name || categoryId}: ${total} mots-clés`);
+            if (keywords.absolute?.length) {
+                console.log(`  Absolus (${keywords.absolute.length}):`, keywords.absolute.slice(0, 5).join(', ') + (keywords.absolute.length > 5 ? '...' : ''));
+            }
+            if (keywords.strong?.length) {
+                console.log(`  Forts (${keywords.strong.length}):`, keywords.strong.slice(0, 5).join(', ') + (keywords.strong.length > 5 ? '...' : ''));
+            }
+            if (keywords.weak?.length) {
+                console.log(`  Faibles (${keywords.weak.length}):`, keywords.weak.slice(0, 5).join(', ') + (keywords.weak.length > 5 ? '...' : ''));
+            }
+            if (keywords.exclusions?.length) {
+                console.log(`  Exclusions (${keywords.exclusions.length}):`, keywords.exclusions.slice(0, 5).join(', ') + (keywords.exclusions.length > 5 ? '...' : ''));
+            }
         }
     });
     
@@ -2337,8 +2624,7 @@ window.forceCategorySync = function() {
     return { success: true, message: 'Synchronisation forcée effectuée' };
 };
 
-console.log('✅ CategoryManager v21.0 loaded - Complet et optimisé');
-console.log('🔒 Meilleure détection fraude/sécurité');
-console.log('📰 Patterns marketing/newsletter améliorés');
-console.log('📋 Détection CC plus précise');
-console.log('🔄 Système de synchronisation renforcé');
+console.log('✅ CategoryManager v22.0 loaded - Mots-clés améliorés pour entreprise');
+console.log('🎯 Détection optimisée pour newsletters, notifications et emails professionnels');
+console.log('📧 Patterns enrichis pour Twitch, Glassdoor et autres services');
+console.log('🔄 Système de synchronisation avec EmailScanner maintenu');
