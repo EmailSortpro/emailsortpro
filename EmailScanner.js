@@ -1,5 +1,5 @@
-// EmailScanner.js - Version 13.0 - Gestion complète de la catégorisation
-// Adapté au CategoryManager v22.0 simplifié (sans priorités ni exclusions)
+// EmailScanner.js - Version 14.0 - Analyse améliorée du contenu complet
+// Détection basée sur le contenu réel, pas sur les domaines
 
 class EmailScanner {
     constructor() {
@@ -10,30 +10,78 @@ class EmailScanner {
         this.settings = {};
         this.taskPreselectedCategories = [];
         
-        // Définition des priorités de catégories (géré par EmailScanner maintenant)
+        // Priorités des catégories (géré par EmailScanner)
         this.categoryPriorities = {
-            'marketing_news': 100,  // Priorité maximale
-            'cc': 90,              // Priorité élevée
-            'security': 50,
-            'finance': 50,
-            'tasks': 50,
+            'marketing_news': 100,
+            'cc': 90,
+            'security': 80,
+            'finance': 70,
+            'tasks': 60,
+            'hr': 55,
             'commercial': 50,
             'meetings': 50,
             'support': 50,
             'reminders': 50,
             'project': 50,
-            'hr': 50,
             'internal': 50,
-            'notifications': 50
+            'notifications': 40
         };
         
-        // Patterns d'exclusion globaux
-        this.globalExclusions = {
-            personal: ['papa', 'maman', 'famille', 'bises', 'bisous', 'chéri', 'chérie'],
-            marketing: ['newsletter', 'unsubscribe', 'désinscrire', 'promotion', 'promo', 'soldes']
+        // Patterns spéciaux pour améliorer la détection
+        this.specialPatterns = {
+            marketing: {
+                unsubscribe: [
+                    'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
+                    'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
+                    'ne plus recevoir', 'stop receiving', 'click here to unsubscribe',
+                    'cliquez ici pour vous désinscrire', 'gérer vos préférences',
+                    'manage preferences', 'notification settings', 'email preferences',
+                    'stop emails', 'arrêter les emails', 'ne souhaitez plus recevoir'
+                ],
+                promotional: [
+                    'offre limitée', 'limited offer', 'promotion', 'promo', 'soldes',
+                    'vente privée', 'exclusive', 'deal', 'discount', 'réduction',
+                    'special offer', 'offre spéciale', 'black friday', 'cyber monday'
+                ],
+                streaming: [
+                    'is live', 'streaming', 'watch now', 'regarder maintenant',
+                    'diffusion en direct', 'live stream', 'twitch', 'youtube'
+                ]
+            },
+            hr: {
+                recruitment: [
+                    'poste', 'job', 'emploi', 'recrutement', 'recruitment',
+                    'candidature', 'cv', 'curriculum', 'entretien', 'interview',
+                    'offre d\'emploi', 'job offer', 'vacancy', 'opportunité de carrière',
+                    'ressources humaines', 'human resources', 'rh', 'hr'
+                ],
+                jobTitles: [
+                    'manager', 'responsable', 'directeur', 'director', 'chef',
+                    'assistant', 'analyste', 'analyst', 'développeur', 'developer',
+                    'commercial', 'sales', 'marketing', 'engineer', 'ingénieur',
+                    'customer success', 'account manager', 'project manager'
+                ],
+                workTerms: [
+                    'cdi', 'cdd', 'stage', 'alternance', 'freelance', 'temps plein',
+                    'temps partiel', 'full time', 'part time', 'contract', 'permanent',
+                    'salaire', 'salary', 'rémunération', 'compensation', 'benefits'
+                ]
+            },
+            finance: {
+                payment: [
+                    'facture', 'invoice', 'paiement', 'payment', 'virement',
+                    'règlement', 'montant', 'amount', 'échéance', 'due date',
+                    'relance de paiement', 'payment reminder', 'impayé', 'unpaid'
+                ],
+                fraud: [
+                    'fraude', 'fraud', 'arnaque', 'scam', 'phishing',
+                    'vigilant', 'attention', 'méfie-toi', 'be careful',
+                    'faux site', 'fake website', 'tentative de fraude'
+                ]
+            }
         };
         
-        // Métriques de performance
+        // Métriques
         this.scanMetrics = {
             startTime: null,
             categorizedCount: 0,
@@ -41,7 +89,7 @@ class EmailScanner {
             preselectedCount: 0
         };
         
-        console.log('[EmailScanner] ✅ Version 13.0 - Gestion complète de la catégorisation');
+        console.log('[EmailScanner] ✅ Version 14.0 - Analyse améliorée du contenu');
         this.initializeWithSync();
     }
 
@@ -59,8 +107,478 @@ class EmailScanner {
     }
 
     // ================================================
-    // CHARGEMENT DES PARAMÈTRES
+    // ANALYSE D'EMAIL AMÉLIORÉE
     // ================================================
+    analyzeEmail(email) {
+        if (!email) {
+            return { category: 'other', score: 0, confidence: 0 };
+        }
+
+        // 1. Vérifier si c'est du spam
+        if (this.isSpamEmail(email) && this.settings.preferences?.excludeSpam !== false) {
+            return { category: 'spam', score: 0, confidence: 0, isSpam: true };
+        }
+
+        // 2. Extraire le contenu COMPLET
+        const content = this.extractCompleteContent(email);
+        
+        // 3. Analyser avec les patterns spéciaux d'abord
+        const specialAnalysis = this.analyzeWithSpecialPatterns(content);
+        if (specialAnalysis && specialAnalysis.confidence >= 0.8) {
+            console.log(`[EmailScanner] 🎯 Détection spéciale: ${specialAnalysis.category} (${specialAnalysis.confidence})`);
+            return specialAnalysis;
+        }
+        
+        // 4. Détecter si on est en CC
+        const isCC = this.isInCC(email);
+        
+        // 5. Analyser toutes les catégories avec les mots-clés
+        const categoryScores = this.analyzeAllCategories(content);
+        
+        // 6. Combiner avec l'analyse spéciale si elle existe
+        if (specialAnalysis && categoryScores[specialAnalysis.category]) {
+            categoryScores[specialAnalysis.category].score += specialAnalysis.score;
+            categoryScores[specialAnalysis.category].confidence = Math.max(
+                categoryScores[specialAnalysis.category].confidence,
+                specialAnalysis.confidence
+            );
+        }
+        
+        // 7. Sélectionner la meilleure catégorie
+        const bestCategory = this.selectBestCategory(categoryScores);
+        
+        // 8. Gestion spéciale CC
+        if (isCC && this.settings.preferences?.detectCC !== false) {
+            if (!bestCategory || bestCategory.score < 100) {
+                return {
+                    category: 'cc',
+                    score: 100,
+                    confidence: 0.95,
+                    matchedPatterns: [{ keyword: 'in_cc', type: 'detected', score: 100 }],
+                    hasAbsolute: true,
+                    isCC: true
+                };
+            }
+        }
+        
+        // 9. Retourner le résultat
+        if (bestCategory && bestCategory.score >= 30) {
+            return {
+                category: bestCategory.category,
+                score: bestCategory.score,
+                confidence: bestCategory.confidence,
+                matchedPatterns: bestCategory.matches,
+                hasAbsolute: bestCategory.hasAbsolute,
+                isCC: isCC
+            };
+        }
+        
+        return { category: 'other', score: 0, confidence: 0 };
+    }
+
+    // ================================================
+    // ANALYSE AVEC PATTERNS SPÉCIAUX
+    // ================================================
+    analyzeWithSpecialPatterns(content) {
+        const text = content.fullText.toLowerCase();
+        
+        // Détecter les emails marketing
+        let marketingScore = 0;
+        let marketingMatches = [];
+        
+        // Vérifier les patterns de désabonnement (très fort indicateur)
+        for (const pattern of this.specialPatterns.marketing.unsubscribe) {
+            if (text.includes(pattern)) {
+                marketingScore += 150;
+                marketingMatches.push({ keyword: pattern, type: 'unsubscribe', score: 150 });
+            }
+        }
+        
+        // Vérifier les patterns promotionnels
+        for (const pattern of this.specialPatterns.marketing.promotional) {
+            if (text.includes(pattern)) {
+                marketingScore += 50;
+                marketingMatches.push({ keyword: pattern, type: 'promotional', score: 50 });
+            }
+        }
+        
+        // Vérifier les patterns de streaming
+        for (const pattern of this.specialPatterns.marketing.streaming) {
+            if (text.includes(pattern)) {
+                marketingScore += 80;
+                marketingMatches.push({ keyword: pattern, type: 'streaming', score: 80 });
+            }
+        }
+        
+        if (marketingScore >= 100) {
+            return {
+                category: 'marketing_news',
+                score: marketingScore,
+                confidence: Math.min(0.95, marketingScore / 200),
+                matchedPatterns: marketingMatches,
+                hasAbsolute: marketingScore >= 150
+            };
+        }
+        
+        // Détecter les emails RH
+        let hrScore = 0;
+        let hrMatches = [];
+        
+        // Vérifier les termes de recrutement
+        for (const pattern of this.specialPatterns.hr.recruitment) {
+            if (text.includes(pattern)) {
+                hrScore += 60;
+                hrMatches.push({ keyword: pattern, type: 'recruitment', score: 60 });
+            }
+        }
+        
+        // Vérifier les titres de poste
+        for (const pattern of this.specialPatterns.hr.jobTitles) {
+            if (text.includes(pattern)) {
+                hrScore += 40;
+                hrMatches.push({ keyword: pattern, type: 'job_title', score: 40 });
+            }
+        }
+        
+        // Vérifier les termes de travail
+        for (const pattern of this.specialPatterns.hr.workTerms) {
+            if (text.includes(pattern)) {
+                hrScore += 30;
+                hrMatches.push({ keyword: pattern, type: 'work_term', score: 30 });
+            }
+        }
+        
+        if (hrScore >= 100) {
+            return {
+                category: 'hr',
+                score: hrScore,
+                confidence: Math.min(0.95, hrScore / 150),
+                matchedPatterns: hrMatches,
+                hasAbsolute: hrScore >= 120
+            };
+        }
+        
+        // Détecter les alertes de fraude (mais pas forcément finance)
+        let fraudScore = 0;
+        let fraudMatches = [];
+        
+        for (const pattern of this.specialPatterns.finance.fraud) {
+            if (text.includes(pattern)) {
+                fraudScore += 40;
+                fraudMatches.push({ keyword: pattern, type: 'fraud', score: 40 });
+            }
+        }
+        
+        // Si on détecte de la fraude + désabonnement = marketing
+        if (fraudScore > 0 && marketingScore > 0) {
+            return {
+                category: 'marketing_news',
+                score: marketingScore + fraudScore,
+                confidence: 0.9,
+                matchedPatterns: [...marketingMatches, ...fraudMatches],
+                hasAbsolute: true
+            };
+        }
+        
+        return null;
+    }
+
+    // ================================================
+    // EXTRACTION COMPLÈTE DU CONTENU
+    // ================================================
+    extractCompleteContent(email) {
+        let fullText = '';
+        let subject = '';
+        let bodyText = '';
+        
+        // Sujet avec poids très élevé
+        if (email.subject && email.subject.trim()) {
+            subject = email.subject;
+            fullText += (email.subject + ' ').repeat(10); // Répéter 10 fois
+        }
+        
+        // Corps de l'email - TOUT le contenu
+        if (email.bodyPreview) {
+            bodyText += email.bodyPreview + ' ';
+            fullText += email.bodyPreview + ' ';
+        }
+        
+        if (email.body?.content) {
+            const cleanedBody = this.cleanHtml(email.body.content);
+            bodyText += cleanedBody + ' ';
+            fullText += cleanedBody + ' ';
+        }
+        
+        if (email.bodyText) {
+            bodyText += email.bodyText + ' ';
+            fullText += email.bodyText + ' ';
+        }
+        
+        // NE PAS inclure l'expéditeur dans l'analyse principale
+        // pour éviter les faux positifs basés sur le domaine
+        
+        return {
+            fullText: fullText.toLowerCase().trim(),
+            subject: subject.toLowerCase(),
+            body: bodyText.toLowerCase(),
+            domain: this.extractDomain(email.from?.emailAddress?.address),
+            hasHtml: !!(email.body?.content && email.body.content.includes('<')),
+            length: fullText.length
+        };
+    }
+
+    // ================================================
+    // CALCUL DU SCORE AMÉLIORÉ
+    // ================================================
+    calculateCategoryScore(content, keywords, categoryId) {
+        let totalScore = 0;
+        let hasAbsolute = false;
+        const matches = [];
+        
+        // Utiliser le texte complet pour l'analyse
+        const text = content.fullText;
+        const bodyText = content.body;
+        const subjectText = content.subject;
+        
+        // Test des mots-clés absolus
+        if (keywords.absolute && keywords.absolute.length > 0) {
+            for (const keyword of keywords.absolute) {
+                if (this.findInText(text, keyword)) {
+                    totalScore += 100;
+                    hasAbsolute = true;
+                    matches.push({ keyword, type: 'absolute', score: 100 });
+                    
+                    // Super bonus si dans le sujet
+                    if (subjectText && this.findInText(subjectText, keyword)) {
+                        totalScore += 100;
+                        matches.push({ keyword: keyword + ' (subject)', type: 'subject_bonus', score: 100 });
+                    }
+                }
+            }
+        }
+        
+        // Test des mots-clés forts
+        if (keywords.strong && keywords.strong.length > 0) {
+            let strongMatches = 0;
+            for (const keyword of keywords.strong) {
+                if (this.findInText(text, keyword)) {
+                    totalScore += 50;
+                    strongMatches++;
+                    matches.push({ keyword, type: 'strong', score: 50 });
+                    
+                    // Bonus si dans le sujet
+                    if (subjectText && this.findInText(subjectText, keyword)) {
+                        totalScore += 50;
+                        matches.push({ keyword: keyword + ' (subject)', type: 'subject_bonus', score: 50 });
+                    }
+                }
+            }
+            
+            // Bonus si plusieurs mots forts
+            if (strongMatches >= 3) {
+                totalScore += 50;
+                matches.push({ keyword: 'multiple_strong', type: 'bonus', score: 50 });
+            }
+        }
+        
+        // Test des mots-clés faibles
+        if (keywords.weak && keywords.weak.length > 0) {
+            let weakMatches = 0;
+            for (const keyword of keywords.weak) {
+                if (this.findInText(text, keyword)) {
+                    totalScore += 20;
+                    weakMatches++;
+                    matches.push({ keyword, type: 'weak', score: 20 });
+                }
+            }
+            
+            // Bonus si beaucoup de mots faibles
+            if (weakMatches >= 4) {
+                totalScore += 40;
+                matches.push({ keyword: 'multiple_weak', type: 'bonus', score: 40 });
+            }
+        }
+        
+        // Pénalités contextuelles
+        if (this.shouldPenalizeCategory(categoryId, text)) {
+            totalScore = Math.max(0, totalScore - 100);
+            matches.push({ keyword: 'contextual_penalty', type: 'penalty', score: -100 });
+        }
+        
+        return { 
+            total: Math.max(0, totalScore), 
+            hasAbsolute, 
+            matches 
+        };
+    }
+
+    // ================================================
+    // PÉNALITÉS CONTEXTUELLES
+    // ================================================
+    shouldPenalizeCategory(categoryId, text) {
+        // Ne pas pénaliser marketing_news si on trouve des patterns de désabonnement
+        if (categoryId !== 'marketing_news') {
+            const unsubscribeCount = this.specialPatterns.marketing.unsubscribe
+                .filter(pattern => text.includes(pattern)).length;
+            if (unsubscribeCount >= 2) {
+                return true; // Pénaliser les autres catégories
+            }
+        }
+        
+        // Ne pas pénaliser HR si on trouve des patterns de recrutement
+        if (categoryId !== 'hr') {
+            const hrCount = this.specialPatterns.hr.recruitment
+                .filter(pattern => text.includes(pattern)).length;
+            if (hrCount >= 3) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    // ================================================
+    // SÉLECTION DE LA MEILLEURE CATÉGORIE
+    // ================================================
+    selectBestCategory(categoryScores) {
+        const MIN_SCORE_THRESHOLD = 30;
+        const MIN_CONFIDENCE_THRESHOLD = 0.4;
+        
+        const candidates = Object.values(categoryScores)
+            .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
+            .sort((a, b) => {
+                // D'abord par présence de mot-clé absolu
+                if (a.hasAbsolute && !b.hasAbsolute) return -1;
+                if (!a.hasAbsolute && b.hasAbsolute) return 1;
+                
+                // Si les deux ont des scores très proches, utiliser la priorité
+                const scoreDiff = Math.abs(a.score - b.score);
+                if (scoreDiff < 50) {
+                    const priorityDiff = (this.categoryPriorities[b.category] || 30) - 
+                                       (this.categoryPriorities[a.category] || 30);
+                    if (priorityDiff !== 0) return priorityDiff > 0 ? 1 : -1;
+                }
+                
+                // Sinon par score
+                return b.score - a.score;
+            });
+        
+        const best = candidates[0];
+        
+        if (best) {
+            console.log(`[EmailScanner] 🎯 Meilleure catégorie: ${best.category} (score: ${best.score}, priorité: ${this.categoryPriorities[best.category] || 30})`);
+        }
+        
+        return best || null;
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES AMÉLIORÉES
+    // ================================================
+    findInText(text, keyword) {
+        if (!text || !keyword) return false;
+        
+        const normalizeText = (str) => {
+            return str.toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[''`]/g, "'")
+                .replace(/[-_]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        };
+        
+        const normalizedText = normalizeText(text);
+        const normalizedKeyword = normalizeText(keyword);
+        
+        // Recherche exacte
+        if (normalizedText.includes(normalizedKeyword)) {
+            return true;
+        }
+        
+        // Recherche avec variations (pour les mots composés)
+        const keywordVariations = [
+            normalizedKeyword,
+            normalizedKeyword.replace(/ /g, ''),
+            normalizedKeyword.replace(/ /g, '-')
+        ];
+        
+        return keywordVariations.some(variation => normalizedText.includes(variation));
+    }
+
+    cleanHtml(html) {
+        if (!html) return '';
+        
+        // Extraire le texte des liens d'abord
+        html = html.replace(/<a[^>]*>(.*?)<\/a>/gi, ' $1 ');
+        
+        // Remplacer les retours à la ligne HTML par des espaces
+        html = html.replace(/<br\s*\/?>/gi, ' ');
+        html = html.replace(/<\/p>/gi, ' ');
+        html = html.replace(/<\/div>/gi, ' ');
+        html = html.replace(/<\/li>/gi, ' ');
+        
+        // Supprimer toutes les autres balises
+        html = html.replace(/<[^>]+>/g, ' ');
+        
+        // Décoder les entités HTML
+        html = html.replace(/&nbsp;/g, ' ');
+        html = html.replace(/&amp;/g, '&');
+        html = html.replace(/&lt;/g, '<');
+        html = html.replace(/&gt;/g, '>');
+        html = html.replace(/&quot;/g, '"');
+        html = html.replace(/&#39;/g, "'");
+        html = html.replace(/&[^;]+;/g, ' ');
+        
+        // Nettoyer les espaces multiples
+        return html.replace(/\s+/g, ' ').trim();
+    }
+
+    calculateConfidence(analysis) {
+        if (analysis.hasAbsolute) return 0.95;
+        if (analysis.total >= 250) return 0.95;
+        if (analysis.total >= 200) return 0.90;
+        if (analysis.total >= 150) return 0.85;
+        if (analysis.total >= 100) return 0.80;
+        if (analysis.total >= 80) return 0.75;
+        if (analysis.total >= 60) return 0.70;
+        if (analysis.total >= 40) return 0.60;
+        if (analysis.total >= 30) return 0.55;
+        return 0.40;
+    }
+
+    // ================================================
+    // ANALYSE DE TOUTES LES CATÉGORIES
+    // ================================================
+    analyzeAllCategories(content) {
+        const categories = window.categoryManager?.getCategories() || {};
+        const activeCategories = window.categoryManager?.getActiveCategories() || Object.keys(categories);
+        const results = {};
+        
+        for (const categoryId of activeCategories) {
+            const keywords = window.categoryManager?.getCategoryKeywords(categoryId);
+            if (!keywords) continue;
+            
+            const score = this.calculateCategoryScore(content, keywords, categoryId);
+            if (score.total > 0) {
+                results[categoryId] = {
+                    category: categoryId,
+                    score: score.total,
+                    hasAbsolute: score.hasAbsolute,
+                    matches: score.matches,
+                    confidence: this.calculateConfidence(score),
+                    priority: this.categoryPriorities[categoryId] || 30
+                };
+            }
+        }
+        
+        return results;
+    }
+
+    // ================================================
+    // AUTRES MÉTHODES (inchangées depuis v13)
+    // ================================================
+    
     async loadSettingsFromCategoryManager() {
         if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
             try {
@@ -100,11 +618,8 @@ class EmailScanner {
         return true;
     }
 
-    // ================================================
-    // MÉTHODE SCAN PRINCIPALE
-    // ================================================
     async scan(options = {}) {
-        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v13.0 ===');
+        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v14.0 ===');
         
         const scanSettings = this.settings.scanSettings || {};
         const mergedOptions = {
@@ -219,9 +734,6 @@ class EmailScanner {
         }
     }
 
-    // ================================================
-    // RÉCUPÉRATION DES EMAILS
-    // ================================================
     async fetchEmailsFromMailService(options) {
         console.log('[EmailScanner] 📬 Récupération des emails...');
         
@@ -230,20 +742,16 @@ class EmailScanner {
                 throw new Error('MailService non disponible');
             }
 
-            // Initialiser MailService si nécessaire
             if (!window.mailService.isInitialized()) {
                 await window.mailService.initialize();
             }
 
-            // Calculer les dates
             const endDate = new Date();
             const startDate = new Date();
             startDate.setDate(endDate.getDate() - options.days);
 
-            // Construire le filtre
             const dateFilter = this.buildDateFilter(startDate, endDate, options.provider);
 
-            // Récupérer les emails
             const emails = await window.mailService.getMessages(options.folder, {
                 top: options.maxEmails > 0 ? options.maxEmails : undefined,
                 filter: dateFilter
@@ -268,14 +776,11 @@ class EmailScanner {
         }
     }
 
-    // ================================================
-    // CATÉGORISATION DES EMAILS (NOUVELLE LOGIQUE)
-    // ================================================
     async categorizeEmails() {
         const total = this.emails.length;
         let processed = 0;
         
-        console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION v13.0 ===');
+        console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION v14.0 ===');
         console.log('[EmailScanner] 📊 Total emails:', total);
         console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
 
@@ -285,10 +790,8 @@ class EmailScanner {
             
             for (const email of batch) {
                 try {
-                    // Analyser l'email avec la nouvelle logique
                     const analysis = this.analyzeEmail(email);
                     
-                    // Appliquer les résultats
                     email.category = analysis.category;
                     email.categoryScore = analysis.score;
                     email.categoryConfidence = analysis.confidence;
@@ -298,10 +801,8 @@ class EmailScanner {
                     email.isCC = analysis.isCC || false;
                     email.isPersonal = analysis.isPersonal || false;
                     
-                    // Marquer comme pré-sélectionné pour les tâches
                     email.isPreselectedForTasks = this.taskPreselectedCategories.includes(analysis.category);
                     
-                    // Ajouter à la catégorie
                     if (!this.categorizedEmails[analysis.category]) {
                         this.categorizedEmails[analysis.category] = [];
                     }
@@ -310,7 +811,6 @@ class EmailScanner {
                 } catch (error) {
                     console.error('[EmailScanner] ❌ Erreur catégorisation:', error);
                     
-                    // Valeurs par défaut
                     email.category = 'other';
                     email.categoryError = error.message;
                     email.isPreselectedForTasks = false;
@@ -324,7 +824,6 @@ class EmailScanner {
                 processed++;
             }
 
-            // Mettre à jour le progrès
             if (this.scanProgress && (i % (batchSize * 2) === 0 || processed === total)) {
                 const percent = Math.round((processed / total) * 100);
                 this.scanProgress({
@@ -334,7 +833,6 @@ class EmailScanner {
                 });
             }
 
-            // Pause courte
             if (i < this.emails.length - batchSize) {
                 await new Promise(resolve => setTimeout(resolve, 1));
             }
@@ -346,438 +844,6 @@ class EmailScanner {
         console.log('[EmailScanner] ✅ === CATÉGORISATION TERMINÉE ===');
     }
 
-    // ================================================
-    // NOUVELLE LOGIQUE D'ANALYSE D'EMAIL
-    // ================================================
-    analyzeEmail(email) {
-        if (!email) {
-            return { category: 'other', score: 0, confidence: 0 };
-        }
-
-        // 1. Vérifier si c'est du spam
-        if (this.isSpamEmail(email) && this.settings.preferences?.excludeSpam !== false) {
-            return { category: 'spam', score: 0, confidence: 0, isSpam: true };
-        }
-
-        // 2. Extraire le contenu
-        const content = this.extractCompleteContent(email);
-        
-        // 3. Vérifier si c'est un email personnel
-        if (this.isPersonalEmail(content)) {
-            return { category: 'other', score: 0, confidence: 0, isPersonal: true };
-        }
-
-        // 4. Détecter si on est en CC
-        const isCC = this.isInCC(email);
-        
-        // 5. Analyser toutes les catégories
-        const categoryScores = this.analyzeAllCategories(content);
-        
-        // 6. Si on est en CC et qu'on détecte du marketing, prioriser marketing
-        if (isCC && categoryScores.marketing_news && categoryScores.marketing_news.score >= 50) {
-            return {
-                category: 'marketing_news',
-                score: categoryScores.marketing_news.score,
-                confidence: categoryScores.marketing_news.confidence,
-                matchedPatterns: categoryScores.marketing_news.matches,
-                hasAbsolute: categoryScores.marketing_news.hasAbsolute,
-                isCC: true
-            };
-        }
-        
-        // 7. Sélectionner la meilleure catégorie selon les priorités
-        const bestCategory = this.selectBestCategory(categoryScores);
-        
-        // 8. Si on est en CC et pas de catégorie forte trouvée
-        if (isCC && this.settings.preferences?.detectCC !== false) {
-            if (!bestCategory || bestCategory.score < 100) {
-                return {
-                    category: 'cc',
-                    score: 100,
-                    confidence: 0.95,
-                    matchedPatterns: [{ keyword: 'in_cc', type: 'detected', score: 100 }],
-                    hasAbsolute: true,
-                    isCC: true
-                };
-            }
-        }
-        
-        // 9. Retourner le résultat
-        if (bestCategory && bestCategory.score >= 30) {
-            return {
-                category: bestCategory.category,
-                score: bestCategory.score,
-                confidence: bestCategory.confidence,
-                matchedPatterns: bestCategory.matches,
-                hasAbsolute: bestCategory.hasAbsolute,
-                isCC: isCC
-            };
-        }
-        
-        return { category: 'other', score: 0, confidence: 0 };
-    }
-
-    // ================================================
-    // ANALYSE DE TOUTES LES CATÉGORIES
-    // ================================================
-    analyzeAllCategories(content) {
-        const categories = window.categoryManager?.getCategories() || {};
-        const activeCategories = window.categoryManager?.getActiveCategories() || Object.keys(categories);
-        const results = {};
-        
-        for (const categoryId of activeCategories) {
-            const keywords = window.categoryManager?.getCategoryKeywords(categoryId);
-            if (!keywords) continue;
-            
-            const score = this.calculateCategoryScore(content, keywords, categoryId);
-            if (score.total > 0) {
-                results[categoryId] = {
-                    category: categoryId,
-                    score: score.total,
-                    hasAbsolute: score.hasAbsolute,
-                    matches: score.matches,
-                    confidence: this.calculateConfidence(score),
-                    priority: this.categoryPriorities[categoryId] || 30
-                };
-            }
-        }
-        
-        return results;
-    }
-
-    // ================================================
-    // CALCUL DU SCORE POUR UNE CATÉGORIE
-    // ================================================
-    calculateCategoryScore(content, keywords, categoryId) {
-        let totalScore = 0;
-        let hasAbsolute = false;
-        const matches = [];
-        const text = content.text.toLowerCase();
-        
-        // Appliquer des exclusions contextuelles
-        if (this.shouldExcludeCategory(categoryId, text)) {
-            return { total: 0, hasAbsolute: false, matches: [] };
-        }
-        
-        // Test des mots-clés absolus
-        if (keywords.absolute && keywords.absolute.length > 0) {
-            for (const keyword of keywords.absolute) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 100;
-                    hasAbsolute = true;
-                    matches.push({ keyword, type: 'absolute', score: 100 });
-                    
-                    // Bonus si dans le sujet
-                    if (content.subject && this.findInText(content.subject, keyword)) {
-                        totalScore += 50;
-                        matches.push({ keyword: keyword + ' (subject)', type: 'bonus', score: 50 });
-                    }
-                }
-            }
-        }
-        
-        // Test des mots-clés forts
-        if (keywords.strong && keywords.strong.length > 0) {
-            let strongMatches = 0;
-            for (const keyword of keywords.strong) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 40;
-                    strongMatches++;
-                    matches.push({ keyword, type: 'strong', score: 40 });
-                    
-                    // Bonus si dans le sujet
-                    if (content.subject && this.findInText(content.subject, keyword)) {
-                        totalScore += 20;
-                        matches.push({ keyword: keyword + ' (subject)', type: 'bonus', score: 20 });
-                    }
-                }
-            }
-            
-            // Bonus si plusieurs mots forts
-            if (strongMatches >= 2) {
-                totalScore += 30;
-                matches.push({ keyword: 'multiple_strong', type: 'bonus', score: 30 });
-            }
-        }
-        
-        // Test des mots-clés faibles
-        if (keywords.weak && keywords.weak.length > 0) {
-            let weakMatches = 0;
-            for (const keyword of keywords.weak) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 15;
-                    weakMatches++;
-                    matches.push({ keyword, type: 'weak', score: 15 });
-                }
-            }
-            
-            // Bonus si beaucoup de mots faibles
-            if (weakMatches >= 3) {
-                totalScore += 20;
-                matches.push({ keyword: 'multiple_weak', type: 'bonus', score: 20 });
-            }
-        }
-        
-        // Bonus de domaine spécifiques
-        totalScore += this.getDomainBonus(content.domain, categoryId);
-        
-        return { 
-            total: Math.max(0, totalScore), 
-            hasAbsolute, 
-            matches 
-        };
-    }
-
-    // ================================================
-    // LOGIQUE D'EXCLUSION PAR CATÉGORIE
-    // ================================================
-    shouldExcludeCategory(categoryId, text) {
-        // Exclure les catégories professionnelles des emails personnels
-        const professionalCategories = ['hr', 'internal', 'meetings', 'commercial', 'project'];
-        if (professionalCategories.includes(categoryId)) {
-            for (const word of this.globalExclusions.personal) {
-                if (text.includes(word)) {
-                    return true;
-                }
-            }
-        }
-        
-        // Exclure les catégories non-marketing des emails marketing évidents
-        const nonMarketingCategories = ['tasks', 'meetings', 'project', 'commercial', 'finance'];
-        if (nonMarketingCategories.includes(categoryId)) {
-            const marketingKeywords = ['newsletter', 'unsubscribe', 'désinscrire', 'promotion'];
-            let marketingCount = 0;
-            for (const word of marketingKeywords) {
-                if (text.includes(word)) {
-                    marketingCount++;
-                }
-            }
-            if (marketingCount >= 2) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-
-    // ================================================
-    // SÉLECTION DE LA MEILLEURE CATÉGORIE
-    // ================================================
-    selectBestCategory(categoryScores) {
-        const MIN_SCORE_THRESHOLD = 30;
-        const MIN_CONFIDENCE_THRESHOLD = 0.5;
-        
-        const candidates = Object.values(categoryScores)
-            .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
-            .sort((a, b) => {
-                // D'abord par présence de mot-clé absolu
-                if (a.hasAbsolute && !b.hasAbsolute) return -1;
-                if (!a.hasAbsolute && b.hasAbsolute) return 1;
-                
-                // Puis par priorité
-                if (a.priority !== b.priority) {
-                    return b.priority - a.priority;
-                }
-                
-                // Enfin par score
-                return b.score - a.score;
-            });
-        
-        return candidates[0] || null;
-    }
-
-    // ================================================
-    // BONUS DE DOMAINE
-    // ================================================
-    getDomainBonus(domain, categoryId) {
-        const domainBonuses = {
-            security: ['microsoft', 'google', 'apple', 'security', 'auth'],
-            finance: ['gouv.fr', 'impots', 'bank', 'paypal', 'stripe'],
-            marketing_news: ['newsletter', 'mailchimp', 'campaign', 'marketing'],
-            notifications: ['noreply', 'notification', 'donotreply'],
-            project: ['github', 'gitlab', 'jira', 'asana'],
-            meetings: ['zoom', 'teams', 'meet', 'webex'],
-            support: ['zendesk', 'freshdesk', 'helpdesk', 'support']
-        };
-        
-        if (domainBonuses[categoryId]) {
-            for (const keyword of domainBonuses[categoryId]) {
-                if (domain.includes(keyword)) {
-                    return 40;
-                }
-            }
-        }
-        
-        return 0;
-    }
-
-    // ================================================
-    // MÉTHODES UTILITAIRES
-    // ================================================
-    extractCompleteContent(email) {
-        let allText = '';
-        let subject = '';
-        
-        // Sujet avec poids élevé
-        if (email.subject && email.subject.trim()) {
-            subject = email.subject;
-            allText += (email.subject + ' ').repeat(5);
-        } else {
-            subject = '[SANS_SUJET]';
-            allText += 'sans sujet email sans objet ';
-        }
-        
-        // Expéditeur
-        if (email.from?.emailAddress?.address) {
-            allText += (email.from.emailAddress.address + ' ').repeat(2);
-        }
-        
-        // Corps de l'email
-        if (email.bodyPreview) {
-            allText += email.bodyPreview + ' ';
-        }
-        
-        if (email.body?.content) {
-            const cleanedBody = this.cleanHtml(email.body.content);
-            allText += cleanedBody + ' ';
-        }
-        
-        return {
-            text: allText.toLowerCase().trim(),
-            subject: subject.toLowerCase(),
-            domain: this.extractDomain(email.from?.emailAddress?.address),
-            hasHtml: !!(email.body?.content && email.body.content.includes('<')),
-            length: allText.length
-        };
-    }
-
-    cleanHtml(html) {
-        if (!html) return '';
-        return html
-            .replace(/<a[^>]*>(.*?)<\/a>/gi, ' $1 ')
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/&[^;]+;/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-    }
-
-    extractDomain(email) {
-        if (!email || !email.includes('@')) return 'unknown';
-        return email.split('@')[1]?.toLowerCase() || 'unknown';
-    }
-
-    findInText(text, keyword) {
-        if (!text || !keyword) return false;
-        
-        const normalizeText = (str) => {
-            return str.toLowerCase()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .replace(/['']/g, "'")
-                .replace(/[-_]/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
-        };
-        
-        const normalizedText = normalizeText(text);
-        const normalizedKeyword = normalizeText(keyword);
-        
-        return normalizedText.includes(normalizedKeyword);
-    }
-
-    calculateConfidence(analysis) {
-        if (analysis.hasAbsolute) return 0.95;
-        if (analysis.total >= 200) return 0.90;
-        if (analysis.total >= 150) return 0.85;
-        if (analysis.total >= 100) return 0.80;
-        if (analysis.total >= 80) return 0.75;
-        if (analysis.total >= 60) return 0.70;
-        if (analysis.total >= 40) return 0.60;
-        if (analysis.total >= 30) return 0.55;
-        return 0.40;
-    }
-
-    isSpamEmail(email) {
-        if (email.parentFolderId) {
-            const folderInfo = email.parentFolderId.toLowerCase();
-            if (folderInfo.includes('junk') || 
-                folderInfo.includes('spam') || 
-                folderInfo.includes('unwanted') ||
-                folderInfo.includes('indésirable')) {
-                return true;
-            }
-        }
-        
-        if (email.categories && Array.isArray(email.categories)) {
-            const hasSpamCategory = email.categories.some(cat => 
-                cat.toLowerCase().includes('spam') ||
-                cat.toLowerCase().includes('junk') ||
-                cat.toLowerCase().includes('indésirable')
-            );
-            if (hasSpamCategory) return true;
-        }
-        
-        return false;
-    }
-
-    isPersonalEmail(content) {
-        const personalScore = this.globalExclusions.personal.reduce((score, word) => {
-            return score + (content.text.includes(word) ? 10 : 0);
-        }, 0);
-        
-        return personalScore >= 20;
-    }
-
-    isInCC(email) {
-        if (!email.ccRecipients || !Array.isArray(email.ccRecipients) || email.ccRecipients.length === 0) {
-            return false;
-        }
-        
-        const currentUserEmail = this.getCurrentUserEmail();
-        if (!currentUserEmail) return false;
-        
-        // Vérifier si on est dans TO
-        const isInTo = email.toRecipients?.some(recipient => {
-            const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-            return recipientEmail === currentUserEmail.toLowerCase();
-        }) || false;
-        
-        // Vérifier si on est dans CC
-        const isInCc = email.ccRecipients.some(recipient => {
-            const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-            return recipientEmail === currentUserEmail.toLowerCase();
-        });
-        
-        // On est en CC seulement si on est dans CC et PAS dans TO
-        return isInCc && !isInTo;
-    }
-
-    getCurrentUserEmail() {
-        try {
-            const userInfo = localStorage.getItem('currentUserInfo');
-            if (userInfo) {
-                const parsed = JSON.parse(userInfo);
-                return parsed.email || parsed.userPrincipalName || parsed.mail;
-            }
-            
-            // Essayer depuis le token MSAL
-            const msalAccounts = JSON.parse(localStorage.getItem('msal.account.keys') || '[]');
-            if (msalAccounts.length > 0) {
-                const firstAccount = localStorage.getItem(msalAccounts[0]);
-                if (firstAccount) {
-                    const account = JSON.parse(firstAccount);
-                    return account.username || account.preferred_username;
-                }
-            }
-        } catch (e) {
-            console.warn('[EmailScanner] Impossible de récupérer l\'email utilisateur');
-        }
-        return null;
-    }
-
-    // ================================================
-    // ANALYSE IA POUR TÂCHES
-    // ================================================
     async analyzeForTasks() {
         if (!window.aiTaskAnalyzer) {
             console.log('[EmailScanner] ⚠️ AITaskAnalyzer non disponible');
@@ -818,9 +884,6 @@ class EmailScanner {
         }
     }
 
-    // ================================================
-    // CONSTRUCTION DES RÉSULTATS
-    // ================================================
     buildEmptyResults(options) {
         return {
             success: true,
@@ -892,9 +955,6 @@ class EmailScanner {
         };
     }
 
-    // ================================================
-    // RE-CATÉGORISATION
-    // ================================================
     async recategorizeEmails() {
         if (this.emails.length === 0) {
             console.log('[EmailScanner] ⚠️ Aucun email à recatégoriser');
@@ -903,20 +963,16 @@ class EmailScanner {
 
         console.log('[EmailScanner] 🔄 === DÉBUT RE-CATÉGORISATION ===');
         
-        // Recharger les paramètres
         await this.loadSettingsFromCategoryManager();
         
-        // Réinitialiser les catégories
         Object.keys(this.categorizedEmails).forEach(cat => {
             this.categorizedEmails[cat] = [];
         });
 
-        // Recatégoriser
         await this.categorizeEmails();
         
         console.log('[EmailScanner] ✅ Re-catégorisation terminée');
         
-        // Notifier
         this.dispatchEvent('emailsRecategorized', {
             emails: this.emails,
             breakdown: this.getDetailedResults().breakdown,
@@ -925,9 +981,6 @@ class EmailScanner {
         });
     }
 
-    // ================================================
-    // MÉTHODES D'ACCÈS AUX DONNÉES
-    // ================================================
     getAllEmails() {
         return [...this.emails];
     }
@@ -947,9 +1000,6 @@ class EmailScanner {
         return this.emails.find(email => email.id === emailId);
     }
 
-    // ================================================
-    // GESTION DES ÉVÉNEMENTS
-    // ================================================
     registerAsChangeListener() {
         if (window.categoryManager && typeof window.categoryManager.addChangeListener === 'function') {
             this.changeListener = window.categoryManager.addChangeListener((event, data) => {
@@ -984,7 +1034,6 @@ class EmailScanner {
     }
 
     setupEventListeners() {
-        // Écouter les changements de mots-clés
         window.addEventListener('keywordsUpdated', (event) => {
             if (this.emails.length > 0) {
                 setTimeout(() => {
@@ -1010,9 +1059,6 @@ class EmailScanner {
         }
     }
 
-    // ================================================
-    // MÉTHODES UTILITAIRES
-    // ================================================
     reset() {
         console.log('[EmailScanner] 🔄 Réinitialisation...');
         
@@ -1026,18 +1072,87 @@ class EmailScanner {
             preselectedCount: 0
         };
         
-        // Initialiser avec toutes les catégories
         const categories = window.categoryManager?.getCategories() || {};
         Object.keys(categories).forEach(catId => {
             this.categorizedEmails[catId] = [];
         });
         
-        // Catégories spéciales
         ['other', 'spam', 'cc'].forEach(catId => {
             if (!this.categorizedEmails[catId]) {
                 this.categorizedEmails[catId] = [];
             }
         });
+    }
+
+    isSpamEmail(email) {
+        if (email.parentFolderId) {
+            const folderInfo = email.parentFolderId.toLowerCase();
+            if (folderInfo.includes('junk') || 
+                folderInfo.includes('spam') || 
+                folderInfo.includes('unwanted') ||
+                folderInfo.includes('indésirable')) {
+                return true;
+            }
+        }
+        
+        if (email.categories && Array.isArray(email.categories)) {
+            const hasSpamCategory = email.categories.some(cat => 
+                cat.toLowerCase().includes('spam') ||
+                cat.toLowerCase().includes('junk') ||
+                cat.toLowerCase().includes('indésirable')
+            );
+            if (hasSpamCategory) return true;
+        }
+        
+        return false;
+    }
+
+    isInCC(email) {
+        if (!email.ccRecipients || !Array.isArray(email.ccRecipients) || email.ccRecipients.length === 0) {
+            return false;
+        }
+        
+        const currentUserEmail = this.getCurrentUserEmail();
+        if (!currentUserEmail) return false;
+        
+        const isInTo = email.toRecipients?.some(recipient => {
+            const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
+            return recipientEmail === currentUserEmail.toLowerCase();
+        }) || false;
+        
+        const isInCc = email.ccRecipients.some(recipient => {
+            const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
+            return recipientEmail === currentUserEmail.toLowerCase();
+        });
+        
+        return isInCc && !isInTo;
+    }
+
+    getCurrentUserEmail() {
+        try {
+            const userInfo = localStorage.getItem('currentUserInfo');
+            if (userInfo) {
+                const parsed = JSON.parse(userInfo);
+                return parsed.email || parsed.userPrincipalName || parsed.mail;
+            }
+            
+            const msalAccounts = JSON.parse(localStorage.getItem('msal.account.keys') || '[]');
+            if (msalAccounts.length > 0) {
+                const firstAccount = localStorage.getItem(msalAccounts[0]);
+                if (firstAccount) {
+                    const account = JSON.parse(firstAccount);
+                    return account.username || account.preferred_username;
+                }
+            }
+        } catch (e) {
+            console.warn('[EmailScanner] Impossible de récupérer l\'email utilisateur');
+        }
+        return null;
+    }
+
+    extractDomain(email) {
+        if (!email || !email.includes('@')) return 'unknown';
+        return email.split('@')[1]?.toLowerCase() || 'unknown';
     }
 
     getDebugInfo() {
@@ -1050,7 +1165,8 @@ class EmailScanner {
             preselectedEmailsCount: this.emails.filter(e => e.isPreselectedForTasks).length,
             settings: this.settings,
             categoryPriorities: this.categoryPriorities,
-            version: '13.0'
+            specialPatterns: Object.keys(this.specialPatterns),
+            version: '14.0'
         };
     }
 
@@ -1074,5 +1190,6 @@ if (window.emailScanner) {
 
 window.emailScanner = new EmailScanner();
 
-console.log('✅ EmailScanner v13.0 loaded - Gestion complète de la catégorisation');
-console.log('📊 Utilise CategoryManager v22.0 pour les données uniquement');
+console.log('✅ EmailScanner v14.0 loaded - Analyse améliorée du contenu complet');
+console.log('🎯 Détection basée sur le contenu réel, pas sur les domaines');
+console.log('📊 Patterns spéciaux pour marketing, RH et fraude');
