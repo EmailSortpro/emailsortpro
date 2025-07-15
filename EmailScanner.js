@@ -6,11 +6,11 @@
     
     // Configuration des logs - Mode production par défaut
     const LOG_CONFIG = {
-        enabled: true, // Activé temporairement pour debug Gmail
+        enabled: false, // Désactivé par défaut pour la performance
         levels: {
             error: true,
             warn: true,
-            info: true,
+            info: false,
             debug: false
         }
     };
@@ -34,12 +34,13 @@
             
             // Configuration optimisée
             this.config = {
-                batchSize: 50,
+                batchSize: 100, // Augmenté de 50 à 100
                 categorizationDelay: 0,
-                parallelBatches: 3,
+                parallelBatches: 5, // Augmenté de 3 à 5
                 cacheEnabled: true,
-                cacheMaxSize: 1000,
-                debugMode: false
+                cacheMaxSize: 2000, // Augmenté de 1000 à 2000
+                debugMode: false,
+                progressUpdateInterval: 200 // Nouveau: limiter les mises à jour UI
             };
             
             // Cache LRU optimisé
@@ -423,9 +424,9 @@
                 const provider = options.provider || window.mailService.getCurrentProvider() || 'microsoft';
                 log.info(`📧 Provider détecté: ${provider}`);
 
-                // Options adaptées selon le provider
+                // Options adaptées selon le provider - PAS DE LIMITE POUR GMAIL
                 const fetchOptions = {
-                    maxResults: options.maxEmails === -1 ? (provider === 'gmail' ? 500 : 1000) : options.maxEmails,
+                    maxResults: options.maxEmails === -1 ? -1 : options.maxEmails, // Pas de limite si -1
                     days: options.days === -1 ? 365 : options.days,
                     includeSpam: options.includeSpam
                 };
@@ -493,6 +494,7 @@
 
             let processed = 0;
             let errors = 0;
+            let lastProgressUpdate = 0;
             
             // Division en batches
             const batches = this.createBatches(this.emails, this.config.batchSize);
@@ -526,7 +528,7 @@
                                 isPreselectedForTasks: taskPreselectedCategories.includes(finalCategory)
                             });
                             
-                            // Log pour debug Gmail
+                            // Log pour debug Gmail uniquement si nécessaire
                             if (finalCategory === 'other' && this.config.debugMode) {
                                 log.debug(`📌 Email "other":`, {
                                     subject: email.subject?.substring(0, 50),
@@ -536,15 +538,17 @@
                                 });
                             }
                             
-                            // Log pour les catégories personnalisées pré-sélectionnées
-                            if (email.isPreselectedForTasks) {
+                            // Log uniquement pour les premiers emails pré-sélectionnés
+                            if (email.isPreselectedForTasks && preselectedStats[finalCategory] < 3) {
                                 const categoryInfo = window.categoryManager?.getCategory(finalCategory);
                                 log.debug(`⭐ Email pré-sélectionné:`, {
                                     subject: email.subject?.substring(0, 50),
                                     category: finalCategory,
                                     categoryName: categoryInfo?.name || finalCategory
                                 });
-                                
+                            }
+                            
+                            if (email.isPreselectedForTasks) {
                                 preselectedStats[finalCategory] = (preselectedStats[finalCategory] || 0) + 1;
                             }
                             
@@ -570,7 +574,9 @@
                     processed += batch.length;
                     
                     // Mise à jour de progression throttlée
-                    if (this.scanProgress && (processed % 100 === 0 || processed === total)) {
+                    const now = Date.now();
+                    if (this.scanProgress && (now - lastProgressUpdate > this.config.progressUpdateInterval || processed === total)) {
+                        lastProgressUpdate = now;
                         const percent = Math.round((processed / total) * 100);
                         this.scanProgress({
                             phase: 'categorizing',
@@ -579,6 +585,11 @@
                         });
                     }
                 }));
+                
+                // Yield pour ne pas bloquer l'UI
+                if (i < batches.length - parallelLimit) {
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
             }
 
             // Sauvegarder les stats
@@ -597,8 +608,10 @@
                 log.info('📋 Détail pré-sélection:', preselectedStats);
             }
             
-            // Vérification d'intégrité
-            this.verifyCategorizationIntegrity(taskPreselectedCategories);
+            // Vérification d'intégrité seulement en mode debug
+            if (this.config.debugMode) {
+                this.verifyCategorizationIntegrity(taskPreselectedCategories);
+            }
         }
 
         verifyCategorizationIntegrity(expectedPreselectedCategories) {
