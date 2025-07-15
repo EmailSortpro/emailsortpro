@@ -51,7 +51,8 @@ class GoogleAuthService {
             
             // 1. Ajouter le sujet (très important pour la catégorisation)
             if (headers.subject) {
-                fullTextForAnalysis += headers.subject + '\n\n';
+                // Nettoyer le sujet des caractères non-UTF8
+                fullTextForAnalysis += this.cleanText(headers.subject) + '\n\n';
             }
             
             // 2. Ajouter l'expéditeur
@@ -66,7 +67,7 @@ class GoogleAuthService {
             
             // 4. Ajouter le snippet si différent
             if (gmailData.snippet && !fullTextForAnalysis.includes(gmailData.snippet)) {
-                fullTextForAnalysis += '\n\n' + gmailData.snippet;
+                fullTextForAnalysis += '\n\n' + this.cleanText(gmailData.snippet);
             }
             
             // Créer l'objet email standardisé
@@ -121,14 +122,13 @@ class GoogleAuthService {
                 // Headers complets (pour analyse avancée si besoin)
                 headers: headers,
                 
-                // Métadonnées Gmail spécifiques
+                // Métadonnées Gmail spécifiques (sans le payload complet pour économiser la mémoire)
                 gmailMetadata: {
                     historyId: gmailData.historyId,
                     snippet: gmailData.snippet,
                     sizeEstimate: gmailData.sizeEstimate,
                     threadId: gmailData.threadId,
-                    labels: gmailData.labelIds || [],
-                    fullPayload: gmailData.payload // Garder le payload complet
+                    labels: gmailData.labelIds || []
                 }
             };
             
@@ -255,59 +255,76 @@ class GoogleAuthService {
     extractTextFromHtmlComplete(html) {
         if (!html) return '';
         
-        // Créer un élément DOM temporaire
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
-        
-        // Supprimer les éléments non textuels
-        const elementsToRemove = tempDiv.querySelectorAll('script, style, noscript, iframe, object, embed, meta, link');
-        elementsToRemove.forEach(el => el.remove());
-        
-        // Préserver la structure du texte
-        // Remplacer les BR par des sauts de ligne
-        tempDiv.querySelectorAll('br').forEach(br => {
-            br.replaceWith('\n');
-        });
-        
-        // Ajouter des sauts de ligne pour les éléments de bloc
-        tempDiv.querySelectorAll('p, div, li, tr, blockquote, section, article, header, footer').forEach(el => {
-            if (el.textContent.trim()) {
-                el.innerHTML = el.innerHTML + '\n';
-            }
-        });
-        
-        // Ajouter des doubles sauts de ligne pour les titres
-        tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
-            el.innerHTML = '\n' + el.innerHTML + '\n';
-        });
-        
-        // Ajouter des séparateurs pour les cellules de tableau
-        tempDiv.querySelectorAll('td, th').forEach(el => {
-            el.innerHTML = el.innerHTML + ' | ';
-        });
-        
-        // Préserver les liens
-        tempDiv.querySelectorAll('a').forEach(link => {
-            const href = link.getAttribute('href');
-            if (href && !link.textContent.includes(href)) {
-                link.innerHTML = link.innerHTML + ` [${href}]`;
-            }
-        });
-        
-        // Extraire et nettoyer le texte COMPLET
-        let text = tempDiv.textContent || tempDiv.innerText || '';
-        
-        // Nettoyer les espaces excessifs tout en préservant la structure
-        text = text
-            .replace(/\r\n/g, '\n')      // Normaliser les sauts de ligne
-            .replace(/\r/g, '\n')
-            .replace(/\n{3,}/g, '\n\n')   // Maximum 2 sauts de ligne consécutifs
-            .replace(/[ \t]+/g, ' ')      // Remplacer les espaces multiples
-            .replace(/\n[ \t]+/g, '\n')   // Supprimer les espaces en début de ligne
-            .replace(/[ \t]+\n/g, '\n')   // Supprimer les espaces en fin de ligne
-            .replace(/ \| \n/g, '\n');    // Nettoyer les séparateurs de tableau en fin de ligne
-        
-        return text;
+        try {
+            // Créer un élément DOM temporaire
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Supprimer les éléments non textuels et problématiques
+            const elementsToRemove = tempDiv.querySelectorAll('script, style, noscript, iframe, object, embed, meta, link, img[src^="cid:"], img[src^="https://links"], img[src*="tracking"]');
+            elementsToRemove.forEach(el => el.remove());
+            
+            // Nettoyer les liens de tracking
+            tempDiv.querySelectorAll('a[href*="tracking"], a[href*="links1."], a[href*="linkprod"]').forEach(link => {
+                const text = link.textContent || link.innerText || '';
+                if (text.trim()) {
+                    link.replaceWith(text);
+                }
+            });
+            
+            // Préserver la structure du texte
+            // Remplacer les BR par des sauts de ligne
+            tempDiv.querySelectorAll('br').forEach(br => {
+                br.replaceWith('\n');
+            });
+            
+            // Ajouter des sauts de ligne pour les éléments de bloc
+            tempDiv.querySelectorAll('p, div, li, tr, blockquote, section, article, header, footer').forEach(el => {
+                if (el.textContent.trim()) {
+                    el.innerHTML = el.innerHTML + '\n';
+                }
+            });
+            
+            // Ajouter des doubles sauts de ligne pour les titres
+            tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
+                el.innerHTML = '\n' + el.innerHTML + '\n';
+            });
+            
+            // Ajouter des séparateurs pour les cellules de tableau
+            tempDiv.querySelectorAll('td, th').forEach(el => {
+                el.innerHTML = el.innerHTML + ' | ';
+            });
+            
+            // Préserver les liens utiles (non-tracking)
+            tempDiv.querySelectorAll('a').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && !href.includes('tracking') && !href.includes('links1.') && !href.startsWith('cid:')) {
+                    const text = link.textContent || link.innerText || '';
+                    if (text && !text.includes(href)) {
+                        link.innerHTML = text + ` [${href}]`;
+                    }
+                }
+            });
+            
+            // Extraire et nettoyer le texte COMPLET
+            let text = tempDiv.textContent || tempDiv.innerText || '';
+            
+            // Nettoyer les espaces excessifs tout en préservant la structure
+            text = text
+                .replace(/\r\n/g, '\n')      // Normaliser les sauts de ligne
+                .replace(/\r/g, '\n')
+                .replace(/\n{3,}/g, '\n\n')   // Maximum 2 sauts de ligne consécutifs
+                .replace(/[ \t]+/g, ' ')      // Remplacer les espaces multiples
+                .replace(/\n[ \t]+/g, '\n')   // Supprimer les espaces en début de ligne
+                .replace(/[ \t]+\n/g, '\n')   // Supprimer les espaces en fin de ligne
+                .replace(/ \| \n/g, '\n');    // Nettoyer les séparateurs de tableau en fin de ligne
+            
+            return text;
+        } catch (error) {
+            console.warn('[GoogleAuthService] Erreur extraction HTML:', error);
+            // Fallback basique
+            return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        }
     }
 
     // ================================================
