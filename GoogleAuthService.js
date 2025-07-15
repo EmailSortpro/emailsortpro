@@ -1,5 +1,5 @@
-// GoogleAuthService.js - Service Google corrigé v6.0
-// Amélioration de l'extraction des emails Gmail
+// GoogleAuthService.js - Version 8.0 - Extraction complète et détaillée des emails Gmail
+// Amélioration majeure de l'extraction du contenu pour une catégorisation précise
 
 class GoogleAuthService {
     constructor() {
@@ -23,15 +23,20 @@ class GoogleAuthService {
             accessType: 'online'
         };
         
+        // Limites de scan - pas de limite
         this.scanLimits = {
             maxEmails: Number.MAX_SAFE_INTEGER,
-            batchSize: 500,
-            rateLimitDelay: 100
+            batchSize: 100, // Nombre d'emails par batch
+            detailsBatchSize: 10, // Nombre de détails récupérés en parallèle
+            rateLimitDelay: 50 // Délai entre les requêtes en ms
         };
         
-        console.log('[GoogleAuthService] v6.0 - Structure extraction améliorée');
+        console.log('[GoogleAuthService] v8.0 - Extraction complète et détaillée');
     }
 
+    // ================================================
+    // INITIALISATION
+    // ================================================
     async initialize() {
         if (this.initializationPromise) {
             return this.initializationPromise;
@@ -48,24 +53,31 @@ class GoogleAuthService {
     async _doInitialize() {
         try {
             console.log('[GoogleAuthService] Initialisation...');
-            this.isInitialized = true;
             
             const cachedToken = this.getCachedToken();
             if (cachedToken && this.isTokenValid(cachedToken)) {
                 console.log('[GoogleAuthService] Token valide trouvé');
                 await this.loadUserInfoFromToken(cachedToken.access_token);
+                this.isInitialized = true;
+            } else {
+                console.log('[GoogleAuthService] Pas de token valide');
+                this.isInitialized = true; // Initialisé mais non authentifié
             }
             
             console.log('[GoogleAuthService] ✅ Initialisation réussie');
+            return true;
             
         } catch (error) {
-            console.error('[GoogleAuthService] ❌ Erreur:', error);
+            console.error('[GoogleAuthService] ❌ Erreur initialisation:', error);
             this.isInitialized = false;
             this.initializationPromise = null;
             throw error;
         }
     }
 
+    // ================================================
+    // AUTHENTIFICATION
+    // ================================================
     isAuthenticated() {
         return this.currentUser !== null && this.isInitialized;
     }
@@ -106,7 +118,7 @@ class GoogleAuthService {
             }
             
             window.location.href = authUrl;
-            return new Promise(() => {});
+            return new Promise(() => {}); // Ne jamais résoudre car on redirige
             
         } catch (error) {
             console.error('[GoogleAuthService] ❌ Erreur login:', error);
@@ -199,25 +211,45 @@ class GoogleAuthService {
         return userInfo;
     }
 
+    // ================================================
+    // RÉCUPÉRATION DES EMAILS - MÉTHODE PRINCIPALE
+    // ================================================
     async fetchEmails(options = {}) {
-        console.log('[GoogleAuthService] Récupération emails Gmail...');
+        console.log('[GoogleAuthService] 📧 === RÉCUPÉRATION EMAILS GMAIL ===');
+        console.log('[GoogleAuthService] Options:', options);
         
         const token = await this.getAccessToken();
         if (!token) {
-            throw new Error('Pas de token');
+            throw new Error('Pas de token d\'authentification');
         }
 
         try {
-            const maxResults = options.maxResults || 100;
-            const query = this.buildGmailQuery(options);
+            // Paramètres par défaut
+            const maxResults = options.maxResults === -1 ? Number.MAX_SAFE_INTEGER : (options.maxResults || 500);
+            const days = options.days || 7;
+            const includeSpam = options.includeSpam || false;
+            
+            // Construire la requête de recherche Gmail
+            const query = this.buildGmailQuery({
+                days: days,
+                includeSpam: includeSpam,
+                folder: options.folder
+            });
+            
+            console.log('[GoogleAuthService] 🔍 Query Gmail:', query);
+            console.log('[GoogleAuthService] 📊 Limite:', maxResults === Number.MAX_SAFE_INTEGER ? 'ILLIMITÉ' : maxResults);
             
             let allEmails = [];
             let pageToken = null;
             let totalFetched = 0;
             
+            // Boucle de récupération des IDs d'emails
             do {
+                // Calculer le nombre d'emails à récupérer dans ce batch
+                const batchSize = Math.min(this.scanLimits.batchSize, maxResults - totalFetched);
+                
                 const params = new URLSearchParams({
-                    maxResults: Math.min(this.scanLimits.batchSize, maxResults - totalFetched),
+                    maxResults: batchSize.toString(),
                     q: query
                 });
                 
@@ -225,7 +257,8 @@ class GoogleAuthService {
                     params.append('pageToken', pageToken);
                 }
                 
-                const response = await fetch(
+                // Récupérer la liste des messages
+                const listResponse = await fetch(
                     `https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`,
                     {
                         headers: {
@@ -235,39 +268,59 @@ class GoogleAuthService {
                     }
                 );
                 
-                if (!response.ok) {
-                    throw new Error(`Gmail API error: ${response.status}`);
+                if (!listResponse.ok) {
+                    const errorText = await listResponse.text();
+                    throw new Error(`Gmail API error ${listResponse.status}: ${errorText}`);
                 }
                 
-                const data = await response.json();
+                const listData = await listResponse.json();
+                const messageIds = listData.messages || [];
                 
-                if (data.messages && data.messages.length > 0) {
-                    const batchEmails = await this.fetchEmailDetails(data.messages, token);
-                    allEmails = allEmails.concat(batchEmails);
-                    totalFetched += batchEmails.length;
-                    
-                    if (options.onProgress) {
-                        options.onProgress({
-                            phase: 'fetching',
-                            message: `${totalFetched} emails récupérés...`,
-                            progress: { current: totalFetched, total: maxResults }
-                        });
-                    }
+                if (messageIds.length === 0) {
+                    console.log('[GoogleAuthService] Plus d\'emails à récupérer');
+                    break;
                 }
                 
-                pageToken = data.nextPageToken;
+                console.log(`[GoogleAuthService] 📬 Récupération de ${messageIds.length} emails...`);
                 
-                if (pageToken && totalFetched < maxResults) {
+                // Récupérer les détails de chaque email
+                const batchEmails = await this.fetchEmailDetailsInBatches(messageIds, token);
+                allEmails = allEmails.concat(batchEmails);
+                totalFetched += batchEmails.length;
+                
+                // Callback de progression
+                if (options.onProgress) {
+                    options.onProgress({
+                        phase: 'fetching',
+                        message: `${totalFetched} emails Gmail récupérés...`,
+                        progress: { 
+                            current: totalFetched, 
+                            total: maxResults === Number.MAX_SAFE_INTEGER ? totalFetched : maxResults 
+                        }
+                    });
+                }
+                
+                // Récupérer le token de la page suivante
+                pageToken = listData.nextPageToken;
+                
+                // Vérifier si on a atteint la limite
+                if (totalFetched >= maxResults) {
+                    console.log('[GoogleAuthService] Limite atteinte');
+                    break;
+                }
+                
+                // Délai anti rate-limit entre les pages
+                if (pageToken) {
                     await new Promise(resolve => setTimeout(resolve, this.scanLimits.rateLimitDelay));
                 }
                 
-            } while (pageToken && totalFetched < maxResults);
+            } while (pageToken);
             
-            console.log(`[GoogleAuthService] ✅ ${allEmails.length} emails récupérés`);
+            console.log(`[GoogleAuthService] ✅ TOTAL: ${allEmails.length} emails Gmail récupérés`);
             return allEmails;
             
         } catch (error) {
-            console.error('[GoogleAuthService] ❌ Erreur:', error);
+            console.error('[GoogleAuthService] ❌ Erreur récupération emails:', error);
             throw error;
         }
     }
@@ -275,107 +328,183 @@ class GoogleAuthService {
     buildGmailQuery(options) {
         const parts = [];
         
+        // Exclure le spam si demandé
         if (!options.includeSpam) {
             parts.push('-in:spam');
         }
         
+        // Toujours exclure la corbeille
         parts.push('-in:trash');
-        parts.push('in:inbox OR in:sent');
         
+        // Dossier spécifique ou inbox + sent
+        if (options.folder === 'INBOX') {
+            parts.push('in:inbox');
+        } else if (options.folder === 'SENT') {
+            parts.push('in:sent');
+        } else {
+            parts.push('(in:inbox OR in:sent)');
+        }
+        
+        // Filtre de date
         if (options.days && options.days > 0) {
             const date = new Date();
             date.setDate(date.getDate() - options.days);
-            parts.push(`after:${date.toISOString().split('T')[0]}`);
+            const dateStr = date.toISOString().split('T')[0];
+            parts.push(`after:${dateStr}`);
         }
         
         return parts.join(' ');
     }
 
-    async fetchEmailDetails(messages, token) {
+    // ================================================
+    // RÉCUPÉRATION DES DÉTAILS DES EMAILS
+    // ================================================
+    async fetchEmailDetailsInBatches(messageIds, token) {
         const emails = [];
+        const batchSize = this.scanLimits.detailsBatchSize;
         
-        for (const msg of messages) {
-            try {
-                const response = await fetch(
-                    `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json'
-                        }
-                    }
-                );
-                
-                if (!response.ok) continue;
-                
-                const emailData = await response.json();
-                const email = this.transformGmailToStandardFormat(emailData);
-                
+        // Traiter par batches pour optimiser
+        for (let i = 0; i < messageIds.length; i += batchSize) {
+            const batch = messageIds.slice(i, i + batchSize);
+            
+            // Récupérer les détails en parallèle pour ce batch
+            const promises = batch.map(msg => 
+                this.fetchSingleEmailDetail(msg.id, token).catch(error => {
+                    console.error(`[GoogleAuthService] Erreur email ${msg.id}:`, error);
+                    return null;
+                })
+            );
+            
+            const results = await Promise.all(promises);
+            
+            // Ajouter les emails valides
+            results.forEach(email => {
                 if (email) {
                     emails.push(email);
                 }
-                
-            } catch (error) {
-                console.warn(`[GoogleAuthService] Erreur email ${msg.id}:`, error);
+            });
+            
+            // Petit délai entre les batches
+            if (i + batchSize < messageIds.length) {
+                await new Promise(resolve => setTimeout(resolve, this.scanLimits.rateLimitDelay));
             }
         }
         
         return emails;
     }
 
+    async fetchSingleEmailDetail(messageId, token) {
+        try {
+            const response = await fetch(
+                `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                }
+            );
+            
+            if (!response.ok) {
+                throw new Error(`Erreur récupération message ${messageId}: ${response.status}`);
+            }
+            
+            const messageData = await response.json();
+            return this.transformGmailToStandardFormat(messageData);
+            
+        } catch (error) {
+            console.error(`[GoogleAuthService] Erreur détail email ${messageId}:`, error);
+            throw error;
+        }
+    }
+
+    // ================================================
+    // TRANSFORMATION DU FORMAT GMAIL
+    // ================================================
     transformGmailToStandardFormat(gmailData) {
         try {
-            const headers = this.extractHeaders(gmailData.payload.headers);
-            const body = this.extractBody(gmailData.payload);
+            // Extraire les headers
+            const headers = this.extractHeaders(gmailData.payload?.headers || []);
             
-            // AMÉLIORATION: Extraction complète et structurée
+            // Extraire le corps complet de l'email
+            const bodyData = this.extractCompleteBody(gmailData.payload);
+            
+            // Créer le contenu textuel complet pour l'analyse
+            let fullTextForAnalysis = '';
+            
+            // 1. Ajouter le sujet (très important pour la catégorisation)
+            if (headers.subject) {
+                fullTextForAnalysis += headers.subject + '\n\n';
+            }
+            
+            // 2. Ajouter l'expéditeur
+            if (headers.from) {
+                fullTextForAnalysis += 'From: ' + headers.from + '\n';
+            }
+            
+            // 3. Ajouter le corps du message
+            if (bodyData.fullText) {
+                fullTextForAnalysis += bodyData.fullText;
+            }
+            
+            // 4. Ajouter le snippet si différent
+            if (gmailData.snippet && !fullTextForAnalysis.includes(gmailData.snippet)) {
+                fullTextForAnalysis += '\n\n' + gmailData.snippet;
+            }
+            
+            // Créer l'objet email standardisé
             const email = {
+                // Identifiants
                 id: gmailData.id,
+                threadId: gmailData.threadId,
                 provider: 'gmail',
                 providerType: 'gmail',
                 source: 'gmail',
-                threadId: gmailData.threadId,
-                labelIds: gmailData.labelIds || [],
                 
-                // Extraction propre du sujet
-                subject: this.cleanSubject(headers.subject || '(Sans sujet)'),
+                // Métadonnées principales
+                subject: this.cleanText(headers.subject || '(Sans sujet)'),
+                receivedDateTime: new Date(parseInt(gmailData.internalDate)).toISOString(),
                 
-                // Extraction structurée de l'expéditeur
-                from: {
-                    emailAddress: {
-                        address: this.extractEmailAddress(headers.from),
-                        name: this.extractDisplayName(headers.from)
-                    }
-                },
+                // Expéditeur
+                from: this.parseEmailAddress(headers.from),
                 
                 // Destinataires
                 toRecipients: this.parseRecipients(headers.to),
                 ccRecipients: this.parseRecipients(headers.cc),
+                bccRecipients: this.parseRecipients(headers.bcc),
                 
-                // Date et heure
-                receivedDateTime: new Date(parseInt(gmailData.internalDate)).toISOString(),
-                
-                // Corps du message avec extraction intelligente
-                bodyPreview: this.cleanBodyPreview(body.preview || body.text),
+                // Corps du message
+                bodyPreview: this.createBodyPreview(bodyData.fullText || gmailData.snippet),
                 body: {
-                    content: body.html || body.text,
-                    contentType: body.html ? 'html' : 'text'
+                    content: bodyData.html || bodyData.text || bodyData.fullText,
+                    contentType: bodyData.html ? 'html' : 'text'
                 },
                 
-                // Métadonnées
-                hasAttachments: this.hasAttachments(gmailData.payload),
-                importance: this.extractImportance(headers),
+                // IMPORTANT: Contenu complet pour l'analyse par CategoryManager
+                fullTextContent: fullTextForAnalysis.trim(),
+                
+                // Pièces jointes
+                hasAttachments: bodyData.hasAttachments,
+                attachments: bodyData.attachments,
+                
+                // État et importance
                 isRead: !gmailData.labelIds?.includes('UNREAD'),
                 isDraft: gmailData.labelIds?.includes('DRAFT'),
+                importance: this.extractImportance(headers, gmailData.labelIds),
                 
-                // Headers complets pour analyse
+                // Labels Gmail
+                labels: gmailData.labelIds || [],
+                labelNames: this.mapLabelIds(gmailData.labelIds),
+                
+                // Headers complets (pour analyse avancée si besoin)
                 headers: headers,
                 
-                // Gmail specific
+                // Métadonnées Gmail spécifiques
                 gmailMetadata: {
                     historyId: gmailData.historyId,
                     snippet: gmailData.snippet,
                     sizeEstimate: gmailData.sizeEstimate,
+                    threadId: gmailData.threadId,
                     labels: gmailData.labelIds || []
                 }
             };
@@ -383,82 +512,278 @@ class GoogleAuthService {
             return email;
             
         } catch (error) {
-            console.error('[GoogleAuthService] Erreur transformation:', error);
+            console.error('[GoogleAuthService] Erreur transformation email:', error);
+            console.error('[GoogleAuthService] Data Gmail:', gmailData);
             return null;
         }
     }
 
+    // ================================================
+    // EXTRACTION DES HEADERS
+    // ================================================
     extractHeaders(headers) {
         const result = {};
+        
         headers.forEach(header => {
             const name = header.name.toLowerCase();
-            result[name] = header.value;
+            const value = header.value;
+            
+            // Stocker tous les headers
+            result[name] = value;
+            
+            // Headers multiples (comme Received)
+            if (name === 'received' || name === 'x-received') {
+                if (!result['received-headers']) {
+                    result['received-headers'] = [];
+                }
+                result['received-headers'].push(value);
+            }
         });
+        
         return result;
     }
 
-    extractBody(payload) {
-        let text = '';
-        let html = '';
+    // ================================================
+    // EXTRACTION COMPLÈTE DU CORPS
+    // ================================================
+    extractCompleteBody(payload) {
+        let textContent = '';
+        let htmlContent = '';
+        let fullText = '';
+        let hasAttachments = false;
+        const attachments = [];
         
-        const extractPart = (part) => {
-            if (part.mimeType === 'text/plain' && part.body.data) {
-                text = this.base64Decode(part.body.data);
-            } else if (part.mimeType === 'text/html' && part.body.data) {
-                html = this.base64Decode(part.body.data);
+        const processPayloadPart = (part) => {
+            // Détecter les pièces jointes
+            if (part.filename && part.filename.length > 0) {
+                hasAttachments = true;
+                attachments.push({
+                    filename: part.filename,
+                    mimeType: part.mimeType,
+                    size: part.body?.size || 0,
+                    attachmentId: part.body?.attachmentId
+                });
+                return;
             }
             
-            if (part.parts) {
-                part.parts.forEach(extractPart);
+            // Extraire le contenu du corps
+            if (part.body?.data) {
+                const decoded = this.base64Decode(part.body.data);
+                
+                if (part.mimeType === 'text/plain') {
+                    textContent += decoded + '\n';
+                    fullText += decoded + '\n';
+                } else if (part.mimeType === 'text/html') {
+                    htmlContent += decoded;
+                    // Convertir le HTML en texte pour l'analyse
+                    const textFromHtml = this.extractTextFromHtml(decoded);
+                    if (!textContent) {
+                        // Si pas de version texte, utiliser le texte extrait du HTML
+                        fullText += textFromHtml + '\n';
+                    }
+                }
+            }
+            
+            // Traiter récursivement les parties multiples
+            if (part.parts && Array.isArray(part.parts)) {
+                part.parts.forEach(processPayloadPart);
             }
         };
         
-        extractPart(payload);
+        // Commencer le traitement
+        if (payload) {
+            processPayloadPart(payload);
+        }
         
-        // Nettoyer le texte pour le preview
-        const preview = text || this.htmlToText(html);
+        // S'assurer qu'on a du contenu textuel
+        if (!fullText) {
+            if (htmlContent) {
+                fullText = this.extractTextFromHtml(htmlContent);
+            } else if (textContent) {
+                fullText = textContent;
+            }
+        }
         
-        return { 
-            text, 
-            html, 
-            preview: preview.substring(0, 500) // Preview plus long
+        return {
+            text: textContent.trim(),
+            html: htmlContent.trim(),
+            fullText: fullText.trim(),
+            hasAttachments: hasAttachments,
+            attachments: attachments
         };
     }
 
-    base64Decode(data) {
-        try {
-            const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
-            return decodeURIComponent(escape(atob(base64)));
-        } catch (error) {
-            console.warn('[GoogleAuthService] Erreur décodage:', error);
-            return '';
-        }
-    }
-
-    htmlToText(html) {
-        const temp = document.createElement('div');
-        temp.innerHTML = html;
+    // ================================================
+    // EXTRACTION DU TEXTE DEPUIS HTML
+    // ================================================
+    extractTextFromHtml(html) {
+        if (!html) return '';
         
-        // Supprimer les scripts et styles
-        const scripts = temp.querySelectorAll('script, style');
-        scripts.forEach(el => el.remove());
+        // Créer un élément DOM temporaire
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
         
-        // Remplacer les BR par des espaces
-        const brs = temp.querySelectorAll('br');
-        brs.forEach(br => br.replaceWith(' '));
+        // Supprimer les éléments non textuels
+        const elementsToRemove = tempDiv.querySelectorAll('script, style, noscript, iframe, object, embed');
+        elementsToRemove.forEach(el => el.remove());
         
-        // Extraire le texte
-        let text = temp.textContent || temp.innerText || '';
+        // Préserver la structure du texte
+        // Remplacer les BR par des sauts de ligne
+        tempDiv.querySelectorAll('br').forEach(br => {
+            br.replaceWith('\n');
+        });
         
-        // Nettoyer les espaces multiples
-        text = text.replace(/\s+/g, ' ').trim();
+        // Ajouter des sauts de ligne pour les éléments de bloc
+        tempDiv.querySelectorAll('p, div, li, tr').forEach(el => {
+            if (el.textContent.trim()) {
+                el.innerHTML = el.innerHTML + '\n';
+            }
+        });
+        
+        // Ajouter des doubles sauts de ligne pour les titres
+        tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
+            el.innerHTML = '\n' + el.innerHTML + '\n';
+        });
+        
+        // Ajouter des séparateurs pour les cellules de tableau
+        tempDiv.querySelectorAll('td, th').forEach(el => {
+            el.innerHTML = el.innerHTML + ' | ';
+        });
+        
+        // Extraire et nettoyer le texte
+        let text = tempDiv.textContent || tempDiv.innerText || '';
+        
+        // Nettoyer les espaces excessifs tout en préservant la structure
+        text = text
+            .replace(/\r\n/g, '\n')      // Normaliser les sauts de ligne
+            .replace(/\r/g, '\n')
+            .replace(/\n{3,}/g, '\n\n')   // Maximum 2 sauts de ligne consécutifs
+            .replace(/[ \t]+/g, ' ')      // Remplacer les espaces multiples
+            .replace(/\n[ \t]+/g, '\n')   // Supprimer les espaces en début de ligne
+            .replace(/[ \t]+\n/g, '\n')   // Supprimer les espaces en fin de ligne
+            .replace(/ \| \n/g, '\n')     // Nettoyer les séparateurs de tableau en fin de ligne
+            .trim();
         
         return text;
     }
 
-    cleanSubject(subject) {
-        // Nettoyer les caractères spéciaux du sujet
-        return subject
+    // ================================================
+    // CRÉATION DU PREVIEW
+    // ================================================
+    createBodyPreview(text, maxLength = 200) {
+        if (!text) return '';
+        
+        // Nettoyer le texte pour le preview
+        let preview = text
+            .replace(/\n+/g, ' ')           // Remplacer les sauts de ligne par des espaces
+            .replace(/\s+/g, ' ')           // Normaliser les espaces
+            .replace(/https?:\/\/[^\s]+/g, '') // Supprimer les URLs
+            .trim();
+        
+        // Tronquer si nécessaire
+        if (preview.length > maxLength) {
+            // Couper au dernier espace avant la limite
+            const lastSpace = preview.lastIndexOf(' ', maxLength);
+            if (lastSpace > maxLength * 0.8) {
+                preview = preview.substring(0, lastSpace) + '...';
+            } else {
+                preview = preview.substring(0, maxLength) + '...';
+            }
+        }
+        
+        return preview;
+    }
+
+    // ================================================
+    // PARSING DES ADRESSES EMAIL
+    // ================================================
+    parseEmailAddress(emailHeader) {
+        if (!emailHeader) return { emailAddress: { address: 'unknown@gmail.com', name: 'Unknown' } };
+        
+        // Patterns pour extraire nom et email
+        // Format 1: "Name" <email@domain.com>
+        // Format 2: Name <email@domain.com>
+        // Format 3: email@domain.com
+        
+        const match = emailHeader.match(/^"?([^"<]*?)"?\s*<?([^>]+@[^>]+)>?$/);
+        
+        if (match) {
+            const name = match[1].trim();
+            const email = match[2].trim().toLowerCase();
+            
+            return {
+                emailAddress: {
+                    name: name || email.split('@')[0],
+                    address: email
+                }
+            };
+        }
+        
+        // Si le pattern ne match pas, essayer de détecter juste l'email
+        const emailMatch = emailHeader.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        if (emailMatch) {
+            const email = emailMatch[1].toLowerCase();
+            return {
+                emailAddress: {
+                    name: email.split('@')[0],
+                    address: email
+                }
+            };
+        }
+        
+        // Fallback
+        return {
+            emailAddress: {
+                name: emailHeader,
+                address: emailHeader.toLowerCase()
+            }
+        };
+    }
+
+    parseRecipients(recipientHeader) {
+        if (!recipientHeader) return [];
+        
+        const recipients = [];
+        
+        // Séparer par virgule en respectant les guillemets et les chevrons
+        const parts = recipientHeader.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)(?![^<]*>)/);
+        
+        parts.forEach(part => {
+            const parsed = this.parseEmailAddress(part.trim());
+            if (parsed.emailAddress.address && parsed.emailAddress.address.includes('@')) {
+                recipients.push(parsed);
+            }
+        });
+        
+        return recipients;
+    }
+
+    // ================================================
+    // UTILITAIRES
+    // ================================================
+    base64Decode(data) {
+        try {
+            // Gmail utilise une variante URL-safe du base64
+            const base64 = data
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            
+            // Ajouter le padding si nécessaire
+            const padLength = (4 - (base64.length % 4)) % 4;
+            const padded = base64 + '='.repeat(padLength);
+            
+            // Décoder
+            return decodeURIComponent(escape(atob(padded)));
+        } catch (error) {
+            console.warn('[GoogleAuthService] Erreur décodage base64:', error);
+            return '';
+        }
+    }
+
+    cleanText(text) {
+        if (!text) return '';
+        
+        return text
             .replace(/\r\n/g, ' ')
             .replace(/\n/g, ' ')
             .replace(/\t/g, ' ')
@@ -466,87 +791,51 @@ class GoogleAuthService {
             .trim();
     }
 
-    cleanBodyPreview(text) {
-        if (!text) return '';
-        
-        // Nettoyer le texte pour le preview
-        return text
-            .replace(/\r\n/g, ' ')
-            .replace(/\n/g, ' ')
-            .replace(/\t/g, ' ')
-            .replace(/\s+/g, ' ')
-            .replace(/https?:\/\/[^\s]+/g, '[LIEN]')
-            .trim()
-            .substring(0, 500);
-    }
-
-    extractEmailAddress(fromHeader) {
-        if (!fromHeader) return 'unknown@gmail.com';
-        
-        // Format: "Name" <email@domain.com>
-        const match = fromHeader.match(/<(.+?)>/);
-        if (match) {
-            return match[1].toLowerCase();
-        }
-        
-        // Format simple: email@domain.com
-        if (fromHeader.includes('@')) {
-            return fromHeader.toLowerCase().trim();
-        }
-        
-        return fromHeader;
-    }
-
-    extractDisplayName(fromHeader) {
-        if (!fromHeader) return 'Unknown';
-        
-        // Format: "Name" <email@domain.com>
-        const match = fromHeader.match(/^"?([^"<]+)"?\s*</);
-        if (match) {
-            return match[1].trim();
-        }
-        
-        // Si pas de nom, utiliser la partie avant @
-        const email = this.extractEmailAddress(fromHeader);
-        return email.split('@')[0];
-    }
-
-    parseRecipients(recipientHeader) {
-        if (!recipientHeader) return [];
-        
-        // Séparer par virgule et nettoyer
-        const recipients = recipientHeader.split(',').map(r => r.trim());
-        
-        return recipients.map(recipient => ({
-            emailAddress: {
-                address: this.extractEmailAddress(recipient),
-                name: this.extractDisplayName(recipient)
-            }
-        }));
-    }
-
-    hasAttachments(payload) {
-        const checkPart = (part) => {
-            if (part.filename && part.filename.length > 0) {
-                return true;
-            }
-            if (part.parts) {
-                return part.parts.some(checkPart);
-            }
-            return false;
-        };
-        
-        return checkPart(payload);
-    }
-
-    extractImportance(headers) {
-        const importance = headers['importance'] || headers['x-priority'];
-        if (importance && (importance.includes('high') || importance === '1')) {
+    extractImportance(headers, labelIds) {
+        // Vérifier les labels Gmail
+        if (labelIds?.includes('IMPORTANT')) {
             return 'high';
         }
+        
+        // Vérifier les headers
+        const importance = headers['importance'] || headers['x-priority'];
+        if (importance) {
+            if (importance.toLowerCase().includes('high') || importance === '1') {
+                return 'high';
+            }
+            if (importance.toLowerCase().includes('low') || importance === '5') {
+                return 'low';
+            }
+        }
+        
         return 'normal';
     }
 
+    mapLabelIds(labelIds) {
+        if (!labelIds) return [];
+        
+        const labelMap = {
+            'INBOX': 'Boîte de réception',
+            'SENT': 'Envoyés',
+            'DRAFT': 'Brouillons',
+            'SPAM': 'Spam',
+            'TRASH': 'Corbeille',
+            'UNREAD': 'Non lu',
+            'IMPORTANT': 'Important',
+            'STARRED': 'Suivi',
+            'CATEGORY_PERSONAL': 'Personnel',
+            'CATEGORY_SOCIAL': 'Réseaux sociaux',
+            'CATEGORY_PROMOTIONS': 'Promotions',
+            'CATEGORY_UPDATES': 'Mises à jour',
+            'CATEGORY_FORUMS': 'Forums'
+        };
+        
+        return labelIds.map(id => labelMap[id] || id);
+    }
+
+    // ================================================
+    // GESTION DU TOKEN
+    // ================================================
     saveToken(tokenData) {
         try {
             const tokenInfo = {
@@ -560,7 +849,7 @@ class GoogleAuthService {
             localStorage.setItem('google_token_emailsortpro', JSON.stringify(tokenInfo));
             console.log('[GoogleAuthService] Token sauvegardé');
         } catch (error) {
-            console.warn('[GoogleAuthService] Erreur sauvegarde:', error);
+            console.warn('[GoogleAuthService] Erreur sauvegarde token:', error);
         }
     }
 
@@ -583,6 +872,8 @@ class GoogleAuthService {
         
         const now = Date.now();
         const expiresAt = tokenInfo.expires_at || 0;
+        
+        // Le token est valide s'il expire dans plus de 5 minutes
         return expiresAt > (now + 5 * 60 * 1000);
     }
 
@@ -596,9 +887,14 @@ class GoogleAuthService {
             return cachedToken.access_token;
         }
         
+        // Token expiré ou invalide
+        console.log('[GoogleAuthService] Token expiré, re-authentification nécessaire');
         return null;
     }
 
+    // ================================================
+    // MÉTHODES PUBLIQUES
+    // ================================================
     async getUserInfo() {
         if (!this.isAuthenticated()) {
             throw new Error('Non authentifié');
@@ -620,22 +916,22 @@ class GoogleAuthService {
     }
 
     async logout() {
-        console.log('[GoogleAuthService] Logout...');
+        console.log('[GoogleAuthService] Déconnexion...');
         
         try {
             this.currentUser = null;
             localStorage.removeItem('google_token_emailsortpro');
             sessionStorage.removeItem('google_oauth_state');
             
-            console.log('[GoogleAuthService] ✅ Logout réussi');
+            console.log('[GoogleAuthService] ✅ Déconnexion réussie');
             
         } catch (error) {
-            console.error('[GoogleAuthService] Erreur logout:', error);
+            console.error('[GoogleAuthService] Erreur déconnexion:', error);
         }
     }
 
     async reset() {
-        console.log('[GoogleAuthService] Reset...');
+        console.log('[GoogleAuthService] Reset complet...');
         this.forceCleanup();
     }
 
@@ -652,6 +948,9 @@ class GoogleAuthService {
         }
     }
 
+    // ================================================
+    // DIAGNOSTIC
+    // ================================================
     getDiagnosticInfo() {
         const cachedToken = this.getCachedToken();
         
@@ -664,7 +963,8 @@ class GoogleAuthService {
                 hasToken: !!cachedToken.access_token,
                 isValid: this.isTokenValid(cachedToken),
                 expiresAt: cachedToken.expires_at ? new Date(cachedToken.expires_at).toISOString() : null
-            } : null
+            } : null,
+            scanLimits: this.scanLimits
         };
     }
 
@@ -674,7 +974,7 @@ class GoogleAuthService {
         try {
             const token = await this.getAccessToken();
             if (!token) {
-                throw new Error('Aucun token');
+                throw new Error('Aucun token valide');
             }
 
             const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
@@ -696,7 +996,8 @@ class GoogleAuthService {
                 provider: this.provider,
                 email: profile.emailAddress,
                 messagesTotal: profile.messagesTotal,
-                threadsTotal: profile.threadsTotal
+                threadsTotal: profile.threadsTotal,
+                historyId: profile.historyId
             };
 
         } catch (error) {
@@ -710,20 +1011,30 @@ class GoogleAuthService {
     }
 }
 
-// Créer l'instance globale
+// ================================================
+// INITIALISATION GLOBALE
+// ================================================
 try {
+    // Nettoyer l'ancienne instance si elle existe
+    if (window.googleAuthService) {
+        window.googleAuthService.forceCleanup?.();
+    }
+    
     window.googleAuthService = new GoogleAuthService();
-    console.log('[GoogleAuthService] ✅ v6.0 créée');
+    console.log('[GoogleAuthService] ✅ v8.0 créée - Extraction complète et détaillée');
+    
 } catch (error) {
     console.error('[GoogleAuthService] ❌ Erreur création:', error);
     
+    // Fallback en cas d'erreur
     window.googleAuthService = {
         isInitialized: false,
         provider: 'gmail',
         initialize: () => Promise.resolve(),
         login: () => Promise.reject(new Error('Service indisponible')),
-        isAuthenticated: () => false
+        isAuthenticated: () => false,
+        fetchEmails: () => Promise.reject(new Error('Service indisponible'))
     };
 }
 
-console.log('✅ GoogleAuthService v6.0 - Structure extraction améliorée');
+console.log('✅ GoogleAuthService v8.0 loaded - Extraction complète des emails Gmail');
