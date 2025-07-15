@@ -1,10 +1,10 @@
-// MailService.js - Service unifié pour la gestion des emails
-// Intégration avec GoogleAuthService et AuthService pour extraction complète
+// MailService.js - Version 2.0 - Service unifié complet et fonctionnel
+// Intégration avec GoogleAuthService et AuthService sans erreurs
 
 class MailService {
     constructor() {
         this.currentProvider = null;
-        this.isInitialized = false;
+        this._isInitialized = false;
         this.authServices = {
             google: window.googleAuthService,
             gmail: window.googleAuthService,
@@ -12,14 +12,14 @@ class MailService {
             outlook: window.authService
         };
         
-        console.log('[MailService] Service unifié créé');
+        console.log('[MailService] v2.0 - Service unifié créé');
     }
 
     // ================================================
     // INITIALISATION
     // ================================================
     async initialize() {
-        if (this.isInitialized) {
+        if (this._isInitialized) {
             return true;
         }
 
@@ -32,19 +32,27 @@ class MailService {
             // Initialiser le service approprié
             if (this.currentProvider) {
                 const service = this.authServices[this.currentProvider];
-                if (service && service.initialize) {
+                if (service && typeof service.initialize === 'function') {
                     await service.initialize();
                 }
             }
             
-            this.isInitialized = true;
+            this._isInitialized = true;
             console.log('[MailService] ✅ Initialisé avec provider:', this.currentProvider);
             return true;
             
         } catch (error) {
             console.error('[MailService] ❌ Erreur initialisation:', error);
+            this._isInitialized = false;
             throw error;
         }
+    }
+
+    // ================================================
+    // VÉRIFICATION D'INITIALISATION
+    // ================================================
+    isInitialized() {
+        return this._isInitialized;
     }
 
     // ================================================
@@ -52,13 +60,17 @@ class MailService {
     // ================================================
     detectActiveProvider() {
         // Vérifier Gmail
-        if (window.googleAuthService?.isAuthenticated?.()) {
+        if (window.googleAuthService && 
+            typeof window.googleAuthService.isAuthenticated === 'function' &&
+            window.googleAuthService.isAuthenticated()) {
             this.currentProvider = 'google';
             return 'google';
         }
         
         // Vérifier Outlook
-        if (window.authService?.isAuthenticated?.()) {
+        if (window.authService && 
+            typeof window.authService.isAuthenticated === 'function' &&
+            window.authService.isAuthenticated()) {
             this.currentProvider = 'microsoft';
             return 'microsoft';
         }
@@ -82,8 +94,12 @@ class MailService {
         
         // Initialiser le nouveau service si nécessaire
         const service = this.authServices[normalizedProvider];
-        if (service && service.initialize && !service.isInitialized) {
-            await service.initialize();
+        if (service && typeof service.initialize === 'function') {
+            if (typeof service.isInitialized === 'function' && !service.isInitialized()) {
+                await service.initialize();
+            } else if (service.isInitialized === false) {
+                await service.initialize();
+            }
         }
         
         return normalizedProvider;
@@ -110,7 +126,7 @@ class MailService {
             throw new Error(`Service non disponible pour ${provider}`);
         }
         
-        if (service.login) {
+        if (typeof service.login === 'function') {
             await service.login();
             this.currentProvider = normalizedProvider;
         } else {
@@ -124,7 +140,11 @@ class MailService {
         }
         
         const service = this.authServices[this.currentProvider];
-        return service?.isAuthenticated?.() || false;
+        if (service && typeof service.isAuthenticated === 'function') {
+            return service.isAuthenticated();
+        }
+        
+        return false;
     }
 
     // ================================================
@@ -134,6 +154,11 @@ class MailService {
         console.log('[MailService] 📧 Récupération des messages...');
         console.log('[MailService] Provider:', this.currentProvider);
         console.log('[MailService] Options:', options);
+        
+        // S'assurer que le service est initialisé
+        if (!this._isInitialized) {
+            await this.initialize();
+        }
         
         if (!this.isAuthenticated()) {
             throw new Error('Non authentifié');
@@ -157,7 +182,7 @@ class MailService {
             };
             
             // Utiliser la méthode appropriée selon le service
-            if (service.fetchEmails) {
+            if (typeof service.fetchEmails === 'function') {
                 // GoogleAuthService ou AuthService avec fetchEmails
                 const emails = await service.fetchEmails(fetchOptions);
                 console.log(`[MailService] ✅ ${emails.length} emails récupérés avec contenu complet`);
@@ -165,7 +190,7 @@ class MailService {
                 // S'assurer que chaque email a le contenu complet
                 return emails.map(email => this.ensureCompleteContent(email));
                 
-            } else if (service.getMessages) {
+            } else if (typeof service.getMessages === 'function') {
                 // Service avec getMessages
                 const emails = await service.getMessages(folder, fetchOptions);
                 console.log(`[MailService] ✅ ${emails.length} emails récupérés`);
@@ -226,6 +251,11 @@ class MailService {
             email.providerType = this.currentProvider;
         }
         
+        // S'assurer que l'email a un ID
+        if (!email.id) {
+            email.id = email.messageId || email.itemId || this.generateId();
+        }
+        
         return email;
     }
 
@@ -235,34 +265,39 @@ class MailService {
     extractTextFromHtml(html) {
         if (!html) return '';
         
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
-        
-        // Supprimer les éléments non textuels
-        const elementsToRemove = tempDiv.querySelectorAll('script, style, noscript, iframe, object, embed');
-        elementsToRemove.forEach(el => el.remove());
-        
-        // Préserver les sauts de ligne
-        tempDiv.querySelectorAll('br').forEach(br => {
-            br.replaceWith('\n');
-        });
-        
-        tempDiv.querySelectorAll('p, div, li, tr').forEach(el => {
-            if (el.textContent.trim()) {
-                el.innerHTML = el.innerHTML + '\n';
-            }
-        });
-        
-        // Extraire le texte
-        let text = tempDiv.textContent || tempDiv.innerText || '';
-        
-        // Nettoyer
-        text = text
-            .replace(/\n{3,}/g, '\n\n')
-            .replace(/[ \t]+/g, ' ')
-            .trim();
-        
-        return text;
+        try {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            
+            // Supprimer les éléments non textuels
+            const elementsToRemove = tempDiv.querySelectorAll('script, style, noscript, iframe, object, embed');
+            elementsToRemove.forEach(el => el.remove());
+            
+            // Préserver les sauts de ligne
+            tempDiv.querySelectorAll('br').forEach(br => {
+                br.replaceWith('\n');
+            });
+            
+            tempDiv.querySelectorAll('p, div, li, tr').forEach(el => {
+                if (el.textContent.trim()) {
+                    el.innerHTML = el.innerHTML + '\n';
+                }
+            });
+            
+            // Extraire le texte
+            let text = tempDiv.textContent || tempDiv.innerText || '';
+            
+            // Nettoyer
+            text = text
+                .replace(/\n{3,}/g, '\n\n')
+                .replace(/[ \t]+/g, ' ')
+                .trim();
+            
+            return text;
+        } catch (error) {
+            console.warn('[MailService] Erreur extraction HTML:', error);
+            return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        }
     }
 
     // ================================================
@@ -271,7 +306,7 @@ class MailService {
     async markAsRead(messageId) {
         const service = this.authServices[this.currentProvider];
         
-        if (service.markAsRead) {
+        if (service && typeof service.markAsRead === 'function') {
             return await service.markAsRead(messageId);
         }
         
@@ -282,7 +317,7 @@ class MailService {
     async archive(messageId) {
         const service = this.authServices[this.currentProvider];
         
-        if (service.archive) {
+        if (service && typeof service.archive === 'function') {
             return await service.archive(messageId);
         }
         
@@ -293,7 +328,7 @@ class MailService {
     async delete(messageId) {
         const service = this.authServices[this.currentProvider];
         
-        if (service.delete) {
+        if (service && typeof service.delete === 'function') {
             return await service.delete(messageId);
         }
         
@@ -307,12 +342,12 @@ class MailService {
     async getUserInfo() {
         const service = this.authServices[this.currentProvider];
         
-        if (service?.getUserInfo) {
+        if (service && typeof service.getUserInfo === 'function') {
             return await service.getUserInfo();
         }
         
-        if (service?.getAccount) {
-            return await service.getAccount();
+        if (service && typeof service.getAccount === 'function') {
+            return service.getAccount();
         }
         
         return null;
@@ -321,7 +356,7 @@ class MailService {
     getAccount() {
         const service = this.authServices[this.currentProvider];
         
-        if (service?.getAccount) {
+        if (service && typeof service.getAccount === 'function') {
             return service.getAccount();
         }
         
@@ -334,12 +369,12 @@ class MailService {
     async logout() {
         const service = this.authServices[this.currentProvider];
         
-        if (service?.logout) {
+        if (service && typeof service.logout === 'function') {
             await service.logout();
         }
         
         this.currentProvider = null;
-        this.isInitialized = false;
+        this._isInitialized = false;
         
         console.log('[MailService] Déconnexion effectuée');
     }
@@ -350,7 +385,7 @@ class MailService {
     getDiagnosticInfo() {
         const info = {
             currentProvider: this.currentProvider,
-            isInitialized: this.isInitialized,
+            isInitialized: this._isInitialized,
             isAuthenticated: this.isAuthenticated(),
             availableServices: {}
         };
@@ -361,8 +396,8 @@ class MailService {
             if (service) {
                 info.availableServices[key] = {
                     exists: true,
-                    isInitialized: service.isInitialized || false,
-                    isAuthenticated: service.isAuthenticated?.() || false
+                    isInitialized: (typeof service.isInitialized === 'function' ? service.isInitialized() : service.isInitialized) || false,
+                    isAuthenticated: (typeof service.isAuthenticated === 'function' ? service.isAuthenticated() : false)
                 };
             }
         });
@@ -402,6 +437,21 @@ class MailService {
             };
         }
     }
+
+    // ================================================
+    // UTILITAIRES
+    // ================================================
+    generateId() {
+        return `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    // ================================================
+    // COMPATIBILITÉ AVEC EMAILSCANNER
+    // ================================================
+    async fetchEmails(options = {}) {
+        // Méthode alias pour compatibilité avec EmailScanner
+        return this.getMessages(options.folder || 'INBOX', options);
+    }
 }
 
 // ================================================
@@ -409,8 +459,22 @@ class MailService {
 // ================================================
 if (window.mailService) {
     console.log('[MailService] Service existant trouvé, remplacement...');
+    // Nettoyer l'ancien service
+    if (typeof window.mailService.logout === 'function') {
+        window.mailService.logout().catch(() => {});
+    }
 }
 
 window.mailService = new MailService();
 
-console.log('✅ MailService loaded - Service unifié pour extraction complète des emails');
+// Auto-initialiser si possible
+(async () => {
+    try {
+        await window.mailService.initialize();
+        console.log('[MailService] ✅ Auto-initialisation réussie');
+    } catch (error) {
+        console.log('[MailService] Auto-initialisation échouée, attente de l\'authentification');
+    }
+})();
+
+console.log('✅ MailService v2.0 loaded - Service unifié complet et fonctionnel');
