@@ -19,18 +19,14 @@ class UnifiedScanModule {
                 icon: 'fab fa-google',
                 color: '#4285f4',
                 authService: 'googleAuthService',
-                scanLimit: -1, // Pas de limite
-                pageManager: 'pageManagerGmail', // Redirection vers PageManagerGmail
-                emailsPage: 'emails' // Page emails dans PageManagerGmail
+                scanLimit: -1 // Pas de limite
             },
             outlook: {
                 name: 'Outlook',
                 icon: 'fab fa-microsoft', 
                 color: '#0078d4',
                 authService: 'authService',
-                scanLimit: -1, // Pas de limite
-                pageManager: 'pageManager', // PageManager principal pour Outlook
-                emailsPage: 'emails' // Page emails standard
+                scanLimit: -1 // Pas de limite
             }
         };
         
@@ -57,7 +53,7 @@ class UnifiedScanModule {
         // Paramètres utilisateur
         this.userSettings = this.loadUserSettings();
         
-        console.log('[StartScan] ✅ Module unifié initialisé avec routing approprié');
+        console.log('[StartScan] ✅ Module unifié initialisé');
     }
 
     // ================================================
@@ -76,6 +72,9 @@ class UnifiedScanModule {
         
         // Toujours afficher l'interface de scan principale
         this.renderScanInterface(container);
+        
+        // Ajouter les styles
+        this.addStyles();
     }
 
     // ================================================
@@ -129,204 +128,158 @@ class UnifiedScanModule {
     // INTERFACE DE SCAN PRINCIPALE (STRUCTURE ORIGINALE)
     // ================================================
     renderScanInterface(container) {
-        // Utiliser la structure HTML originale
+        const savedOptions = this.getSavedScanOptions();
+        
+        // Utiliser exactement la même structure HTML que l'original
         container.innerHTML = `
-            <div class="start-scan-modern">
-                <div class="scan-header-section">
-                    <div class="scan-icon-wrapper">
-                        <i class="fas fa-envelope-open-text"></i>
-                    </div>
-                    <h1 class="scan-title">Scanner vos emails</h1>
-                    <p class="scan-subtitle">
-                        ${this.currentProvider ? 
-                            `Connecté avec ${this.providers[this.currentProvider].name}` : 
-                            'Analysez et organisez vos emails en quelques clics'
-                        }
-                    </p>
-                </div>
-
-                ${!this.currentProvider ? this.renderProviderSelection() : ''}
-                ${this.currentProvider && !this.isAuthenticated ? this.renderAuthRequired() : ''}
-                ${this.currentProvider && this.isAuthenticated ? this.renderScanOptions() : ''}
-
-                <div id="scanProgress" class="scan-progress-wrapper" style="display: none;">
-                    <div class="progress-container">
-                        <div class="progress-header">
-                            <div class="progress-title">
-                                <i class="fas fa-sync fa-spin"></i>
-                                <span>Scan en cours...</span>
+            <div class="start-scan-page">
+                <div class="start-scan-container">
+                    <!-- Provider Selection -->
+                    ${!this.currentProvider ? `
+                        <div class="provider-selection">
+                            <h2 class="provider-title">
+                                <i class="fas fa-envelope-open-text"></i>
+                                Choisissez votre service email
+                            </h2>
+                            <div class="provider-cards">
+                                <div class="provider-card" onclick="unifiedScanModule.selectProvider('gmail')">
+                                    <div class="provider-icon" style="color: #4285f4;">
+                                        <i class="fab fa-google"></i>
+                                    </div>
+                                    <h3>Gmail</h3>
+                                    <p>Scanner votre compte Google</p>
+                                </div>
+                                <div class="provider-card" onclick="unifiedScanModule.selectProvider('outlook')">
+                                    <div class="provider-icon" style="color: #0078d4;">
+                                        <i class="fab fa-microsoft"></i>
+                                    </div>
+                                    <h3>Outlook</h3>
+                                    <p>Scanner votre compte Microsoft</p>
+                                </div>
                             </div>
-                            <button class="btn-cancel-scan" onclick="unifiedScanModule.cancelScan()">
-                                <i class="fas fa-times"></i>
+                        </div>
+                    ` : ''}
+
+                    <!-- Auth Required -->
+                    ${this.currentProvider && !this.isAuthenticated ? `
+                        <div class="auth-section">
+                            <div class="auth-icon" style="color: ${this.providers[this.currentProvider].color};">
+                                <i class="${this.providers[this.currentProvider].icon}"></i>
+                            </div>
+                            <h2>Connexion requise</h2>
+                            <p>Connectez-vous à ${this.providers[this.currentProvider].name} pour scanner vos emails</p>
+                            <button class="btn-auth" onclick="unifiedScanModule.authenticate()">
+                                <i class="${this.providers[this.currentProvider].icon}"></i>
+                                Se connecter avec ${this.providers[this.currentProvider].name}
+                            </button>
+                        </div>
+                    ` : ''}
+
+                    <!-- Scan Options -->
+                    ${this.currentProvider && this.isAuthenticated ? `
+                        <div class="scan-header">
+                            <h2 class="scan-title">
+                                <i class="fas fa-search"></i>
+                                Scanner vos emails ${this.providers[this.currentProvider].name}
+                            </h2>
+                            <p class="scan-subtitle">${this.getUserEmail()}</p>
+                        </div>
+
+                        <div class="scan-options">
+                            <div class="option-row">
+                                <div class="option-group">
+                                    <label>
+                                        <i class="fas fa-calendar-alt"></i>
+                                        Période
+                                    </label>
+                                    <select id="scanPeriod" class="scan-select">
+                                        <option value="1" ${savedOptions.days === 1 ? 'selected' : ''}>Dernières 24 heures</option>
+                                        <option value="3" ${savedOptions.days === 3 ? 'selected' : ''}>3 derniers jours</option>
+                                        <option value="7" ${savedOptions.days === 7 ? 'selected' : ''}>7 derniers jours</option>
+                                        <option value="14" ${savedOptions.days === 14 ? 'selected' : ''}>2 dernières semaines</option>
+                                        <option value="30" ${savedOptions.days === 30 ? 'selected' : ''}>30 derniers jours</option>
+                                        <option value="90" ${savedOptions.days === 90 ? 'selected' : ''}>3 derniers mois</option>
+                                        <option value="-1">Tous les emails</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="option-group">
+                                    <label>
+                                        <i class="fas fa-folder"></i>
+                                        Dossier
+                                    </label>
+                                    <select id="scanFolder" class="scan-select">
+                                        ${this.renderFolderOptions(savedOptions.folder)}
+                                    </select>
+                                </div>
+                                
+                                <div class="option-group">
+                                    <label>
+                                        <i class="fas fa-list-ol"></i>
+                                        Limite
+                                    </label>
+                                    <select id="scanLimit" class="scan-select">
+                                        <option value="100" ${savedOptions.maxEmails === 100 ? 'selected' : ''}>100 emails</option>
+                                        <option value="500" ${savedOptions.maxEmails === 500 ? 'selected' : ''}>500 emails</option>
+                                        <option value="1000" ${savedOptions.maxEmails === 1000 ? 'selected' : ''}>1000 emails</option>
+                                        <option value="5000" ${savedOptions.maxEmails === 5000 ? 'selected' : ''}>5000 emails</option>
+                                        <option value="-1" ${savedOptions.maxEmails === -1 ? 'selected' : ''}>Sans limite</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="scan-toggles">
+                                <label class="scan-toggle">
+                                    <input type="checkbox" id="includeSpam" ${savedOptions.includeSpam ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                    <span class="toggle-text">Inclure les spams</span>
+                                </label>
+                                
+                                <label class="scan-toggle">
+                                    <input type="checkbox" id="autoCategrize" ${savedOptions.autoCategrize ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                    <span class="toggle-text">Catégorisation automatique</span>
+                                </label>
+                                
+                                <label class="scan-toggle">
+                                    <input type="checkbox" id="autoAnalyze" ${savedOptions.autoAnalyze ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                    <span class="toggle-text">Analyse IA pour tâches</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="scan-actions">
+                            <button id="startScanBtn" class="btn-start-scan" onclick="unifiedScanModule.startScan()">
+                                <i class="fas fa-search"></i>
+                                Démarrer le scan
+                            </button>
+                            <button class="btn-logout" onclick="unifiedScanModule.logout()">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Déconnexion
+                            </button>
+                        </div>
+                    ` : ''}
+
+                    <!-- Progress -->
+                    <div id="scanProgress" class="scan-progress" style="display: none;">
+                        <div class="progress-header">
+                            <h3>Scan en cours...</h3>
+                            <button class="btn-cancel" onclick="unifiedScanModule.cancelScan()">
                                 Annuler
                             </button>
                         </div>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill" id="progressFill"></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
                         </div>
-                        <div class="progress-details">
+                        <div class="progress-info">
                             <span id="progressMessage">Initialisation...</span>
-                            <span id="progressStats" class="progress-stats">0/0</span>
+                            <span id="progressStats">0/0</span>
                         </div>
                     </div>
-                </div>
 
-                <div id="scanResults" class="scan-results-wrapper" style="display: none;"></div>
-            </div>
-        `;
-        
-        // Ajouter les styles
-        this.addStyles();
-    }
-
-    renderProviderSelection() {
-        return `
-            <div class="provider-selection-section">
-                <h3 class="section-title">Choisissez votre service email</h3>
-                <div class="provider-grid">
-                    <div class="provider-card" onclick="unifiedScanModule.selectProvider('gmail')">
-                        <div class="provider-icon-large" style="color: #4285f4;">
-                            <i class="fab fa-google"></i>
-                        </div>
-                        <h4>Gmail</h4>
-                        <p>Scanner votre compte Google</p>
-                        <ul class="provider-features">
-                            <li><i class="fas fa-infinity"></i> Scan illimité</li>
-                            <li><i class="fas fa-tags"></i> Labels Gmail</li>
-                            <li><i class="fas fa-star"></i> Priorités</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="provider-card" onclick="unifiedScanModule.selectProvider('outlook')">
-                        <div class="provider-icon-large" style="color: #0078d4;">
-                            <i class="fab fa-microsoft"></i>
-                        </div>
-                        <h4>Outlook</h4>
-                        <p>Scanner votre compte Microsoft</p>
-                        <ul class="provider-features">
-                            <li><i class="fas fa-infinity"></i> Scan illimité</li>
-                            <li><i class="fas fa-folder"></i> Dossiers</li>
-                            <li><i class="fas fa-flag"></i> Marqueurs</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    renderAuthRequired() {
-        const provider = this.providers[this.currentProvider];
-        return `
-            <div class="auth-required-section">
-                <div class="auth-message">
-                    <i class="${provider.icon}" style="color: ${provider.color}; font-size: 48px; margin-bottom: 20px;"></i>
-                    <h3>Connexion requise</h3>
-                    <p>Connectez-vous à ${provider.name} pour scanner vos emails</p>
-                    <button class="btn btn-primary btn-large" onclick="unifiedScanModule.authenticate()">
-                        <i class="${provider.icon}"></i>
-                        Se connecter avec ${provider.name}
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    renderScanOptions() {
-        const savedOptions = this.getSavedScanOptions();
-        const provider = this.providers[this.currentProvider];
-        
-        return `
-            <div class="scan-config-section">
-                <div class="connected-account">
-                    <div class="account-badge" style="background: ${provider.color}20; color: ${provider.color};">
-                        <i class="${provider.icon}"></i>
-                    </div>
-                    <div class="account-info">
-                        <span class="account-label">Connecté avec ${provider.name}</span>
-                        <span class="account-email">${this.getUserEmail()}</span>
-                    </div>
-                    <button class="btn-disconnect" onclick="unifiedScanModule.logout()">
-                        <i class="fas fa-sign-out-alt"></i>
-                        Déconnexion
-                    </button>
-                </div>
-
-                <div class="scan-options-grid">
-                    <div class="scan-option">
-                        <label class="option-label">
-                            <i class="fas fa-calendar-alt"></i>
-                            Période à scanner
-                        </label>
-                        <select id="scanPeriod" class="option-select">
-                            <option value="1" ${savedOptions.days === 1 ? 'selected' : ''}>Dernières 24 heures</option>
-                            <option value="3" ${savedOptions.days === 3 ? 'selected' : ''}>3 derniers jours</option>
-                            <option value="7" ${savedOptions.days === 7 ? 'selected' : ''}>7 derniers jours</option>
-                            <option value="14" ${savedOptions.days === 14 ? 'selected' : ''}>2 dernières semaines</option>
-                            <option value="30" ${savedOptions.days === 30 ? 'selected' : ''}>30 derniers jours</option>
-                            <option value="90" ${savedOptions.days === 90 ? 'selected' : ''}>3 derniers mois</option>
-                            <option value="-1">Tous les emails</option>
-                        </select>
-                    </div>
-                    
-                    <div class="scan-option">
-                        <label class="option-label">
-                            <i class="fas fa-folder"></i>
-                            Dossier à scanner
-                        </label>
-                        <select id="scanFolder" class="option-select">
-                            ${this.renderFolderOptions(savedOptions.folder)}
-                        </select>
-                    </div>
-                    
-                    <div class="scan-option">
-                        <label class="option-label">
-                            <i class="fas fa-list-ol"></i>
-                            Limite d'emails
-                        </label>
-                        <select id="scanLimit" class="option-select">
-                            <option value="100" ${savedOptions.maxEmails === 100 ? 'selected' : ''}>100 emails</option>
-                            <option value="500" ${savedOptions.maxEmails === 500 ? 'selected' : ''}>500 emails</option>
-                            <option value="1000" ${savedOptions.maxEmails === 1000 ? 'selected' : ''}>1000 emails</option>
-                            <option value="5000" ${savedOptions.maxEmails === 5000 ? 'selected' : ''}>5000 emails</option>
-                            <option value="-1" ${savedOptions.maxEmails === -1 ? 'selected' : ''}>Sans limite</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="scan-toggles">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="includeSpam" ${savedOptions.includeSpam ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                        <span class="toggle-label">
-                            <i class="fas fa-ban"></i>
-                            Inclure les spams
-                        </span>
-                    </label>
-                    
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="autoCategrize" ${savedOptions.autoCategrize ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                        <span class="toggle-label">
-                            <i class="fas fa-tags"></i>
-                            Catégorisation automatique
-                        </span>
-                    </label>
-                    
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="autoAnalyze" ${savedOptions.autoAnalyze ? 'checked' : ''}>
-                        <span class="toggle-slider"></span>
-                        <span class="toggle-label">
-                            <i class="fas fa-brain"></i>
-                            Analyse IA pour tâches
-                        </span>
-                    </label>
-                </div>
-
-                <div class="scan-action-section">
-                    <button id="startScanBtn" class="btn btn-primary btn-large btn-scan" onclick="unifiedScanModule.startScan()">
-                        <i class="fas fa-search"></i>
-                        <span>Démarrer le scan</span>
-                    </button>
+                    <!-- Results -->
+                    <div id="scanResults" class="scan-results" style="display: none;"></div>
                 </div>
             </div>
         `;
@@ -569,82 +522,54 @@ class UnifiedScanModule {
         
         const duration = this.scanMetrics.endTime - this.scanMetrics.startTime;
         const durationSeconds = Math.round(duration / 1000);
-        const provider = this.providers[this.currentProvider];
         
         resultsContainer.innerHTML = `
-            <div class="scan-results-container">
+            <div class="results-container">
                 <div class="results-header">
-                    <div class="results-success">
+                    <h3>
                         <i class="fas fa-check-circle"></i>
-                        <h3>Scan terminé avec succès !</h3>
-                    </div>
+                        Scan terminé
+                    </h3>
                     <div class="results-actions">
-                        <button class="btn btn-secondary" onclick="unifiedScanModule.exportResults()">
+                        <button class="btn-secondary" onclick="unifiedScanModule.exportResults()">
                             <i class="fas fa-download"></i>
                             Exporter
                         </button>
-                        <button class="btn btn-primary" onclick="unifiedScanModule.viewEmails()">
+                        <button class="btn-primary" onclick="unifiedScanModule.viewEmails()">
                             <i class="fas fa-envelope"></i>
                             Voir les emails
                         </button>
                     </div>
                 </div>
                 
-                <div class="results-stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: ${provider.color}20; color: ${provider.color};">
-                            <i class="${provider.icon}"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-value">${results.total}</div>
-                            <div class="stat-label">Emails scannés</div>
-                        </div>
+                <div class="results-stats">
+                    <div class="stat-box">
+                        <div class="stat-value">${results.total}</div>
+                        <div class="stat-label">Emails scannés</div>
                     </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: #10b98120; color: #10b981;">
-                            <i class="fas fa-tags"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-value">${results.categorized}</div>
-                            <div class="stat-label">Catégorisés</div>
-                        </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${results.categorized}</div>
+                        <div class="stat-label">Catégorisés</div>
                     </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: #8b5cf620; color: #8b5cf6;">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-value">${results.stats?.preselectedForTasks || 0}</div>
-                            <div class="stat-label">Pré-sélectionnés</div>
-                        </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${results.stats?.preselectedForTasks || 0}</div>
+                        <div class="stat-label">Pré-sélectionnés</div>
                     </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon" style="background: #6366f120; color: #6366f1;">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="stat-content">
-                            <div class="stat-value">${durationSeconds}s</div>
-                            <div class="stat-label">Durée</div>
-                        </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${durationSeconds}s</div>
+                        <div class="stat-label">Durée</div>
                     </div>
                 </div>
                 
-                <div class="category-breakdown-section">
-                    <h4>Répartition par catégorie</h4>
-                    <div class="category-list">
-                        ${this.renderCategoryBreakdown(results.breakdown)}
-                    </div>
+                <div class="results-categories">
+                    <h4>Catégories</h4>
+                    ${this.renderCategoryBreakdown(results.breakdown)}
                 </div>
                 
-                <div class="results-footer">
-                    <button class="btn btn-outline" onclick="unifiedScanModule.resetScan()">
-                        <i class="fas fa-redo"></i>
-                        Nouveau scan
-                    </button>
-                </div>
+                <button class="btn-new-scan" onclick="unifiedScanModule.resetScan()">
+                    <i class="fas fa-redo"></i>
+                    Nouveau scan
+                </button>
             </div>
         `;
         
@@ -653,7 +578,7 @@ class UnifiedScanModule {
 
     renderCategoryBreakdown(breakdown) {
         if (!breakdown || Object.keys(breakdown).length === 0) {
-            return '<p class="empty-message">Aucune catégorie détectée</p>';
+            return '<p>Aucune catégorie détectée</p>';
         }
         
         // Obtenir les infos de catégorie depuis CategoryManager
@@ -673,26 +598,18 @@ class UnifiedScanModule {
             .sort((a, b) => b[1] - a[1])
             .slice(0, 10); // Top 10
         
-        return sortedCategories.map(([catId, count]) => {
+        return `<div class="category-list">` + sortedCategories.map(([catId, count]) => {
             const info = categoryInfo[catId] || { name: catId, icon: '📂', color: '#6b7280' };
             const percentage = this.scanResults ? Math.round((count / this.scanResults.total) * 100) : 0;
             
             return `
-                <div class="category-row">
-                    <div class="category-info">
-                        <span class="category-icon" style="color: ${info.color}">${info.icon}</span>
-                        <span class="category-name">${info.name}</span>
-                    </div>
-                    <div class="category-progress">
-                        <span class="category-count">${count}</span>
-                        <div class="category-bar">
-                            <div class="category-fill" style="width: ${percentage}%; background: ${info.color}"></div>
-                        </div>
-                        <span class="category-percent">${percentage}%</span>
-                    </div>
+                <div class="category-item">
+                    <span class="category-icon" style="color: ${info.color}">${info.icon}</span>
+                    <span class="category-name">${info.name}</span>
+                    <span class="category-count">${count} (${percentage}%)</span>
                 </div>
             `;
-        }).join('');
+        }).join('') + `</div>`;
     }
 
     // ================================================
@@ -821,27 +738,28 @@ class UnifiedScanModule {
     viewEmails() {
         console.log('[StartScan] 📧 Navigating to emails page for', this.currentProvider);
         
-        const providerConfig = this.providers[this.currentProvider];
-        
+        // REDIRECTION CORRIGÉE
         if (this.currentProvider === 'gmail') {
-            // Rediriger vers PageManagerGmail
+            // Pour Gmail, utiliser PageManagerGmail
             if (window.pageManagerGmail) {
-                console.log('[StartScan] ✅ Redirecting to PageManagerGmail');
+                console.log('[StartScan] ✅ Using pageManagerGmail.loadPage("emails")');
                 window.pageManagerGmail.loadPage('emails');
             } else if (window.pageManager) {
-                // Fallback vers pageManager principal avec page gmail
-                console.log('[StartScan] ✅ Redirecting to pageManager -> gmail');
+                // Fallback: essayer pageManager avec la page gmail
+                console.log('[StartScan] ✅ Fallback: pageManager.loadPage("gmail")');
                 window.pageManager.loadPage('gmail');
             } else {
-                this.showToast('PageManagerGmail non disponible', 'error');
+                console.error('[StartScan] ❌ No page manager available for Gmail');
+                this.showToast('Navigation non disponible', 'error');
             }
         } else if (this.currentProvider === 'outlook') {
-            // Rediriger vers la page emails standard pour Outlook
+            // Pour Outlook, utiliser le PageManager principal
             if (window.pageManager) {
-                console.log('[StartScan] ✅ Redirecting to pageManager -> emails');
+                console.log('[StartScan] ✅ Using pageManager.loadPage("emails")');
                 window.pageManager.loadPage('emails');
             } else {
-                this.showToast('PageManager non disponible', 'error');
+                console.error('[StartScan] ❌ No page manager available for Outlook');
+                this.showToast('Navigation non disponible', 'error');
             }
         }
     }
@@ -862,7 +780,7 @@ class UnifiedScanModule {
         
         const loader = document.createElement('div');
         loader.id = 'unifiedLoader';
-        loader.className = 'unified-loader';
+        loader.className = 'loader-overlay';
         loader.innerHTML = `
             <div class="loader-content">
                 <i class="fas fa-spinner fa-spin"></i>
@@ -893,7 +811,7 @@ class UnifiedScanModule {
         
         // Fallback toast
         const toast = document.createElement('div');
-        toast.className = `unified-toast toast-${type}`;
+        toast.className = `toast toast-${type}`;
         toast.innerHTML = `
             <i class="fas ${this.getToastIcon(type)}"></i>
             <span>${message}</span>
@@ -918,7 +836,7 @@ class UnifiedScanModule {
     }
 
     // ================================================
-    // STYLES CSS (STRUCTURE ORIGINALE)
+    // STYLES CSS (EXACTEMENT COMME L'ORIGINAL)
     // ================================================
     addStyles() {
         if (document.getElementById('unified-scan-styles')) return;
@@ -926,871 +844,720 @@ class UnifiedScanModule {
         const styles = document.createElement('style');
         styles.id = 'unified-scan-styles';
         styles.textContent = `
-            /* Container principal avec structure originale */
-            .start-scan-modern {
-                background: #f8fafc;
+            /* Start Scan Page - Exactement comme l'original */
+            .start-scan-page {
                 min-height: 100vh;
-                padding: 20px;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+                background: #f8fafc;
+                padding: 30px 20px;
             }
-            
-            /* Header Section */
-            .scan-header-section {
-                text-align: center;
-                margin-bottom: 40px;
-            }
-            
-            .scan-icon-wrapper {
-                width: 80px;
-                height: 80px;
-                margin: 0 auto 20px;
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                border-radius: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
-            }
-            
-            .scan-icon-wrapper i {
-                font-size: 36px;
-                color: white;
-            }
-            
-            .scan-title {
-                font-size: 32px;
-                font-weight: 700;
-                color: #1f2937;
-                margin-bottom: 10px;
-            }
-            
-            .scan-subtitle {
-                font-size: 16px;
-                color: #6b7280;
-                max-width: 500px;
-                margin: 0 auto;
-            }
-            
-            /* Provider Selection */
-            .provider-selection-section {
-                max-width: 700px;
-                margin: 0 auto 40px;
-            }
-            
-            .section-title {
-                font-size: 20px;
-                font-weight: 600;
-                color: #1f2937;
-                margin-bottom: 24px;
-                text-align: center;
-            }
-            
-            .provider-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 20px;
-            }
-            
-            .provider-card {
-                background: white;
-                border: 2px solid #e5e7eb;
-                border-radius: 12px;
-                padding: 30px;
-                text-align: center;
-                cursor: pointer;
-                transition: all 0.3s ease;
-            }
-            
-            .provider-card:hover {
-                border-color: #6366f1;
-                transform: translateY(-4px);
-                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-            }
-            
-            .provider-icon-large {
-                font-size: 48px;
-                margin-bottom: 16px;
-            }
-            
-            .provider-card h4 {
-                font-size: 20px;
-                font-weight: 600;
-                color: #1f2937;
-                margin-bottom: 8px;
-            }
-            
-            .provider-card p {
-                color: #6b7280;
-                margin-bottom: 20px;
-            }
-            
-            .provider-features {
-                list-style: none;
-                padding: 0;
-                margin: 0;
-                text-align: left;
-            }
-            
-            .provider-features li {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                color: #4b5563;
-                font-size: 14px;
-                margin-bottom: 8px;
-            }
-            
-            .provider-features i {
-                color: #10b981;
-                width: 16px;
-            }
-            
-            /* Auth Required */
-            .auth-required-section {
-                max-width: 500px;
-                margin: 0 auto;
-                text-align: center;
-            }
-            
-            .auth-message {
-                background: white;
-                border-radius: 12px;
-                padding: 40px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            }
-            
-            .auth-message h3 {
-                font-size: 24px;
-                font-weight: 600;
-                color: #1f2937;
-                margin-bottom: 12px;
-            }
-            
-            .auth-message p {
-                color: #6b7280;
-                margin-bottom: 24px;
-            }
-            
-            /* Scan Config */
-            .scan-config-section {
+
+            .start-scan-container {
                 max-width: 800px;
                 margin: 0 auto;
             }
-            
-            .connected-account {
-                background: white;
-                border-radius: 12px;
-                padding: 20px;
-                display: flex;
-                align-items: center;
-                gap: 16px;
-                margin-bottom: 24px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+            /* Provider Selection */
+            .provider-selection {
+                text-align: center;
+                margin-bottom: 40px;
             }
-            
-            .account-badge {
-                width: 48px;
-                height: 48px;
-                border-radius: 12px;
+
+            .provider-title {
+                font-size: 28px;
+                font-weight: 700;
+                color: #1e293b;
+                margin-bottom: 30px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 24px;
+                gap: 12px;
             }
-            
-            .account-info {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
+
+            .provider-title i {
+                color: #6366f1;
             }
-            
-            .account-label {
-                font-size: 13px;
-                color: #6b7280;
+
+            .provider-cards {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
             }
-            
-            .account-email {
-                font-size: 15px;
-                font-weight: 600;
-                color: #1f2937;
-            }
-            
-            .btn-disconnect {
-                padding: 8px 16px;
-                background: #f3f4f6;
-                color: #374151;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: 500;
+
+            .provider-card {
+                background: white;
+                border: 2px solid #e2e8f0;
+                border-radius: 16px;
+                padding: 40px 30px;
                 cursor: pointer;
-                transition: all 0.2s ease;
+                transition: all 0.3s ease;
+                text-align: center;
+            }
+
+            .provider-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                border-color: #6366f1;
+            }
+
+            .provider-icon {
+                font-size: 48px;
+                margin-bottom: 20px;
+            }
+
+            .provider-card h3 {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1e293b;
+                margin-bottom: 10px;
+            }
+
+            .provider-card p {
+                color: #64748b;
+                font-size: 16px;
+            }
+
+            /* Auth Section */
+            .auth-section {
+                background: white;
+                border-radius: 16px;
+                padding: 60px 40px;
+                text-align: center;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+            }
+
+            .auth-icon {
+                font-size: 64px;
+                margin-bottom: 30px;
+            }
+
+            .auth-section h2 {
+                font-size: 28px;
+                font-weight: 700;
+                color: #1e293b;
+                margin-bottom: 15px;
+            }
+
+            .auth-section p {
+                color: #64748b;
+                font-size: 16px;
+                margin-bottom: 30px;
+            }
+
+            .btn-auth {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                padding: 14px 28px;
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                border: none;
+                border-radius: 12px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+            }
+
+            .btn-auth:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
+            }
+
+            /* Scan Header */
+            .scan-header {
+                background: white;
+                border-radius: 16px;
+                padding: 30px;
+                margin-bottom: 30px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+                text-align: center;
+            }
+
+            .scan-title {
+                font-size: 28px;
+                font-weight: 700;
+                color: #1e293b;
+                margin-bottom: 10px;
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                justify-content: center;
+                gap: 12px;
             }
-            
-            .btn-disconnect:hover {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
+
+            .scan-title i {
+                color: #6366f1;
             }
-            
-            .scan-options-grid {
+
+            .scan-subtitle {
+                color: #64748b;
+                font-size: 16px;
+            }
+
+            /* Scan Options */
+            .scan-options {
+                background: white;
+                border-radius: 16px;
+                padding: 30px;
+                margin-bottom: 30px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+            }
+
+            .option-row {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                 gap: 20px;
-                margin-bottom: 24px;
+                margin-bottom: 30px;
             }
-            
-            .scan-option {
-                background: white;
-                border-radius: 12px;
-                padding: 20px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+            .option-group {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
             }
-            
-            .option-label {
+
+            .option-group label {
+                font-size: 14px;
+                font-weight: 600;
+                color: #475569;
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                font-size: 14px;
-                font-weight: 600;
-                color: #374151;
-                margin-bottom: 12px;
             }
-            
-            .option-label i {
-                color: #6b7280;
+
+            .option-group label i {
+                color: #6366f1;
             }
-            
-            .option-select {
+
+            .scan-select {
                 width: 100%;
-                padding: 10px 12px;
-                background: #f9fafb;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 14px;
-                color: #1f2937;
+                padding: 12px 16px;
+                border: 2px solid #e2e8f0;
+                border-radius: 10px;
+                font-size: 15px;
+                color: #1e293b;
+                background: #f8fafc;
                 cursor: pointer;
                 transition: all 0.2s ease;
             }
-            
-            .option-select:hover {
-                border-color: #d1d5db;
+
+            .scan-select:hover {
+                border-color: #cbd5e1;
+                background: white;
             }
-            
-            .option-select:focus {
+
+            .scan-select:focus {
                 outline: none;
                 border-color: #6366f1;
+                background: white;
                 box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
             }
-            
+
+            /* Toggles */
             .scan-toggles {
-                background: white;
-                border-radius: 12px;
-                padding: 24px;
-                margin-bottom: 24px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
                 display: flex;
                 flex-wrap: wrap;
                 gap: 20px;
             }
-            
-            .toggle-switch {
+
+            .scan-toggle {
                 display: flex;
                 align-items: center;
                 cursor: pointer;
                 position: relative;
-                padding-left: 52px;
-                font-size: 14px;
-                color: #374151;
+                padding-left: 60px;
+                min-height: 30px;
                 user-select: none;
             }
-            
-            .toggle-switch input {
+
+            .scan-toggle input {
                 position: absolute;
                 opacity: 0;
                 cursor: pointer;
             }
-            
+
             .toggle-slider {
                 position: absolute;
                 left: 0;
                 top: 50%;
                 transform: translateY(-50%);
-                width: 44px;
-                height: 24px;
-                background: #e5e7eb;
-                border-radius: 12px;
+                width: 50px;
+                height: 26px;
+                background: #cbd5e1;
+                border-radius: 13px;
                 transition: all 0.3s ease;
             }
-            
+
             .toggle-slider::after {
                 content: '';
                 position: absolute;
-                left: 2px;
-                top: 2px;
+                left: 3px;
+                top: 3px;
                 width: 20px;
                 height: 20px;
                 background: white;
                 border-radius: 50%;
                 transition: all 0.3s ease;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             }
-            
-            .toggle-switch input:checked + .toggle-slider {
+
+            .scan-toggle input:checked + .toggle-slider {
                 background: #6366f1;
             }
-            
-            .toggle-switch input:checked + .toggle-slider::after {
-                transform: translateX(20px);
+
+            .scan-toggle input:checked + .toggle-slider::after {
+                transform: translateX(24px);
             }
-            
-            .toggle-label {
-                display: flex;
-                align-items: center;
-                gap: 8px;
+
+            .toggle-text {
+                font-size: 15px;
                 font-weight: 500;
+                color: #475569;
             }
-            
-            .toggle-label i {
-                color: #6b7280;
-                width: 16px;
+
+            /* Scan Actions */
+            .scan-actions {
+                display: flex;
+                gap: 15px;
+                justify-content: center;
+                margin-bottom: 30px;
             }
-            
-            .scan-action-section {
-                text-align: center;
-            }
-            
-            /* Buttons */
-            .btn {
-                padding: 12px 24px;
-                border: none;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
+
+            .btn-start-scan {
                 display: inline-flex;
                 align-items: center;
-                gap: 8px;
-            }
-            
-            .btn-primary {
+                gap: 10px;
+                padding: 16px 32px;
                 background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
                 color: white;
-                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+                border: none;
+                border-radius: 12px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
             }
-            
-            .btn-primary:hover {
+
+            .btn-start-scan:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+                box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
             }
-            
-            .btn-primary:disabled {
-                background: #9ca3af;
+
+            .btn-start-scan:disabled {
+                background: #94a3b8;
                 cursor: not-allowed;
                 transform: none;
                 box-shadow: none;
             }
-            
-            .btn-secondary {
-                background: #f3f4f6;
-                color: #374151;
-                border: 1px solid #e5e7eb;
-            }
-            
-            .btn-secondary:hover {
-                background: #e5e7eb;
-            }
-            
-            .btn-outline {
-                background: transparent;
-                color: #6366f1;
-                border: 2px solid #6366f1;
-            }
-            
-            .btn-outline:hover {
-                background: #6366f1;
-                color: white;
-            }
-            
-            .btn-large {
-                padding: 16px 32px;
-                font-size: 16px;
-            }
-            
-            .btn-scan {
-                min-width: 200px;
-                justify-content: center;
-            }
-            
-            /* Progress */
-            .scan-progress-wrapper {
-                max-width: 800px;
-                margin: 40px auto;
-            }
-            
-            .progress-container {
-                background: white;
+
+            .btn-logout {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 14px 24px;
+                background: #f1f5f9;
+                color: #475569;
+                border: 2px solid #e2e8f0;
                 border-radius: 12px;
-                padding: 24px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
             }
-            
+
+            .btn-logout:hover {
+                background: #fee2e2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+
+            /* Progress */
+            .scan-progress {
+                background: white;
+                border-radius: 16px;
+                padding: 30px;
+                margin-bottom: 30px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+            }
+
             .progress-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 margin-bottom: 20px;
             }
-            
-            .progress-title {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                font-size: 16px;
-                font-weight: 600;
-                color: #1f2937;
+
+            .progress-header h3 {
+                font-size: 20px;
+                font-weight: 700;
+                color: #1e293b;
+                margin: 0;
             }
-            
-            .progress-title i {
-                color: #6366f1;
-            }
-            
-            .btn-cancel-scan {
+
+            .btn-cancel {
                 padding: 8px 16px;
-                background: #fef2f2;
+                background: #fee2e2;
                 color: #dc2626;
                 border: 1px solid #fecaca;
-                border-radius: 6px;
-                font-size: 13px;
-                font-weight: 500;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                gap: 6px;
             }
-            
-            .btn-cancel-scan:hover {
-                background: #fee2e2;
+
+            .btn-cancel:hover {
+                background: #fecaca;
             }
-            
-            .progress-bar-container {
-                height: 8px;
-                background: #f3f4f6;
-                border-radius: 4px;
+
+            .progress-bar {
+                height: 10px;
+                background: #e2e8f0;
+                border-radius: 5px;
                 overflow: hidden;
-                margin-bottom: 16px;
+                margin-bottom: 15px;
             }
-            
-            .progress-bar-fill {
+
+            .progress-fill {
                 height: 100%;
                 background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
-                border-radius: 4px;
+                border-radius: 5px;
                 transition: width 0.3s ease;
-                position: relative;
-                overflow: hidden;
             }
-            
-            .progress-bar-fill::after {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: linear-gradient(
-                    90deg,
-                    transparent 0%,
-                    rgba(255, 255, 255, 0.3) 50%,
-                    transparent 100%
-                );
-                animation: shimmer 1.5s infinite;
-            }
-            
-            @keyframes shimmer {
-                0% { transform: translateX(-100%); }
-                100% { transform: translateX(100%); }
-            }
-            
-            .progress-details {
+
+            .progress-info {
                 display: flex;
                 justify-content: space-between;
-                align-items: center;
                 font-size: 14px;
+                color: #64748b;
             }
-            
-            #progressMessage {
-                color: #6b7280;
-            }
-            
-            .progress-stats {
-                font-weight: 600;
-                color: #374151;
-            }
-            
+
             /* Results */
-            .scan-results-wrapper {
-                max-width: 800px;
-                margin: 40px auto;
-            }
-            
-            .scan-results-container {
+            .scan-results {
                 background: white;
-                border-radius: 12px;
-                padding: 32px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                border-radius: 16px;
+                padding: 30px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
             }
-            
+
+            .results-container {
+                max-width: 100%;
+            }
+
             .results-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 32px;
+                margin-bottom: 30px;
                 flex-wrap: wrap;
                 gap: 20px;
             }
-            
-            .results-success {
+
+            .results-header h3 {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1e293b;
+                margin: 0;
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 10px;
             }
-            
-            .results-success i {
-                font-size: 28px;
+
+            .results-header h3 i {
                 color: #10b981;
             }
-            
-            .results-success h3 {
-                font-size: 24px;
-                font-weight: 600;
-                color: #1f2937;
-                margin: 0;
-            }
-            
+
             .results-actions {
                 display: flex;
-                gap: 12px;
+                gap: 10px;
             }
-            
-            .results-stats-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-                gap: 16px;
-                margin-bottom: 32px;
-            }
-            
-            .stat-card {
-                background: #f9fafb;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 20px;
-                display: flex;
+
+            .btn-primary, .btn-secondary {
+                display: inline-flex;
                 align-items: center;
-                gap: 16px;
-            }
-            
-            .stat-icon {
-                width: 48px;
-                height: 48px;
+                gap: 8px;
+                padding: 10px 20px;
                 border-radius: 10px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .btn-primary {
+                background: #6366f1;
+                color: white;
+                border: none;
+            }
+
+            .btn-primary:hover {
+                background: #4f46e5;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            }
+
+            .btn-secondary {
+                background: #f1f5f9;
+                color: #475569;
+                border: 2px solid #e2e8f0;
+            }
+
+            .btn-secondary:hover {
+                background: #e2e8f0;
+            }
+
+            /* Results Stats */
+            .results-stats {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 20px;
+                margin-bottom: 30px;
+            }
+
+            .stat-box {
+                background: #f8fafc;
+                border: 2px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 20px;
+                text-align: center;
+            }
+
+            .stat-value {
+                font-size: 36px;
+                font-weight: 700;
+                color: #1e293b;
+                line-height: 1;
+                margin-bottom: 8px;
+            }
+
+            .stat-label {
+                font-size: 14px;
+                color: #64748b;
+                font-weight: 500;
+            }
+
+            /* Categories */
+            .results-categories {
+                margin-bottom: 30px;
+            }
+
+            .results-categories h4 {
+                font-size: 18px;
+                font-weight: 700;
+                color: #1e293b;
+                margin-bottom: 15px;
+            }
+
+            .category-list {
+                display: grid;
+                gap: 10px;
+            }
+
+            .category-item {
                 display: flex;
                 align-items: center;
-                justify-content: center;
+                gap: 15px;
+                padding: 12px 16px;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+            }
+
+            .category-icon {
                 font-size: 20px;
                 flex-shrink: 0;
             }
-            
-            .stat-content {
+
+            .category-name {
                 flex: 1;
-            }
-            
-            .stat-value {
-                font-size: 24px;
-                font-weight: 700;
-                color: #1f2937;
-                line-height: 1;
-                margin-bottom: 4px;
-            }
-            
-            .stat-label {
-                font-size: 13px;
-                color: #6b7280;
-            }
-            
-            .category-breakdown-section {
-                margin-bottom: 32px;
-            }
-            
-            .category-breakdown-section h4 {
-                font-size: 16px;
                 font-weight: 600;
-                color: #1f2937;
-                margin-bottom: 16px;
+                color: #475569;
             }
-            
-            .category-list {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
+
+            .category-count {
+                font-weight: 700;
+                color: #1e293b;
             }
-            
-            .category-row {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 16px;
-            }
-            
-            .category-info {
-                display: flex;
+
+            /* New Scan Button */
+            .btn-new-scan {
+                display: inline-flex;
                 align-items: center;
                 gap: 8px;
-                min-width: 150px;
-            }
-            
-            .category-icon {
-                font-size: 18px;
-            }
-            
-            .category-name {
-                font-size: 14px;
-                font-weight: 500;
-                color: #374151;
-            }
-            
-            .category-progress {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                flex: 1;
-            }
-            
-            .category-count {
-                font-size: 14px;
+                padding: 12px 24px;
+                background: #f1f5f9;
+                color: #475569;
+                border: 2px solid #e2e8f0;
+                border-radius: 10px;
+                font-size: 15px;
                 font-weight: 600;
-                color: #1f2937;
-                min-width: 40px;
-                text-align: right;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                margin-top: 20px;
             }
-            
-            .category-bar {
-                flex: 1;
-                height: 8px;
-                background: #f3f4f6;
-                border-radius: 4px;
-                overflow: hidden;
+
+            .btn-new-scan:hover {
+                background: #e2e8f0;
             }
-            
-            .category-fill {
-                height: 100%;
-                border-radius: 4px;
-                transition: width 0.3s ease;
-            }
-            
-            .category-percent {
-                font-size: 13px;
-                color: #6b7280;
-                min-width: 40px;
-            }
-            
-            .empty-message {
-                text-align: center;
-                color: #9ca3af;
-                font-style: italic;
-                padding: 20px;
-            }
-            
-            .results-footer {
-                text-align: center;
-                padding-top: 24px;
-                border-top: 1px solid #e5e7eb;
-            }
-            
+
             /* Loader */
-            .unified-loader {
+            .loader-overlay {
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
+                background: rgba(15, 23, 42, 0.8);
+                backdrop-filter: blur(8px);
                 z-index: 99999;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                backdrop-filter: blur(4px);
             }
-            
+
             .loader-content {
                 background: white;
-                border-radius: 12px;
-                padding: 32px;
+                border-radius: 16px;
+                padding: 40px;
                 text-align: center;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             }
-            
+
             .loader-content i {
                 font-size: 48px;
                 color: #6366f1;
-                margin-bottom: 16px;
+                margin-bottom: 20px;
+                animation: spin 1s linear infinite;
             }
-            
+
             .loader-content p {
-                color: #374151;
                 font-size: 16px;
+                color: #475569;
                 font-weight: 500;
                 margin: 0;
             }
-            
+
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+
             /* Toast */
-            .unified-toast {
+            .toast {
                 position: fixed;
-                bottom: 20px;
-                right: 20px;
+                bottom: 30px;
+                right: 30px;
                 background: white;
-                border-radius: 8px;
-                padding: 16px 20px;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                border-radius: 12px;
+                padding: 16px 24px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                min-width: 250px;
-                max-width: 400px;
+                min-width: 300px;
                 opacity: 0;
                 transform: translateY(20px);
                 transition: all 0.3s ease;
                 z-index: 100000;
             }
-            
-            .unified-toast.show {
+
+            .toast.show {
                 opacity: 1;
                 transform: translateY(0);
             }
-            
-            .unified-toast i {
+
+            .toast i {
                 font-size: 20px;
             }
-            
+
             .toast-success {
                 border-left: 4px solid #10b981;
             }
-            
+
             .toast-success i {
                 color: #10b981;
             }
-            
+
             .toast-error {
                 border-left: 4px solid #ef4444;
             }
-            
+
             .toast-error i {
                 color: #ef4444;
             }
-            
+
             .toast-warning {
                 border-left: 4px solid #f59e0b;
             }
-            
+
             .toast-warning i {
                 color: #f59e0b;
             }
-            
+
             .toast-info {
                 border-left: 4px solid #3b82f6;
             }
-            
+
             .toast-info i {
                 color: #3b82f6;
             }
-            
+
             /* Responsive */
             @media (max-width: 768px) {
-                .start-scan-modern {
-                    padding: 12px;
+                .start-scan-page {
+                    padding: 20px 15px;
                 }
-                
-                .scan-title {
-                    font-size: 24px;
-                }
-                
-                .scan-subtitle {
-                    font-size: 14px;
-                }
-                
-                .provider-grid {
+
+                .provider-cards {
                     grid-template-columns: 1fr;
                 }
-                
-                .connected-account {
-                    flex-direction: column;
-                    text-align: center;
-                }
-                
-                .btn-disconnect {
-                    width: 100%;
-                    justify-content: center;
-                }
-                
-                .scan-options-grid {
+
+                .option-row {
                     grid-template-columns: 1fr;
                 }
-                
+
                 .scan-toggles {
                     flex-direction: column;
                 }
-                
+
+                .scan-actions {
+                    flex-direction: column;
+                    width: 100%;
+                }
+
+                .scan-actions button {
+                    width: 100%;
+                    justify-content: center;
+                }
+
                 .results-header {
                     flex-direction: column;
                     align-items: flex-start;
                 }
-                
+
                 .results-actions {
                     width: 100%;
                 }
-                
-                .results-actions .btn {
+
+                .results-actions button {
                     flex: 1;
                     justify-content: center;
                 }
-                
-                .results-stats-grid {
+
+                .results-stats {
                     grid-template-columns: repeat(2, 1fr);
                 }
-                
-                .category-row {
-                    flex-wrap: wrap;
-                }
-                
-                .category-progress {
-                    width: 100%;
-                }
             }
-            
+
             @media (max-width: 480px) {
-                .scan-icon-wrapper {
-                    width: 60px;
-                    height: 60px;
-                }
-                
-                .scan-icon-wrapper i {
-                    font-size: 28px;
-                }
-                
-                .results-stats-grid {
+                .results-stats {
                     grid-template-columns: 1fr;
                 }
-                
-                .stat-card {
-                    padding: 16px;
-                }
-                
-                .scan-results-container {
-                    padding: 20px;
+
+                .stat-value {
+                    font-size: 28px;
                 }
             }
         `;
@@ -1825,8 +1592,14 @@ window.testUnifiedScan = function() {
     
     // Test de redirection
     console.log('\n📧 Test redirections:');
-    console.log('Gmail -> pageManagerGmail:', !!window.pageManagerGmail);
-    console.log('Outlook -> pageManager:', !!window.pageManager);
+    console.log('Gmail pageManagerGmail exists?', !!window.pageManagerGmail);
+    console.log('Outlook pageManager exists?', !!window.pageManager);
+    
+    // Test direct de la méthode viewEmails
+    console.log('\n🔍 Test viewEmails method:');
+    window.unifiedScanModule.currentProvider = 'gmail';
+    console.log('Testing Gmail redirection...');
+    // window.unifiedScanModule.viewEmails(); // Décommenter pour tester
     
     console.groupEnd();
     return { success: true };
