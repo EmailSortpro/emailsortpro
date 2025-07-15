@@ -1,7 +1,7 @@
-// MailService.js - Version 12.0 - Service Email Unifié Multi-Provider
-// Support complet Gmail/Outlook avec gestion d'erreurs robuste
+// MailService.js - Version 13.0 - Service Email Unifié avec extraction complète
+// Support Gmail/Outlook avec normalisation complète du contenu
 
-console.log('[MailService] 🚀 Loading MailService.js v12.0 - Unified Email Service...');
+console.log('[MailService] 🚀 Loading MailService.js v13.0 - Service unifié avec extraction complète...');
 
 class MailService {
     constructor() {
@@ -34,7 +34,7 @@ class MailService {
             },
             outlook: {
                 name: 'Outlook',
-                icon: 'fab fa-microsoft',
+                icon: 'fab fa-microsoft', 
                 color: '#0078d4',
                 apiBase: 'https://graph.microsoft.com/v1.0',
                 scopes: ['Mail.Read', 'Mail.ReadWrite']
@@ -48,7 +48,7 @@ class MailService {
             rateLimitDelay: 100
         };
         
-        console.log('[MailService] ✅ Service v12.0 initialized');
+        console.log('[MailService] ✅ Service v13.0 initialisé');
     }
 
     // ================================================
@@ -56,25 +56,27 @@ class MailService {
     // ================================================
     async initialize() {
         if (this.initialized) {
-            console.log('[MailService] ⚠️ Already initialized');
+            console.log('[MailService] ⚠️ Déjà initialisé');
             return true;
         }
 
-        console.log('[MailService] 🔧 Initializing...');
+        console.log('[MailService] 🔧 Initialisation...');
         
         try {
             // 1. Détecter le provider actuel
             await this.detectCurrentProvider();
             
             if (!this.currentProvider) {
-                throw new Error('No email provider detected');
+                console.log('[MailService] ⚠️ Aucun provider détecté');
+                return false;
             }
             
             // 2. Obtenir le token d'accès
             await this.refreshAccessToken();
             
             if (!this.accessToken) {
-                throw new Error('Failed to obtain access token');
+                console.log('[MailService] ⚠️ Pas de token d\'accès');
+                return false;
             }
             
             // 3. Obtenir les informations utilisateur
@@ -84,7 +86,7 @@ class MailService {
             await this.loadFolders();
             
             this.initialized = true;
-            console.log('[MailService] ✅ Initialization complete');
+            console.log('[MailService] ✅ Initialisation complète');
             console.log('[MailService] 📧 Provider:', this.currentProvider);
             console.log('[MailService] 👤 User:', this.userEmail);
             
@@ -97,14 +99,14 @@ class MailService {
             return true;
             
         } catch (error) {
-            console.error('[MailService] ❌ Initialization error:', error);
+            console.error('[MailService] ❌ Erreur initialisation:', error);
             this.initialized = false;
-            throw error;
+            return false;
         }
     }
 
     async detectCurrentProvider() {
-        console.log('[MailService] 🔍 Detecting current provider...');
+        console.log('[MailService] 🔍 Détection du provider actuel...');
         
         // Réinitialiser
         this.currentProvider = null;
@@ -112,21 +114,21 @@ class MailService {
         // 1. Vérifier Gmail
         if (await this.checkGmailAuth()) {
             this.currentProvider = 'gmail';
-            console.log('[MailService] ✅ Gmail detected');
+            console.log('[MailService] ✅ Gmail détecté');
             return;
         }
         
         // 2. Vérifier Outlook
         if (await this.checkOutlookAuth()) {
             this.currentProvider = 'outlook';
-            console.log('[MailService] ✅ Outlook detected');
+            console.log('[MailService] ✅ Outlook détecté');
             return;
         }
         
-        // 3. Vérifier sessionStorage
+        // 3. Vérifier sessionStorage pour le dernier provider
         const lastProvider = sessionStorage.getItem('lastEmailProvider');
         if (lastProvider === 'gmail' || lastProvider === 'outlook') {
-            console.log('[MailService] 📦 Using last provider:', lastProvider);
+            console.log('[MailService] 📦 Utilisation du dernier provider:', lastProvider);
             this.currentProvider = lastProvider;
             
             // Vérifier si toujours authentifié
@@ -140,17 +142,19 @@ class MailService {
             }
         }
         
-        console.log('[MailService] 📧 Current provider:', this.currentProvider || 'None');
+        console.log('[MailService] 📧 Provider actuel:', this.currentProvider || 'Aucun');
     }
 
     async checkGmailAuth() {
         try {
             // GoogleAuthService
             if (window.googleAuthService?.isAuthenticated) {
-                return await window.googleAuthService.isAuthenticated();
+                const isAuth = window.googleAuthService.isAuthenticated();
+                console.log('[MailService] GoogleAuthService auth:', isAuth);
+                return isAuth;
             }
             
-            // GAPI
+            // GAPI (fallback)
             if (window.gapi?.auth2) {
                 const authInstance = window.gapi.auth2.getAuthInstance();
                 return authInstance && authInstance.isSignedIn.get();
@@ -158,7 +162,7 @@ class MailService {
             
             return false;
         } catch (error) {
-            console.warn('[MailService] Gmail auth check error:', error);
+            console.warn('[MailService] Erreur vérification Gmail:', error);
             return false;
         }
     }
@@ -167,10 +171,10 @@ class MailService {
         try {
             // AuthService
             if (window.authService?.isAuthenticated) {
-                return await window.authService.isAuthenticated();
+                return window.authService.isAuthenticated();
             }
             
-            // MSAL
+            // MSAL (fallback)
             if (window.msalInstance) {
                 const accounts = window.msalInstance.getAllAccounts();
                 return accounts && accounts.length > 0;
@@ -178,13 +182,13 @@ class MailService {
             
             return false;
         } catch (error) {
-            console.warn('[MailService] Outlook auth check error:', error);
+            console.warn('[MailService] Erreur vérification Outlook:', error);
             return false;
         }
     }
 
     async refreshAccessToken() {
-        console.log('[MailService] 🔑 Refreshing access token...');
+        console.log('[MailService] 🔑 Rafraîchissement du token...');
         
         const now = Date.now();
         
@@ -192,7 +196,7 @@ class MailService {
         if (this.tokenCache[this.currentProvider]) {
             const cached = this.tokenCache[this.currentProvider];
             if (cached.token && cached.expires > now) {
-                console.log('[MailService] ✅ Using cached token');
+                console.log('[MailService] ✅ Utilisation du token en cache');
                 this.accessToken = cached.token;
                 return;
             }
@@ -217,25 +221,29 @@ class MailService {
                     expires: now + (expiresIn * 1000)
                 };
                 
-                console.log('[MailService] ✅ Token refreshed');
+                console.log('[MailService] ✅ Token rafraîchi');
             } else {
-                throw new Error('Failed to obtain token');
+                throw new Error('Impossible d\'obtenir un token');
             }
             
         } catch (error) {
-            console.error('[MailService] ❌ Token refresh error:', error);
+            console.error('[MailService] ❌ Erreur rafraîchissement token:', error);
             this.accessToken = null;
             throw error;
         }
     }
 
     async getGmailToken() {
-        // 1. GoogleAuthService
+        // 1. GoogleAuthService (priorité)
         if (window.googleAuthService?.getAccessToken) {
-            return await window.googleAuthService.getAccessToken();
+            const token = await window.googleAuthService.getAccessToken();
+            if (token) {
+                console.log('[MailService] Token obtenu via GoogleAuthService');
+                return token;
+            }
         }
         
-        // 2. GAPI
+        // 2. GAPI (fallback)
         if (window.gapi?.auth2) {
             const authInstance = window.gapi.auth2.getAuthInstance();
             if (authInstance && authInstance.isSignedIn.get()) {
@@ -254,7 +262,7 @@ class MailService {
             return await window.authService.getAccessToken();
         }
         
-        // 2. MSAL
+        // 2. MSAL (fallback)
         if (window.msalInstance) {
             const accounts = window.msalInstance.getAllAccounts();
             if (accounts.length > 0) {
@@ -277,7 +285,7 @@ class MailService {
     }
 
     async loadUserInfo() {
-        console.log('[MailService] 👤 Loading user info...');
+        console.log('[MailService] 👤 Chargement des informations utilisateur...');
         
         try {
             if (this.currentProvider === 'gmail') {
@@ -286,10 +294,10 @@ class MailService {
                 await this.loadOutlookUserInfo();
             }
             
-            console.log('[MailService] ✅ User info loaded:', this.userEmail);
+            console.log('[MailService] ✅ Infos utilisateur chargées:', this.userEmail);
             
         } catch (error) {
-            console.error('[MailService] ❌ User info error:', error);
+            console.error('[MailService] ❌ Erreur infos utilisateur:', error);
             this.userEmail = 'me'; // Fallback
         }
     }
@@ -305,16 +313,18 @@ class MailService {
         }
         
         // 2. API Gmail
-        const response = await fetch(`${this.providers.gmail.apiBase}/users/me/profile`, {
-            headers: {
-                'Authorization': `Bearer ${this.accessToken}`,
-                'Accept': 'application/json'
+        if (this.accessToken) {
+            const response = await fetch(`${this.providers.gmail.apiBase}/users/me/profile`, {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const profile = await response.json();
+                this.userEmail = profile.emailAddress;
             }
-        });
-        
-        if (response.ok) {
-            const profile = await response.json();
-            this.userEmail = profile.emailAddress;
         }
     }
 
@@ -329,21 +339,23 @@ class MailService {
         }
         
         // 2. API Graph
-        const response = await fetch(`${this.providers.outlook.apiBase}/me`, {
-            headers: {
-                'Authorization': `Bearer ${this.accessToken}`,
-                'Accept': 'application/json'
+        if (this.accessToken) {
+            const response = await fetch(`${this.providers.outlook.apiBase}/me`, {
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`,
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const profile = await response.json();
+                this.userEmail = profile.mail || profile.userPrincipalName;
             }
-        });
-        
-        if (response.ok) {
-            const profile = await response.json();
-            this.userEmail = profile.mail || profile.userPrincipalName;
         }
     }
 
     async loadFolders() {
-        console.log('[MailService] 📁 Loading folders...');
+        console.log('[MailService] 📁 Chargement des dossiers...');
         
         try {
             if (this.currentProvider === 'gmail') {
@@ -352,10 +364,10 @@ class MailService {
                 await this.loadOutlookFolders();
             }
             
-            console.log(`[MailService] ✅ ${this.folders.length} folders loaded`);
+            console.log(`[MailService] ✅ ${this.folders.length} dossiers chargés`);
             
         } catch (error) {
-            console.error('[MailService] ❌ Folders load error:', error);
+            console.error('[MailService] ❌ Erreur chargement dossiers:', error);
             this.setDefaultFolders();
         }
     }
@@ -411,7 +423,7 @@ class MailService {
     }
 
     setDefaultFolders() {
-        console.log('[MailService] 📁 Using default folders');
+        console.log('[MailService] 📁 Utilisation des dossiers par défaut');
         
         if (this.currentProvider === 'gmail') {
             this.folders = [
@@ -433,13 +445,15 @@ class MailService {
     }
 
     // ================================================
-    // RÉCUPÉRATION DES MESSAGES
+    // RÉCUPÉRATION DES MESSAGES - MÉTHODE PRINCIPALE
     // ================================================
     async getMessages(folderId = 'inbox', options = {}) {
-        console.log(`[MailService] 📬 Getting messages from ${folderId}...`);
+        console.log(`[MailService] 📬 === RÉCUPÉRATION DES MESSAGES ===`);
+        console.log('[MailService] Dossier:', folderId);
         console.log('[MailService] Options:', options);
         
         if (!this.initialized) {
+            console.log('[MailService] ⚠️ Service non initialisé, initialisation...');
             await this.initialize();
         }
         
@@ -447,7 +461,7 @@ class MailService {
         const cacheKey = this.getCacheKey(folderId, options);
         const cached = this.getCachedData(cacheKey);
         if (cached && !options.forceRefresh) {
-            console.log('[MailService] 📦 Returning cached data');
+            console.log('[MailService] 📦 Retour depuis le cache');
             return cached;
         }
         
@@ -458,7 +472,14 @@ class MailService {
             let messages = [];
             
             if (this.currentProvider === 'gmail') {
-                messages = await this.getGmailMessages(folderId, options);
+                // Utiliser GoogleAuthService si disponible
+                if (window.googleAuthService?.fetchEmails) {
+                    console.log('[MailService] Utilisation de GoogleAuthService pour Gmail');
+                    messages = await this.getGmailMessagesViaAuthService(folderId, options);
+                } else {
+                    console.log('[MailService] Utilisation de l\'API Gmail directe');
+                    messages = await this.getGmailMessages(folderId, options);
+                }
             } else if (this.currentProvider === 'outlook') {
                 messages = await this.getOutlookMessages(folderId, options);
             }
@@ -466,15 +487,15 @@ class MailService {
             // Mettre en cache
             this.setCachedData(cacheKey, messages);
             
-            console.log(`[MailService] ✅ ${messages.length} messages retrieved`);
+            console.log(`[MailService] ✅ ${messages.length} messages récupérés`);
             return messages;
             
         } catch (error) {
-            console.error('[MailService] ❌ Get messages error:', error);
+            console.error('[MailService] ❌ Erreur récupération messages:', error);
             
-            // Si erreur 401, réinitialiser et réessayer
+            // Si erreur 401, réinitialiser et réessayer une fois
             if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-                console.log('[MailService] 🔄 Retrying after reauth...');
+                console.log('[MailService] 🔄 Tentative après réauth...');
                 await this.reset();
                 await this.initialize();
                 
@@ -490,8 +511,39 @@ class MailService {
         }
     }
 
+    // ================================================
+    // RÉCUPÉRATION GMAIL VIA GOOGLEAUTHSERVICE
+    // ================================================
+    async getGmailMessagesViaAuthService(labelId = 'INBOX', options = {}) {
+        console.log('[MailService] 📧 Récupération Gmail via GoogleAuthService...');
+        
+        // Préparer les options pour GoogleAuthService
+        const fetchOptions = {
+            maxResults: options.maxResults || 500,
+            days: options.days,
+            folder: labelId,
+            includeSpam: options.includeSpam !== false,
+            onProgress: options.onProgress
+        };
+        
+        // Récupérer les emails via GoogleAuthService
+        const emails = await window.googleAuthService.fetchEmails(fetchOptions);
+        
+        // Les emails sont déjà au bon format grâce à GoogleAuthService v8.0
+        // On s'assure juste qu'ils ont tous les champs nécessaires
+        return emails.map(email => ({
+            ...email,
+            provider: 'gmail',
+            providerType: 'gmail',
+            source: 'gmail'
+        }));
+    }
+
+    // ================================================
+    // RÉCUPÉRATION GMAIL DIRECTE (FALLBACK)
+    // ================================================
     async getGmailMessages(labelId = 'INBOX', options = {}) {
-        console.log(`[MailService] 📧 Getting Gmail messages...`);
+        console.log(`[MailService] 📧 Récupération Gmail directe...`);
         
         const messages = [];
         let pageToken = null;
@@ -500,7 +552,7 @@ class MailService {
         
         // Construire la query
         let query = this.buildGmailQuery(labelId, options);
-        console.log('[MailService] Gmail query:', query);
+        console.log('[MailService] Query Gmail:', query);
         
         do {
             const params = new URLSearchParams({
@@ -599,7 +651,7 @@ class MailService {
             
             const promises = batch.map(msg => 
                 this.getGmailSingleMessage(msg.id).catch(error => {
-                    console.error(`[MailService] Error getting message ${msg.id}:`, error);
+                    console.error(`[MailService] Erreur message ${msg.id}:`, error);
                     return null;
                 })
             );
@@ -640,31 +692,79 @@ class MailService {
         return this.normalizeGmailMessage(message);
     }
 
+    // ================================================
+    // NORMALISATION DES MESSAGES GMAIL
+    // ================================================
     normalizeGmailMessage(message) {
         const headers = this.extractGmailHeaders(message.payload?.headers || []);
         const content = this.extractGmailContent(message.payload);
         
+        // Créer le contenu textuel complet pour l'analyse
+        let fullTextContent = '';
+        
+        // 1. Ajouter le sujet (très important)
+        if (headers.subject) {
+            fullTextContent += headers.subject + '\n\n';
+        }
+        
+        // 2. Ajouter l'expéditeur
+        if (headers.from) {
+            fullTextContent += 'From: ' + headers.from + '\n';
+        }
+        
+        // 3. Ajouter le corps complet
+        if (content.text) {
+            fullTextContent += content.text + '\n';
+        } else if (content.html) {
+            fullTextContent += this.htmlToText(content.html) + '\n';
+        }
+        
+        // 4. Ajouter le snippet si différent
+        if (message.snippet && !fullTextContent.includes(message.snippet)) {
+            fullTextContent += '\n' + message.snippet;
+        }
+        
         return {
+            // Identifiants
             id: message.id,
             threadId: message.threadId,
             provider: 'gmail',
             providerType: 'gmail',
             source: 'gmail',
+            
+            // Métadonnées principales
             receivedDateTime: new Date(parseInt(message.internalDate)).toISOString(),
             subject: headers.subject || '(No subject)',
+            
+            // Expéditeur et destinataires
             from: this.parseEmailAddress(headers.from),
             toRecipients: this.parseRecipients(headers.to),
             ccRecipients: this.parseRecipients(headers.cc),
+            
+            // Corps du message
             bodyPreview: message.snippet || '',
             body: {
                 content: content.html || content.text || '',
                 contentType: content.html ? 'html' : 'text'
             },
+            
+            // IMPORTANT: Contenu complet pour CategoryManager
+            fullTextContent: fullTextContent.trim(),
+            
+            // Métadonnées supplémentaires
             hasAttachments: content.hasAttachments,
             labels: message.labelIds || [],
             isRead: !message.labelIds?.includes('UNREAD'),
             importance: message.labelIds?.includes('IMPORTANT') ? 'high' : 'normal',
-            headers: headers
+            headers: headers,
+            
+            // Métadonnées Gmail
+            gmailMetadata: {
+                historyId: message.historyId,
+                snippet: message.snippet,
+                sizeEstimate: message.sizeEstimate,
+                labels: message.labelIds || []
+            }
         };
     }
 
@@ -691,9 +791,9 @@ class MailService {
             if (part.body?.data) {
                 const decoded = this.base64Decode(part.body.data);
                 if (part.mimeType === 'text/plain') {
-                    text = decoded;
+                    text += decoded + '\n';
                 } else if (part.mimeType === 'text/html') {
-                    html = decoded;
+                    html += decoded;
                 }
             }
             
@@ -704,11 +804,18 @@ class MailService {
         
         if (payload) extractFromPart(payload);
         
-        return { text, html, hasAttachments };
+        return { 
+            text: text.trim(), 
+            html: html.trim(), 
+            hasAttachments 
+        };
     }
 
+    // ================================================
+    // RÉCUPÉRATION DES MESSAGES OUTLOOK
+    // ================================================
     async getOutlookMessages(folderId = 'inbox', options = {}) {
-        console.log(`[MailService] 📂 Getting Outlook messages...`);
+        console.log(`[MailService] 📂 Récupération Outlook...`);
         
         const messages = [];
         let nextLink = null;
@@ -716,7 +823,7 @@ class MailService {
         
         // Construire le filtre
         let filter = this.buildOutlookFilter(options);
-        console.log('[MailService] Outlook filter:', filter);
+        console.log('[MailService] Filtre Outlook:', filter);
         
         do {
             let url;
@@ -793,25 +900,74 @@ class MailService {
         return filters.join(' and ');
     }
 
+    // ================================================
+    // NORMALISATION DES MESSAGES OUTLOOK
+    // ================================================
     normalizeOutlookMessage(message) {
+        // Créer le contenu textuel complet pour l'analyse
+        let fullTextContent = '';
+        
+        // 1. Ajouter le sujet
+        if (message.subject) {
+            fullTextContent += message.subject + '\n\n';
+        }
+        
+        // 2. Ajouter l'expéditeur
+        if (message.from?.emailAddress?.address) {
+            fullTextContent += 'From: ' + message.from.emailAddress.name + ' <' + message.from.emailAddress.address + '>\n';
+        }
+        
+        // 3. Ajouter le corps
+        let bodyText = '';
+        if (message.body?.contentType === 'html') {
+            bodyText = this.htmlToText(message.body.content);
+        } else {
+            bodyText = message.body?.content || '';
+        }
+        fullTextContent += bodyText;
+        
+        // 4. Ajouter le bodyPreview si différent
+        if (message.bodyPreview && !fullTextContent.includes(message.bodyPreview)) {
+            fullTextContent += '\n' + message.bodyPreview;
+        }
+        
         return {
+            // Identifiants
             id: message.id,
             conversationId: message.conversationId,
             provider: 'outlook',
             providerType: 'outlook',
             source: 'outlook',
+            
+            // Métadonnées principales
             receivedDateTime: message.receivedDateTime,
             subject: message.subject || '(No subject)',
+            
+            // Expéditeur et destinataires
             from: message.from,
             toRecipients: message.toRecipients || [],
             ccRecipients: message.ccRecipients || [],
+            
+            // Corps du message
             bodyPreview: message.bodyPreview || '',
             body: message.body || { content: '', contentType: 'text' },
+            
+            // IMPORTANT: Contenu complet pour CategoryManager
+            fullTextContent: fullTextContent.trim(),
+            
+            // Métadonnées supplémentaires
             hasAttachments: message.hasAttachments || false,
             importance: message.importance,
             isRead: message.isRead,
             categories: message.categories || [],
-            flag: message.flag
+            flag: message.flag,
+            
+            // Headers (Outlook n'expose pas directement les headers)
+            headers: {
+                subject: message.subject,
+                from: message.from?.emailAddress?.address,
+                to: message.toRecipients?.map(r => r.emailAddress?.address).join(', ')
+            }
         };
     }
 
@@ -827,9 +983,47 @@ class MailService {
             // Décoder
             return decodeURIComponent(escape(atob(padded)));
         } catch (error) {
-            console.error('[MailService] Base64 decode error:', error);
+            console.error('[MailService] Erreur décodage base64:', error);
             return '';
         }
+    }
+
+    htmlToText(html) {
+        if (!html) return '';
+        
+        // Créer un élément temporaire
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        
+        // Supprimer les scripts et styles
+        const scripts = temp.querySelectorAll('script, style, noscript');
+        scripts.forEach(el => el.remove());
+        
+        // Préserver les sauts de ligne
+        temp.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+        temp.querySelectorAll('p, div').forEach(el => {
+            if (el.textContent.trim()) {
+                el.innerHTML = '\n' + el.innerHTML + '\n';
+            }
+        });
+        temp.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
+            el.innerHTML = '\n\n' + el.innerHTML + '\n\n';
+        });
+        
+        // Extraire le texte
+        let text = temp.textContent || temp.innerText || '';
+        
+        // Nettoyer
+        text = text
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .replace(/[ \t]+/g, ' ')
+            .replace(/\n[ \t]+/g, '\n')
+            .replace(/[ \t]+\n/g, '\n')
+            .trim();
+        
+        return text;
     }
 
     parseEmailAddress(emailString) {
@@ -871,7 +1065,7 @@ class MailService {
     }
 
     // ================================================
-    // CACHE
+    // GESTION DU CACHE
     // ================================================
     getCacheKey(folderId, options) {
         return `${this.currentProvider}_${folderId}_${JSON.stringify(options)}`;
@@ -899,7 +1093,7 @@ class MailService {
     }
 
     clearCache() {
-        console.log('[MailService] 🧹 Clearing cache...');
+        console.log('[MailService] 🧹 Vidage du cache...');
         this.emailCache.clear();
     }
 
@@ -924,10 +1118,10 @@ class MailService {
 
     async setProvider(provider) {
         if (provider !== 'gmail' && provider !== 'outlook') {
-            throw new Error(`Invalid provider: ${provider}`);
+            throw new Error(`Provider invalide: ${provider}`);
         }
         
-        console.log(`[MailService] Switching provider: ${this.currentProvider} -> ${provider}`);
+        console.log(`[MailService] Changement de provider: ${this.currentProvider} -> ${provider}`);
         
         await this.reset();
         this.currentProvider = provider;
@@ -937,34 +1131,34 @@ class MailService {
     }
 
     async authenticate(provider) {
-        console.log(`[MailService] 🔐 Authenticating ${provider}...`);
+        console.log(`[MailService] 🔐 Authentification ${provider}...`);
         
-        if (provider === 'gmail') {
+        if (provider === 'gmail' || provider === 'google') {
             if (window.googleAuthService?.login) {
                 await window.googleAuthService.login();
             } else if (window.gapi?.auth2) {
                 const authInstance = window.gapi.auth2.getAuthInstance();
                 await authInstance.signIn();
             } else {
-                throw new Error('No Gmail authentication service available');
+                throw new Error('Service d\'authentification Gmail non disponible');
             }
-        } else if (provider === 'outlook') {
+        } else if (provider === 'outlook' || provider === 'microsoft') {
             if (window.authService?.login) {
                 await window.authService.login();
             } else if (window.msalInstance) {
                 await window.msalInstance.loginPopup();
             } else {
-                throw new Error('No Outlook authentication service available');
+                throw new Error('Service d\'authentification Outlook non disponible');
             }
         }
         
-        // Réinitialiser après auth
+        // Réinitialiser après authentification
         await this.reset();
         await this.initialize();
     }
 
     async reset() {
-        console.log('[MailService] 🔄 Resetting...');
+        console.log('[MailService] 🔄 Réinitialisation...');
         this.initialized = false;
         this.currentProvider = null;
         this.accessToken = null;
@@ -1002,7 +1196,7 @@ class MailService {
     }
 
     async testConnection() {
-        console.log('[MailService] 🧪 Testing connection...');
+        console.log('[MailService] 🧪 Test de connexion...');
         
         try {
             if (!this.initialized) {
@@ -1038,11 +1232,11 @@ class MailService {
 
 // Nettoyer l'ancienne instance
 if (window.mailService) {
-    console.log('[MailService] 🔄 Cleaning up old instance...');
+    console.log('[MailService] 🔄 Nettoyage de l\'ancienne instance...');
     window.mailService.reset?.();
 }
 
 // Créer la nouvelle instance
 window.mailService = new MailService();
 
-console.log('[MailService] ✅ MailService v12.0 loaded - Complete unified service!');
+console.log('[MailService] ✅ MailService v13.0 chargé - Service unifié avec extraction complète!');
