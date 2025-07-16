@@ -1,7 +1,7 @@
-// StartScan.js - Version 11.0 - Scanner Unifié Optimisé pour Gmail
+// StartScan.js - Version 11.1 - Scanner Unifié Optimisé pour Gmail & Outlook
 // Affichage instantané des résultats, sans limite d'emails
 
-console.log('[StartScan] 🚀 Loading StartScan.js v11.0 - Scanner Unifié Optimisé...');
+console.log('[StartScan] 🚀 Loading StartScan.js v11.1 - Scanner Unifié Optimisé Gmail & Outlook...');
 
 class UnifiedScanModule {
     constructor() {
@@ -21,7 +21,7 @@ class UnifiedScanModule {
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        console.log('[UnifiedScan] Scanner v11.0 initialized - Optimisé pour Gmail');
+        console.log('[UnifiedScan] Scanner v11.1 initialized - Optimisé pour Gmail & Outlook');
         this.detectCurrentProvider();
         this.loadSettingsFromCategoryManager();
         this.addUnifiedStyles();
@@ -33,34 +33,76 @@ class UnifiedScanModule {
     detectCurrentProvider() {
         console.log('[UnifiedScan] 🔍 Détection du provider...');
         
-        // Vérifier Gmail
-        if (window.googleAuthService?.isAuthenticated) {
-            const isGmailAuth = window.googleAuthService.isAuthenticated();
-            if (isGmailAuth) {
-                this.currentProvider = 'gmail';
-                this.isAuthenticated = true;
-                console.log('[UnifiedScan] ✅ Gmail détecté et connecté');
-                return;
+        // Vérifier via MailService en priorité (unifié)
+        if (window.mailService) {
+            console.log('[UnifiedScan] MailService détecté, vérification du provider...');
+            
+            // Détecter le provider actif
+            if (window.mailService.getCurrentProvider) {
+                const provider = window.mailService.getCurrentProvider();
+                console.log('[UnifiedScan] Provider via MailService:', provider);
+                
+                if (provider === 'google' || provider === 'gmail') {
+                    this.currentProvider = 'gmail';
+                    this.isAuthenticated = window.mailService.isAuthenticated();
+                    console.log('[UnifiedScan] ✅ Gmail détecté via MailService, auth:', this.isAuthenticated);
+                    return;
+                } else if (provider === 'microsoft' || provider === 'outlook') {
+                    this.currentProvider = 'outlook';
+                    this.isAuthenticated = window.mailService.isAuthenticated();
+                    console.log('[UnifiedScan] ✅ Outlook détecté via MailService, auth:', this.isAuthenticated);
+                    return;
+                }
+            }
+            
+            // Si pas de provider actif, essayer de détecter
+            if (window.mailService.detectActiveProvider) {
+                const detectedProvider = window.mailService.detectActiveProvider();
+                console.log('[UnifiedScan] Provider détecté:', detectedProvider);
+                
+                if (detectedProvider === 'google') {
+                    this.currentProvider = 'gmail';
+                    this.isAuthenticated = true;
+                    console.log('[UnifiedScan] ✅ Gmail détecté et actif');
+                    return;
+                } else if (detectedProvider === 'microsoft') {
+                    this.currentProvider = 'outlook';
+                    this.isAuthenticated = true;
+                    console.log('[UnifiedScan] ✅ Outlook détecté et actif');
+                    return;
+                }
             }
         }
         
-        // Vérifier Outlook
-        if (window.authService?.isAuthenticated && window.authService.isAuthenticated()) {
-            this.currentProvider = 'outlook';
-            this.isAuthenticated = true;
-            console.log('[UnifiedScan] ✅ Outlook détecté et connecté');
-            return;
+        // Fallback - Vérifier Gmail directement
+        if (window.googleAuthService?.isAuthenticated) {
+            try {
+                const isGmailAuth = typeof window.googleAuthService.isAuthenticated === 'function' ? 
+                    window.googleAuthService.isAuthenticated() : window.googleAuthService.isAuthenticated;
+                if (isGmailAuth) {
+                    this.currentProvider = 'gmail';
+                    this.isAuthenticated = true;
+                    console.log('[UnifiedScan] ✅ Gmail détecté directement');
+                    return;
+                }
+            } catch (e) {
+                console.warn('[UnifiedScan] Erreur vérification Gmail:', e);
+            }
         }
         
-        // Vérifier via MailService
-        if (window.mailService?.getCurrentProvider) {
-            const provider = window.mailService.getCurrentProvider();
-            if (provider === 'google' || provider === 'gmail') {
-                this.currentProvider = 'gmail';
-                this.isAuthenticated = true;
-            } else if (provider === 'microsoft' || provider === 'outlook') {
-                this.currentProvider = 'outlook';
-                this.isAuthenticated = true;
+        // Fallback - Vérifier Outlook directement
+        if (window.authService?.isAuthenticated) {
+            try {
+                const isOutlookAuth = typeof window.authService.isAuthenticated === 'function' ? 
+                    window.authService.isAuthenticated() : window.authService.isAuthenticated;
+                if (isOutlookAuth) {
+                    this.currentProvider = 'outlook';
+                    this.isAuthenticated = true;
+                    console.log('[UnifiedScan] ✅ Outlook détecté directement');
+                    return;
+                }
+            } catch (e) {
+                console.warn('[UnifiedScan] Erreur vérification Outlook:', e);
             }
         }
         
@@ -139,7 +181,7 @@ class UnifiedScanModule {
         const styles = document.createElement('style');
         styles.id = 'unified-scan-styles';
         styles.textContent = `
-            /* Scanner Unifié v11.0 - Optimisé */
+            /* Scanner Unifié v11.1 - Optimisé */
             .unified-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -613,14 +655,14 @@ class UnifiedScanModule {
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[UnifiedScan] ✅ Styles v11.0 ajoutés');
+        console.log('[UnifiedScan] ✅ Styles v11.1 ajoutés');
     }
 
     // ================================================
     // RENDU PRINCIPAL
     // ================================================
     async render(container) {
-        console.log('[UnifiedScan] 🎯 Rendu du scanner unifié v11.0...');
+        console.log('[UnifiedScan] 🎯 Rendu du scanner unifié v11.1...');
         
         try {
             this.addUnifiedStyles();
@@ -638,7 +680,7 @@ class UnifiedScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[UnifiedScan] ✅ Scanner unifié v11.0 rendu avec succès');
+            console.log('[UnifiedScan] ✅ Scanner unifié v11.1 rendu avec succès');
             
         } catch (error) {
             console.error('[UnifiedScan] ❌ Erreur lors du rendu:', error);
@@ -854,10 +896,10 @@ class UnifiedScanModule {
     async loginGmail() {
         console.log('[UnifiedScan] 🔐 Connexion Gmail...');
         try {
-            if (window.googleAuthService?.login) {
-                await window.googleAuthService.login();
-            } else if (window.mailService?.authenticate) {
+            if (window.mailService?.authenticate) {
                 await window.mailService.authenticate('google');
+            } else if (window.googleAuthService?.login) {
+                await window.googleAuthService.login();
             } else {
                 // Simuler une connexion
                 this.currentProvider = 'gmail';
@@ -878,10 +920,10 @@ class UnifiedScanModule {
     async loginOutlook() {
         console.log('[UnifiedScan] 🔐 Connexion Outlook...');
         try {
-            if (window.authService?.login) {
-                await window.authService.login();
-            } else if (window.mailService?.authenticate) {
+            if (window.mailService?.authenticate) {
                 await window.mailService.authenticate('microsoft');
+            } else if (window.authService?.login) {
+                await window.authService.login();
             } else {
                 // Simuler une connexion
                 this.currentProvider = 'outlook';
@@ -970,10 +1012,38 @@ class UnifiedScanModule {
 
     async executeScan(scanOptions) {
         try {
-            if (window.emailScanner && typeof window.emailScanner.scan === 'function') {
-                console.log('[UnifiedScan] 🔄 Scan réel en cours...');
+            // Détecter le bon scanner selon le provider
+            let scanner = null;
+            
+            if (this.currentProvider === 'outlook') {
+                console.log('[UnifiedScan] 🔄 Recherche EmailScannerOutlook...');
                 
-                const results = await window.emailScanner.scan(scanOptions);
+                // Chercher EmailScannerOutlook
+                if (window.emailScannerOutlook && typeof window.emailScannerOutlook.scan === 'function') {
+                    scanner = window.emailScannerOutlook;
+                    console.log('[UnifiedScan] ✅ EmailScannerOutlook trouvé');
+                } else if (window.EmailScannerOutlook) {
+                    // Créer une instance si c'est une classe
+                    scanner = new window.EmailScannerOutlook();
+                    console.log('[UnifiedScan] ✅ Instance EmailScannerOutlook créée');
+                }
+            } else if (this.currentProvider === 'gmail') {
+                console.log('[UnifiedScan] 🔄 Recherche EmailScanner Gmail...');
+                
+                // Pour Gmail, utiliser l'EmailScanner standard
+                if (window.emailScanner && typeof window.emailScanner.scan === 'function') {
+                    scanner = window.emailScanner;
+                    console.log('[UnifiedScan] ✅ EmailScanner Gmail trouvé');
+                } else if (window.EmailScanner) {
+                    scanner = new window.EmailScanner();
+                    console.log('[UnifiedScan] ✅ Instance EmailScanner Gmail créée');
+                }
+            }
+            
+            if (scanner) {
+                console.log('[UnifiedScan] 🔄 Scan réel en cours avec', this.currentProvider, '...');
+                
+                const results = await scanner.scan(scanOptions);
                 this.scanResults = results;
                 
                 console.log('[UnifiedScan] ✅ Scan terminé:', results);
@@ -983,26 +1053,54 @@ class UnifiedScanModule {
                 }
                 
             } else {
-                console.log('[UnifiedScan] 🎭 Mode simulation');
+                // Si aucun scanner spécifique, utiliser MailService
+                console.log('[UnifiedScan] 🔄 Utilisation de MailService pour le scan...');
                 
-                // Simulation spécifique au provider
-                for (let i = 0; i <= 100; i += 5) {
-                    const providerName = this.currentProvider === 'gmail' ? 'Gmail' : 'Outlook';
-                    this.updateProgress(i, `Analyse ${providerName} ${i}%`, 'Récupération des emails');
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-                
-                this.scanResults = {
-                    success: true,
-                    total: this.currentProvider === 'gmail' ? 1250 : 800,
-                    categorized: this.currentProvider === 'gmail' ? 1180 : 750,
-                    provider: this.currentProvider,
-                    taskPreselectedCategories: [...this.taskPreselectedCategories],
-                    stats: { 
-                        preselectedForTasks: this.taskPreselectedCategories.length > 0 ? 125 : 0,
-                        taskSuggestions: 100
+                if (window.mailService && window.mailService.isAuthenticated()) {
+                    const emails = await window.mailService.getMessages('INBOX', {
+                        maxResults: scanOptions.maxResults,
+                        days: scanOptions.days,
+                        includeSpam: scanOptions.includeSpam,
+                        onProgress: scanOptions.onProgress
+                    });
+                    
+                    this.scanResults = {
+                        success: true,
+                        total: emails.length,
+                        categorized: emails.length,
+                        provider: this.currentProvider,
+                        emails: emails,
+                        taskPreselectedCategories: [...this.taskPreselectedCategories],
+                        stats: { 
+                            preselectedForTasks: 0,
+                            taskSuggestions: 0
+                        }
+                    };
+                    
+                    console.log('[UnifiedScan] ✅ Emails récupérés via MailService:', emails.length);
+                    
+                } else {
+                    // Mode simulation si rien n'est disponible
+                    console.log('[UnifiedScan] 🎭 Mode simulation');
+                    
+                    for (let i = 0; i <= 100; i += 5) {
+                        const providerName = this.currentProvider === 'gmail' ? 'Gmail' : 'Outlook';
+                        this.updateProgress(i, `Analyse ${providerName} ${i}%`, 'Récupération des emails');
+                        await new Promise(resolve => setTimeout(resolve, 100));
                     }
-                };
+                    
+                    this.scanResults = {
+                        success: true,
+                        total: this.currentProvider === 'gmail' ? 1250 : 800,
+                        categorized: this.currentProvider === 'gmail' ? 1180 : 750,
+                        provider: this.currentProvider,
+                        taskPreselectedCategories: [...this.taskPreselectedCategories],
+                        stats: { 
+                            preselectedForTasks: this.taskPreselectedCategories.length > 0 ? 125 : 0,
+                            taskSuggestions: 100
+                        }
+                    };
+                }
             }
         } catch (error) {
             console.error('[UnifiedScan] ❌ Erreur scan:', error);
@@ -1070,6 +1168,11 @@ class UnifiedScanModule {
         
         try {
             sessionStorage.setItem('scanResults', JSON.stringify(essentialResults));
+            
+            // Stocker aussi les emails si disponibles
+            if (this.scanResults?.emails) {
+                sessionStorage.setItem('scannedEmails', JSON.stringify(this.scanResults.emails));
+            }
         } catch (error) {
             console.warn('[UnifiedScan] Erreur stockage:', error);
         }
@@ -1084,18 +1187,25 @@ class UnifiedScanModule {
             window.uiManager.showToast(message, 'success', 4000);
         }
         
-        console.log('[UnifiedScan] 🔄 Redirection immédiate vers la page emails...');
+        console.log('[UnifiedScan] 🔄 Redirection vers la page emails...');
         
-        // Redirection immédiate
+        // Redirection adaptée selon le provider
         try {
-            if (this.currentProvider === 'gmail') {
-                console.log('[UnifiedScan] 📧 Redirection vers PageManagerGmail...');
+            if (this.currentProvider === 'outlook') {
+                console.log('[UnifiedScan] 📧 Redirection vers PageManagerOutlook...');
                 
-                if (window.pageManagerGmail && typeof window.pageManagerGmail.loadPage === 'function') {
-                    console.log('[UnifiedScan] ✅ Utilisation de pageManagerGmail.loadPage');
-                    window.pageManagerGmail.loadPage('emails');
+                // Chercher le PageManager Outlook
+                if (window.pageManagerOutlook && typeof window.pageManagerOutlook.loadPage === 'function') {
+                    console.log('[UnifiedScan] ✅ Utilisation de pageManagerOutlook.loadPage');
+                    window.pageManagerOutlook.loadPage('emails');
+                } else if (window.PageManagerOutlook && !window.pageManagerOutlook) {
+                    // Créer une instance si nécessaire
+                    console.log('[UnifiedScan] 📦 Création instance PageManagerOutlook...');
+                    window.pageManagerOutlook = new window.PageManagerOutlook();
+                    window.pageManagerOutlook.loadPage('emails');
                 } else if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
-                    console.log('[UnifiedScan] ✅ Utilisation de pageManager.loadPage');
+                    // Fallback sur pageManager générique
+                    console.log('[UnifiedScan] ✅ Utilisation de pageManager générique');
                     window.pageManager.loadPage('emails');
                 } else {
                     console.log('[UnifiedScan] ⚠️ Aucun PageManager trouvé, rechargement...');
@@ -1103,14 +1213,19 @@ class UnifiedScanModule {
                     window.location.reload();
                 }
                 
-            } else if (this.currentProvider === 'outlook') {
-                console.log('[UnifiedScan] 📧 Redirection vers PageManagerOutlook...');
+            } else if (this.currentProvider === 'gmail') {
+                console.log('[UnifiedScan] 📧 Redirection vers PageManagerGmail...');
                 
-                if (window.pageManagerOutlook && typeof window.pageManagerOutlook.loadPage === 'function') {
-                    console.log('[UnifiedScan] ✅ Utilisation de pageManagerOutlook.loadPage');
-                    window.pageManagerOutlook.loadPage('emails');
+                if (window.pageManagerGmail && typeof window.pageManagerGmail.loadPage === 'function') {
+                    console.log('[UnifiedScan] ✅ Utilisation de pageManagerGmail.loadPage');
+                    window.pageManagerGmail.loadPage('emails');
+                } else if (window.PageManagerGmail && !window.pageManagerGmail) {
+                    // Créer une instance si nécessaire
+                    console.log('[UnifiedScan] 📦 Création instance PageManagerGmail...');
+                    window.pageManagerGmail = new window.PageManagerGmail();
+                    window.pageManagerGmail.loadPage('emails');
                 } else if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
-                    console.log('[UnifiedScan] ✅ Utilisation de pageManager.loadPage');
+                    console.log('[UnifiedScan] ✅ Utilisation de pageManager générique');
                     window.pageManager.loadPage('emails');
                 } else {
                     console.log('[UnifiedScan] ⚠️ Aucun PageManager trouvé, rechargement...');
@@ -1164,8 +1279,31 @@ class UnifiedScanModule {
             throw new Error('Authentification requise');
         }
         
-        if (!window.mailService && !window.authService && !window.googleAuthService) {
-            console.warn('[UnifiedScan] ⚠️ Services d\'authentification non disponibles');
+        // Vérifier la disponibilité des services
+        console.log('[UnifiedScan] 🔍 Vérification des services disponibles...');
+        
+        if (window.mailService) {
+            console.log('[UnifiedScan] ✅ MailService disponible');
+            
+            // S'assurer que MailService est initialisé
+            if (!window.mailService.isInitialized()) {
+                console.log('[UnifiedScan] 📦 Initialisation MailService...');
+                await window.mailService.initialize();
+            }
+        }
+        
+        if (this.currentProvider === 'outlook') {
+            if (window.emailScannerOutlook || window.EmailScannerOutlook) {
+                console.log('[UnifiedScan] ✅ EmailScannerOutlook disponible');
+            } else {
+                console.log('[UnifiedScan] ⚠️ EmailScannerOutlook non trouvé');
+            }
+            
+            if (window.pageManagerOutlook || window.PageManagerOutlook) {
+                console.log('[UnifiedScan] ✅ PageManagerOutlook disponible');
+            } else {
+                console.log('[UnifiedScan] ⚠️ PageManagerOutlook non trouvé');
+            }
         }
     }
 
@@ -1300,7 +1438,15 @@ class UnifiedScanModule {
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             settings: this.settings,
             lastSettingsSync: this.lastSettingsSync,
-            scanResults: this.scanResults
+            scanResults: this.scanResults,
+            availableServices: {
+                mailService: !!window.mailService,
+                emailScanner: !!window.emailScanner,
+                emailScannerOutlook: !!window.emailScannerOutlook,
+                pageManagerGmail: !!window.pageManagerGmail,
+                pageManagerOutlook: !!window.pageManagerOutlook,
+                categoryManager: !!window.categoryManager
+            }
         };
     }
 
@@ -1337,4 +1483,4 @@ window.unifiedScanModule = new UnifiedScanModule();
 window.scanStartModule = window.unifiedScanModule;
 window.minimalScanModule = window.unifiedScanModule; // Compatibilité
 
-console.log('[StartScan] ✅ Scanner Unifié v11.0 chargé - Optimisé pour Gmail, sans limite!');
+console.log('[StartScan] ✅ Scanner Unifié v11.1 chargé - Compatible Gmail & Outlook!');
