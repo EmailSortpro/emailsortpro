@@ -1,5 +1,5 @@
-// CategoryManager.js - Version 24.0 - Détection améliorée des newsletters
-// Mots-clés et patterns optimisés pour détecter correctement les emails marketing
+// CategoryManager.js - Version 25.0 - Détection newsletters complètement refaite
+// Priorité absolue aux patterns de désabonnement et indicateurs newsletter
 
 class CategoryManager {
     constructor() {
@@ -21,17 +21,70 @@ class CategoryManager {
         this._normalizedTextCache = new Map();
         this._analysisCache = new Map();
         
+        // Patterns de newsletters compilés pour performance
+        this.newsletterPatterns = {
+            unsubscribe: null,
+            frequency: null,
+            newsletter: null,
+            marketing: null
+        };
+        
         this.initializeCategories();
         this.loadCustomCategories();
         this.initializeWeightedDetection();
+        this.compileNewsletterPatterns();
         this.setupEventListeners();
         this.startAutoSync();
         
-        console.log('[CategoryManager] ✅ Version 24.0 - Détection newsletters améliorée');
+        console.log('[CategoryManager] ✅ Version 25.0 - Détection newsletters complètement refaite');
     }
 
     // ================================================
-    // MÉTHODE D'ANALYSE PRINCIPALE - AMÉLIORÉE
+    // COMPILATION DES PATTERNS NEWSLETTER
+    // ================================================
+    compileNewsletterPatterns() {
+        // Pattern de désabonnement très large
+        this.newsletterPatterns.unsubscribe = new RegExp(
+            'unsubscribe|se\\s*d[eé]sinscrire|d[eé]sinscrire|d[eé]sabonner|' +
+            'opt\\s*out|opt-out|stop\\s*email|arr[eê]ter|ne\\s*plus\\s*recevoir|' +
+            'g[eé]rer.*pr[eé]f[eé]rences|manage.*preferences|email\\s*preferences|' +
+            'notification\\s*settings|update\\s*preferences|modifier.*pr[eé]f[eé]rences|' +
+            'cliqu(?:e|ez)\\s*ici|click\\s*here|remove|retirer|supprimer.*email|' +
+            'change\\s*email\\s*frequency|fr[eé]quence.*email|manage\\s*email|' +
+            'email\\s*notifications|manage\\s*notifications',
+            'i'
+        );
+        
+        // Pattern de fréquence d'envoi
+        this.newsletterPatterns.frequency = new RegExp(
+            'receive\\s*these\\s*notifications|recevoir\\s*ces\\s*notifications|' +
+            'email\\s*frequency|fr[eé]quence.*email|never|weekly|daily|monthly|' +
+            'jamais|hebdomadaire|quotidien|mensuel|tous\\s*les|every|chaque',
+            'i'
+        );
+        
+        // Pattern d'indicateurs newsletter
+        this.newsletterPatterns.newsletter = new RegExp(
+            'newsletter|bulletin|infolettre|mailing\\s*list|liste\\s*de\\s*diffusion|' +
+            'you\\s*received\\s*this\\s*email\\s*because|vous\\s*recevez\\s*ce.*email|' +
+            'email\\s*marketing|campaign|notification|view.*online|voir.*en\\s*ligne|' +
+            'trouble\\s*viewing|difficult[eé]s.*visualiser|si\\s*ce\\s*message|' +
+            'if\\s*you\\s*can.*t\\s*see|recap|r[eé]cap|summary|sommaire|digest|' +
+            'match(?:es|ing).*your.*(?:search|preferences)|correspond.*vos.*(?:crit[eè]res|pr[eé]f[eé]rences)',
+            'i'
+        );
+        
+        // Pattern marketing général
+        this.newsletterPatterns.marketing = new RegExp(
+            'offre\\s*sp[eé]ciale|special\\s*offer|promotion|promo|soldes|sale|' +
+            'r[eé]duction|discount|nouveau\\s*produit|new\\s*product|lancement|' +
+            'd[eé]couvr(?:ez|ir)|discover|exclusive|exclusif|limit[eé]|gratuit|free',
+            'i'
+        );
+    }
+
+    // ================================================
+    // MÉTHODE D'ANALYSE PRINCIPALE - REFAITE
     // ================================================
     analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
@@ -45,19 +98,45 @@ class CategoryManager {
         // Extraire TOUT le contenu disponible
         const content = this.extractCompleteContent(email);
         
+        // PRIORITÉ 1: Détecter d'abord si c'est une newsletter
+        const newsletterCheck = this.checkIfNewsletter(content);
+        
         if (this.debugMode) {
             console.log('[CategoryManager] 📄 Analyse email:', {
                 subject: email.subject?.substring(0, 50) + '...',
                 from: email.from?.emailAddress?.address,
-                contentLength: content.fullText.length,
-                hasFullTextContent: !!email.fullTextContent,
-                hasUnsubscribeLinks: content.hasUnsubscribeLinks,
-                hasNewsletterIndicators: content.hasNewsletterIndicators
+                isNewsletter: newsletterCheck.isNewsletter,
+                newsletterScore: newsletterCheck.score,
+                patterns: newsletterCheck.patterns
             });
         }
         
-        // Analyser toutes les catégories
+        // Si c'est clairement une newsletter, retourner directement
+        if (newsletterCheck.isNewsletter && newsletterCheck.confidence >= 0.8) {
+            const result = {
+                category: 'marketing_news',
+                score: newsletterCheck.score,
+                confidence: newsletterCheck.confidence,
+                matchedPatterns: newsletterCheck.patterns,
+                hasAbsolute: true
+            };
+            
+            this._analysisCache.set(cacheKey, result);
+            return result;
+        }
+        
+        // Sinon, analyser toutes les catégories
         const results = this.analyzeAllCategories(content);
+        
+        // Si newsletter a un bon score, augmenter ses chances
+        if (results.marketing_news && newsletterCheck.score > 50) {
+            results.marketing_news.score += newsletterCheck.score;
+            results.marketing_news.confidence = Math.max(
+                results.marketing_news.confidence,
+                newsletterCheck.confidence
+            );
+            results.marketing_news.matchedPatterns.push(...newsletterCheck.patterns);
+        }
         
         // Sélectionner la meilleure catégorie
         const bestResult = this.selectBestCategory(results);
@@ -75,7 +154,118 @@ class CategoryManager {
     }
 
     // ================================================
-    // EXTRACTION COMPLÈTE DU CONTENU - OPTIMISÉE
+    // DÉTECTION SPÉCIFIQUE NEWSLETTER - NOUVELLE
+    // ================================================
+    checkIfNewsletter(content) {
+        let score = 0;
+        const patterns = [];
+        let hasStrongIndicator = false;
+        
+        // Convertir tout en minuscules pour la recherche
+        const fullTextLower = content.fullText.toLowerCase();
+        const subjectLower = content.subject.toLowerCase();
+        
+        // 1. PATTERN CRITIQUE: Désabonnement (très fort indicateur)
+        if (this.newsletterPatterns.unsubscribe.test(fullTextLower)) {
+            score += 200;
+            hasStrongIndicator = true;
+            patterns.push({ type: 'critical', keyword: 'unsubscribe_pattern', score: 200 });
+            
+            // Bonus si dans un lien
+            if (fullTextLower.match(/href[^>]*(?:unsubscribe|desinscrire|opt-out)/i)) {
+                score += 50;
+                patterns.push({ type: 'link', keyword: 'unsubscribe_link', score: 50 });
+            }
+        }
+        
+        // 2. PATTERN FORT: Gestion de fréquence
+        if (this.newsletterPatterns.frequency.test(fullTextLower)) {
+            score += 150;
+            hasStrongIndicator = true;
+            patterns.push({ type: 'strong', keyword: 'frequency_management', score: 150 });
+        }
+        
+        // 3. PATTERN FORT: Indicateurs newsletter
+        if (this.newsletterPatterns.newsletter.test(fullTextLower)) {
+            score += 100;
+            patterns.push({ type: 'strong', keyword: 'newsletter_indicator', score: 100 });
+        }
+        
+        // 4. Domaine expéditeur typique
+        if (content.domain) {
+            const newsletterDomains = /news|newsletter|mail|email|marketing|campaign|mailchimp|sendgrid|mailgun|noreply|no-reply|notification|info|contact|hello|team/i;
+            if (newsletterDomains.test(content.domain)) {
+                score += 75;
+                patterns.push({ type: 'domain', keyword: `newsletter_domain_${content.domain}`, score: 75 });
+            }
+        }
+        
+        // 5. Adresse expéditeur typique
+        const fromEmail = content.fromEmail?.toLowerCase() || '';
+        if (fromEmail.match(/^(no-?reply|noreply|newsletter|news|info|hello|contact|notification|team|support|marketing)@/i)) {
+            score += 50;
+            patterns.push({ type: 'sender', keyword: 'newsletter_sender', score: 50 });
+        }
+        
+        // 6. Contenu marketing
+        if (this.newsletterPatterns.marketing.test(fullTextLower)) {
+            score += 30;
+            patterns.push({ type: 'content', keyword: 'marketing_content', score: 30 });
+        }
+        
+        // 7. Labels Gmail spécifiques
+        if (content.labels && content.labels.length > 0) {
+            if (content.labels.includes('CATEGORY_PROMOTIONS') || 
+                content.labels.includes('CATEGORY_SOCIAL') ||
+                content.labels.includes('CATEGORY_UPDATES')) {
+                score += 100;
+                hasStrongIndicator = true;
+                patterns.push({ type: 'gmail_label', keyword: 'promotional_category', score: 100 });
+            }
+        }
+        
+        // 8. Patterns spécifiques détectés dans les exemples
+        // Welcome to the Jungle
+        if (fullTextLower.includes('matching your search') || 
+            fullTextLower.includes('jobs matching') ||
+            fullTextLower.includes('new match')) {
+            score += 50;
+            patterns.push({ type: 'specific', keyword: 'job_alerts', score: 50 });
+        }
+        
+        // Fitness Park et autres récaps
+        if (subjectLower.includes('recap') || subjectLower.includes('récap') ||
+            fullTextLower.includes('ton récap') || fullTextLower.includes('votre récap')) {
+            score += 50;
+            patterns.push({ type: 'specific', keyword: 'recap_email', score: 50 });
+        }
+        
+        // Calculer la confiance
+        let confidence = 0;
+        if (hasStrongIndicator) {
+            confidence = Math.min(0.95, 0.5 + (score / 400));
+        } else if (score >= 200) {
+            confidence = 0.85;
+        } else if (score >= 150) {
+            confidence = 0.75;
+        } else if (score >= 100) {
+            confidence = 0.65;
+        } else if (score >= 50) {
+            confidence = 0.55;
+        } else {
+            confidence = score / 200;
+        }
+        
+        return {
+            isNewsletter: score >= 100 || hasStrongIndicator,
+            score: score,
+            confidence: confidence,
+            patterns: patterns
+        };
+    }
+
+    // ================================================
+    // EXTRACTION COMPLÈTE DU CONTENU - AMÉLIORÉE
     // ================================================
     extractCompleteContent(email) {
         // Construire le texte complet pour l'analyse
@@ -88,21 +278,6 @@ class CategoryManager {
         // 1. PRIORITÉ ABSOLUE : Utiliser fullTextContent si disponible
         if (email.fullTextContent && email.fullTextContent.trim()) {
             fullText = email.fullTextContent;
-            
-            // Vérifier la présence de patterns de désabonnement
-            if (fullText.match(/\[UNSUBSCRIBE_LINKS\][\s\S]*?\[\/UNSUBSCRIBE_LINKS\]/i)) {
-                hasUnsubscribeLinks = true;
-            }
-            
-            // Vérifier la présence d'indicateurs de newsletter
-            if (fullText.match(/\[NEWSLETTER_INDICATORS\][\s\S]*?\[\/NEWSLETTER_INDICATORS\]/i)) {
-                hasNewsletterIndicators = true;
-            }
-            
-            // S'assurer que le sujet est inclus
-            if (subject && !fullText.toLowerCase().includes(subject.toLowerCase())) {
-                fullText = subject + ' ' + subject + ' ' + subject + '\n\n' + fullText;
-            }
         } else {
             // 2. FALLBACK : Construire le contenu manuellement
             
@@ -121,75 +296,33 @@ class CategoryManager {
                 if (fromEmail.includes('@')) {
                     const domain = fromEmail.split('@')[1];
                     fullText += `Domaine: ${domain}\n`;
-                    
-                    // Domaines typiques de newsletters
-                    if (domain.match(/news|newsletter|mail|email|marketing|campaign|mailchimp|sendgrid|mailgun|constant|aweber|getresponse/i)) {
-                        hasNewsletterIndicators = true;
-                    }
                 }
             }
             
             // Corps du message
             if (email.body?.content) {
                 bodyText = email.body.content;
-                fullText += bodyText + '\n';
-                
-                // Chercher les patterns de désabonnement dans le HTML brut
-                if (bodyText.match(/unsubscribe|se désabonner|désinscrire|désinscription|opt.?out|stop email|arrêter|ne plus recevoir|gérer.*préférences|manage.*preferences|email preferences|notification settings/i)) {
-                    hasUnsubscribeLinks = true;
-                }
-                
-                // Chercher les indicateurs de newsletter
-                if (bodyText.match(/newsletter|mailing list|liste de diffusion|email marketing|campaign|notification|view.*online|voir.*en ligne|trouble viewing|difficultés.*visualiser/i)) {
-                    hasNewsletterIndicators = true;
-                }
+                fullText += '\n' + bodyText + '\n';
+            } else if (email.bodyHtml) {
+                bodyText = email.bodyHtml;
+                fullText += '\n' + bodyText + '\n';
+            } else if (email.bodyText) {
+                bodyText = email.bodyText;
+                fullText += '\n' + bodyText + '\n';
             } else if (email.bodyPreview) {
                 bodyText = email.bodyPreview;
-                fullText += bodyText + '\n';
+                fullText += '\n' + bodyText + '\n';
             }
             
             // Snippet Gmail
             if (email.gmailMetadata?.snippet && !fullText.includes(email.gmailMetadata.snippet)) {
                 fullText += '\n' + email.gmailMetadata.snippet;
             }
-            
-            // Métadonnées importantes
-            if (email.hasAttachments) {
-                fullText += '\n[PIÈCE JOINTE PRÉSENTE]';
-            }
-            
-            if (email.importance === 'high') {
-                fullText += '\n[HAUTE PRIORITÉ]';
-            }
-            
-            // Labels Gmail
-            if (email.labelIds && Array.isArray(email.labelIds)) {
-                email.labelIds.forEach(label => {
-                    if (label.includes('IMPORTANT')) fullText += '\n[EMAIL IMPORTANT]';
-                    if (label.includes('CATEGORY_PROMOTIONS')) {
-                        fullText += '\n[CATÉGORIE PROMOTIONS]';
-                        hasNewsletterIndicators = true;
-                    }
-                    if (label.includes('CATEGORY_SOCIAL')) {
-                        fullText += '\n[CATÉGORIE RÉSEAUX SOCIAUX]';
-                        hasNewsletterIndicators = true;
-                    }
-                    if (label.includes('CATEGORY_UPDATES')) {
-                        fullText += '\n[CATÉGORIE MISES À JOUR]';
-                        hasNewsletterIndicators = true;
-                    }
-                });
-            }
         }
         
-        // Forcer les indicateurs si détectés
-        if (hasUnsubscribeLinks) {
-            fullText += '\n[UNSUBSCRIBE_DETECTED]';
-        }
-        
-        if (hasNewsletterIndicators) {
-            fullText += '\n[NEWSLETTER_DETECTED]';
-        }
+        // Extraire les informations importantes
+        const fromEmail = email.from?.emailAddress?.address || '';
+        const domain = fromEmail.includes('@') ? fromEmail.split('@')[1].toLowerCase() : '';
         
         // Normaliser le texte pour l'analyse
         const normalizedText = this.normalizeText(fullText);
@@ -199,14 +332,14 @@ class CategoryManager {
             normalizedText: normalizedText,
             subject: subject,
             bodyText: bodyText,
-            domain: this.extractDomain(email.from?.emailAddress?.address),
+            domain: domain,
+            fromEmail: fromEmail,
             hasAttachments: email.hasAttachments || false,
             importance: email.importance || 'normal',
             provider: email.provider || email.providerType || 'unknown',
             isReply: this.isReplyOrForward(subject),
             hasFullTextContent: !!email.fullTextContent,
-            hasUnsubscribeLinks: hasUnsubscribeLinks,
-            hasNewsletterIndicators: hasNewsletterIndicators
+            labels: email.labelIds || email.labels || []
         };
     }
 
@@ -219,22 +352,13 @@ class CategoryManager {
         const matches = [];
         const text = content.normalizedText;
         
-        // BOOST SPÉCIAL POUR MARKETING_NEWS si indicateurs détectés
+        // Pour marketing_news, utiliser d'abord la détection spécialisée
         if (categoryId === 'marketing_news') {
-            if (content.hasUnsubscribeLinks) {
-                totalScore += 150;
-                matches.push({ type: 'special', keyword: 'unsubscribe_link_detected', score: 150 });
-            }
-            
-            if (content.hasNewsletterIndicators) {
-                totalScore += 100;
-                matches.push({ type: 'special', keyword: 'newsletter_indicators_detected', score: 100 });
-            }
-            
-            // Boost si domaine typique de newsletter
-            if (content.domain && content.domain.match(/news|newsletter|mail|email|marketing|campaign/i)) {
-                totalScore += 50;
-                matches.push({ type: 'domain', keyword: `newsletter_domain_${content.domain}`, score: 50 });
+            const newsletterCheck = this.checkIfNewsletter(content);
+            if (newsletterCheck.isNewsletter) {
+                totalScore = newsletterCheck.score;
+                matches.push(...newsletterCheck.patterns);
+                hasAbsolute = newsletterCheck.confidence >= 0.8;
             }
         }
         
@@ -319,12 +443,12 @@ class CategoryManager {
             }
         }
         
-        // Appliquer les exclusions (réduites pour marketing_news)
+        // Appliquer les exclusions (très réduites pour marketing_news)
         if (keywords.exclusions && keywords.exclusions.length > 0) {
             for (const exclusion of keywords.exclusions) {
                 if (this.findKeywordInText(text, exclusion)) {
-                    // Pénalité réduite pour marketing_news si indicateurs présents
-                    const penalty = (categoryId === 'marketing_news' && (content.hasUnsubscribeLinks || content.hasNewsletterIndicators)) ? -20 : -50;
+                    // Pénalité très réduite pour marketing_news si indicateurs newsletter présents
+                    const penalty = (categoryId === 'marketing_news' && totalScore > 150) ? -10 : -50;
                     totalScore += penalty;
                     matches.push({ type: 'exclusion', keyword: exclusion, score: penalty });
                 }
@@ -349,7 +473,7 @@ class CategoryManager {
                 icon: '📰',
                 color: '#8b5cf6',
                 description: 'Newsletters, actualités et communications marketing',
-                priority: 85, // Augmenté pour prioriser
+                priority: 95, // Priorité très élevée
                 isCustom: false
             },
             
@@ -376,7 +500,7 @@ class CategoryManager {
                 icon: '✅',
                 color: '#ef4444',
                 description: 'Tâches et actions à effectuer',
-                priority: 95,
+                priority: 85,
                 isCustom: false
             },
             
@@ -385,7 +509,7 @@ class CategoryManager {
                 icon: '📅',
                 color: '#f59e0b',
                 description: 'Invitations et planification de réunions',
-                priority: 85,
+                priority: 80,
                 isCustom: false
             },
             
@@ -476,78 +600,24 @@ class CategoryManager {
     }
 
     // ================================================
-    // INITIALISATION DES MOTS-CLÉS - AMÉLIORÉE POUR NEWSLETTERS
+    // INITIALISATION DES MOTS-CLÉS - SIMPLIFIÉE
     // ================================================
     initializeWeightedDetection() {
         this.weightedKeywords = {
-            // MARKETING & NEWS - Détection améliorée
+            // MARKETING & NEWS - Détection principale via checkIfNewsletter()
             marketing_news: {
                 absolute: [
-                    // Désabonnement universel - patterns exacts
-                    'se desinscrire', 'se désinscrire', 'desinscrire', 'désinscrire',
-                    'unsubscribe', 'opt out', 'opt-out', 'desabonner', 'désabonner',
-                    'stop emails', 'arreter emails', 'arrêter emails', 'ne plus recevoir',
-                    'gerer preferences', 'gérer préférences', 'manage preferences',
-                    'email preferences', 'communication preferences', 'notification settings',
-                    'update preferences', 'modifier preferences', 'modifier préférences',
-                    'cliquez ici pour', 'click here to', 'clique ici',
-                    'liste de diffusion', 'mailing list',
-                    'newsletter', 'bulletin', 'infolettre',
-                    // Patterns spécifiques détectés
-                    'unsubscribe_detected', 'newsletter_detected',
-                    'catégorie promotions', 'category_promotions',
-                    'catégorie réseaux sociaux', 'category_social',
-                    'catégorie mises à jour', 'category_updates',
-                    // Indicateurs de vue en ligne
-                    'voir en ligne', 'view online', 'visualiser ce message',
-                    'difficultés pour visualiser', 'trouble viewing',
-                    'si ce message ne s\'affiche pas', 'if you can\'t see this',
-                    // Marketing générique
-                    'offre speciale', 'offre spéciale', 'special offer',
-                    'promotion', 'promo', 'soldes', 'vente', 'sale',
-                    'reduction', 'réduction', 'discount',
-                    'nouveau produit', 'new product', 'lancement',
-                    'decouvrez', 'découvrez', 'discover'
+                    // Les patterns critiques sont gérés dans checkIfNewsletter()
+                    // On garde juste quelques mots-clés de backup
+                    'newsletter', 'unsubscribe', 'se desinscrire'
                 ],
                 strong: [
-                    // Indicateurs de newsletter
-                    'recevoir ces notifications', 'receive these notifications',
-                    'email frequency', 'fréquence des emails',
-                    'notification email', 'email de notification',
-                    'change email frequency', 'modifier la fréquence',
-                    'weekly', 'daily', 'monthly', 'hebdomadaire', 'quotidien', 'mensuel',
-                    'ton récap', 'votre récap', 'your recap', 'recap du mois',
-                    'new match', 'nouveau match', 'nouvelle correspondance',
-                    'matching your', 'correspondent à vos',
-                    // Contenu marketing
-                    'actualite', 'actualité', 'news', 'nouveaute', 'nouveauté',
-                    'article', 'blog', 'publication', 'parution',
-                    'evenement', 'événement', 'event', 'webinar', 'webinaire',
-                    'invitation', 'participer', 'inscrire', 'inscription',
-                    'offre', 'promotion', 'remise', 'avantage',
-                    'exclusif', 'exclusive', 'limite', 'limité', 'limited',
-                    'gratuit', 'free', 'essai', 'trial',
-                    'telecharger', 'télécharger', 'download',
-                    'decouvrir', 'découvrir', 'explorer', 'voir plus',
-                    // Signatures marketing
-                    'all rights reserved', 'tous droits réservés',
-                    'you received this email because', 'vous recevez cet email car',
-                    'trading name', 'marque commerciale'
+                    'marketing', 'promotion', 'offre', 'solde'
                 ],
                 weak: [
-                    'information', 'info', 'mise a jour', 'mise à jour', 'update',
-                    'nouveau', 'nouvelle', 'new', 'recent', 'récent',
-                    'disponible', 'available', 'maintenant', 'now',
-                    'profiter', 'beneficier', 'bénéficier',
-                    'suivez nous', 'follow us', 'rejoignez nous',
-                    'reseaux sociaux', 'social media', 'réseaux sociaux'
+                    'decouvrir', 'nouveau', 'actualite', 'info'
                 ],
-                exclusions: [
-                    // Exclusions réduites pour ne pas pénaliser les vraies newsletters
-                    'facture à payer', 'invoice due', 'paiement requis',
-                    'action urgente requise', 'urgent action required',
-                    'securite critique', 'critical security'
-                ]
+                exclusions: []  // Pas d'exclusions pour cette catégorie
             },
 
             // NOTIFICATIONS - Emails automatiques
@@ -557,35 +627,23 @@ class CategoryManager {
                     'no reply', 'noreply', 'donotreply', 'no-reply',
                     'message automatique', 'automated message', 'automatic email',
                     'notification automatique', 'system notification',
-                    'ceci est un message automatique', 'this is an automated',
-                    // Notifications RH spécifiques
-                    'votre candidature', 'your application',
-                    'candidature recue', 'candidature reçue', 'application received',
-                    'nous avons le regret', 'we regret to inform',
-                    'merci pour votre candidature', 'thank you for your application',
-                    'apres examen', 'après examen', 'after review',
-                    'suite donnee', 'suite donnée', 'next steps'
+                    'ceci est un message automatique', 'this is an automated'
                 ],
                 strong: [
                     'notification', 'alerte', 'alert', 'avis', 'notice',
                     'statut', 'status', 'etat', 'état', 'state',
                     'confirmation', 'confirme', 'confirmé', 'confirmed',
                     'recu', 'reçu', 'received', 'traite', 'traité', 'processed',
-                    'automatique', 'automatic', 'automated', 'systeme', 'système',
-                    'candidature', 'application', 'postulation',
-                    'recrutement', 'recruitment', 'embauche', 'hiring'
+                    'automatique', 'automatic', 'automated', 'systeme', 'système'
                 ],
                 weak: [
                     'information', 'message', 'update', 'mise a jour',
                     'changement', 'modification', 'evolution', 'évolution'
                 ],
-                exclusions: [
-                    'newsletter', 'marketing', 'promotion', 'offre',
-                    'unsubscribe', 'se désinscrire'
-                ]
+                exclusions: []
             },
 
-            // HR - Ressources humaines (amélioration pour Welcome to the Jungle)
+            // HR - Ressources humaines (sans exclusion unsubscribe)
             hr: {
                 absolute: [
                     'ressources humaines', 'human resources', 'rh', 'hr',
@@ -594,13 +652,7 @@ class CategoryManager {
                     'conge', 'congé', 'conges', 'congés', 'leave', 'vacation',
                     'entretien annuel', 'evaluation', 'évaluation', 'review',
                     'formation', 'training', 'stage', 'onboarding',
-                    'recrutement', 'recruitment', 'embauche', 'hiring',
-                    // Patterns spécifiques job boards
-                    'matching your search', 'correspondent à vos critères',
-                    'matching your preferences', 'correspondent à vos préférences',
-                    'new jobs matching', 'nouveaux emplois correspondant',
-                    'job match', 'emploi correspondant',
-                    'customer success manager', 'manager', 'associate'
+                    'recrutement', 'recruitment', 'embauche', 'hiring'
                 ],
                 strong: [
                     'salaire', 'salary', 'remuneration', 'rémunération',
@@ -609,18 +661,17 @@ class CategoryManager {
                     'poste', 'position', 'fonction', 'role', 'job',
                     'carriere', 'carrière', 'career', 'evolution',
                     'competence', 'compétence', 'skill', 'qualification',
-                    'contrat', 'contract', 'avenant', 'accord',
-                    'opportunité', 'opportunity', 'offre emploi', 'job offer',
-                    'candidat', 'candidate', 'talent', 'profil'
+                    'candidat', 'candidate', 'talent', 'profil',
+                    // Patterns job boards
+                    'job match', 'emploi correspondant', 'offre emploi', 'job offer',
+                    'opportunité', 'opportunity'
                 ],
                 weak: [
                     'equipe', 'équipe', 'team', 'personnel', 'staff',
                     'entreprise', 'company', 'societe', 'société',
                     'remote', 'télétravail', 'bureau', 'office'
                 ],
-                exclusions: [
-                    // Pas d'exclusion pour unsubscribe car les job boards ont souvent des liens de désabonnement
-                ]
+                exclusions: []  // Pas d'exclusion pour permettre les job boards avec unsubscribe
             },
 
             // FINANCE - Termes financiers universels
@@ -653,10 +704,7 @@ class CategoryManager {
                     'document', 'piece', 'pièce', 'justificatif',
                     'valider', 'validation', 'approuver', 'approval'
                 ],
-                exclusions: [
-                    'newsletter', 'marketing', 'promotion', 'solde commercial',
-                    'reduction commerciale', 'réduction commerciale', 'offre speciale'
-                ]
+                exclusions: []
             },
 
             // TASKS - Actions requises universelles
@@ -688,10 +736,7 @@ class CategoryManager {
                     'terminer', 'finir', 'complete', 'achever',
                     'traiter', 'process', 'gerer', 'gérer', 'handle'
                 ],
-                exclusions: [
-                    'information', 'pour info', 'fyi', 'newsletter',
-                    'notification', 'automatique'
-                ]
+                exclusions: []
             },
 
             // MEETINGS - Réunions tous contextes
@@ -718,9 +763,7 @@ class CategoryManager {
                     'rencontre', 'meet', 'voir', 'discuss', 'discuter',
                     'echanger', 'échanger', 'talk', 'parler', 'partager'
                 ],
-                exclusions: [
-                    'newsletter', 'notification', 'automatique', 'marketing'
-                ]
+                exclusions: []
             },
 
             // COMMERCIAL - Opportunités business
@@ -749,12 +792,11 @@ class CategoryManager {
                     'possible', 'envisager', 'consider', 'etudier', 'étudier'
                 ],
                 exclusions: [
-                    'facture', 'invoice', 'paiement', 'newsletter',
-                    'candidature', 'cv', 'emploi'
+                    'facture', 'invoice', 'paiement'
                 ]
             },
 
-            // PROJECT - Gestion de projet (amélioration pour Fitness Park)
+            // PROJECT - Gestion de projet
             project: {
                 absolute: [
                     'projet', 'project', 'programme', 'program',
@@ -779,10 +821,7 @@ class CategoryManager {
                     'document', 'fichier', 'file', 'dossier', 'rapport',
                     'mise a jour', 'update', 'evolution', 'changement'
                 ],
-                exclusions: [
-                    'facture', 'paiement', 'newsletter', 'marketing',
-                    'unsubscribe', 'désinscrire' // Exclure les newsletters
-                ]
+                exclusions: []
             },
 
             // SUPPORT - Support technique
@@ -808,9 +847,7 @@ class CategoryManager {
                     'question', 'demande', 'request', 'besoin',
                     'fonctionnement', 'marche pas', 'not working'
                 ],
-                exclusions: [
-                    'commercial', 'vente', 'marketing', 'newsletter'
-                ]
+                exclusions: []
             },
 
             // SECURITY - Sécurité informatique
@@ -837,9 +874,7 @@ class CategoryManager {
                     'compte', 'account', 'profil', 'profile',
                     'connexion', 'login', 'session', 'utilisateur'
                 ],
-                exclusions: [
-                    'newsletter', 'marketing', 'promotion', 'offre'
-                ]
+                exclusions: []
             },
 
             // INTERNAL - Communications internes
@@ -865,8 +900,7 @@ class CategoryManager {
                     'mise a jour', 'update', 'communication'
                 ],
                 exclusions: [
-                    'client', 'customer', 'externe', 'external',
-                    'marketing', 'commercial'
+                    'client', 'customer', 'externe', 'external'
                 ]
             },
 
@@ -917,7 +951,7 @@ class CategoryManager {
             }
         };
 
-        console.log('[CategoryManager] ✅ Mots-clés optimisés pour newsletters');
+        console.log('[CategoryManager] ✅ Mots-clés optimisés pour détection newsletters');
     }
 
     // ================================================
@@ -993,7 +1027,7 @@ class CategoryManager {
     // ================================================
     selectBestCategory(results) {
         const MIN_SCORE_THRESHOLD = 25;
-        const MIN_CONFIDENCE_THRESHOLD = 0.5;
+        const MIN_CONFIDENCE_THRESHOLD = 0.4;  // Réduit pour permettre plus de flexibilité
         
         // Filtrer les résultats valides
         const validResults = Object.values(results)
@@ -1025,22 +1059,15 @@ class CategoryManager {
         
         const best = validResults[0];
         
-        // Pour marketing_news, être plus permissif si indicateurs détectés
+        // Pour marketing_news, être plus permissif
         if (best.category === 'marketing_news' && best.score >= MIN_SCORE_THRESHOLD) {
-            // Accepter même avec une confiance plus faible si indicateurs présents
-            const hasSpecialIndicators = best.matches.some(m => 
-                m.type === 'special' || m.keyword.includes('unsubscribe') || m.keyword.includes('newsletter')
-            );
-            
-            if (hasSpecialIndicators || best.confidence >= 0.4) {
-                return {
-                    category: best.category,
-                    score: best.score,
-                    confidence: Math.max(best.confidence, 0.6), // Boost de confiance
-                    matchedPatterns: best.matches,
-                    hasAbsolute: best.hasAbsolute
-                };
-            }
+            return {
+                category: best.category,
+                score: best.score,
+                confidence: Math.max(best.confidence, 0.6),
+                matchedPatterns: best.matches,
+                hasAbsolute: best.hasAbsolute
+            };
         }
         
         if (best.confidence < MIN_CONFIDENCE_THRESHOLD && !best.hasAbsolute) {
@@ -1103,52 +1130,6 @@ class CategoryManager {
     // ================================================
     // MÉTHODES UTILITAIRES
     // ================================================
-    extractDomain(email) {
-        if (!email || !email.includes('@')) return '';
-        const domain = email.split('@')[1]?.toLowerCase() || '';
-        // Extraire le domaine principal (ex: google.com -> google)
-        const parts = domain.split('.');
-        if (parts.length >= 2) {
-            return parts[parts.length - 2];
-        }
-        return domain;
-    }
-
-    cleanHtmlContent(html) {
-        if (!html) return '';
-        
-        // Créer un élément temporaire
-        const temp = document.createElement('div');
-        temp.innerHTML = html;
-        
-        // Supprimer les scripts et styles
-        const elementsToRemove = temp.querySelectorAll('script, style, noscript, iframe');
-        elementsToRemove.forEach(el => el.remove());
-        
-        // Extraire le texte en préservant la structure
-        let text = '';
-        
-        const extractText = (node) => {
-            if (node.nodeType === Node.TEXT_NODE) {
-                text += node.textContent + ' ';
-            } else if (node.nodeType === Node.ELEMENT_NODE) {
-                // Ajouter des espaces pour certains éléments
-                if (['p', 'div', 'br', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(node.tagName.toLowerCase())) {
-                    text += '\n';
-                }
-                
-                // Parcourir les enfants
-                for (const child of node.childNodes) {
-                    extractText(child);
-                }
-            }
-        };
-        
-        extractText(temp);
-        
-        return text.trim();
-    }
-
     calculateConfidence(score) {
         if (score.hasAbsolute) return 0.95;
         if (score.total >= 200) return 0.90;
@@ -1167,10 +1148,7 @@ class CategoryManager {
     }
 
     escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\                strong: [
-                    'securite', 'sécurité', 'security', 'protection',
-                    'verification', 'vérification', 'verify', 'confirmer',
-                    'identite', 'ident');
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
     generateCacheKey(email) {
@@ -1392,6 +1370,7 @@ class CategoryManager {
         const result = this.analyzeEmail(testEmail);
         
         console.log(`📧 Test: "${subject}"`);
+        console.log(`   From: ${from}`);
         console.log(`   Catégorie: ${result.category} (Score: ${result.score}, Confiance: ${Math.round(result.confidence * 100)}%)`);
         console.log(`   Matches:`, result.matchedPatterns);
         
@@ -1424,7 +1403,7 @@ class CategoryManager {
 
     getDebugInfo() {
         return {
-            version: '24.0',
+            version: '25.0',
             categoriesCount: Object.keys(this.categories).length,
             customCategoriesCount: Object.keys(this.customCategories).length,
             activeCategories: this.getActiveCategories().length,
@@ -1484,9 +1463,19 @@ window.CategoryManager = CategoryManager;
 
 // Fonctions de test globales
 window.testCategoryManager = function() {
-    console.group('🧪 TEST CategoryManager v24.0');
+    console.group('🧪 TEST CategoryManager v25.0');
     
     const tests = [
+        { 
+            subject: "New match: Associate Customer Success Manager at Hostaway", 
+            body: "There are new jobs matching your search preferences! You received this email because you subscribed. Unsubscribe from these notifications.", 
+            expected: "marketing_news" 
+        },
+        { 
+            subject: "Ton récap' du mois 📝", 
+            body: "Hello! Voici ton récap du mois. Si tu ne souhaites plus recevoir les informations de notre part, clique-ici.", 
+            expected: "marketing_news" 
+        },
         { subject: "Nouvelle facture #12345 à payer avant le 31", expected: "finance" },
         { subject: "Action urgente requise: valider le document", expected: "tasks" },
         { subject: "Invitation réunion Teams demain 14h", expected: "meetings" },
@@ -1498,13 +1487,11 @@ window.testCategoryManager = function() {
         { subject: "Ticket #45678 - Problème résolu", expected: "support" },
         { subject: "Note de service: Changement d'horaires", expected: "internal" },
         { subject: "Bulletin de paie Janvier 2024", expected: "hr" },
-        { subject: "Avancement projet Alpha - Sprint 3", expected: "project" },
-        { subject: "New match: Associate Customer Success Manager at Hostaway", body: "you received this email because unsubscribe", expected: "marketing_news" },
-        { subject: "Ton récap' du mois 📝", body: "clique-ici si tu ne souhaites plus recevoir", expected: "marketing_news" }
+        { subject: "Avancement projet Alpha - Sprint 3", expected: "project" }
     ];
     
     tests.forEach(test => {
-        window.categoryManager.testEmail(test.subject, test.body || '', 'test@example.com', test.expected);
+        window.categoryManager.testEmail(test.subject, test.body || '', test.expected);
     });
     
     console.log('\n📊 Statistiques des mots-clés:');
@@ -1517,4 +1504,4 @@ window.testCategoryManager = function() {
     return { success: true, testsRun: tests.length };
 };
 
-console.log('✅ CategoryManager v24.0 loaded - Détection newsletters améliorée');
+console.log('✅ CategoryManager v25.0 loaded - Détection newsletters complètement refaite');
