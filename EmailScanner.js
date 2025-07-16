@@ -1,4 +1,4 @@
-// EmailScanner.js - Version 15.0 - Intégration optimisée avec CategoryManager v26
+// EmailScanner.js - Version 16.0 - Intégration optimisée avec CategoryManager v27
 // Extraction de contenu complète et gestion améliorée des newsletters
 
 class EmailScanner {
@@ -46,10 +46,11 @@ class EmailScanner {
             provider: null,
             errors: [],
             newsletterCount: 0,
+            calendlyCount: 0,
             debugInfo: []
         };
         
-        console.log('[EmailScanner] ✅ Version 15.0 - Intégration CategoryManager v26');
+        console.log('[EmailScanner] ✅ Version 16.0 - Intégration CategoryManager v27');
         this.initialize();
     }
 
@@ -71,7 +72,7 @@ class EmailScanner {
             if (!window.categoryManager) {
                 console.error('[EmailScanner] ❌ CategoryManager non disponible!');
             } else {
-                console.log('[EmailScanner] ✅ CategoryManager v26 trouvé');
+                console.log('[EmailScanner] ✅ CategoryManager v27 trouvé');
             }
             
             // 2. Charger les paramètres
@@ -150,7 +151,12 @@ class EmailScanner {
             preferences: {
                 excludeSpam: true,
                 detectCC: true,
-                showNotifications: true
+                showNotifications: true,
+                excludeCalendly: true
+            },
+            categoryExclusions: {
+                domains: ['calendly.com'],
+                emails: []
             }
         };
     }
@@ -234,7 +240,7 @@ class EmailScanner {
     // MÉTHODE SCAN PRINCIPALE
     // ================================================
     async scan(options = {}) {
-        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v15.0 ===');
+        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v16.0 ===');
         
         if (this.isScanning) {
             console.warn('[EmailScanner] ⚠️ Scan déjà en cours');
@@ -252,6 +258,7 @@ class EmailScanner {
             this.currentProvider = options.provider || this.detectCurrentProvider();
             console.log('[EmailScanner] 📧 Provider:', this.currentProvider);
             console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+            console.log('[EmailScanner] 🚫 Exclusion Calendly:', this.settings.preferences?.excludeCalendly);
             
             // Préparer les options
             const scanOptions = this.prepareScanOptions(options);
@@ -272,7 +279,7 @@ class EmailScanner {
             console.log('[EmailScanner] 📋 Vérification du contenu complet...');
             await this.ensureFullContent(scanOptions);
             
-            // Étape 3: Catégoriser avec CategoryManager v26
+            // Étape 3: Catégoriser avec CategoryManager v27
             if (scanOptions.autoCategrize !== false) {
                 await this.categorizeAllEmails(scanOptions);
             }
@@ -290,6 +297,7 @@ class EmailScanner {
                 total: results.total,
                 categorized: results.categorized,
                 newsletters: results.stats.newsletterCount,
+                calendly: results.stats.calendlyCount,
                 preselected: results.stats.preselectedForTasks,
                 duration: results.stats.scanDuration
             });
@@ -360,6 +368,7 @@ class EmailScanner {
             autoCategrize: options.autoCategrize ?? defaults.autoCategrize ?? true,
             includeSpam: options.includeSpam ?? !this.settings.preferences?.excludeSpam,
             detectCC: options.detectCC ?? this.settings.preferences?.detectCC ?? true,
+            excludeCalendly: options.excludeCalendly ?? this.settings.preferences?.excludeCalendly ?? true,
             onProgress: options.onProgress,
             provider: this.currentProvider
         };
@@ -432,7 +441,7 @@ class EmailScanner {
     // CATÉGORISATION DES EMAILS
     // ================================================
     async categorizeAllEmails(options) {
-        console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION v15.0 ===');
+        console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION v16.0 ===');
         console.log('[EmailScanner] 📊 Total emails:', this.emails.length);
         console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
         
@@ -440,11 +449,13 @@ class EmailScanner {
         this.categorizedEmails = {};
         this.scanMetrics.categoryDistribution = {};
         this.scanMetrics.newsletterCount = 0;
+        this.scanMetrics.calendlyCount = 0;
         this.scanMetrics.debugInfo = [];
         
         let processed = 0;
         let preselectedCount = 0;
         let newsletterCount = 0;
+        let calendlyCount = 0;
         
         // Catégoriser par batch
         const batchSize = 50;
@@ -453,7 +464,7 @@ class EmailScanner {
             
             for (const email of batch) {
                 try {
-                    // Catégoriser avec CategoryManager v26
+                    // Catégoriser avec CategoryManager v27
                     const result = await this.categorizeEmail(email);
                     
                     // Ajouter à la catégorie
@@ -484,6 +495,11 @@ class EmailScanner {
                         });
                     }
                     
+                    // Compter Calendly
+                    if (email.isCalendly) {
+                        calendlyCount++;
+                    }
+                    
                     processed++;
                     
                 } catch (error) {
@@ -502,7 +518,7 @@ class EmailScanner {
             if (options.onProgress) {
                 const percent = 20 + Math.round((processed / this.emails.length) * 60);
                 this.updateProgress(options.onProgress, 'categorizing', 
-                    `Catégorisation: ${processed}/${this.emails.length} (${newsletterCount} newsletters)`, percent);
+                    `Catégorisation: ${processed}/${this.emails.length} (${newsletterCount} newsletters, ${calendlyCount} Calendly)`, percent);
             }
             
             // Pause pour ne pas bloquer l'UI
@@ -514,10 +530,12 @@ class EmailScanner {
         this.scanMetrics.categorizedCount = processed;
         this.scanMetrics.preselectedCount = preselectedCount;
         this.scanMetrics.newsletterCount = newsletterCount;
+        this.scanMetrics.calendlyCount = calendlyCount;
         
         console.log('[EmailScanner] ✅ === CATÉGORISATION TERMINÉE ===');
         console.log('[EmailScanner] 📊 Distribution:', this.scanMetrics.categoryDistribution);
         console.log('[EmailScanner] 📰 Newsletters détectées:', newsletterCount);
+        console.log('[EmailScanner] 📅 Calendly détectés:', calendlyCount);
         console.log('[EmailScanner] ⭐ Emails pré-sélectionnés:', preselectedCount);
     }
 
@@ -530,17 +548,18 @@ class EmailScanner {
             email.fullTextContent = this.buildFullTextContent(email);
         }
         
-        // Utiliser CategoryManager v26
+        // Utiliser CategoryManager v27
         if (!window.categoryManager || typeof window.categoryManager.analyzeEmail !== 'function') {
             console.warn('[EmailScanner] ⚠️ CategoryManager non disponible');
             email.category = 'other';
             email.categoryScore = 0;
             email.categoryConfidence = 0;
             email.isPreselectedForTasks = false;
+            email.isCalendly = false;
             return { category: 'other' };
         }
         
-        // Analyser avec CategoryManager v26
+        // Analyser avec CategoryManager v27
         const analysis = window.categoryManager.analyzeEmail(email);
         
         // Appliquer les résultats
@@ -550,10 +569,30 @@ class EmailScanner {
         email.matchedPatterns = analysis.matchedPatterns || [];
         email.hasAbsolute = analysis.hasAbsolute || false;
         
+        // Détecter Calendly
+        email.isCalendly = this.isCalendlyEmail(email);
+        
         // Vérifier si pré-sélectionné
         email.isPreselectedForTasks = this.taskPreselectedCategories.includes(email.category);
         
         return analysis;
+    }
+
+    // ================================================
+    // DÉTECTION CALENDLY
+    // ================================================
+    isCalendlyEmail(email) {
+        const textLower = (email.fullTextContent || '').toLowerCase();
+        const fromEmail = email.from?.emailAddress?.address?.toLowerCase() || '';
+        const subject = (email.subject || '').toLowerCase();
+        
+        return (
+            fromEmail.includes('calendly') ||
+            textLower.includes('calendly') ||
+            subject.includes('calendly') ||
+            textLower.includes('meeting scheduled via calendly') ||
+            textLower.includes('book time with calendly')
+        );
     }
 
     // ================================================
@@ -699,16 +738,19 @@ class EmailScanner {
     }
 
     selectEmailsForAIAnalysis() {
-        // Exclure les newsletters
-        const nonNewsletters = this.emails.filter(e => e.category !== 'marketing_news');
+        // Exclure les newsletters et Calendly
+        const eligibleEmails = this.emails.filter(e => 
+            e.category !== 'marketing_news' && 
+            !e.isCalendly
+        );
         
-        // Priorité 1: Emails pré-sélectionnés (sauf newsletters)
-        const preselected = nonNewsletters.filter(e => 
+        // Priorité 1: Emails pré-sélectionnés (sauf newsletters et Calendly)
+        const preselected = eligibleEmails.filter(e => 
             e.isPreselectedForTasks && e.categoryConfidence > 0.7
         ).sort((a, b) => b.categoryConfidence - a.categoryConfidence);
         
-        // Priorité 2: Autres emails haute confiance (sauf newsletters)
-        const highConfidence = nonNewsletters.filter(e =>
+        // Priorité 2: Autres emails haute confiance (sauf newsletters et Calendly)
+        const highConfidence = eligibleEmails.filter(e =>
             !e.isPreselectedForTasks && e.categoryConfidence > 0.8
         ).sort((a, b) => b.categoryConfidence - a.categoryConfidence);
         
@@ -751,6 +793,7 @@ class EmailScanner {
             errors: this.scanMetrics.errors.length,
             preselectedForTasks: this.scanMetrics.preselectedCount,
             newsletterCount: this.scanMetrics.newsletterCount,
+            calendlyCount: this.scanMetrics.calendlyCount,
             highConfidence: this.emails.filter(e => e.categoryConfidence >= 0.8).length,
             taskSuggestions: this.emails.filter(e => e.taskSuggested).length,
             scanDuration: this.scanMetrics.endTime ? 
@@ -818,6 +861,10 @@ class EmailScanner {
         return this.emails.filter(email => email.category === 'marketing_news');
     }
 
+    getCalendlyEmails() {
+        return this.emails.filter(email => email.isCalendly);
+    }
+
     getEmailById(emailId) {
         return this.emails.find(email => email.id === emailId);
     }
@@ -876,10 +923,15 @@ class EmailScanner {
             info.category !== 'marketing_news' && 
             (info.from?.includes('newsletter') || 
              info.from?.includes('news') ||
-             info.subject?.match(/newsletter|unsubscribe|désinscr/i))
+             info.from?.includes('noreply') ||
+             info.from?.includes('no-reply') ||
+             info.subject?.match(/newsletter|unsubscribe|désinscr|update.*email.*preference/i))
         );
         
+        const calendlyEmails = this.getCalendlyEmails();
+        
         console.log(`✅ ${newsletters.length} newsletters correctement détectées`);
+        console.log(`📅 ${calendlyEmails.length} emails Calendly détectés`);
         console.log(`❌ ${misclassified.length} newsletters potentiellement mal classées`);
         
         if (misclassified.length > 0) {
@@ -888,6 +940,14 @@ class EmailScanner {
                 console.log(`- "${email.subject}" (${email.category})`);
                 console.log(`  From: ${email.from}`);
                 console.log(`  Score: ${email.score}, Confiance: ${Math.round((email.confidence || 0) * 100)}%`);
+            });
+        }
+        
+        if (calendlyEmails.length > 0) {
+            console.log('\nEmails Calendly:');
+            calendlyEmails.forEach(email => {
+                console.log(`- "${email.subject}" (${email.category})`);
+                console.log(`  From: ${email.from?.emailAddress?.address}`);
             });
         }
         
@@ -918,6 +978,7 @@ class EmailScanner {
             categorizedCount: 0,
             preselectedCount: 0,
             newsletterCount: 0,
+            calendlyCount: 0,
             categoryDistribution: {},
             provider: this.currentProvider,
             errors: [],
@@ -954,7 +1015,7 @@ class EmailScanner {
     exportToCSV() {
         const headers = [
             'Date', 'Provider', 'De', 'Email', 'Sujet', 'Catégorie', 
-            'Confiance', 'Score', 'Pré-sélectionné', 'Newsletter', 'Tâche suggérée'
+            'Confiance', 'Score', 'Pré-sélectionné', 'Newsletter', 'Calendly', 'Tâche suggérée'
         ];
         
         const rows = [headers];
@@ -972,6 +1033,7 @@ class EmailScanner {
                 email.categoryScore || 0,
                 email.isPreselectedForTasks ? 'Oui' : 'Non',
                 email.category === 'marketing_news' ? 'Oui' : 'Non',
+                email.isCalendly ? 'Oui' : 'Non',
                 email.taskSuggested ? 'Oui' : 'Non'
             ]);
         });
@@ -1030,12 +1092,13 @@ class EmailScanner {
     // ================================================
     getDebugInfo() {
         return {
-            version: '15.0',
+            version: '16.0',
             isScanning: this.isScanning,
             currentProvider: this.currentProvider,
             totalEmails: this.emails.length,
             categorizedCount: this.scanMetrics.categorizedCount,
             newsletterCount: this.scanMetrics.newsletterCount,
+            calendlyCount: this.scanMetrics.calendlyCount,
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             preselectedCount: this.getPreselectedEmails().length,
             settings: this.settings,
@@ -1048,7 +1111,7 @@ class EmailScanner {
     }
 
     testCategorization() {
-        console.group('🧪 TEST Catégorisation EmailScanner v15.0');
+        console.group('🧪 TEST Catégorisation EmailScanner v16.0');
         
         const testEmails = [
             {
@@ -1065,12 +1128,24 @@ class EmailScanner {
             },
             {
                 id: 'test3',
-                subject: 'Sahar : un nouveau poste correspond à votre profil',
-                from: { emailAddress: { address: 'no-reply@sahar.teamtailor-mail.com', name: 'Sahar' } },
-                body: { content: 'Strategic Project Manager (F/H) - CDI - Paris... Se désabonner | Supprimer mes données' }
+                subject: 'Sony Community Support',
+                from: { emailAddress: { address: 'support@sony.com', name: 'Sony' } },
+                body: { content: 'Privacy Statement Terms & Conditions Unsubscribe Contact Us © 2025 Sony Europe B.V. All rights reserved.' }
             },
             {
                 id: 'test4',
+                subject: 'Update your email preferences',
+                from: { emailAddress: { address: 'noreply@company.com', name: 'Company' } },
+                body: { content: 'You can update your email preferences to choose which emails you receive from us...' }
+            },
+            {
+                id: 'test5',
+                subject: 'Meeting scheduled via Calendly',
+                from: { emailAddress: { address: 'notifications@calendly.com', name: 'Calendly' } },
+                body: { content: 'Your meeting has been confirmed via Calendly for tomorrow at 2pm' }
+            },
+            {
+                id: 'test6',
                 subject: '[GitHub] A third-party OAuth application has been added to your account',
                 from: { emailAddress: { address: 'noreply@github.com', name: 'GitHub' } },
                 body: { content: 'A third-party OAuth application (MongoDB Atlas) with read:user and user:email scopes was recently authorized' }
@@ -1086,7 +1161,12 @@ class EmailScanner {
             console.log(`📧 "${email.subject}"`);
             console.log(`   From: ${email.from.emailAddress.address}`);
             console.log(`   Category: ${result.category} (Score: ${result.score}, Confidence: ${Math.round((result.confidence || 0) * 100)}%)`);
-            console.log(`   Expected: ${email.id === 'test4' ? 'notifications' : 'marketing_news'}`);
+            console.log(`   Calendly: ${email.isCalendly ? 'Oui' : 'Non'}`);
+            
+            const expectedCat = email.id === 'test5' ? 'meetings' : 
+                                email.id === 'test6' ? 'notifications' : 
+                                'marketing_news';
+            console.log(`   Expected: ${expectedCat}`);
             console.log('');
         });
         
@@ -1134,7 +1214,7 @@ window.emailScanner = new EmailScanner();
 
 // Fonctions de test globales
 window.testEmailScanner = function() {
-    console.group('🧪 TEST EmailScanner v15.0');
+    console.group('🧪 TEST EmailScanner v16.0');
     
     const info = window.emailScanner.getDebugInfo();
     console.log('Debug Info:', info);
@@ -1153,4 +1233,4 @@ window.testEmailScanner = function() {
 // Active le debug des newsletters pour cette session
 window.debugNewsletters = true;
 
-console.log('✅ EmailScanner v15.0 loaded - Intégration optimisée avec CategoryManager v26');
+console.log('✅ EmailScanner v16.0 loaded - Intégration optimisée avec CategoryManager v27');
