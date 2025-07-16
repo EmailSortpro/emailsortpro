@@ -87,7 +87,7 @@ class CategoryManager {
     // MÉTHODE D'ANALYSE PRINCIPALE - REFAITE
     // ================================================
     analyzeEmail(email) {
-        if (!email) return { category: 'other', score: 0, confidence: 0 };
+        if (!email) return { category: 'other', score: 0, confidence: 0, matchedPatterns: [] };
         
         // Vérifier le cache d'analyse
         const cacheKey = this.generateCacheKey(email);
@@ -117,7 +117,7 @@ class CategoryManager {
                 category: 'marketing_news',
                 score: newsletterCheck.score,
                 confidence: newsletterCheck.confidence,
-                matchedPatterns: newsletterCheck.patterns,
+                matchedPatterns: newsletterCheck.patterns || [],
                 hasAbsolute: true
             };
             
@@ -135,11 +135,22 @@ class CategoryManager {
                 results.marketing_news.confidence,
                 newsletterCheck.confidence
             );
-            results.marketing_news.matchedPatterns.push(...newsletterCheck.patterns);
+            // S'assurer que matchedPatterns existe avant d'ajouter
+            if (!results.marketing_news.matchedPatterns) {
+                results.marketing_news.matchedPatterns = [];
+            }
+            if (newsletterCheck.patterns && Array.isArray(newsletterCheck.patterns)) {
+                results.marketing_news.matchedPatterns.push(...newsletterCheck.patterns);
+            }
         }
         
         // Sélectionner la meilleure catégorie
         const bestResult = this.selectBestCategory(results);
+        
+        // S'assurer que matchedPatterns existe toujours
+        if (!bestResult.matchedPatterns) {
+            bestResult.matchedPatterns = [];
+        }
         
         // Mettre en cache le résultat
         this._analysisCache.set(cacheKey, bestResult);
@@ -1065,7 +1076,7 @@ class CategoryManager {
                 category: best.category,
                 score: best.score,
                 confidence: Math.max(best.confidence, 0.6),
-                matchedPatterns: best.matches,
+                matchedPatterns: best.matchedPatterns || [],
                 hasAbsolute: best.hasAbsolute
             };
         }
@@ -1075,7 +1086,7 @@ class CategoryManager {
                 category: 'other',
                 score: best.score,
                 confidence: best.confidence,
-                matchedPatterns: best.matches,
+                matchedPatterns: best.matchedPatterns || [],
                 hasAbsolute: false,
                 reason: 'low_confidence'
             };
@@ -1085,7 +1096,7 @@ class CategoryManager {
             category: best.category,
             score: best.score,
             confidence: best.confidence,
-            matchedPatterns: best.matches,
+            matchedPatterns: best.matchedPatterns || [],
             hasAbsolute: best.hasAbsolute
         };
     }
@@ -1108,6 +1119,7 @@ class CategoryManager {
                 category: categoryId,
                 score: score.total,
                 matches: score.matches,
+                matchedPatterns: score.matches, // Ajouter matchedPatterns pour compatibilité
                 confidence: this.calculateConfidence(score),
                 hasAbsolute: score.hasAbsolute,
                 priority: this.categories[categoryId]?.priority || 50
@@ -1119,6 +1131,7 @@ class CategoryManager {
             category: 'other',
             score: 0,
             matches: [],
+            matchedPatterns: [], // Ajouter pour compatibilité
             confidence: 0,
             hasAbsolute: false,
             priority: 0
