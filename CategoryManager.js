@@ -171,60 +171,105 @@ class CategoryManager {
         let score = 0;
         const patterns = [];
         let hasStrongIndicator = false;
+        let hasBankingIndicator = false;
+        let hasSecurityIndicator = false;
         
         // Convertir tout en minuscules pour la recherche
         const fullTextLower = content.fullText.toLowerCase();
         const subjectLower = content.subject.toLowerCase();
         
-        // 1. PATTERN CRITIQUE: Désabonnement (très fort indicateur)
-        if (this.newsletterPatterns.unsubscribe.test(fullTextLower)) {
-            score += 200;
-            hasStrongIndicator = true;
-            patterns.push({ type: 'critical', keyword: 'unsubscribe_pattern', score: 200 });
-            
-            // Bonus si dans un lien
-            if (fullTextLower.match(/href[^>]*(?:unsubscribe|desinscrire|opt-out)/i)) {
-                score += 50;
-                patterns.push({ type: 'link', keyword: 'unsubscribe_link', score: 50 });
+        // VÉRIFICATIONS PRIORITAIRES pour exclure les faux positifs
+        
+        // 1. Indicateurs bancaires/financiers (EXCLUANT)
+        if (fullTextLower.match(/nouveau.*document.*disponible|documents? contractuels?|espace personnel|banque à distance|codes? d'accès|carte bancaire|virement|prélèvement|échéance|solde compte|relevé|avis d'opération/i)) {
+            hasBankingIndicator = true;
+            score -= 100; // Forte pénalité
+            patterns.push({ type: 'exclusion', keyword: 'banking_indicator', score: -100 });
+        }
+        
+        // 2. Indicateurs de sécurité (EXCLUANT)
+        if (fullTextLower.match(/sécurité|securite|codes? d'accès|mot de passe|authentification|confidential|ne.*jamais.*demander/i)) {
+            hasSecurityIndicator = true;
+            score -= 50;
+            patterns.push({ type: 'exclusion', keyword: 'security_indicator', score: -50 });
+        }
+        
+        // 3. Domaines d'envoi critiques (EXCLUANT pour newsletters)
+        const criticalDomains = /banque|bank|cic\.fr|creditagricole|bnp|societegenerale|laposte|impots|ameli|caf\.fr|pole-emploi|urssaf/i;
+        if (content.domain && criticalDomains.test(content.domain)) {
+            score -= 75;
+            patterns.push({ type: 'exclusion', keyword: 'critical_domain', score: -75 });
+        }
+        
+        // Si c'est clairement un email bancaire/officiel, arrêter ici
+        if (hasBankingIndicator || hasSecurityIndicator) {
+            return {
+                isNewsletter: false,
+                score: Math.max(0, score),
+                confidence: 0,
+                patterns: patterns
+            };
+        }
+        
+        // 4. PATTERN CRITIQUE: Désabonnement (fort indicateur MAIS vérifier le contexte)
+        const unsubscribeMatch = this.newsletterPatterns.unsubscribe.test(fullTextLower);
+        const hasMarketingContext = fullTextLower.match(/offre|promotion|solde|reduction|decouvr|nouveau produit|actualite|news/i);
+        
+        if (unsubscribeMatch) {
+            // Vérifier si c'est dans un contexte marketing
+            if (hasMarketingContext || !hasBankingIndicator) {
+                score += 200;
+                hasStrongIndicator = true;
+                patterns.push({ type: 'critical', keyword: 'unsubscribe_pattern', score: 200 });
+                
+                // Bonus si dans un lien
+                if (fullTextLower.match(/href[^>]*(?:unsubscribe|desinscrire|opt-out)/i)) {
+                    score += 50;
+                    patterns.push({ type: 'link', keyword: 'unsubscribe_link', score: 50 });
+                }
             }
         }
         
-        // 2. PATTERN FORT: Gestion de fréquence
+        // 5. PATTERN FORT: Gestion de fréquence
         if (this.newsletterPatterns.frequency.test(fullTextLower)) {
             score += 150;
             hasStrongIndicator = true;
             patterns.push({ type: 'strong', keyword: 'frequency_management', score: 150 });
         }
         
-        // 3. PATTERN FORT: Indicateurs newsletter
+        // 6. PATTERN FORT: Indicateurs newsletter explicites
         if (this.newsletterPatterns.newsletter.test(fullTextLower)) {
             score += 100;
             patterns.push({ type: 'strong', keyword: 'newsletter_indicator', score: 100 });
         }
         
-        // 4. Domaine expéditeur typique
+        // 7. Domaine expéditeur typique newsletter
         if (content.domain) {
-            const newsletterDomains = /news|newsletter|mail|email|marketing|campaign|mailchimp|sendgrid|mailgun|noreply|no-reply|notification|info|contact|hello|team/i;
-            if (newsletterDomains.test(content.domain)) {
+            const newsletterDomains = /news|newsletter|mail|email|marketing|campaign|mailchimp|sendgrid|mailgun/i;
+            if (newsletterDomains.test(content.domain) && !criticalDomains.test(content.domain)) {
                 score += 75;
                 patterns.push({ type: 'domain', keyword: `newsletter_domain_${content.domain}`, score: 75 });
             }
         }
         
-        // 5. Adresse expéditeur typique
+        // 8. Adresse expéditeur typique (mais exclure noreply bancaire)
         const fromEmail = content.fromEmail?.toLowerCase() || '';
-        if (fromEmail.match(/^(no-?reply|noreply|newsletter|news|info|hello|contact|notification|team|support|marketing)@/i)) {
+        if (fromEmail.match(/^(newsletter|news|info|hello|contact|marketing)@/i)) {
             score += 50;
             patterns.push({ type: 'sender', keyword: 'newsletter_sender', score: 50 });
+        } else if (fromEmail.includes('noreply') && !hasBankingIndicator) {
+            // noreply n'est un indicateur newsletter que si ce n'est pas bancaire
+            score += 25;
+            patterns.push({ type: 'sender', keyword: 'noreply_sender', score: 25 });
         }
         
-        // 6. Contenu marketing
-        if (this.newsletterPatterns.marketing.test(fullTextLower)) {
+        // 9. Contenu marketing
+        if (this.newsletterPatterns.marketing.test(fullTextLower) && hasMarketingContext) {
             score += 30;
             patterns.push({ type: 'content', keyword: 'marketing_content', score: 30 });
         }
         
-        // 7. Labels Gmail spécifiques
+        // 10. Labels Gmail spécifiques
         if (content.labels && content.labels.length > 0) {
             if (content.labels.includes('CATEGORY_PROMOTIONS') || 
                 content.labels.includes('CATEGORY_SOCIAL') ||
@@ -235,7 +280,7 @@ class CategoryManager {
             }
         }
         
-        // 8. Patterns spécifiques détectés dans les exemples
+        // 11. Patterns spécifiques détectés dans les exemples
         // Welcome to the Jungle
         if (fullTextLower.includes('matching your search') || 
             fullTextLower.includes('jobs matching') ||
@@ -251,25 +296,25 @@ class CategoryManager {
             patterns.push({ type: 'specific', keyword: 'recap_email', score: 50 });
         }
         
-        // Calculer la confiance
+        // Calculer la confiance (ajustée pour être moins permissive)
         let confidence = 0;
-        if (hasStrongIndicator) {
-            confidence = Math.min(0.95, 0.5 + (score / 400));
-        } else if (score >= 200) {
+        if (hasStrongIndicator && score >= 200) {
+            confidence = Math.min(0.95, 0.5 + (score / 500));
+        } else if (score >= 300) {
             confidence = 0.85;
-        } else if (score >= 150) {
+        } else if (score >= 200) {
             confidence = 0.75;
-        } else if (score >= 100) {
+        } else if (score >= 150) {
             confidence = 0.65;
-        } else if (score >= 50) {
+        } else if (score >= 100) {
             confidence = 0.55;
         } else {
-            confidence = score / 200;
+            confidence = Math.max(0, score / 300);
         }
         
         return {
-            isNewsletter: score >= 100 || hasStrongIndicator,
-            score: score,
+            isNewsletter: score >= 150 && hasStrongIndicator && !hasBankingIndicator,
+            score: Math.max(0, score),
             confidence: confidence,
             patterns: patterns
         };
