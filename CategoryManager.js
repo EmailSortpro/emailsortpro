@@ -204,6 +204,7 @@ class CategoryManager {
         
         const textLower = content.fullText.toLowerCase();
         const subjectLower = content.subject.toLowerCase();
+        const fromEmail = content.fromEmail?.toLowerCase() || '';
         
         // 1. PATTERNS CRITIQUES - Score très élevé
         
@@ -219,6 +220,12 @@ class CategoryManager {
             }
         }
         
+        // Patterns spécifiques EDF et conseillers
+        if (textLower.match(/votre conseiller|espace client|decouvrez.*avantages|suivre.*conso|telecharger.*appli/i)) {
+            score += 150;
+            patterns.push({ type: 'strong', keyword: 'customer_portal_promo', score: 150 });
+        }
+        
         // Newsletter explicite
         if (this.compiledPatterns.newsletter.test(textLower)) {
             score += 200;
@@ -231,7 +238,24 @@ class CategoryManager {
             patterns.push({ type: 'strong', keyword: 'marketing_pattern', score: 150 });
         }
         
-        // 2. DOMAINES TYPIQUES
+        // 2. PATTERNS D'EXCLUSION POUR CANDIDATURES
+        const isCandidature = textLower.match(/votre candidature|your application|suite favorable|pas retenue|thank you for your.*application/i);
+        const isFromRecruiter = fromEmail.match(/recrutement|recruiting|recruitment|talent|rh|hr|candidat/i) || 
+                                content.fromName?.toLowerCase().match(/recrutement|recruiting|talent/i);
+        
+        if (isCandidature && !this.compiledPatterns.unsubscribe.test(textLower)) {
+            // C'est une vraie notification de candidature, pas une newsletter
+            score -= 500;
+            patterns.push({ type: 'exclusion', keyword: 'genuine_application_response', score: -500 });
+            return {
+                isDefiniteNewsletter: false,
+                score: 0,
+                confidence: 0,
+                patterns: patterns
+            };
+        }
+        
+        // 3. DOMAINES TYPIQUES
         const domain = content.domain?.toLowerCase() || '';
         
         // Domaines newsletter évidents
@@ -240,24 +264,28 @@ class CategoryManager {
             patterns.push({ type: 'domain', keyword: `newsletter_domain_${domain}`, score: 100 });
         }
         
-        // Sous-domaines marketing (comme news.winamax.fr)
+        // Domaines d'entreprises avec newsletters (comme relation-client-edf.fr)
+        if (domain.match(/relation-client|customer-service|client-info|info-client/i)) {
+            score += 150;
+            patterns.push({ type: 'domain', keyword: 'customer_communication_domain', score: 150 });
+        }
+        
+        // Sous-domaines marketing
         if (domain.includes('.') && domain.match(/^(news|newsletter|email|mail|marketing|info|contact)\./i)) {
             score += 150;
             patterns.push({ type: 'domain', keyword: 'marketing_subdomain', score: 150 });
             isDefiniteNewsletter = true;
         }
         
-        // 3. EXPÉDITEUR
-        const fromEmail = content.fromEmail?.toLowerCase() || '';
-        const fromName = content.fromName?.toLowerCase() || '';
+        // 4. EXPÉDITEUR
         
         // Emails typiques newsletter
-        if (fromEmail.match(/newsletter|news|marketing|info|contact|noreply|notification|alert|update|promo/i)) {
+        if (fromEmail.match(/newsletter|news|marketing|info|contact|noreply|notification|alert|update|promo|conseiller|relation-client/i)) {
             score += 100;
             patterns.push({ type: 'sender', keyword: 'newsletter_sender', score: 100 });
         }
         
-        // 4. CONTENU SPÉCIFIQUE
+        // 5. CONTENU SPÉCIFIQUE
         
         // Emojis dans le sujet (fort indicateur)
         if (subjectLower.match(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u)) {
@@ -284,10 +312,10 @@ class CategoryManager {
             isDefiniteNewsletter = true;
         }
         
-        // 5. EXCLUSIONS RÉDUITES
+        // 6. EXCLUSIONS RÉDUITES
         
         // Vérifier si c'est vraiment transactionnel/sécurité
-        const isTransactional = textLower.match(/facture|invoice|paiement|payment|virement|securit[eé]|authentification|verification.*compte/i);
+        const isTransactional = textLower.match(/facture.*payer|invoice.*payment|paiement.*effectuer|virement.*effectue|securit[eé]|authentification|verification.*compte/i);
         const hasCriticalInfo = textLower.match(/mot\\s*de\\s*passe|password|code.*s[eé]curit[eé]|pin|confidentiel/i);
         
         if (isTransactional && hasCriticalInfo && !this.compiledPatterns.unsubscribe.test(textLower)) {
@@ -296,7 +324,7 @@ class CategoryManager {
             isDefiniteNewsletter = false;
         }
         
-        // 6. CALCUL FINAL
+        // 7. CALCUL FINAL
         
         // Si patterns newsletter très forts, forcer la détection
         if (score >= 400 || (score >= 300 && domain.includes('newsletter'))) {
@@ -576,7 +604,9 @@ class CategoryManager {
                     'newsletter', 'unsubscribe', 'se desabonner', 'se desinscrire',
                     'cliquez ici', 'click here', 'ne plus recevoir', 'stop email',
                     'manage preferences', 'gerer preferences', 'email preferences',
-                    'vous recevez ce', 'you received this', 'bulk email'
+                    'vous recevez ce', 'you received this', 'bulk email',
+                    'desabonnement', 'choisir quels emails', 'pour vous desabonner',
+                    'espace client', 'votre conseiller', 'decouvrez avantages'
                 ],
                 strong: [
                     'marketing', 'promotion', 'offre', 'promo', 'solde', 'sale',
@@ -586,12 +616,15 @@ class CategoryManager {
                     'recap', 'summary', 'digest', 'update', 'news', 'info',
                     'hebdomadaire', 'weekly', 'mensuel', 'monthly', 'daily',
                     'correspond profil', 'match profile', 'job alert',
-                    'freebet', 'pari', 'bet', 'mission', 'challenge'
+                    'freebet', 'pari', 'bet', 'mission', 'challenge',
+                    'avantages', 'suivre conso', 'economie', 'appli',
+                    'telecharger', 'adopter', 'rendez-vous', 'prochain'
                 ],
                 weak: [
                     'profitez', 'beneficiez', 'advantage', 'opportunite',
                     'inscrivez', 'subscribe', 'membre', 'member', 'club',
-                    'actualite', 'article', 'blog', 'contenu', 'content'
+                    'actualite', 'article', 'blog', 'contenu', 'content',
+                    'conseil', 'astuce', 'solution', 'service'
                 ],
                 exclusions: [] // Aucune exclusion pour cette catégorie
             },
@@ -602,7 +635,8 @@ class CategoryManager {
                     'facture', 'invoice', 'paiement', 'payment', 'virement',
                     'remboursement', 'refund', 'releve bancaire', 'bank statement',
                     'devis', 'quote', 'commande numero', 'order number',
-                    'montant du', 'montant total', 'total amount', 'a payer'
+                    'montant du', 'montant total', 'total amount', 'a payer',
+                    'reglement facture', 'payer facture', 'facture a regler'
                 ],
                 strong: [
                     'montant', 'amount', 'euro', 'dollar', 'prix', 'price',
@@ -610,13 +644,14 @@ class CategoryManager {
                     'echeance', 'due date', 'date limite', 'deadline',
                     'bancaire', 'bank', 'compte', 'account', 'carte',
                     'tresorerie', 'treasury', 'comptabilite', 'accounting',
-                    'budget', 'depense', 'expense', 'frais', 'fees'
+                    'budget', 'depense', 'expense', 'frais', 'fees',
+                    'iban', 'virement', 'prelevement', 'cheque'
                 ],
                 weak: [
                     'reference', 'numero', 'document', 'piece jointe',
                     'valider', 'validation', 'approuver', 'approval'
                 ],
-                exclusions: ['newsletter', 'promotion', 'offre speciale']
+                exclusions: ['newsletter', 'promotion', 'offre speciale', 'decouvrez', 'conseiller', 'espace client']
             },
 
             // SECURITY - Haute priorité
@@ -679,7 +714,7 @@ class CategoryManager {
                 weak: [
                     'rencontre', 'voir', 'discuter', 'talk', 'echanger'
                 ],
-                exclusions: ['webinar marketing', 'conference commerciale']
+                exclusions: ['webinar marketing', 'conference commerciale', 'candidature', 'application']
             },
 
             // COMMERCIAL - B2B
@@ -698,7 +733,7 @@ class CategoryManager {
                 weak: [
                     'interessant', 'potentiel', 'envisager', 'consider'
                 ],
-                exclusions: ['newsletter', 'promotion personnelle']
+                exclusions: ['newsletter', 'promotion personnelle', 'candidature', 'votre candidature', 'suite favorable']
             },
 
             // NOTIFICATIONS - Automatiques
@@ -706,17 +741,25 @@ class CategoryManager {
                 absolute: [
                     'no reply', 'noreply', 'ne pas repondre', 'do not reply',
                     'notification automatique', 'automated notification',
-                    'message automatique', 'automated message'
+                    'message automatique', 'automated message',
+                    'candidature retenue', 'candidature pas retenue',
+                    'thank you for your application', 'merci pour votre candidature',
+                    'nous avons recu votre candidature', 'received your application',
+                    'suite favorable', 'pas de suite favorable'
                 ],
                 strong: [
                     'notification', 'alert', 'alerte', 'avis', 'notice',
                     'statut', 'status', 'confirmation', 'confirme',
-                    'automatique', 'automated', 'systeme', 'system'
+                    'automatique', 'automated', 'systeme', 'system',
+                    'candidature', 'application', 'postulation',
+                    'reponse automatique', 'automated response',
+                    'accusé reception', 'acknowledgment'
                 ],
                 weak: [
-                    'information', 'update', 'mise a jour', 'changement'
+                    'information', 'update', 'mise a jour', 'changement',
+                    'merci', 'thank you', 'cordialement', 'regards'
                 ],
-                exclusions: ['action requise', 'urgent', 'newsletter']
+                exclusions: ['action requise', 'urgent', 'newsletter', 'rendez-vous', 'reunion']
             },
 
             // HR - Ressources humaines
@@ -752,7 +795,7 @@ class CategoryManager {
                 weak: [
                     'document', 'fichier', 'rapport', 'update'
                 ],
-                exclusions: ['newsletter projet']
+                exclusions: ['newsletter projet', 'candidature', 'votre candidature', 'suite favorable']
             },
 
             // SUPPORT - Technique
