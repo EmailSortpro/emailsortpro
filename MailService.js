@@ -152,18 +152,12 @@ class MailService {
     // ================================================
     async getMessages(folder = 'INBOX', options = {}) {
         console.log('[MailService] 📧 Récupération des messages...');
-        console.log('[MailService] Provider actuel:', this.currentProvider);
+        console.log('[MailService] Provider:', this.currentProvider);
         console.log('[MailService] Options:', options);
         
         // S'assurer que le service est initialisé
         if (!this._isInitialized) {
             await this.initialize();
-        }
-        
-        // Détecter le provider si nécessaire
-        if (!this.currentProvider) {
-            this.detectActiveProvider();
-            console.log('[MailService] Provider détecté:', this.currentProvider);
         }
         
         if (!this.isAuthenticated()) {
@@ -172,7 +166,7 @@ class MailService {
         
         const service = this.authServices[this.currentProvider];
         if (!service) {
-            throw new Error(`Service non disponible pour ${this.currentProvider}`);
+            throw new Error('Service non disponible');
         }
         
         try {
@@ -218,11 +212,11 @@ class MailService {
     // ================================================
     ensureCompleteContent(email) {
         // S'assurer que l'email a tous les champs nécessaires
-        if (!email.fullTextContent) {
+        if (!email.fullTextContent && (email.body?.content || email.bodyText || email.bodyHtml)) {
             // Reconstruire le contenu complet si nécessaire
             let fullText = '';
             
-            // Ajouter le sujet (très important, répété pour augmenter le poids)
+            // Ajouter le sujet (important pour la catégorisation)
             if (email.subject) {
                 fullText += email.subject + ' ' + email.subject + ' ' + email.subject + '\n\n';
             }
@@ -232,6 +226,8 @@ class MailService {
                 const fromEmail = email.from.emailAddress.address || '';
                 const fromName = email.from.emailAddress.name || '';
                 fullText += `De: ${fromName} <${fromEmail}>\n`;
+                
+                // Ajouter le domaine
                 if (fromEmail.includes('@')) {
                     const domain = fromEmail.split('@')[1];
                     fullText += `Domaine: ${domain}\n`;
@@ -245,24 +241,22 @@ class MailService {
             
             fullText += '\n';
             
-            // Ajouter le corps - AMÉLIORATION : Inclure le HTML brut ET le texte extrait
+            // Ajouter le corps avec les balises pour préserver les liens
             if (email.body?.content) {
-                // Inclure le HTML brut pour détecter les patterns exacts
-                fullText += '[HTML_RAW]\n' + email.body.content + '\n[/HTML_RAW]\n\n';
-                
-                // Extraire et inclure le texte propre
-                if (email.body.contentType === 'html') {
-                    const extractedText = this.extractTextFromHtml(email.body.content);
-                    fullText += '[TEXT_EXTRACTED]\n' + extractedText + '\n[/TEXT_EXTRACTED]\n';
+                if (email.body.contentType === 'html' || email.body.content.includes('<')) {
+                    // Conserver le HTML brut pour détecter les patterns
+                    fullText += '[HTML_CONTENT]\n' + email.body.content + '\n[/HTML_CONTENT]\n\n';
+                    
+                    // Extraire aussi le texte
+                    const textContent = this.extractTextFromHtml(email.body.content);
+                    fullText += '[TEXT_CONTENT]\n' + textContent + '\n[/TEXT_CONTENT]\n';
                 } else {
                     fullText += '[TEXT_CONTENT]\n' + email.body.content + '\n[/TEXT_CONTENT]\n';
                 }
             } else if (email.bodyHtml) {
-                // HTML brut
-                fullText += '[HTML_RAW]\n' + email.bodyHtml + '\n[/HTML_RAW]\n\n';
-                // Texte extrait
-                const extractedText = this.extractTextFromHtml(email.bodyHtml);
-                fullText += '[TEXT_EXTRACTED]\n' + extractedText + '\n[/TEXT_EXTRACTED]\n';
+                fullText += '[HTML_CONTENT]\n' + email.bodyHtml + '\n[/HTML_CONTENT]\n\n';
+                const textContent = this.extractTextFromHtml(email.bodyHtml);
+                fullText += '[TEXT_CONTENT]\n' + textContent + '\n[/TEXT_CONTENT]\n';
             } else if (email.bodyText) {
                 fullText += '[TEXT_CONTENT]\n' + email.bodyText + '\n[/TEXT_CONTENT]\n';
             } else if (email.bodyPreview) {
@@ -288,15 +282,6 @@ class MailService {
                 fullText += '\n[LABELS]\n';
                 email.labelIds.forEach(label => {
                     fullText += label + ' ';
-                    if (label.includes('CATEGORY_PROMOTIONS')) {
-                        fullText += '\n[GMAIL_PROMOTIONS_CATEGORY]';
-                    }
-                    if (label.includes('CATEGORY_SOCIAL')) {
-                        fullText += '\n[GMAIL_SOCIAL_CATEGORY]';
-                    }
-                    if (label.includes('CATEGORY_UPDATES')) {
-                        fullText += '\n[GMAIL_UPDATES_CATEGORY]';
-                    }
                 });
                 fullText += '\n[/LABELS]\n';
             }
@@ -331,56 +316,30 @@ class MailService {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = html;
             
-            // IMPORTANT : Extraire d'abord les liens de désabonnement et les textes importants
-            const unsubscribeLinks = [];
-            const importantTexts = [];
+            // IMPORTANT: Extraire d'abord les liens importants
+            const importantLinks = [];
             
-            // Chercher tous les liens
+            // Chercher les liens de désabonnement
             tempDiv.querySelectorAll('a').forEach(link => {
                 const href = link.getAttribute('href') || '';
-                const text = (link.textContent || link.innerText || '').trim();
+                const text = (link.textContent || link.innerText || '').toLowerCase();
                 
-                // Conserver les textes des liens de désabonnement
-                if (text.match(/unsubscribe|se désabonner|désinscrire|opt.?out|stop email|arrêter|ne plus recevoir|gérer.*préférences|manage.*preferences|email preferences/i)) {
-                    unsubscribeLinks.push(text);
-                }
-                
-                // Remplacer le lien par son texte pour la suite du traitement
-                if (text) {
-                    const textNode = document.createTextNode(text + ' ');
-                    link.parentNode?.replaceChild(textNode, link);
+                // Détecter les liens de désabonnement et préférences
+                if (text.includes('unsubscribe') || text.includes('desinscrire') || 
+                    text.includes('désinscrire') || text.includes('desabonner') ||
+                    text.includes('preferences') || text.includes('préférences') ||
+                    text.includes('manage') || text.includes('gérer') ||
+                    text.includes('opt out') || text.includes('opt-out') ||
+                    text.includes('email preferences') || text.includes('notification') ||
+                    href.includes('unsubscribe') || href.includes('preferences') ||
+                    href.includes('opt-out') || href.includes('optout')) {
+                    
+                    importantLinks.push(text + ' [LINK:' + href + ']');
                 }
             });
             
-            // Chercher les textes importants dans tout le HTML
-            const allText = tempDiv.textContent || tempDiv.innerText || '';
-            
-            // Patterns de newsletter
-            const newsletterPatterns = [
-                /newsletter/i,
-                /mailing list/i,
-                /liste de diffusion/i,
-                /cliquez ici pour/i,
-                /click here to/i,
-                /email preferences/i,
-                /notification/i,
-                /recevoir ces notifications/i,
-                /change email frequency/i,
-                /voir.*en ligne/i,
-                /view.*online/i,
-                /si.*difficultés.*visualiser/i,
-                /trouble viewing/i
-            ];
-            
-            newsletterPatterns.forEach(pattern => {
-                const matches = allText.match(pattern);
-                if (matches) {
-                    importantTexts.push(...matches);
-                }
-            });
-            
-            // Supprimer les éléments non textuels
-            const elementsToRemove = tempDiv.querySelectorAll('script, style, noscript, iframe, object, embed, meta, link');
+            // Supprimer les éléments non textuels mais préserver la structure
+            const elementsToRemove = tempDiv.querySelectorAll('script, style, noscript, iframe, object, embed');
             elementsToRemove.forEach(el => el.remove());
             
             // Préserver la structure du texte
@@ -398,20 +357,15 @@ class MailService {
                 el.innerHTML = el.innerHTML + ' ';
             });
             
-            // Extraire le texte final
+            // Extraire le texte
             let text = tempDiv.textContent || tempDiv.innerText || '';
             
-            // Ajouter les liens de désabonnement au début pour s'assurer qu'ils sont détectés
-            if (unsubscribeLinks.length > 0) {
-                text = '\n[UNSUBSCRIBE_LINKS]\n' + unsubscribeLinks.join('\n') + '\n[/UNSUBSCRIBE_LINKS]\n' + text;
+            // Ajouter les liens importants extraits
+            if (importantLinks.length > 0) {
+                text += '\n\n[IMPORTANT_LINKS]\n' + importantLinks.join('\n') + '\n[/IMPORTANT_LINKS]';
             }
             
-            // Ajouter les textes importants
-            if (importantTexts.length > 0) {
-                text = '\n[NEWSLETTER_INDICATORS]\n' + importantTexts.join('\n') + '\n[/NEWSLETTER_INDICATORS]\n' + text;
-            }
-            
-            // Nettoyer les espaces excessifs tout en préservant la structure
+            // Nettoyer tout en préservant la structure
             text = text
                 .replace(/\r\n/g, '\n')
                 .replace(/\r/g, '\n')
