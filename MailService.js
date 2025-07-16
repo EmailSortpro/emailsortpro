@@ -1,5 +1,5 @@
-// MailService.js - Version 2.0 - Service unifié complet et fonctionnel
-// Intégration avec GoogleAuthService et AuthService sans erreurs
+// MailService.js - Version 3.0 - Service unifié avec extraction HTML améliorée
+// Correction de l'extraction du contenu pour une meilleure détection des newsletters
 
 class MailService {
     constructor() {
@@ -12,7 +12,7 @@ class MailService {
             outlook: window.authService
         };
         
-        console.log('[MailService] v2.0 - Service unifié créé');
+        console.log('[MailService] v3.0 - Service unifié avec extraction améliorée');
     }
 
     // ================================================
@@ -212,31 +212,87 @@ class MailService {
     // ================================================
     ensureCompleteContent(email) {
         // S'assurer que l'email a tous les champs nécessaires
-        if (!email.fullTextContent && (email.body?.content || email.bodyText || email.bodyHtml)) {
+        if (!email.fullTextContent) {
             // Reconstruire le contenu complet si nécessaire
             let fullText = '';
             
-            // Ajouter le sujet
+            // Ajouter le sujet (très important, répété pour augmenter le poids)
             if (email.subject) {
-                fullText += email.subject + '\n\n';
+                fullText += email.subject + ' ' + email.subject + ' ' + email.subject + '\n\n';
             }
             
             // Ajouter l'expéditeur
             if (email.from?.emailAddress) {
-                fullText += `From: ${email.from.emailAddress.name || ''} <${email.from.emailAddress.address}>\n\n`;
+                const fromEmail = email.from.emailAddress.address || '';
+                const fromName = email.from.emailAddress.name || '';
+                fullText += `De: ${fromName} <${fromEmail}>\n`;
+                if (fromEmail.includes('@')) {
+                    const domain = fromEmail.split('@')[1];
+                    fullText += `Domaine: ${domain}\n`;
+                }
             }
             
-            // Ajouter le corps
-            if (email.bodyText) {
-                fullText += email.bodyText;
-            } else if (email.body?.content) {
+            // Ajouter la date
+            if (email.receivedDateTime) {
+                fullText += `Date: ${new Date(email.receivedDateTime).toLocaleString('fr-FR')}\n`;
+            }
+            
+            fullText += '\n';
+            
+            // Ajouter le corps - AMÉLIORATION : Inclure le HTML brut ET le texte extrait
+            if (email.body?.content) {
+                // Inclure le HTML brut pour détecter les patterns exacts
+                fullText += '[HTML_RAW]\n' + email.body.content + '\n[/HTML_RAW]\n\n';
+                
+                // Extraire et inclure le texte propre
                 if (email.body.contentType === 'html') {
-                    fullText += this.extractTextFromHtml(email.body.content);
+                    const extractedText = this.extractTextFromHtml(email.body.content);
+                    fullText += '[TEXT_EXTRACTED]\n' + extractedText + '\n[/TEXT_EXTRACTED]\n';
                 } else {
-                    fullText += email.body.content;
+                    fullText += '[TEXT_CONTENT]\n' + email.body.content + '\n[/TEXT_CONTENT]\n';
                 }
             } else if (email.bodyHtml) {
-                fullText += this.extractTextFromHtml(email.bodyHtml);
+                // HTML brut
+                fullText += '[HTML_RAW]\n' + email.bodyHtml + '\n[/HTML_RAW]\n\n';
+                // Texte extrait
+                const extractedText = this.extractTextFromHtml(email.bodyHtml);
+                fullText += '[TEXT_EXTRACTED]\n' + extractedText + '\n[/TEXT_EXTRACTED]\n';
+            } else if (email.bodyText) {
+                fullText += '[TEXT_CONTENT]\n' + email.bodyText + '\n[/TEXT_CONTENT]\n';
+            } else if (email.bodyPreview) {
+                fullText += '[PREVIEW]\n' + email.bodyPreview + '\n[/PREVIEW]\n';
+            }
+            
+            // Ajouter le snippet Gmail si disponible
+            if (email.gmailMetadata?.snippet && !fullText.includes(email.gmailMetadata.snippet)) {
+                fullText += '\n[SNIPPET]\n' + email.gmailMetadata.snippet + '\n[/SNIPPET]\n';
+            }
+            
+            // Ajouter les métadonnées
+            if (email.hasAttachments) {
+                fullText += '\n[ATTACHMENTS]';
+            }
+            
+            if (email.importance === 'high') {
+                fullText += '\n[HIGH_PRIORITY]';
+            }
+            
+            // Ajouter les labels Gmail
+            if (email.labelIds && Array.isArray(email.labelIds)) {
+                fullText += '\n[LABELS]\n';
+                email.labelIds.forEach(label => {
+                    fullText += label + ' ';
+                    if (label.includes('CATEGORY_PROMOTIONS')) {
+                        fullText += '\n[GMAIL_PROMOTIONS_CATEGORY]';
+                    }
+                    if (label.includes('CATEGORY_SOCIAL')) {
+                        fullText += '\n[GMAIL_SOCIAL_CATEGORY]';
+                    }
+                    if (label.includes('CATEGORY_UPDATES')) {
+                        fullText += '\n[GMAIL_UPDATES_CATEGORY]';
+                    }
+                });
+                fullText += '\n[/LABELS]\n';
             }
             
             email.fullTextContent = fullText;
@@ -260,7 +316,7 @@ class MailService {
     }
 
     // ================================================
-    // EXTRACTION DE TEXTE DEPUIS HTML
+    // EXTRACTION DE TEXTE DEPUIS HTML - AMÉLIORÉE
     // ================================================
     extractTextFromHtml(html) {
         if (!html) return '';
@@ -269,33 +325,100 @@ class MailService {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = html;
             
+            // IMPORTANT : Extraire d'abord les liens de désabonnement et les textes importants
+            const unsubscribeLinks = [];
+            const importantTexts = [];
+            
+            // Chercher tous les liens
+            tempDiv.querySelectorAll('a').forEach(link => {
+                const href = link.getAttribute('href') || '';
+                const text = (link.textContent || link.innerText || '').trim();
+                
+                // Conserver les textes des liens de désabonnement
+                if (text.match(/unsubscribe|se désabonner|désinscrire|opt.?out|stop email|arrêter|ne plus recevoir|gérer.*préférences|manage.*preferences|email preferences/i)) {
+                    unsubscribeLinks.push(text);
+                }
+                
+                // Remplacer le lien par son texte pour la suite du traitement
+                if (text) {
+                    const textNode = document.createTextNode(text + ' ');
+                    link.parentNode?.replaceChild(textNode, link);
+                }
+            });
+            
+            // Chercher les textes importants dans tout le HTML
+            const allText = tempDiv.textContent || tempDiv.innerText || '';
+            
+            // Patterns de newsletter
+            const newsletterPatterns = [
+                /newsletter/i,
+                /mailing list/i,
+                /liste de diffusion/i,
+                /cliquez ici pour/i,
+                /click here to/i,
+                /email preferences/i,
+                /notification/i,
+                /recevoir ces notifications/i,
+                /change email frequency/i,
+                /voir.*en ligne/i,
+                /view.*online/i,
+                /si.*difficultés.*visualiser/i,
+                /trouble viewing/i
+            ];
+            
+            newsletterPatterns.forEach(pattern => {
+                const matches = allText.match(pattern);
+                if (matches) {
+                    importantTexts.push(...matches);
+                }
+            });
+            
             // Supprimer les éléments non textuels
-            const elementsToRemove = tempDiv.querySelectorAll('script, style, noscript, iframe, object, embed');
+            const elementsToRemove = tempDiv.querySelectorAll('script, style, noscript, iframe, object, embed, meta, link');
             elementsToRemove.forEach(el => el.remove());
             
-            // Préserver les sauts de ligne
+            // Préserver la structure du texte
             tempDiv.querySelectorAll('br').forEach(br => {
                 br.replaceWith('\n');
             });
             
-            tempDiv.querySelectorAll('p, div, li, tr').forEach(el => {
+            tempDiv.querySelectorAll('p, div, li, tr, h1, h2, h3, h4, h5, h6').forEach(el => {
                 if (el.textContent.trim()) {
                     el.innerHTML = el.innerHTML + '\n';
                 }
             });
             
-            // Extraire le texte
+            tempDiv.querySelectorAll('td, th').forEach(el => {
+                el.innerHTML = el.innerHTML + ' ';
+            });
+            
+            // Extraire le texte final
             let text = tempDiv.textContent || tempDiv.innerText || '';
             
-            // Nettoyer
+            // Ajouter les liens de désabonnement au début pour s'assurer qu'ils sont détectés
+            if (unsubscribeLinks.length > 0) {
+                text = '\n[UNSUBSCRIBE_LINKS]\n' + unsubscribeLinks.join('\n') + '\n[/UNSUBSCRIBE_LINKS]\n' + text;
+            }
+            
+            // Ajouter les textes importants
+            if (importantTexts.length > 0) {
+                text = '\n[NEWSLETTER_INDICATORS]\n' + importantTexts.join('\n') + '\n[/NEWSLETTER_INDICATORS]\n' + text;
+            }
+            
+            // Nettoyer les espaces excessifs tout en préservant la structure
             text = text
+                .replace(/\r\n/g, '\n')
+                .replace(/\r/g, '\n')
                 .replace(/\n{3,}/g, '\n\n')
                 .replace(/[ \t]+/g, ' ')
+                .replace(/\n[ \t]+/g, '\n')
+                .replace(/[ \t]+\n/g, '\n')
                 .trim();
             
             return text;
         } catch (error) {
             console.warn('[MailService] Erreur extraction HTML:', error);
+            // Fallback basique
             return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
         }
     }
@@ -477,4 +600,4 @@ window.mailService = new MailService();
     }
 })();
 
-console.log('✅ MailService v2.0 loaded - Service unifié complet et fonctionnel');
+console.log('✅ MailService v3.0 loaded - Extraction HTML améliorée pour newsletters');
