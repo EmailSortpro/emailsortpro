@@ -1,5 +1,5 @@
-// MailService.js - Version 3.0 - Service unifié avec extraction HTML améliorée
-// Correction de l'extraction du contenu pour une meilleure détection des newsletters
+// MailService.js - Version 3.1 - Service unifié avec détection améliorée des méthodes
+// Fusion optimisée pour gérer correctement Gmail et Outlook
 
 class MailService {
     constructor() {
@@ -12,7 +12,33 @@ class MailService {
             outlook: window.authService
         };
         
-        console.log('[MailService] v3.0 - Service unifié avec extraction améliorée');
+        console.log('[MailService] v3.1 - Service unifié avec détection améliorée');
+        this.detectAvailableMethods();
+    }
+
+    // ================================================
+    // DÉTECTION DES MÉTHODES DISPONIBLES
+    // ================================================
+    detectAvailableMethods() {
+        console.log('[MailService] 🔍 Détection des méthodes disponibles...');
+        
+        // Détecter les méthodes pour Google/Gmail
+        if (window.googleAuthService) {
+            console.log('[MailService] Gmail - Méthodes disponibles:');
+            console.log('  - fetchEmails:', typeof window.googleAuthService.fetchEmails === 'function');
+            console.log('  - getMessages:', typeof window.googleAuthService.getMessages === 'function');
+            console.log('  - isAuthenticated:', typeof window.googleAuthService.isAuthenticated === 'function');
+            console.log('  - initialize:', typeof window.googleAuthService.initialize === 'function');
+        }
+        
+        // Détecter les méthodes pour Microsoft/Outlook
+        if (window.authService) {
+            console.log('[MailService] Outlook - Méthodes disponibles:');
+            console.log('  - fetchEmails:', typeof window.authService.fetchEmails === 'function');
+            console.log('  - getMessages:', typeof window.authService.getMessages === 'function');
+            console.log('  - isAuthenticated:', typeof window.authService.isAuthenticated === 'function');
+            console.log('  - initialize:', typeof window.authService.initialize === 'function');
+        }
     }
 
     // ================================================
@@ -32,8 +58,16 @@ class MailService {
             // Initialiser le service approprié
             if (this.currentProvider) {
                 const service = this.authServices[this.currentProvider];
-                if (service && typeof service.initialize === 'function') {
-                    await service.initialize();
+                if (service) {
+                    // Vérifier si le service a besoin d'initialisation
+                    if (typeof service.initialize === 'function') {
+                        console.log(`[MailService] Initialisation du service ${this.currentProvider}...`);
+                        await service.initialize();
+                    } else if (typeof service.isInitialized === 'function' && !service.isInitialized()) {
+                        console.log(`[MailService] Le service ${this.currentProvider} n'est pas initialisé et n'a pas de méthode initialize`);
+                    } else {
+                        console.log(`[MailService] Le service ${this.currentProvider} est déjà prêt`);
+                    }
                 }
             }
             
@@ -59,23 +93,49 @@ class MailService {
     // DÉTECTION DU PROVIDER
     // ================================================
     detectActiveProvider() {
+        console.log('[MailService] 🔍 Détection du provider actif...');
+        
         // Vérifier Gmail
-        if (window.googleAuthService && 
-            typeof window.googleAuthService.isAuthenticated === 'function' &&
-            window.googleAuthService.isAuthenticated()) {
-            this.currentProvider = 'google';
-            return 'google';
+        if (window.googleAuthService) {
+            try {
+                let isAuth = false;
+                if (typeof window.googleAuthService.isAuthenticated === 'function') {
+                    isAuth = window.googleAuthService.isAuthenticated();
+                } else if (window.googleAuthService.isAuthenticated === true) {
+                    isAuth = true;
+                }
+                
+                if (isAuth) {
+                    this.currentProvider = 'google';
+                    console.log('[MailService] ✅ Gmail actif et authentifié');
+                    return 'google';
+                }
+            } catch (e) {
+                console.warn('[MailService] Erreur vérification Gmail:', e);
+            }
         }
         
         // Vérifier Outlook
-        if (window.authService && 
-            typeof window.authService.isAuthenticated === 'function' &&
-            window.authService.isAuthenticated()) {
-            this.currentProvider = 'microsoft';
-            return 'microsoft';
+        if (window.authService) {
+            try {
+                let isAuth = false;
+                if (typeof window.authService.isAuthenticated === 'function') {
+                    isAuth = window.authService.isAuthenticated();
+                } else if (window.authService.isAuthenticated === true) {
+                    isAuth = true;
+                }
+                
+                if (isAuth) {
+                    this.currentProvider = 'microsoft';
+                    console.log('[MailService] ✅ Outlook actif et authentifié');
+                    return 'microsoft';
+                }
+            } catch (e) {
+                console.warn('[MailService] Erreur vérification Outlook:', e);
+            }
         }
         
-        console.log('[MailService] Aucun provider authentifié détecté');
+        console.log('[MailService] ⚠️ Aucun provider authentifié détecté');
         return null;
     }
 
@@ -83,6 +143,9 @@ class MailService {
     // GESTION DU PROVIDER
     // ================================================
     getCurrentProvider() {
+        if (!this.currentProvider) {
+            this.detectActiveProvider();
+        }
         return this.currentProvider;
     }
 
@@ -92,24 +155,23 @@ class MailService {
         
         this.currentProvider = normalizedProvider;
         
-        // Initialiser le nouveau service si nécessaire
-        const service = this.authServices[normalizedProvider];
-        if (service && typeof service.initialize === 'function') {
-            if (typeof service.isInitialized === 'function' && !service.isInitialized()) {
-                await service.initialize();
-            } else if (service.isInitialized === false) {
-                await service.initialize();
-            }
-        }
+        // Réinitialiser l'état d'initialisation
+        this._isInitialized = false;
+        
+        // Initialiser le nouveau service
+        await this.initialize();
         
         return normalizedProvider;
     }
 
     normalizeProvider(provider) {
-        if (provider === 'gmail' || provider === 'google') {
+        if (!provider) return null;
+        
+        const providerLower = provider.toLowerCase();
+        if (providerLower === 'gmail' || providerLower === 'google') {
             return 'google';
         }
-        if (provider === 'outlook' || provider === 'microsoft') {
+        if (providerLower === 'outlook' || providerLower === 'microsoft') {
             return 'microsoft';
         }
         return provider;
@@ -126,9 +188,13 @@ class MailService {
             throw new Error(`Service non disponible pour ${provider}`);
         }
         
+        console.log(`[MailService] Authentification ${normalizedProvider}...`);
+        
         if (typeof service.login === 'function') {
             await service.login();
             this.currentProvider = normalizedProvider;
+            this._isInitialized = false; // Forcer la réinitialisation
+            await this.initialize();
         } else {
             throw new Error(`Méthode login non disponible pour ${provider}`);
         }
@@ -139,9 +205,20 @@ class MailService {
             this.detectActiveProvider();
         }
         
+        if (!this.currentProvider) {
+            return false;
+        }
+        
         const service = this.authServices[this.currentProvider];
-        if (service && typeof service.isAuthenticated === 'function') {
+        if (!service) {
+            return false;
+        }
+        
+        // Vérifier l'authentification
+        if (typeof service.isAuthenticated === 'function') {
             return service.isAuthenticated();
+        } else if (service.isAuthenticated === true) {
+            return true;
         }
         
         return false;
@@ -181,28 +258,92 @@ class MailService {
                 onProgress: options.onProgress
             };
             
-            // Utiliser la méthode appropriée selon le service
-            if (typeof service.fetchEmails === 'function') {
-                // GoogleAuthService ou AuthService avec fetchEmails
-                const emails = await service.fetchEmails(fetchOptions);
-                console.log(`[MailService] ✅ ${emails.length} emails récupérés avec contenu complet`);
-                
-                // S'assurer que chaque email a le contenu complet
-                return emails.map(email => this.ensureCompleteContent(email));
-                
-            } else if (typeof service.getMessages === 'function') {
-                // Service avec getMessages
-                const emails = await service.getMessages(folder, fetchOptions);
-                console.log(`[MailService] ✅ ${emails.length} emails récupérés`);
-                
-                return emails.map(email => this.ensureCompleteContent(email));
-                
-            } else {
-                throw new Error('Aucune méthode de récupération disponible');
+            // Détecter la méthode disponible pour ce service
+            let emails = [];
+            let methodUsed = null;
+            
+            // Ordre de priorité des méthodes à essayer
+            const methodsToTry = [
+                { name: 'fetchEmails', check: () => typeof service.fetchEmails === 'function' },
+                { name: 'getMessages', check: () => typeof service.getMessages === 'function' },
+                { name: 'fetchMessages', check: () => typeof service.fetchMessages === 'function' },
+                { name: 'getAllEmails', check: () => typeof service.getAllEmails === 'function' }
+            ];
+            
+            // Essayer chaque méthode dans l'ordre
+            for (const method of methodsToTry) {
+                if (method.check()) {
+                    console.log(`[MailService] Utilisation de la méthode: ${method.name}`);
+                    methodUsed = method.name;
+                    
+                    try {
+                        switch (method.name) {
+                            case 'fetchEmails':
+                                emails = await service.fetchEmails(fetchOptions);
+                                break;
+                            case 'getMessages':
+                                emails = await service.getMessages(folder, fetchOptions);
+                                break;
+                            case 'fetchMessages':
+                                emails = await service.fetchMessages(fetchOptions);
+                                break;
+                            case 'getAllEmails':
+                                emails = await service.getAllEmails(fetchOptions);
+                                break;
+                        }
+                        
+                        // Si on a récupéré des emails, arrêter
+                        if (emails && (Array.isArray(emails) || emails.length >= 0)) {
+                            break;
+                        }
+                    } catch (methodError) {
+                        console.warn(`[MailService] Erreur avec ${method.name}:`, methodError);
+                        // Continuer avec la méthode suivante
+                    }
+                }
             }
+            
+            // Si aucune méthode n'a fonctionné
+            if (!methodUsed) {
+                // Dernière tentative : chercher une méthode générique
+                console.log('[MailService] ⚠️ Aucune méthode standard trouvée, recherche de méthodes alternatives...');
+                
+                // Lister toutes les méthodes disponibles du service
+                const availableMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(service))
+                    .filter(prop => typeof service[prop] === 'function')
+                    .filter(name => name.includes('mail') || name.includes('email') || name.includes('message'));
+                
+                console.log('[MailService] Méthodes disponibles:', availableMethods);
+                
+                throw new Error(`Aucune méthode de récupération disponible pour ${this.currentProvider}. Méthodes du service: ${availableMethods.join(', ')}`);
+            }
+            
+            console.log(`[MailService] ✅ ${emails.length} emails récupérés via ${methodUsed}`);
+            
+            // S'assurer que chaque email a le contenu complet
+            const processedEmails = emails.map(email => this.ensureCompleteContent(email));
+            
+            return processedEmails;
             
         } catch (error) {
             console.error('[MailService] ❌ Erreur récupération messages:', error);
+            
+            // Diagnostic supplémentaire
+            console.log('[MailService] 🔍 Diagnostic du service:');
+            console.log('  - Service existe:', !!service);
+            console.log('  - Service type:', typeof service);
+            console.log('  - Service constructor:', service?.constructor?.name);
+            
+            // Lister toutes les propriétés du service
+            if (service) {
+                const props = Object.getOwnPropertyNames(service);
+                const proto = Object.getPrototypeOf(service);
+                const protoProps = proto ? Object.getOwnPropertyNames(proto) : [];
+                
+                console.log('  - Propriétés directes:', props);
+                console.log('  - Propriétés prototype:', protoProps);
+            }
+            
             throw error;
         }
     }
@@ -223,8 +364,8 @@ class MailService {
             
             // Ajouter l'expéditeur
             if (email.from?.emailAddress) {
-                const fromEmail = email.from.emailAddress.address || '';
-                const fromName = email.from.emailAddress.name || '';
+                const fromEmail = email.from.emailAddress.address || email.from.emailAddress || '';
+                const fromName = email.from.emailAddress.name || email.from.name || '';
                 fullText += `De: ${fromName} <${fromEmail}>\n`;
                 
                 // Ajouter le domaine
@@ -232,11 +373,17 @@ class MailService {
                     const domain = fromEmail.split('@')[1];
                     fullText += `Domaine: ${domain}\n`;
                 }
+            } else if (email.from) {
+                // Format alternatif pour l'expéditeur
+                const fromStr = typeof email.from === 'string' ? email.from : JSON.stringify(email.from);
+                fullText += `De: ${fromStr}\n`;
             }
             
             // Ajouter la date
             if (email.receivedDateTime) {
                 fullText += `Date: ${new Date(email.receivedDateTime).toLocaleString('fr-FR')}\n`;
+            } else if (email.date) {
+                fullText += `Date: ${new Date(email.date).toLocaleString('fr-FR')}\n`;
             }
             
             fullText += '\n';
@@ -300,7 +447,7 @@ class MailService {
         
         // S'assurer que l'email a un ID
         if (!email.id) {
-            email.id = email.messageId || email.itemId || this.generateId();
+            email.id = email.messageId || email.itemId || email.uniqueId || this.generateId();
         }
         
         return email;
@@ -480,8 +627,17 @@ class MailService {
                 info.availableServices[key] = {
                     exists: true,
                     isInitialized: (typeof service.isInitialized === 'function' ? service.isInitialized() : service.isInitialized) || false,
-                    isAuthenticated: (typeof service.isAuthenticated === 'function' ? service.isAuthenticated() : false)
+                    isAuthenticated: (typeof service.isAuthenticated === 'function' ? service.isAuthenticated() : false),
+                    availableMethods: []
                 };
+                
+                // Lister les méthodes importantes
+                const importantMethods = ['fetchEmails', 'getMessages', 'fetchMessages', 'getAllEmails', 'login', 'logout', 'initialize'];
+                importantMethods.forEach(method => {
+                    if (typeof service[method] === 'function') {
+                        info.availableServices[key].availableMethods.push(method);
+                    }
+                });
             }
         });
         
@@ -535,6 +691,35 @@ class MailService {
         // Méthode alias pour compatibilité avec EmailScanner
         return this.getMessages(options.folder || 'INBOX', options);
     }
+
+    // ================================================
+    // MÉTHODE DE DEBUG
+    // ================================================
+    debugService() {
+        console.log('[MailService] 🔍 DEBUG - État actuel:');
+        console.log('  - Provider actuel:', this.currentProvider);
+        console.log('  - Initialisé:', this._isInitialized);
+        console.log('  - Authentifié:', this.isAuthenticated());
+        
+        console.log('\n[MailService] 🔍 DEBUG - Services disponibles:');
+        Object.keys(this.authServices).forEach(key => {
+            const service = this.authServices[key];
+            console.log(`\n  ${key}:`);
+            console.log('    - Existe:', !!service);
+            if (service) {
+                console.log('    - Type:', typeof service);
+                console.log('    - Constructor:', service.constructor?.name);
+                
+                // Méthodes importantes
+                const methods = ['fetchEmails', 'getMessages', 'isAuthenticated', 'initialize', 'login'];
+                methods.forEach(method => {
+                    console.log(`    - ${method}:`, typeof service[method] === 'function' ? '✅ Fonction' : '❌ Non disponible');
+                });
+            }
+        });
+        
+        return this.getDiagnosticInfo();
+    }
 }
 
 // ================================================
@@ -555,9 +740,13 @@ window.mailService = new MailService();
     try {
         await window.mailService.initialize();
         console.log('[MailService] ✅ Auto-initialisation réussie');
+        
+        // Debug initial
+        window.mailService.debugService();
+        
     } catch (error) {
         console.log('[MailService] Auto-initialisation échouée, attente de l\'authentification');
     }
 })();
 
-console.log('✅ MailService v3.0 loaded - Extraction HTML améliorée pour newsletters');
+console.log('✅ MailService v3.1 loaded - Détection améliorée des méthodes Gmail/Outlook');
