@@ -152,12 +152,18 @@ class MailService {
     // ================================================
     async getMessages(folder = 'INBOX', options = {}) {
         console.log('[MailService] 📧 Récupération des messages...');
-        console.log('[MailService] Provider:', this.currentProvider);
+        console.log('[MailService] Provider actuel:', this.currentProvider);
         console.log('[MailService] Options:', options);
         
         // S'assurer que le service est initialisé
         if (!this._isInitialized) {
             await this.initialize();
+        }
+        
+        // Détecter le provider si nécessaire
+        if (!this.currentProvider) {
+            this.detectActiveProvider();
+            console.log('[MailService] Provider détecté:', this.currentProvider);
         }
         
         if (!this.isAuthenticated()) {
@@ -166,7 +172,7 @@ class MailService {
         
         const service = this.authServices[this.currentProvider];
         if (!service) {
-            throw new Error('Service non disponible');
+            throw new Error(`Service non disponible pour ${this.currentProvider}`);
         }
         
         try {
