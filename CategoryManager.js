@@ -134,9 +134,16 @@ class CategoryManager {
             'changement|change|modification|modifi[eé]|' +
             'information|info|communication|annonce|announcement|' +
             'rappel|reminder|relance|follow\\s*up|' +
-            'r[eé]ponse\\s*automatique|auto\\s*reply|out\\s*of\\s*office',
+            'r[eé]ponse\\s*automatique|auto\\s*reply|out\\s*of\\s*office|' +
+            'candidature|application|postulation|thank\\s*you\\s*for\\s*your\\s*application|' +
+            'nous\\s*avons\\s*re[cç]u\\s*votre|received\\s*your\\s*application|' +
+            'suite\\s*favorable|pas\\s*de\\s*suite|regret.*pas.*retenue',
             'i'
         );
+        
+        // Domaines et emails spécifiques
+        this.specificDomains = {};
+        this.specificEmails = {};
     }
 
     // ================================================
@@ -239,9 +246,10 @@ class CategoryManager {
         }
         
         // 2. PATTERNS D'EXCLUSION POUR CANDIDATURES
-        const isCandidature = textLower.match(/votre candidature|your application|suite favorable|pas retenue|thank you for your.*application/i);
+        const isCandidature = textLower.match(/votre candidature|your application|suite favorable|pas retenue|thank you for your.*application|suite de votre candidature|update about your application|nous vous remercions.*candidature|decided to move forward|regret to inform/i);
         const isFromRecruiter = fromEmail.match(/recrutement|recruiting|recruitment|talent|rh|hr|candidat/i) || 
-                                content.fromName?.toLowerCase().match(/recrutement|recruiting|talent/i);
+                                content.fromName?.toLowerCase().match(/recrutement|recruiting|talent/i) ||
+                                textLower.match(/charge.*recrutement|recruitment team|equipe.*recrutement/i);
         
         if (isCandidature && !this.compiledPatterns.unsubscribe.test(textLower)) {
             // C'est une vraie notification de candidature, pas une newsletter
@@ -372,6 +380,20 @@ class CategoryManager {
                 hasAbsolute: score.hasAbsolute,
                 priority: this.categories[categoryId]?.priority || 50
             };
+        }
+        
+        // Boost spécial pour les notifications de candidature
+        const textLower = content.fullText.toLowerCase();
+        if (textLower.match(/suite de votre candidature|update about your application|charge.*recrutement|recruitment team/i)) {
+            if (results.notifications) {
+                results.notifications.score += 200;
+                results.notifications.matchedPatterns.push({ 
+                    type: 'boost', 
+                    keyword: 'recruitment_notification_boost', 
+                    score: 200 
+                });
+                results.notifications.confidence = Math.min(0.95, results.notifications.confidence + 0.2);
+            }
         }
         
         return results;
@@ -703,18 +725,26 @@ class CategoryManager {
                 absolute: [
                     'reunion', 'meeting', 'rendez-vous', 'appointment',
                     'invitation reunion', 'meeting invitation', 'conference',
-                    'call', 'visio', 'teams', 'zoom', 'meet', 'webex'
+                    'call', 'visio', 'teams', 'zoom', 'meet', 'webex',
+                    'salle de reunion', 'meeting room', 'ordre du jour',
+                    'rejoindre reunion', 'join meeting', 'lien de connexion'
                 ],
                 strong: [
                     'calendrier', 'calendar', 'agenda', 'planning', 'schedule',
                     'date', 'heure', 'time', 'horaire', 'disponible',
                     'available', 'disponibilite', 'availability', 'confirmer',
-                    'confirm', 'reporter', 'postpone', 'reschedule', 'annuler'
+                    'confirm', 'reporter', 'postpone', 'reschedule', 'annuler',
+                    'participants', 'attendees', 'invites', 'organizer'
                 ],
                 weak: [
                     'rencontre', 'voir', 'discuter', 'talk', 'echanger'
                 ],
-                exclusions: ['webinar marketing', 'conference commerciale', 'candidature', 'application']
+                exclusions: [
+                    'webinar marketing', 'conference commerciale', 
+                    'candidature', 'application', 'suite de votre candidature',
+                    'update about your application', 'recruitment', 'recrutement',
+                    'charge de recrutement', 'regret to inform'
+                ]
             },
 
             // COMMERCIAL - B2B
@@ -745,7 +775,11 @@ class CategoryManager {
                     'candidature retenue', 'candidature pas retenue',
                     'thank you for your application', 'merci pour votre candidature',
                     'nous avons recu votre candidature', 'received your application',
-                    'suite favorable', 'pas de suite favorable'
+                    'suite favorable', 'pas de suite favorable',
+                    'suite de votre candidature', 'update about your application',
+                    'nous vous remercions de nous avoir fait parvenir',
+                    'decided to move forward', 'regret to inform',
+                    'malheureusement pas en mesure', 'after thorough consideration'
                 ],
                 strong: [
                     'notification', 'alert', 'alerte', 'avis', 'notice',
@@ -753,13 +787,18 @@ class CategoryManager {
                     'automatique', 'automated', 'systeme', 'system',
                     'candidature', 'application', 'postulation',
                     'reponse automatique', 'automated response',
-                    'accusé reception', 'acknowledgment'
+                    'accusé reception', 'acknowledgment',
+                    'recruitment team', 'equipe recrutement',
+                    'charge recrutement', 'recruiter', 'recruteur',
+                    'ressources humaines', 'human resources',
+                    'talent acquisition', 'donner suite', 'giving update'
                 ],
                 weak: [
                     'information', 'update', 'mise a jour', 'changement',
-                    'merci', 'thank you', 'cordialement', 'regards'
+                    'merci', 'thank you', 'cordialement', 'regards',
+                    'remercions', 'appreciate', 'consideration'
                 ],
-                exclusions: ['action requise', 'urgent', 'newsletter', 'rendez-vous', 'reunion']
+                exclusions: ['action requise', 'urgent', 'newsletter', 'rendez-vous', 'reunion', 'meeting invitation']
             },
 
             // HR - Ressources humaines
