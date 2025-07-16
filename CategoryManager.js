@@ -452,7 +452,7 @@ class CategoryManager {
         
         // Boost spécial pour les notifications de candidature
         const textLower = content.fullText.toLowerCase();
-        if (textLower.match(/suite de votre candidature|update about your application|charge.*recrutement|recruitment team|oauth.*application.*added|candidature bien recue|nous avons bien recu votre candidature|indeed apply|welcomekit|equipe rh/i)) {
+        if (textLower.match(/suite de votre candidature|update about your application|charge.*recrutement|recruitment team|oauth.*application.*added|candidature bien recue|nous avons bien recu votre candidature|indeed apply|welcomekit|equipe rh|thanks for applying|application.*submitted successfully|workable|workablemail|copy of your application/i)) {
             if (results.notifications) {
                 results.notifications.score += 250;
                 results.notifications.matchedPatterns.push({ 
@@ -464,7 +464,7 @@ class CategoryManager {
             }
         }
         
-        // Pénalité pour les emails Sony et marketing déguisés en autre chose
+        // Pénalité pour les emails marketing déguisés en autre chose
         if (textLower.match(/your tv upgrade is calling|bravia|made for movies|made for sports|made for gaming|best for design|bigger bolder|lineup is here/i)) {
             if (results.meetings) {
                 results.meetings.score -= 300;
@@ -945,7 +945,12 @@ class CategoryManager {
                 weak: [
                     'document', 'fichier', 'rapport', 'update'
                 ],
-                exclusions: ['newsletter projet', 'candidature', 'votre candidature', 'suite favorable']
+                exclusions: [
+                    'newsletter projet', 'candidature', 'votre candidature', 
+                    'suite favorable', 'application', 'applying', 'thanks for applying',
+                    'application submitted', 'workable', 'workablemail',
+                    'copy of your application', 'withdraw this application'
+                ]
             },
 
             // SUPPORT - Technique
@@ -1511,6 +1516,12 @@ window.testCategoryManager = function() {
             expected: "marketing_news"
         },
         {
+            subject: "Thanks for applying to Booksy",
+            body: "Your application for the Customer Support Outbound Specialist job was submitted successfully. Here's a copy of your application data for safekeeping... Powered by Workable",
+            from: "noreply@candidates.workablemail.com",
+            expected: "notifications"
+        },
+        {
             subject: "VIANNEY, candidature bien reçue pour Customer Success manager",
             body: "Nous avons bien reçu votre candidature... nous l'étudions avec attention... Sans retour de notre part dans un délai de 4 semaines, veuillez considérer que votre candidature n'est pas retenue pour cette fois.",
             from: "beyab-83bc73a9@candidates.welcomekit.co",
@@ -1525,7 +1536,7 @@ window.testCategoryManager = function() {
         {
             subject: "Your TV upgrade is calling—BRAVIA's finest lineup is here🔥",
             body: "Made for Movies... Made for Sports... Made for Gaming... Update your e-mail preferences... Privacy Statement Terms & Conditions Unsubscribe Contact Us",
-            from: "sonyeurope@bmail.sony-europe.com",
+            from: "marketing@bmail.example-electronics.com",
             expected: "marketing_news"
         },
         {
