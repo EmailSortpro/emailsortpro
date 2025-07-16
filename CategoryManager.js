@@ -1,5 +1,5 @@
-// CategoryManager.js - Version 26.0 - Détection newsletter ultra-renforcée
-// Mots-clés densifiés et patterns optimisés
+// CategoryManager.js - Version 27.0 - Détection améliorée et exclusion Calendly
+// Mots-clés enrichis pour newsletters et patterns optimisés
 
 class CategoryManager {
     constructor() {
@@ -26,7 +26,8 @@ class CategoryManager {
             newsletter: null,
             marketing: null,
             commercial: null,
-            notification: null
+            notification: null,
+            calendly: null
         };
         
         this.initializeCategories();
@@ -36,14 +37,14 @@ class CategoryManager {
         this.setupEventListeners();
         this.startAutoSync();
         
-        console.log('[CategoryManager] ✅ Version 26.0 - Détection ultra-renforcée');
+        console.log('[CategoryManager] ✅ Version 27.0 - Détection améliorée avec exclusion Calendly');
     }
 
     // ================================================
     // COMPILATION DES PATTERNS
     // ================================================
     compilePatterns() {
-        // Pattern de désabonnement ULTRA-LARGE
+        // Pattern de désabonnement ENRICHI
         this.compiledPatterns.unsubscribe = new RegExp(
             'unsubscribe|se\\s*d[eé]sabonner|d[eé]sabonner|d[eé]sinscrire|se\\s*d[eé]sinscrire|' +
             'd[eé]sactiv(?:er|ation)|opt\\s*out|opt-out|stop\\s*email|arr[eê]ter|' +
@@ -55,15 +56,18 @@ class CategoryManager {
             'cliqu(?:e|ez)\\s*ici|click\\s*here|remove|retirer|supprimer.*email|' +
             'change\\s*email\\s*frequency|fr[eé]quence.*email|manage\\s*(?:email|notification)|' +
             'email\\s*notifications?|manage\\s*notifications?|' +
+            'update\\s*your\\s*email\\s*preference|mettre\\s*[àa]\\s*jour.*pr[eé]f[eé]rences|' +
+            'email\\s*preference|pr[eé]f[eé]rence.*email|communication\\s*preference|' +
             'vous\\s*(?:pouvez|souhaitez).*(?:d[eé]sabonner|ne\\s*plus)|' +
             'si\\s*vous.*(?:souhaitez|voulez).*(?:ne\\s*plus|arr[eê]ter)|' +
             'pour\\s*(?:ne\\s*plus|arr[eê]ter|cesser).*recevoir|' +
             'no\\s*longer\\s*(?:wish|want).*receive|stop\\s*receiving|' +
-            'r[eé]silier|annuler.*(?:inscription|abonnement)|cancel.*subscription',
+            'r[eé]silier|annuler.*(?:inscription|abonnement)|cancel.*subscription|' +
+            'privacy\\s*statement|terms\\s*&\\s*conditions|contact\\s*us',
             'i'
         );
         
-        // Pattern newsletter/marketing
+        // Pattern newsletter/marketing ENRICHI
         this.compiledPatterns.newsletter = new RegExp(
             'newsletter|bulletin|infolettre|info\\s*lettre|news\\s*letter|' +
             'mailing\\s*list|liste\\s*(?:de\\s*)?diffusion|liste\\s*d\'envoi|' +
@@ -85,11 +89,16 @@ class CategoryManager {
             'alert.*(?:job|emploi|opportunit[eé])|job.*(?:alert|notification)|' +
             'match.*(?:profil|search|criteria)|correspond.*(?:profil|recherche)|' +
             'r[eé]cap|recap|summary|sommaire|digest|weekly|hebdomadaire|' +
-            'monthly|mensuel|daily|quotidien|p[eé]riodique|r[eé]gulier',
+            'monthly|mensuel|daily|quotidien|p[eé]riodique|r[eé]gulier|' +
+            'community.*support|support.*community|all\\s*rights\\s*reserved|' +
+            'trademark|registered.*trade.*mark|confidential.*intended.*solely|' +
+            'this\\s*email.*files.*transmitted|cannot\\s*accept\\s*liability|' +
+            'l\'app\\s*pour\\s*tous|tous\\s*pour\\s*l\'app|satisfaction\\s*survey|' +
+            'enqu[eê]te.*satisfaction|votre\\s*avis.*compte|give\\s*us.*feedback',
             'i'
         );
         
-        // Pattern marketing agressif
+        // Pattern marketing agressif ENRICHI
         this.compiledPatterns.marketing = new RegExp(
             'gratuit|free|offert|cadeau|gift|bonus|extra|suppl[eé]mentaire|' +
             'gagnez|win|gagner|winner|gagnant|prix|price|reward|r[eé]compense|' +
@@ -103,7 +112,8 @@ class CategoryManager {
             'cashback|remboursement|money\\s*back|garantie|guarantee|' +
             'essai|trial|test|d[eé]mo|demonstration|[eé]chantillon|sample|' +
             'pari|bet|mise|jouer|play|casino|jackpot|' +
-            'freebet|bonus.*(?:sport|pari|casino)|mission|d[eé]fi|challenge',
+            'freebet|bonus.*(?:sport|pari|casino)|mission|d[eé]fi|challenge|' +
+            'freebets|paris\\s*gagnants|encha[îi]ne.*paris|everest|kaizen',
             'i'
         );
         
@@ -137,17 +147,23 @@ class CategoryManager {
             'r[eé]ponse\\s*automatique|auto\\s*reply|out\\s*of\\s*office|' +
             'candidature|application|postulation|thank\\s*you\\s*for\\s*your\\s*application|' +
             'nous\\s*avons\\s*re[cç]u\\s*votre|received\\s*your\\s*application|' +
-            'suite\\s*favorable|pas\\s*de\\s*suite|regret.*pas.*retenue',
+            'suite\\s*favorable|pas\\s*de\\s*suite|regret.*pas.*retenue|' +
+            'oauth.*application.*added|third-party.*application.*authorized|' +
+            'security.*notification|s[eé]curit[eé].*notification',
             'i'
         );
         
-        // Domaines et emails spécifiques
-        this.specificDomains = {};
-        this.specificEmails = {};
+        // Pattern Calendly
+        this.compiledPatterns.calendly = new RegExp(
+            'calendly|schedule\\s*with.*calendly|book\\s*time.*calendly|' +
+            'calendly\\.com|calendar\\s*scheduling|booking\\s*confirmed|' +
+            'meeting\\s*scheduled.*calendly|appointment\\s*booked.*calendly',
+            'i'
+        );
     }
 
     // ================================================
-    // ANALYSE D'EMAIL PRINCIPALE - REFAITE
+    // ANALYSE D'EMAIL PRINCIPALE
     // ================================================
     analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0, matchedPatterns: [] };
@@ -160,6 +176,19 @@ class CategoryManager {
         
         // Extraire le contenu complet
         const content = this.extractCompleteContent(email);
+        
+        // Vérifier d'abord Calendly
+        if (this.isCalendlyEmail(content)) {
+            const result = {
+                category: 'meetings',
+                score: 300,
+                confidence: 0.95,
+                matchedPatterns: [{ type: 'calendly', keyword: 'calendly_detected', score: 300 }],
+                hasAbsolute: true
+            };
+            this._analysisCache.set(cacheKey, result);
+            return result;
+        }
         
         // Analyse multi-passes
         const newsletterScore = this.detectNewsletter(content);
@@ -202,7 +231,17 @@ class CategoryManager {
     }
 
     // ================================================
-    // DÉTECTION NEWSLETTER ULTRA-AGRESSIVE
+    // DÉTECTION CALENDLY
+    // ================================================
+    isCalendlyEmail(content) {
+        const textLower = content.fullText.toLowerCase();
+        
+        // Vérifier uniquement le pattern Calendly dans le contenu
+        return this.compiledPatterns.calendly.test(textLower);
+    }
+
+    // ================================================
+    // DÉTECTION NEWSLETTER AMÉLIORÉE
     // ================================================
     detectNewsletter(content) {
         let score = 0;
@@ -221,14 +260,26 @@ class CategoryManager {
             patterns.push({ type: 'critical', keyword: 'unsubscribe_detected', score: 300 });
             
             // Bonus si dans un lien
-            if (textLower.match(/<a[^>]*>[^<]*(?:d[eé]sabonner|unsubscribe|cliquez\\s*ici)[^<]*<\/a>/i)) {
+            if (textLower.match(/<a[^>]*>[^<]*(?:d[eé]sabonner|unsubscribe|cliquez\\s*ici|update.*email.*preference)[^<]*<\/a>/i)) {
                 score += 100;
                 patterns.push({ type: 'critical', keyword: 'unsubscribe_link', score: 100 });
             }
         }
         
+        // Patterns spécifiques Sony et autres entreprises
+        if (textLower.match(/privacy\\s*statement|terms\\s*&\\s*conditions|all\\s*rights\\s*reserved|trademark|registered.*trade.*mark/i)) {
+            score += 150;
+            patterns.push({ type: 'strong', keyword: 'corporate_footer', score: 150 });
+        }
+        
+        // Email confidentiality notice (typique des newsletters)
+        if (textLower.match(/this\\s*email.*confidential.*intended\\s*solely|cannot\\s*accept\\s*liability/i)) {
+            score += 100;
+            patterns.push({ type: 'strong', keyword: 'confidentiality_notice', score: 100 });
+        }
+        
         // Patterns spécifiques EDF et conseillers
-        if (textLower.match(/votre conseiller|espace client|decouvrez.*avantages|suivre.*conso|telecharger.*appli/i)) {
+        if (textLower.match(/votre conseiller|espace client|decouvrez.*avantages|suivre.*conso|telecharger.*appli|l\'app\\s*pour\\s*tous/i)) {
             score += 150;
             patterns.push({ type: 'strong', keyword: 'customer_portal_promo', score: 150 });
         }
@@ -245,14 +296,14 @@ class CategoryManager {
             patterns.push({ type: 'strong', keyword: 'marketing_pattern', score: 150 });
         }
         
-        // 2. PATTERNS D'EXCLUSION POUR CANDIDATURES
+        // 2. PATTERNS D'EXCLUSION POUR CANDIDATURES ET MEETINGS LÉGITIMES
         const isCandidature = textLower.match(/votre candidature|your application|suite favorable|pas retenue|thank you for your.*application|suite de votre candidature|update about your application|nous vous remercions.*candidature|decided to move forward|regret to inform/i);
         const isFromRecruiter = fromEmail.match(/recrutement|recruiting|recruitment|talent|rh|hr|candidat/i) || 
                                 content.fromName?.toLowerCase().match(/recrutement|recruiting|talent/i) ||
                                 textLower.match(/charge.*recrutement|recruitment team|equipe.*recrutement/i);
         
+        // Exclure les vraies candidatures
         if (isCandidature && !this.compiledPatterns.unsubscribe.test(textLower)) {
-            // C'est une vraie notification de candidature, pas une newsletter
             score -= 500;
             patterns.push({ type: 'exclusion', keyword: 'genuine_application_response', score: -500 });
             return {
@@ -263,23 +314,34 @@ class CategoryManager {
             };
         }
         
+        // Exclure les vraies réunions (non Calendly, non marketing)
+        const isLegitMeeting = textLower.match(/invitation.*r[eé]union|meeting.*invitation|conf[eé]rence.*call|visio.*conf[eé]rence/i) &&
+                               !this.compiledPatterns.unsubscribe.test(textLower) &&
+                               !this.compiledPatterns.marketing.test(textLower) &&
+                               !textLower.match(/webinar|s[eé]minaire\\s*web|pr[eé]sentation\\s*commerciale/i);
+        
+        if (isLegitMeeting) {
+            score -= 300;
+            patterns.push({ type: 'exclusion', keyword: 'legitimate_meeting', score: -300 });
+        }
+        
         // 3. DOMAINES TYPIQUES
         const domain = content.domain?.toLowerCase() || '';
         
-        // Domaines newsletter évidents
+        // Pattern de domaine newsletter (basé sur mots-clés, pas sur liste)
         if (domain.match(/news|newsletter|mail|marketing|campaign|notification|info|contact|noreply|no-reply/i)) {
             score += 100;
-            patterns.push({ type: 'domain', keyword: `newsletter_domain_${domain}`, score: 100 });
+            patterns.push({ type: 'domain', keyword: `newsletter_domain_pattern`, score: 100 });
         }
         
-        // Domaines d'entreprises avec newsletters (comme relation-client-edf.fr)
-        if (domain.match(/relation-client|customer-service|client-info|info-client/i)) {
+        // Domaines d'entreprises avec newsletters
+        if (domain.match(/relation-client|customer-service|client-info|info-client|satisfaction|review|feedback/i)) {
             score += 150;
             patterns.push({ type: 'domain', keyword: 'customer_communication_domain', score: 150 });
         }
         
         // Sous-domaines marketing
-        if (domain.includes('.') && domain.match(/^(news|newsletter|email|mail|marketing|info|contact)\./i)) {
+        if (domain.includes('.') && domain.match(/^(news|newsletter|email|mail|marketing|info|contact|satisfaction|review)\./i)) {
             score += 150;
             patterns.push({ type: 'domain', keyword: 'marketing_subdomain', score: 150 });
             isDefiniteNewsletter = true;
@@ -287,10 +349,10 @@ class CategoryManager {
         
         // 4. EXPÉDITEUR
         
-        // Emails typiques newsletter
-        if (fromEmail.match(/newsletter|news|marketing|info|contact|noreply|notification|alert|update|promo|conseiller|relation-client/i)) {
+        // Emails typiques newsletter (basé sur patterns)
+        if (fromEmail.match(/newsletter|news|marketing|info|contact|noreply|notification|alert|update|promo|conseiller|relation-client|satisfaction|no-reply/i)) {
             score += 100;
-            patterns.push({ type: 'sender', keyword: 'newsletter_sender', score: 100 });
+            patterns.push({ type: 'sender', keyword: 'newsletter_sender_pattern', score: 100 });
         }
         
         // 5. CONTENU SPÉCIFIQUE
@@ -313,11 +375,17 @@ class CategoryManager {
             patterns.push({ type: 'content', keyword: 'job_alert', score: 100 });
         }
         
-        // Patterns de paris/jeux
-        if (textLower.match(/pari|bet|mise|freebet|bonus|mission|jackpot|casino|jouer|gagner/i)) {
-            score += 150;
-            patterns.push({ type: 'content', keyword: 'gambling_content', score: 150 });
+        // Patterns de paris/jeux (Winamax, etc.)
+        if (textLower.match(/pari|bet|mise|freebet|bonus|mission|jackpot|casino|jouer|gagner|kaizen|everest/i)) {
+            score += 200;
+            patterns.push({ type: 'content', keyword: 'gambling_content', score: 200 });
             isDefiniteNewsletter = true;
+        }
+        
+        // Patterns de satisfaction/feedback
+        if (textLower.match(/satisfaction|votre\\s*avis|enqu[eê]te|survey|feedback|[eé]valuation|notez|rate\\s*us/i)) {
+            score += 100;
+            patterns.push({ type: 'content', keyword: 'satisfaction_survey', score: 100 });
         }
         
         // 6. EXCLUSIONS RÉDUITES
@@ -335,7 +403,7 @@ class CategoryManager {
         // 7. CALCUL FINAL
         
         // Si patterns newsletter très forts, forcer la détection
-        if (score >= 400 || (score >= 300 && domain.includes('newsletter'))) {
+        if (score >= 400 || (score >= 300 && domain.match(/newsletter|marketing|news/i))) {
             isDefiniteNewsletter = true;
         }
         
@@ -384,15 +452,31 @@ class CategoryManager {
         
         // Boost spécial pour les notifications de candidature
         const textLower = content.fullText.toLowerCase();
-        if (textLower.match(/suite de votre candidature|update about your application|charge.*recrutement|recruitment team/i)) {
+        if (textLower.match(/suite de votre candidature|update about your application|charge.*recrutement|recruitment team|oauth.*application.*added|candidature bien recue|nous avons bien recu votre candidature|indeed apply|welcomekit|equipe rh/i)) {
             if (results.notifications) {
-                results.notifications.score += 200;
+                results.notifications.score += 250;
                 results.notifications.matchedPatterns.push({ 
                     type: 'boost', 
-                    keyword: 'recruitment_notification_boost', 
-                    score: 200 
+                    keyword: 'special_notification_boost', 
+                    score: 250 
                 });
-                results.notifications.confidence = Math.min(0.95, results.notifications.confidence + 0.2);
+                results.notifications.confidence = Math.min(0.95, results.notifications.confidence + 0.3);
+            }
+        }
+        
+        // Pénalité pour les emails Sony et marketing déguisés en autre chose
+        if (textLower.match(/your tv upgrade is calling|bravia|made for movies|made for sports|made for gaming|best for design|bigger bolder|lineup is here/i)) {
+            if (results.meetings) {
+                results.meetings.score -= 300;
+                results.meetings.matchedPatterns.push({ 
+                    type: 'penalty', 
+                    keyword: 'marketing_content_detected', 
+                    score: -300 
+                });
+            }
+            if (results.marketing_news) {
+                results.marketing_news.score += 200;
+                results.marketing_news.confidence = Math.min(0.95, results.marketing_news.confidence + 0.2);
             }
         }
         
@@ -616,11 +700,11 @@ class CategoryManager {
     }
 
     // ================================================
-    // MOTS-CLÉS DENSIFIÉS
+    // MOTS-CLÉS ENRICHIS
     // ================================================
     initializeWeightedDetection() {
         this.weightedKeywords = {
-            // MARKETING & NEWS - Hyper-dense
+            // MARKETING & NEWS - Hyper-dense avec nouveaux patterns
             marketing_news: {
                 absolute: [
                     'newsletter', 'unsubscribe', 'se desabonner', 'se desinscrire',
@@ -628,7 +712,14 @@ class CategoryManager {
                     'manage preferences', 'gerer preferences', 'email preferences',
                     'vous recevez ce', 'you received this', 'bulk email',
                     'desabonnement', 'choisir quels emails', 'pour vous desabonner',
-                    'espace client', 'votre conseiller', 'decouvrez avantages'
+                    'espace client', 'votre conseiller', 'decouvrez avantages',
+                    'update your email preference', 'update your e-mail preferences',
+                    'mettre a jour preferences email', 'privacy statement', 
+                    'terms & conditions', 'terms and conditions', 'contact us',
+                    'all rights reserved', 'registered trade mark', 'trademark',
+                    'your tv upgrade is calling', 'upgrade to the best',
+                    'made for movies', 'made for sports', 'made for gaming',
+                    'best for design', 'discover more', 'store online'
                 ],
                 strong: [
                     'marketing', 'promotion', 'offre', 'promo', 'solde', 'sale',
@@ -640,13 +731,20 @@ class CategoryManager {
                     'correspond profil', 'match profile', 'job alert',
                     'freebet', 'pari', 'bet', 'mission', 'challenge',
                     'avantages', 'suivre conso', 'economie', 'appli',
-                    'telecharger', 'adopter', 'rendez-vous', 'prochain'
+                    'telecharger', 'adopter', 'rendez-vous', 'prochain',
+                    'satisfaction', 'votre avis', 'enquete', 'survey', 'feedback',
+                    'app pour tous', 'tous pour app', 'community support',
+                    'this email and any files', 'confidential and intended',
+                    'cannot accept liability', 'bmail', 'view online', 
+                    'all products', 'lineup is here', 'calling', 'finest', 
+                    'bigger bolder', 'thrill home', 'tell us what you love', 
+                    'we have the best'
                 ],
                 weak: [
                     'profitez', 'beneficiez', 'advantage', 'opportunite',
                     'inscrivez', 'subscribe', 'membre', 'member', 'club',
                     'actualite', 'article', 'blog', 'contenu', 'content',
-                    'conseil', 'astuce', 'solution', 'service'
+                    'conseil', 'astuce', 'solution', 'service', 'communication'
                 ],
                 exclusions: [] // Aucune exclusion pour cette catégorie
             },
@@ -720,7 +818,7 @@ class CategoryManager {
                 exclusions: ['newsletter', 'offre']
             },
 
-            // MEETINGS - Réunions
+            // MEETINGS - Réunions (EXCLUANT CALENDLY)
             meetings: {
                 absolute: [
                     'reunion', 'meeting', 'rendez-vous', 'appointment',
@@ -743,7 +841,8 @@ class CategoryManager {
                     'webinar marketing', 'conference commerciale', 
                     'candidature', 'application', 'suite de votre candidature',
                     'update about your application', 'recruitment', 'recrutement',
-                    'charge de recrutement', 'regret to inform'
+                    'charge de recrutement', 'regret to inform',
+                    'unsubscribe', 'newsletter', 'promotion'
                 ]
             },
 
@@ -766,20 +865,28 @@ class CategoryManager {
                 exclusions: ['newsletter', 'promotion personnelle', 'candidature', 'votre candidature', 'suite favorable']
             },
 
-            // NOTIFICATIONS - Automatiques
+            // NOTIFICATIONS - Automatiques (ENRICHI)
             notifications: {
                 absolute: [
                     'no reply', 'noreply', 'ne pas repondre', 'do not reply',
                     'notification automatique', 'automated notification',
                     'message automatique', 'automated message',
                     'candidature retenue', 'candidature pas retenue',
+                    'candidature bien recue', 'candidature recue', 'bien recu votre candidature',
                     'thank you for your application', 'merci pour votre candidature',
-                    'nous avons recu votre candidature', 'received your application',
-                    'suite favorable', 'pas de suite favorable',
+                    'nous avons bien recu votre candidature', 'nous avons recu votre candidature', 
+                    'received your application', 'application received',
+                    'suite favorable', 'pas de suite favorable', 'pas retenue pour cette fois',
                     'suite de votre candidature', 'update about your application',
                     'nous vous remercions de nous avoir fait parvenir',
                     'decided to move forward', 'regret to inform',
-                    'malheureusement pas en mesure', 'after thorough consideration'
+                    'malheureusement pas en mesure', 'after thorough consideration',
+                    'oauth application has been added', 'third-party application',
+                    'application has been authorized', 'security notification',
+                    'etudions avec attention', 'revenons vers vous dans les plus brefs delais',
+                    'sans retour de notre part', 'veuillez considerer',
+                    'conserver votre cv', 'cvtheque', 'candidature envoyee',
+                    'indeed apply', 'welcomekit', 'candidats.welcomekit'
                 ],
                 strong: [
                     'notification', 'alert', 'alerte', 'avis', 'notice',
@@ -788,15 +895,19 @@ class CategoryManager {
                     'candidature', 'application', 'postulation',
                     'reponse automatique', 'automated response',
                     'accusé reception', 'acknowledgment',
-                    'recruitment team', 'equipe recrutement',
+                    'recruitment team', 'equipe recrutement', 'equipe rh',
                     'charge recrutement', 'recruiter', 'recruteur',
-                    'ressources humaines', 'human resources',
-                    'talent acquisition', 'donner suite', 'giving update'
+                    'ressources humaines', 'human resources', 'rh de',
+                    'talent acquisition', 'donner suite', 'giving update',
+                    'github', 'oauth', 'authorized', 'scopes',
+                    'employeur peut vous contacter', 'prochaines etapes',
+                    'email automatique', 'ne pas repondre'
                 ],
                 weak: [
                     'information', 'update', 'mise a jour', 'changement',
                     'merci', 'thank you', 'cordialement', 'regards',
-                    'remercions', 'appreciate', 'consideration'
+                    'remercions', 'appreciate', 'consideration',
+                    'bonne chance', 'good luck'
                 ],
                 exclusions: ['action requise', 'urgent', 'newsletter', 'rendez-vous', 'reunion', 'meeting invitation']
             },
@@ -906,7 +1017,7 @@ class CategoryManager {
             }
         };
 
-        console.log('[CategoryManager] ✅ Mots-clés densifiés chargés');
+        console.log('[CategoryManager] ✅ Mots-clés enrichis chargés');
     }
 
     // ================================================
@@ -1326,11 +1437,12 @@ class CategoryManager {
 
     getDebugInfo() {
         return {
-            version: '26.0',
+            version: '27.0',
             categoriesCount: Object.keys(this.categories).length,
             customCategoriesCount: Object.keys(this.customCategories).length,
             activeCategories: this.getActiveCategories().length,
             taskPreselectedCategories: this.settings.taskPreselectedCategories,
+            categoryExclusions: this.settings.categoryExclusions,
             cacheSize: {
                 normalizedText: this._normalizedTextCache.size,
                 analysis: this._analysisCache.size
@@ -1377,7 +1489,7 @@ window.CategoryManager = CategoryManager;
 
 // Fonctions de test globales
 window.testCategoryManager = function() {
-    console.group('🧪 TEST CategoryManager v26.0');
+    console.group('🧪 TEST CategoryManager v27.0');
     
     const tests = [
         { 
@@ -1398,11 +1510,35 @@ window.testCategoryManager = function() {
             from: "no-reply@sahar.teamtailor-mail.com",
             expected: "marketing_news"
         },
-        { 
+        {
+            subject: "VIANNEY, candidature bien reçue pour Customer Success manager",
+            body: "Nous avons bien reçu votre candidature... nous l'étudions avec attention... Sans retour de notre part dans un délai de 4 semaines, veuillez considérer que votre candidature n'est pas retenue pour cette fois.",
+            from: "beyab-83bc73a9@candidates.welcomekit.co",
+            expected: "notifications"
+        },
+        {
+            subject: "Candidatures via Indeed : Customer Success Manager",
+            body: "Candidature envoyée... Les éléments suivants ont été envoyés à Hostaway... Ceci est un email automatique - merci de ne pas répondre.",
+            from: "indeedapply@indeed.com",
+            expected: "notifications"
+        },
+        {
+            subject: "Your TV upgrade is calling—BRAVIA's finest lineup is here🔥",
+            body: "Made for Movies... Made for Sports... Made for Gaming... Update your e-mail preferences... Privacy Statement Terms & Conditions Unsubscribe Contact Us",
+            from: "sonyeurope@bmail.sony-europe.com",
+            expected: "marketing_news"
+        },
+        {
             subject: "[GitHub] A third-party OAuth application has been added to your account",
             body: "A third-party OAuth application (MongoDB Atlas) with read:user and user:email scopes was recently authorized",
             from: "noreply@github.com",
             expected: "notifications"
+        },
+        {
+            subject: "Meeting scheduled via Calendly",
+            body: "Your meeting has been confirmed via Calendly for tomorrow at 2pm",
+            from: "notifications@calendly.com",
+            expected: "meetings"
         },
         { subject: "Nouvelle facture #12345 à payer avant le 31", expected: "finance" },
         { subject: "Action urgente requise: valider le document", expected: "tasks" },
@@ -1421,4 +1557,4 @@ window.testCategoryManager = function() {
     return { success: true, testsRun: tests.length };
 };
 
-console.log('✅ CategoryManager v26.0 loaded - Détection newsletter ultra-renforcée');
+console.log('✅ CategoryManager v27.0 loaded - Détection basée sur mots-clés uniquement');
