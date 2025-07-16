@@ -1,5 +1,5 @@
-// EmailScanner.js - Version 13.0 - Intégration améliorée avec CategoryManager v23
-// Détection newsletter/marketing optimisée et extraction de contenu complète
+// EmailScanner.js - Version 14.0 - Intégration optimisée avec CategoryManager v24
+// Détection newsletter améliorée et extraction de contenu complète
 
 class EmailScanner {
     constructor() {
@@ -45,10 +45,10 @@ class EmailScanner {
             categoryDistribution: {},
             provider: null,
             errors: [],
-            newsletterCount: 0 // Nouveau compteur
+            newsletterCount: 0
         };
         
-        console.log('[EmailScanner] ✅ Version 13.0 - Intégration CategoryManager v23');
+        console.log('[EmailScanner] ✅ Version 14.0 - Intégration CategoryManager v24');
         this.initialize();
     }
 
@@ -59,7 +59,7 @@ class EmailScanner {
         console.log('[EmailScanner] 🔧 Initialisation...');
         
         try {
-            // 1. Vérifier CategoryManager v23
+            // 1. Vérifier CategoryManager v24
             if (!window.categoryManager) {
                 console.error('[EmailScanner] ❌ CategoryManager non disponible!');
                 return;
@@ -230,7 +230,7 @@ class EmailScanner {
     // MÉTHODE SCAN PRINCIPALE
     // ================================================
     async scan(options = {}) {
-        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v13.0 ===');
+        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN v14.0 ===');
         
         if (this.isScanning) {
             console.warn('[EmailScanner] ⚠️ Scan déjà en cours');
@@ -252,7 +252,7 @@ class EmailScanner {
             // Préparer les options de scan
             const scanOptions = this.prepareScanOptions(options);
             
-            // Étape 1: Récupérer les emails
+            // Étape 1: Récupérer les emails via MailService
             this.updateProgress(scanOptions.onProgress, 'fetching', 'Récupération des emails...', 0);
             const emails = await this.fetchEmails(scanOptions);
             
@@ -264,10 +264,17 @@ class EmailScanner {
                 return this.buildResults('empty');
             }
             
-            // Étape 2: Enrichir le contenu des emails
-            await this.enrichEmailContent(scanOptions);
+            // Étape 2: Les emails doivent déjà avoir le contenu complet grâce à MailService v3
+            console.log('[EmailScanner] 📋 Vérification du contenu complet...');
+            let emailsWithContent = 0;
+            this.emails.forEach(email => {
+                if (email.fullTextContent) {
+                    emailsWithContent++;
+                }
+            });
+            console.log(`[EmailScanner] ✅ ${emailsWithContent}/${this.emails.length} emails avec contenu complet`);
             
-            // Étape 3: Catégoriser les emails
+            // Étape 3: Catégoriser les emails avec CategoryManager v24
             if (scanOptions.autoCategrize !== false) {
                 await this.categorizeAllEmails(scanOptions);
             }
@@ -315,45 +322,239 @@ class EmailScanner {
     }
 
     // ================================================
-    // ENRICHISSEMENT DU CONTENU - NOUVEAU
+    // DÉTECTION DU PROVIDER
     // ================================================
-    async enrichEmailContent(options) {
-        console.log('[EmailScanner] 🔍 Enrichissement du contenu des emails...');
+    detectCurrentProvider() {
+        // Vérifier MailService
+        if (window.mailService?.getCurrentProvider) {
+            const provider = window.mailService.getCurrentProvider();
+            if (provider === 'google' || provider === 'gmail') return 'gmail';
+            if (provider === 'microsoft' || provider === 'outlook') return 'outlook';
+            return provider;
+        }
         
-        let enriched = 0;
-        const batchSize = 10;
+        // Vérifier GoogleAuthService
+        if (window.googleAuthService?.isAuthenticated?.()) {
+            return 'gmail';
+        }
         
+        // Vérifier AuthService (Outlook)
+        if (window.authService?.isAuthenticated?.()) {
+            return 'outlook';
+        }
+        
+        return 'unknown';
+    }
+
+    // ================================================
+    // PRÉPARATION DES OPTIONS
+    // ================================================
+    prepareScanOptions(options) {
+        const defaults = this.settings.scanSettings || {};
+        
+        return {
+            days: options.days ?? defaults.defaultPeriod ?? 7,
+            folder: options.folder || defaults.defaultFolder || 'inbox',
+            maxEmails: options.maxEmails ?? defaults.maxEmails ?? -1,
+            autoAnalyze: options.autoAnalyze ?? defaults.autoAnalyze ?? true,
+            autoCategrize: options.autoCategrize ?? defaults.autoCategrize ?? true,
+            includeSpam: options.includeSpam ?? !this.settings.preferences?.excludeSpam,
+            detectCC: options.detectCC ?? this.settings.preferences?.detectCC ?? true,
+            onProgress: options.onProgress,
+            provider: this.currentProvider
+        };
+    }
+
+    // ================================================
+    // RÉCUPÉRATION DES EMAILS VIA MAILSERVICE
+    // ================================================
+    async fetchEmails(options) {
+        console.log('[EmailScanner] 📬 Récupération des emails via MailService...');
+        
+        // Vérifier MailService
+        if (!window.mailService) {
+            throw new Error('MailService non disponible');
+        }
+        
+        // Initialiser si nécessaire
+        if (!window.mailService.isInitialized()) {
+            await window.mailService.initialize();
+        }
+        
+        // Récupérer les emails avec contenu complet
+        const emails = await window.mailService.getMessages(options.folder, {
+            maxResults: options.maxEmails,
+            days: options.days,
+            includeSpam: options.includeSpam,
+            includeFullContent: true, // IMPORTANT: demander le contenu complet
+            onProgress: (progress) => {
+                if (options.onProgress) {
+                    options.onProgress({
+                        phase: 'fetching',
+                        message: progress.message || 'Récupération des emails...',
+                        progress: progress
+                    });
+                }
+            }
+        });
+        
+        // S'assurer que tous les emails ont le provider marqué et le contenu complet
+        return emails.map(email => ({
+            ...email,
+            provider: email.provider || this.currentProvider,
+            providerType: email.providerType || this.currentProvider,
+            // fullTextContent devrait déjà être présent grâce à MailService v3
+        }));
+    }
+
+    // ================================================
+    // CATÉGORISATION DES EMAILS - OPTIMISÉE
+    // ================================================
+    async categorizeAllEmails(options) {
+        console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION v14.0 ===');
+        console.log('[EmailScanner] 📊 Total emails:', this.emails.length);
+        console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+        
+        // Réinitialiser les catégories
+        this.categorizedEmails = {};
+        this.scanMetrics.categoryDistribution = {};
+        this.scanMetrics.newsletterCount = 0;
+        
+        let processed = 0;
+        let preselectedCount = 0;
+        let newsletterCount = 0;
+        const debugNewsletters = [];
+        
+        // Catégoriser par batch pour les performances
+        const batchSize = 50;
         for (let i = 0; i < this.emails.length; i += batchSize) {
             const batch = this.emails.slice(i, i + batchSize);
             
-            await Promise.all(batch.map(async (email) => {
+            for (const email of batch) {
                 try {
-                    // S'assurer que chaque email a le contenu complet
-                    if (!email.fullTextContent) {
-                        email.fullTextContent = this.buildFullTextContent(email);
-                        enriched++;
+                    // Catégoriser l'email avec CategoryManager v24
+                    const result = await this.categorizeEmail(email);
+                    
+                    // Ajouter à la catégorie
+                    if (!this.categorizedEmails[result.category]) {
+                        this.categorizedEmails[result.category] = [];
+                    }
+                    this.categorizedEmails[result.category].push(email);
+                    
+                    // Mettre à jour les stats
+                    this.scanMetrics.categoryDistribution[result.category] = 
+                        (this.scanMetrics.categoryDistribution[result.category] || 0) + 1;
+                    
+                    if (email.isPreselectedForTasks) {
+                        preselectedCount++;
                     }
                     
-                    // Ajouter les métadonnées du provider
-                    email.provider = email.provider || this.currentProvider;
-                    email.providerType = email.providerType || this.currentProvider;
+                    if (result.category === 'marketing_news') {
+                        newsletterCount++;
+                        // Debug pour les newsletters
+                        debugNewsletters.push({
+                            subject: email.subject,
+                            from: email.from?.emailAddress?.address,
+                            score: email.categoryScore,
+                            confidence: email.categoryConfidence,
+                            hasUnsubscribe: email.fullTextContent?.includes('[UNSUBSCRIBE_') || false,
+                            hasNewsletter: email.fullTextContent?.includes('[NEWSLETTER_') || false
+                        });
+                    }
+                    
+                    processed++;
                     
                 } catch (error) {
-                    console.error('[EmailScanner] Erreur enrichissement:', error);
+                    console.error('[EmailScanner] ❌ Erreur catégorisation:', error);
+                    email.category = 'other';
+                    email.categoryError = error.message;
+                    
+                    if (!this.categorizedEmails.other) {
+                        this.categorizedEmails.other = [];
+                    }
+                    this.categorizedEmails.other.push(email);
                 }
-            }));
+            }
             
             // Mettre à jour le progrès
             if (options.onProgress) {
-                const percent = Math.round(((i + batch.length) / this.emails.length) * 20); // 20% pour enrichissement
-                this.updateProgress(options.onProgress, 'enriching', 
-                    `Enrichissement: ${i + batch.length}/${this.emails.length}`, percent);
+                const percent = 20 + Math.round((processed / this.emails.length) * 60); // 20-80% pour catégorisation
+                this.updateProgress(options.onProgress, 'categorizing', 
+                    `Catégorisation: ${processed}/${this.emails.length} (${newsletterCount} newsletters)`, percent);
+            }
+            
+            // Pause pour ne pas bloquer l'UI
+            if (i + batchSize < this.emails.length) {
+                await new Promise(resolve => setTimeout(resolve, 1));
             }
         }
         
-        console.log(`[EmailScanner] ✅ ${enriched} emails enrichis`);
+        this.scanMetrics.categorizedCount = processed;
+        this.scanMetrics.preselectedCount = preselectedCount;
+        this.scanMetrics.newsletterCount = newsletterCount;
+        
+        console.log('[EmailScanner] ✅ === CATÉGORISATION TERMINÉE ===');
+        console.log('[EmailScanner] 📊 Distribution:', this.scanMetrics.categoryDistribution);
+        console.log('[EmailScanner] 📰 Newsletters détectées:', newsletterCount);
+        
+        // Debug newsletters si demandé
+        if (window.debugNewsletters || newsletterCount > 0) {
+            console.log('[EmailScanner] 📰 Debug newsletters:', debugNewsletters);
+        }
+        
+        console.log('[EmailScanner] ⭐ Emails pré-sélectionnés:', preselectedCount);
     }
 
+    // ================================================
+    // CATÉGORISATION D'UN EMAIL
+    // ================================================
+    async categorizeEmail(email) {
+        // Vérifier que l'email a le contenu complet
+        if (!email.fullTextContent) {
+            console.warn('[EmailScanner] ⚠️ Email sans contenu complet:', email.subject);
+            // Essayer de construire le contenu si manquant
+            if (email.body?.content || email.bodyText || email.bodyPreview) {
+                email.fullTextContent = this.buildFullTextContent(email);
+            }
+        }
+        
+        // Utiliser CategoryManager v24 pour l'analyse
+        if (!window.categoryManager || typeof window.categoryManager.analyzeEmail !== 'function') {
+            email.category = 'other';
+            email.categoryScore = 0;
+            email.categoryConfidence = 0;
+            email.isPreselectedForTasks = false;
+            return { category: 'other' };
+        }
+        
+        // Analyser l'email avec le nouveau CategoryManager
+        const analysis = window.categoryManager.analyzeEmail(email);
+        
+        // Appliquer les résultats
+        email.category = analysis.category || 'other';
+        email.categoryScore = analysis.score || 0;
+        email.categoryConfidence = analysis.confidence || 0;
+        email.matchedPatterns = analysis.matchedPatterns || [];
+        email.hasAbsolute = analysis.hasAbsolute || false;
+        
+        // Vérifier si pré-sélectionné pour les tâches
+        email.isPreselectedForTasks = this.taskPreselectedCategories.includes(email.category);
+        
+        // Debug pour les emails mal catégorisés
+        if (email.category === 'marketing_news' && email.categoryScore < 100) {
+            console.log('[EmailScanner] 📰 Newsletter faible score:', {
+                subject: email.subject,
+                score: email.categoryScore,
+                patterns: email.matchedPatterns
+            });
+        }
+        
+        return analysis;
+    }
+
+    // ================================================
+    // CONSTRUCTION DU CONTENU COMPLET (FALLBACK)
+    // ================================================
     buildFullTextContent(email) {
         let fullText = '';
         
@@ -426,7 +627,7 @@ class EmailScanner {
             tempDiv.innerHTML = html;
             
             // Supprimer les éléments non textuels
-            const elementsToRemove = tempDiv.querySelectorAll('script, style, noscript, iframe, object, embed');
+            const elementsToRemove = tempDiv.querySelectorAll('script, style, noscript, iframe, object, embed, meta, link');
             elementsToRemove.forEach(el => el.remove());
             
             // Préserver les sauts de ligne
@@ -452,224 +653,9 @@ class EmailScanner {
             return text;
         } catch (error) {
             console.warn('[EmailScanner] Erreur extraction HTML:', error);
+            // Fallback
             return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
         }
-    }
-
-    // ================================================
-    // DÉTECTION DU PROVIDER
-    // ================================================
-    detectCurrentProvider() {
-        // Vérifier GoogleAuthService
-        if (window.googleAuthService?.isAuthenticated?.()) {
-            return 'gmail';
-        }
-        
-        // Vérifier AuthService (Outlook)
-        if (window.authService?.isAuthenticated?.()) {
-            return 'outlook';
-        }
-        
-        // Vérifier MailService
-        if (window.mailService?.getCurrentProvider) {
-            const provider = window.mailService.getCurrentProvider();
-            if (provider === 'google' || provider === 'gmail') return 'gmail';
-            if (provider === 'microsoft' || provider === 'outlook') return 'outlook';
-        }
-        
-        return 'unknown';
-    }
-
-    // ================================================
-    // PRÉPARATION DES OPTIONS
-    // ================================================
-    prepareScanOptions(options) {
-        const defaults = this.settings.scanSettings || {};
-        
-        return {
-            days: options.days ?? defaults.defaultPeriod ?? 7,
-            folder: options.folder || defaults.defaultFolder || 'inbox',
-            maxEmails: options.maxEmails ?? defaults.maxEmails ?? -1,
-            autoAnalyze: options.autoAnalyze ?? defaults.autoAnalyze ?? true,
-            autoCategrize: options.autoCategrize ?? defaults.autoCategrize ?? true,
-            includeSpam: options.includeSpam ?? !this.settings.preferences?.excludeSpam,
-            detectCC: options.detectCC ?? this.settings.preferences?.detectCC ?? true,
-            onProgress: options.onProgress,
-            provider: this.currentProvider
-        };
-    }
-
-    // ================================================
-    // RÉCUPÉRATION DES EMAILS
-    // ================================================
-    async fetchEmails(options) {
-        console.log('[EmailScanner] 📬 Récupération des emails...');
-        
-        // Vérifier MailService
-        if (!window.mailService) {
-            throw new Error('MailService non disponible');
-        }
-        
-        // Initialiser si nécessaire
-        if (!window.mailService.isInitialized()) {
-            await window.mailService.initialize();
-        }
-        
-        // Configurer le provider
-        const currentProvider = window.mailService.getCurrentProvider();
-        if (currentProvider !== this.currentProvider) {
-            await window.mailService.setProvider(this.currentProvider);
-        }
-        
-        // Récupérer les emails
-        const emails = await window.mailService.getMessages(options.folder, {
-            maxResults: options.maxEmails,
-            days: options.days,
-            includeSpam: options.includeSpam,
-            includeFullContent: true, // IMPORTANT: demander le contenu complet
-            onProgress: (progress) => {
-                if (options.onProgress) {
-                    options.onProgress({
-                        phase: 'fetching',
-                        message: progress.message || 'Récupération des emails...',
-                        progress: progress
-                    });
-                }
-            }
-        });
-        
-        // S'assurer que tous les emails ont le provider marqué
-        return emails.map(email => ({
-            ...email,
-            provider: email.provider || this.currentProvider,
-            providerType: email.providerType || this.currentProvider
-        }));
-    }
-
-    // ================================================
-    // CATÉGORISATION DES EMAILS - AMÉLIORÉE
-    // ================================================
-    async categorizeAllEmails(options) {
-        console.log('[EmailScanner] 🏷️ === DÉBUT CATÉGORISATION v13.0 ===');
-        console.log('[EmailScanner] 📊 Total emails:', this.emails.length);
-        console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
-        
-        // Réinitialiser les catégories
-        this.categorizedEmails = {};
-        this.scanMetrics.categoryDistribution = {};
-        this.scanMetrics.newsletterCount = 0;
-        
-        let processed = 0;
-        let preselectedCount = 0;
-        let newsletterCount = 0;
-        
-        // Catégoriser par batch pour les performances
-        const batchSize = 50;
-        for (let i = 0; i < this.emails.length; i += batchSize) {
-            const batch = this.emails.slice(i, i + batchSize);
-            
-            for (const email of batch) {
-                try {
-                    // Catégoriser l'email avec CategoryManager v23
-                    const result = await this.categorizeEmail(email);
-                    
-                    // Ajouter à la catégorie
-                    if (!this.categorizedEmails[result.category]) {
-                        this.categorizedEmails[result.category] = [];
-                    }
-                    this.categorizedEmails[result.category].push(email);
-                    
-                    // Mettre à jour les stats
-                    this.scanMetrics.categoryDistribution[result.category] = 
-                        (this.scanMetrics.categoryDistribution[result.category] || 0) + 1;
-                    
-                    if (email.isPreselectedForTasks) {
-                        preselectedCount++;
-                    }
-                    
-                    if (result.category === 'marketing_news') {
-                        newsletterCount++;
-                    }
-                    
-                    processed++;
-                    
-                } catch (error) {
-                    console.error('[EmailScanner] ❌ Erreur catégorisation:', error);
-                    email.category = 'other';
-                    email.categoryError = error.message;
-                    
-                    if (!this.categorizedEmails.other) {
-                        this.categorizedEmails.other = [];
-                    }
-                    this.categorizedEmails.other.push(email);
-                }
-            }
-            
-            // Mettre à jour le progrès
-            if (options.onProgress) {
-                const percent = 20 + Math.round((processed / this.emails.length) * 60); // 20-80% pour catégorisation
-                this.updateProgress(options.onProgress, 'categorizing', 
-                    `Catégorisation: ${processed}/${this.emails.length} (${percent - 20}%)`, percent);
-            }
-            
-            // Pause pour ne pas bloquer l'UI
-            if (i + batchSize < this.emails.length) {
-                await new Promise(resolve => setTimeout(resolve, 1));
-            }
-        }
-        
-        this.scanMetrics.categorizedCount = processed;
-        this.scanMetrics.preselectedCount = preselectedCount;
-        this.scanMetrics.newsletterCount = newsletterCount;
-        
-        console.log('[EmailScanner] ✅ === CATÉGORISATION TERMINÉE ===');
-        console.log('[EmailScanner] 📊 Distribution:', this.scanMetrics.categoryDistribution);
-        console.log('[EmailScanner] 📰 Newsletters détectées:', newsletterCount);
-        console.log('[EmailScanner] ⭐ Emails pré-sélectionnés:', preselectedCount);
-    }
-
-    // ================================================
-    // CATÉGORISATION D'UN EMAIL
-    // ================================================
-    async categorizeEmail(email) {
-        // S'assurer que l'email a le contenu complet
-        if (!email.fullTextContent) {
-            email.fullTextContent = this.buildFullTextContent(email);
-        }
-        
-        // Utiliser CategoryManager v23 pour l'analyse
-        if (!window.categoryManager || typeof window.categoryManager.analyzeEmail !== 'function') {
-            email.category = 'other';
-            email.categoryScore = 0;
-            email.categoryConfidence = 0;
-            email.isPreselectedForTasks = false;
-            return { category: 'other' };
-        }
-        
-        // Analyser l'email avec le nouveau CategoryManager
-        const analysis = window.categoryManager.analyzeEmail(email);
-        
-        // Appliquer les résultats
-        email.category = analysis.category || 'other';
-        email.categoryScore = analysis.score || 0;
-        email.categoryConfidence = analysis.confidence || 0;
-        email.matchedPatterns = analysis.matchedPatterns || [];
-        email.hasAbsolute = analysis.hasAbsolute || false;
-        
-        // Vérifier si pré-sélectionné pour les tâches
-        email.isPreselectedForTasks = this.taskPreselectedCategories.includes(email.category);
-        
-        // Debug pour les newsletters
-        if (email.category === 'marketing_news') {
-            console.log('[EmailScanner] 📰 Newsletter détectée:', {
-                subject: email.subject,
-                from: email.from?.emailAddress?.address,
-                score: email.categoryScore,
-                patterns: email.matchedPatterns
-            });
-        }
-        
-        return analysis;
     }
 
     // ================================================
@@ -1017,7 +1003,7 @@ class EmailScanner {
     // ================================================
     getDebugInfo() {
         return {
-            version: '13.0',
+            version: '14.0',
             isScanning: this.isScanning,
             currentProvider: this.currentProvider,
             totalEmails: this.emails.length,
@@ -1030,25 +1016,57 @@ class EmailScanner {
             categoryManagerAvailable: !!window.categoryManager,
             categoryManagerVersion: window.categoryManager?.getDebugInfo?.()?.version,
             mailServiceAvailable: !!window.mailService,
+            mailServiceVersion: window.mailService ? '3.0' : 'N/A',
             metrics: this.scanMetrics
         };
     }
 
     testCategorization() {
-        console.group('🧪 TEST Catégorisation EmailScanner v13.0');
+        console.group('🧪 TEST Catégorisation EmailScanner v14.0');
         
         const testEmails = [
             {
                 id: 'test1',
-                subject: 'Introducing your new dining feed',
-                from: { emailAddress: { address: 'info@news.thefork.co.uk', name: 'TheFork' } },
-                body: { content: 'Unsubscribe | All rights reserved | You received this email because' }
+                subject: 'New match: Associate Customer Success Manager at Hostaway',
+                from: { emailAddress: { address: 'help@welcometothejungle.com', name: 'Welcome to the Jungle' } },
+                body: { content: 'There are new jobs matching your search preferences! You received this email because you subscribed. Unsubscribe from these notifications.' },
+                fullTextContent: `New match: Associate Customer Success Manager at Hostaway New match: Associate Customer Success Manager at Hostaway New match: Associate Customer Success Manager at Hostaway
+
+De: Welcome to the Jungle <help@welcometothejungle.com>
+Domaine: welcometothejungle.com
+
+[UNSUBSCRIBE_LINKS]
+Unsubscribe
+[/UNSUBSCRIBE_LINKS]
+
+[NEWSLETTER_INDICATORS]
+you received this email because
+[/NEWSLETTER_INDICATORS]
+
+There are new jobs matching your search preferences!
+You received this email because you subscribed.
+Unsubscribe from these notifications.`
             },
             {
                 id: 'test2',
-                subject: 'SUMMER SAVINGS: 1000X Series Earbuds',
-                from: { emailAddress: { address: 'sonyeurope@bmail.sony-europe.com', name: 'Sony' } },
-                body: { content: 'Unsubscribe Contact Us | View online | Update your e-mail preferences' }
+                subject: "Ton récap' du mois 📝",
+                from: { emailAddress: { address: 'no-reply@news.fitnesspark.fr', name: 'Fitness Park' } },
+                body: { content: 'Hello! Voici ton récap du mois. Si tu ne souhaites plus recevoir les informations de notre part, clique-ici.' },
+                fullTextContent: `Ton récap' du mois 📝 Ton récap' du mois 📝 Ton récap' du mois 📝
+
+De: Fitness Park <no-reply@news.fitnesspark.fr>
+Domaine: news
+
+[UNSUBSCRIBE_LINKS]
+clique-ici
+[/UNSUBSCRIBE_LINKS]
+
+[NEWSLETTER_INDICATORS]
+si tu ne souhaites plus recevoir
+[/NEWSLETTER_INDICATORS]
+
+Hello! Voici ton récap du mois.
+Si tu ne souhaites plus recevoir les informations de notre part, clique-ici.`
             },
             {
                 id: 'test3',
@@ -1061,11 +1079,14 @@ class EmailScanner {
         console.log('Testing email categorization with full content...\n');
         
         testEmails.forEach(async (email) => {
-            email.fullTextContent = this.buildFullTextContent(email);
+            if (!email.fullTextContent) {
+                email.fullTextContent = this.buildFullTextContent(email);
+            }
             const result = await this.categorizeEmail(email);
             console.log(`📧 "${email.subject}"`);
             console.log(`   From: ${email.from.emailAddress.address}`);
             console.log(`   Category: ${result.category} (Score: ${result.score}, Confidence: ${Math.round(result.confidence * 100)}%)`);
+            console.log(`   Expected: ${email.id === 'test1' || email.id === 'test2' ? 'marketing_news' : 'finance'}`);
             console.log('');
         });
         
@@ -1116,7 +1137,7 @@ window.emailScanner = new EmailScanner();
 
 // Fonctions de test globales
 window.testEmailScanner = function() {
-    console.group('🧪 TEST EmailScanner v13.0');
+    console.group('🧪 TEST EmailScanner v14.0');
     
     const info = window.emailScanner.getDebugInfo();
     console.log('Debug Info:', info);
@@ -1132,4 +1153,4 @@ window.testEmailScanner = function() {
     return info;
 };
 
-console.log('✅ EmailScanner v13.0 loaded - Intégration CategoryManager v23');
+console.log('✅ EmailScanner v14.0 loaded - Intégration optimisée avec CategoryManager v24');
