@@ -1472,6 +1472,16 @@ if (window.categoryManager) {
 
 window.categoryManager = new CategoryManager();
 
+// Attendre que le DOM soit chargé si nécessaire
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('[CategoryManager] DOM chargé, module prêt');
+    });
+}
+
+// Exposer globalement pour éviter les problèmes de timing
+window.CategoryManager = CategoryManager;
+
 // Fonctions de test globales
 window.testCategoryManager = function() {
     console.group('🧪 TEST CategoryManager v24.0');
