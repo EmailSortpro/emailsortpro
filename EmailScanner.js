@@ -59,10 +59,19 @@ class EmailScanner {
         console.log('[EmailScanner] 🔧 Initialisation...');
         
         try {
-            // 1. Vérifier CategoryManager v24
+            // 1. Attendre que CategoryManager soit disponible
+            let attempts = 0;
+            while (!window.categoryManager && attempts < 20) {
+                console.log('[EmailScanner] ⏳ Attente de CategoryManager...', attempts + 1);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+            }
+            
             if (!window.categoryManager) {
-                console.error('[EmailScanner] ❌ CategoryManager non disponible!');
-                return;
+                console.error('[EmailScanner] ❌ CategoryManager non disponible après 10 secondes!');
+                // Continuer sans CategoryManager mais avec fonctionnalités limitées
+            } else {
+                console.log('[EmailScanner] ✅ CategoryManager trouvé');
             }
             
             // 2. Charger les paramètres depuis CategoryManager
@@ -520,6 +529,7 @@ class EmailScanner {
         
         // Utiliser CategoryManager v24 pour l'analyse
         if (!window.categoryManager || typeof window.categoryManager.analyzeEmail !== 'function') {
+            console.warn('[EmailScanner] ⚠️ CategoryManager non disponible pour catégorisation');
             email.category = 'other';
             email.categoryScore = 0;
             email.categoryConfidence = 0;
