@@ -1,16 +1,17 @@
-// app.js - Application principale EmailSortPro v3.8.0
-// CORRECTION COMPLÈTE: Navigation fluide Gmail/Outlook avec gestion correcte des pages
+// app.js - Application principale EmailSortPro v3.9.0
+// CORRECTION COMPLÈTE: Résolution des erreurs et amélioration de la stabilité
 
 class EmailSortProApp {
     constructor() {
-        this.version = '3.8.0';
+        this.version = '3.9.0';
         this.isInitialized = false;
         this.initPromise = null;
         this.currentProvider = null;
         this.isAuthenticated = false;
         this.user = null;
-        this.currentPage = 'dashboard';
-        this.pageManagers = new Map(); // Stockage des PageManagers par provider
+        this.currentPage = null;
+        this.pageManagers = new Map();
+        this.dashboardLoaded = false;
         
         console.log(`[App] EmailSortPro v${this.version} starting...`);
         
@@ -34,7 +35,7 @@ class EmailSortProApp {
                 supportsBothProviders: true 
             },
             emails: { 
-                module: null, // Géré par PageManager
+                module: null,
                 usePageManager: true,
                 supportsBothProviders: true 
             },
@@ -83,7 +84,7 @@ class EmailSortProApp {
             this.currentProvider = 'google';
             this.isAuthenticated = true;
             this.user = event.detail.user;
-            window.location.reload(); // Recharger pour appliquer l'auth
+            window.location.reload();
         });
         
         // Écouter quand GoogleAuthService est initialisé
@@ -107,7 +108,7 @@ class EmailSortProApp {
         window.addEventListener('emailScannerReady', (event) => {
             console.log('[App] EmailScanner ready:', event.detail);
             if (this.currentPage === 'emails') {
-                this.loadPage('emails', true); // Forcer le rechargement
+                this.loadPage('emails', true);
             }
         });
     }
@@ -143,7 +144,9 @@ class EmailSortProApp {
                 
                 // IMPORTANT: Charger le dashboard immédiatement
                 setTimeout(() => {
-                    this.loadDashboard();
+                    if (!this.dashboardLoaded) {
+                        this.loadDashboard();
+                    }
                 }, 100);
                 
                 // Continuer l'initialisation en arrière-plan
@@ -170,7 +173,9 @@ class EmailSortProApp {
                 
                 // IMPORTANT: Charger le dashboard après initialisation
                 setTimeout(() => {
-                    this.loadDashboard();
+                    if (!this.dashboardLoaded) {
+                        this.loadDashboard();
+                    }
                 }, 100);
             } else {
                 console.log('[App] User not authenticated');
@@ -193,9 +198,7 @@ class EmailSortProApp {
     }
     
     quickAuthCheck() {
-        // Vérification rapide des tokens stockés
         try {
-            // Vérifier le provider actif
             const lastProvider = sessionStorage.getItem('lastAuthProvider');
             
             // Vérifier token Google
@@ -223,7 +226,6 @@ class EmailSortProApp {
     }
     
     async backgroundInit() {
-        // Initialisation en arrière-plan après affichage rapide
         try {
             await this.waitForServices();
             await this.initializeAuthServices();
@@ -232,7 +234,7 @@ class EmailSortProApp {
             await this.initializePageManagers();
             
             // IMPORTANT: Charger le dashboard si pas déjà fait
-            if (!this.currentPage) {
+            if (!this.currentPage && !this.dashboardLoaded) {
                 setTimeout(() => {
                     this.loadDashboard();
                 }, 100);
@@ -290,9 +292,9 @@ class EmailSortProApp {
     async initializeAuthServices() {
         console.log('[App] Initializing auth services...');
         
-        // Initialiser Google en premier si c'était le dernier provider
         const lastProvider = sessionStorage.getItem('lastAuthProvider');
         
+        // Initialiser Google en premier si c'était le dernier provider
         if (lastProvider === 'google' && window.googleAuthService) {
             try {
                 await window.googleAuthService.initialize();
@@ -603,6 +605,9 @@ class EmailSortProApp {
     loadDashboard() {
         console.log('[App] Loading dashboard...');
         
+        // Marquer le dashboard comme chargé pour éviter les chargements multiples
+        this.dashboardLoaded = true;
+        
         // S'assurer que le container est visible
         const pageContent = document.getElementById('pageContent');
         if (pageContent) {
@@ -623,9 +628,19 @@ class EmailSortProApp {
     setupEventHandlers() {
         console.log('[App] Setting up event handlers...');
         
+        // Éviter les enregistrements multiples
+        if (this.eventHandlersSetup) {
+            console.log('[App] Event handlers already setup, skipping...');
+            return;
+        }
+        this.eventHandlersSetup = true;
+        
         // Navigation
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
+            // Retirer les anciens listeners
+            item.removeEventListener('click', this.handleNavigation);
+            // Ajouter le nouveau
             item.addEventListener('click', (e) => this.handleNavigation(e));
         });
         
@@ -645,6 +660,7 @@ class EmailSortProApp {
     
     handleNavigation(event) {
         event.preventDefault();
+        event.stopPropagation();
         
         const page = event.currentTarget.dataset.page;
         if (!page) return;
@@ -1003,6 +1019,7 @@ class EmailSortProApp {
             this.isAuthenticated = false;
             this.user = null;
             this.currentPage = null;
+            this.dashboardLoaded = false;
             
             // Nettoyer les PageManagers
             this.pageManagers.clear();
@@ -1034,6 +1051,7 @@ class EmailSortProApp {
             currentPage: this.currentPage,
             isAuthenticated: this.isAuthenticated,
             user: this.user?.email || null,
+            dashboardLoaded: this.dashboardLoaded,
             authentication: {
                 microsoft: window.authService?.isAuthenticated() || false,
                 google: window.googleAuthService?.isAuthenticated() || false,
@@ -1103,6 +1121,7 @@ window.debugApp = function() {
     console.log('Current Provider:', info.currentProvider);
     console.log('Current Page:', info.currentPage);
     console.log('Authenticated:', info.isAuthenticated);
+    console.log('Dashboard Loaded:', info.dashboardLoaded);
     console.log('Services:', info.services);
     console.log('Page Managers:', info.pageManagers);
     console.groupEnd();
@@ -1132,4 +1151,4 @@ window.switchProvider = function(provider) {
     console.log(`✅ Switched to ${provider}`);
 };
 
-console.log('[App] ✅ EmailSortPro v3.8.0 loaded - Navigation améliorée');
+console.log('[App] ✅ EmailSortPro v3.9.0 loaded - Corrections et stabilité améliorée');
