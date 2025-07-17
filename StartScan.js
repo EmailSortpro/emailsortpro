@@ -279,7 +279,7 @@ class UnifiedScanModule {
                 defaultFolder: 'inbox',
                 autoAnalyze: true,
                 autoCategrize: true,
-                maxEmails: -1 // Pas de limite
+                maxEmails: -1 // -1 = AUCUNE LIMITE
             },
             taskPreselectedCategories: [],
             preferences: {
@@ -302,7 +302,7 @@ class UnifiedScanModule {
         console.log('[UnifiedScan] 🚀 Démarrage du scan unifié optimisé v11.4');
         console.log('[UnifiedScan] 📧 Provider:', this.currentProvider);
         console.log('[UnifiedScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
-        console.log('[UnifiedScan] 📅 Période:', this.selectedDays === -1 ? 'Tous les emails' : `${this.selectedDays} jours`);
+        console.log('[UnifiedScan] 📅 Période:', `${this.selectedDays} jours`);
         
         // Vérifier les scanners disponibles
         const availableScanners = this.checkAvailableScanners();
@@ -346,7 +346,7 @@ class UnifiedScanModule {
             includeSpam: !this.settings.preferences?.excludeSpam,
             detectCC: this.settings.preferences?.detectCC !== false,
             provider: this.currentProvider,
-            maxResults: this.selectedDays === -1 ? -1 : undefined, // Pas de limite si "Tous" sélectionné
+            maxResults: -1, // AUCUNE LIMITE par défaut
             onProgress: (progress) => this.updateProgress(
                 progress.progress?.current || 0, 
                 progress.message || '', 
@@ -358,7 +358,10 @@ class UnifiedScanModule {
             baseOptions.taskPreselectedCategories = [...this.taskPreselectedCategories];
         }
         
-        console.log('[UnifiedScan] 📊 Options de scan:', baseOptions);
+        console.log('[UnifiedScan] 📊 Options de scan (AUCUNE LIMITE):', baseOptions);
+        console.log('[UnifiedScan] 📅 Période sélectionnée:', this.selectedDays, 'jours');
+        console.log('[UnifiedScan] 🚫 MaxResults:', baseOptions.maxResults === -1 ? 'AUCUNE LIMITE' : baseOptions.maxResults);
+        
         return baseOptions;
     }
 
@@ -471,7 +474,7 @@ class UnifiedScanModule {
             
             if (window.mailService && window.mailService.isAuthenticated()) {
                 const emails = await window.mailService.getMessages('INBOX', {
-                    maxResults: scanOptions.maxResults,
+                    maxResults: -1, // AUCUNE LIMITE même en fallback
                     days: scanOptions.days,
                     includeSpam: scanOptions.includeSpam,
                     onProgress: scanOptions.onProgress
@@ -1379,8 +1382,7 @@ class UnifiedScanModule {
             { value: 7, label: '7 jours' },
             { value: 15, label: '15 jours' },
             { value: 30, label: '30 jours' },
-            { value: 90, label: '3 mois' },
-            { value: -1, label: 'Tous' }
+            { value: 90, label: '3 mois' }
         ];
         
         return options.map(option => {
@@ -1412,7 +1414,7 @@ class UnifiedScanModule {
         
         const provider = this.currentProvider === 'gmail' ? 'Gmail' : 'Outlook';
         details.push(`Compte ${provider} connecté`);
-        details.push('Sans limite d\'emails');
+        details.push('AUCUNE limite d\'emails'); // Préciser qu'il n'y a AUCUNE limite
         
         return details.length > 0 ? 
             `<div class="scan-info-details">${details.join(' • ')}</div>` :
@@ -1518,18 +1520,36 @@ class UnifiedScanModule {
     }
 
     selectDuration(days) {
+        console.log(`[UnifiedScan] 📅 Sélection durée: ${days} jours`);
+        
+        // Sauvegarder l'ancienne valeur pour debug
+        const oldDays = this.selectedDays;
+        
+        // Mettre à jour la valeur
         this.selectedDays = days;
         
+        // Mettre à jour l'interface immédiatement
+        this.updateDurationButtons(days);
+        
+        console.log(`[UnifiedScan] ✅ Durée changée: ${oldDays} → ${days} jours`);
+    }
+
+    updateDurationButtons(selectedDays) {
+        console.log(`[UnifiedScan] 🔄 Mise à jour boutons durée: ${selectedDays}`);
+        
+        // Désélectionner tous les boutons
         document.querySelectorAll('.duration-option').forEach(btn => {
             btn.classList.remove('selected');
         });
         
-        const selectedBtn = document.querySelector(`[data-days="${days}"]`);
+        // Sélectionner le bon bouton
+        const selectedBtn = document.querySelector(`[data-days="${selectedDays}"]`);
         if (selectedBtn) {
             selectedBtn.classList.add('selected');
+            console.log(`[UnifiedScan] ✅ Bouton ${selectedDays} jours sélectionné`);
+        } else {
+            console.warn(`[UnifiedScan] ⚠️ Bouton pour ${selectedDays} jours non trouvé`);
         }
-        
-        console.log(`[UnifiedScan] ✅ Durée sélectionnée: ${days === -1 ? 'Tous les emails' : days + ' jours'}`);
     }
 
     checkSettingsUpdate() {
@@ -1555,14 +1575,13 @@ class UnifiedScanModule {
     }
 
     updateUIWithNewSettings() {
-        const durationOptions = document.querySelectorAll('.duration-option');
-        durationOptions.forEach(option => {
-            option.classList.remove('selected');
-            if (parseInt(option.dataset.days) === this.selectedDays) {
-                option.classList.add('selected');
-            }
-        });
+        console.log('[UnifiedScan] 🔄 Mise à jour UI avec nouveaux paramètres...');
+        console.log('[UnifiedScan] 📅 selectedDays actuel:', this.selectedDays);
         
+        // Mettre à jour la sélection de durée
+        this.updateDurationButtons(this.selectedDays);
+        
+        // Mettre à jour l'affichage des catégories
         this.updatePreselectedCategoriesDisplay();
     }
 
@@ -1741,6 +1760,85 @@ window.debugScannerInstances = function() {
             provider: window.emailScannerOutlook?.provider,
             synced: window.emailScannerOutlook?.startScanSynced
         }
+    };
+};
+
+window.checkScanLimits = function() {
+    console.group('🚫 CHECK Limites de Scan');
+    
+    const scanModule = window.unifiedScanModule;
+    if (!scanModule) {
+        console.log('❌ UnifiedScanModule non disponible');
+        console.groupEnd();
+        return;
+    }
+    
+    const settings = scanModule.settings;
+    const scanSettings = settings.scanSettings || {};
+    
+    console.log('Paramètres de limite:');
+    console.log('  - maxEmails dans settings:', scanSettings.maxEmails);
+    console.log('  - defaultPeriod:', scanSettings.defaultPeriod);
+    console.log('  - selectedDays:', scanModule.selectedDays);
+    
+    // Simuler la préparation des options
+    const testOptions = scanModule.prepareScanOptions();
+    console.log('Options de scan préparées:');
+    console.log('  - maxResults:', testOptions.maxResults);
+    console.log('  - days:', testOptions.days);
+    
+    if (testOptions.maxResults === -1) {
+        console.log('✅ AUCUNE LIMITE configurée (maxResults = -1)');
+    } else if (testOptions.maxResults === undefined) {
+        console.log('⚠️ maxResults undefined (peut causer des limites par défaut)');
+    } else {
+        console.log('⚠️ LIMITE DÉTECTÉE:', testOptions.maxResults, 'emails');
+    }
+    
+    console.groupEnd();
+    
+    return {
+        maxEmails: scanSettings.maxEmails,
+        maxResults: testOptions.maxResults,
+        hasLimit: testOptions.maxResults !== -1,
+        unlimited: testOptions.maxResults === -1
+    };
+};
+
+window.testDurationSelection = function() {
+    console.group('📅 TEST Sélection de Durée');
+    
+    const scanModule = window.unifiedScanModule;
+    if (!scanModule) {
+        console.log('❌ UnifiedScanModule non disponible');
+        console.groupEnd();
+        return;
+    }
+    
+    console.log('Durée actuelle:', scanModule.selectedDays);
+    
+    // Tester différentes durées
+    const testDurations = [1, 3, 7, 15, 30, 90];
+    
+    testDurations.forEach(days => {
+        console.log(`Test sélection ${days} jours...`);
+        scanModule.selectDuration(days);
+        
+        setTimeout(() => {
+            const currentSelected = scanModule.selectedDays;
+            const buttonSelected = document.querySelector('.duration-option.selected')?.dataset.days;
+            
+            console.log(`  - selectedDays: ${currentSelected}`);
+            console.log(`  - bouton sélectionné: ${buttonSelected}`);
+            console.log(`  - correspondance: ${currentSelected == buttonSelected ? '✅' : '❌'}`);
+        }, 100);
+    });
+    
+    console.groupEnd();
+    
+    return {
+        currentDays: scanModule.selectedDays,
+        availableOptions: [1, 3, 7, 15, 30, 90]
     };
 };
 
