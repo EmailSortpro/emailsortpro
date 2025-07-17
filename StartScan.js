@@ -245,8 +245,10 @@ class UnifiedScanModule {
                 console.log('[UnifiedScan] ✅ Paramètres chargés depuis CategoryManager');
                 console.log('[UnifiedScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
                 
-                if (this.settings.scanSettings?.defaultPeriod) {
+                if (this.settings.scanSettings?.defaultPeriod && this.settings.scanSettings.defaultPeriod !== -1) {
                     this.selectedDays = this.settings.scanSettings.defaultPeriod;
+                } else if (this.selectedDays === -1) {
+                    this.selectedDays = 7; // Valeur par défaut si -1
                 }
             } else {
                 // Fallback localStorage
@@ -255,8 +257,10 @@ class UnifiedScanModule {
                     if (saved) {
                         this.settings = JSON.parse(saved);
                         this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
-                        if (this.settings.scanSettings?.defaultPeriod) {
+                        if (this.settings.scanSettings?.defaultPeriod && this.settings.scanSettings.defaultPeriod !== -1) {
                             this.selectedDays = this.settings.scanSettings.defaultPeriod;
+                        } else if (this.selectedDays === -1) {
+                            this.selectedDays = 7; // Valeur par défaut si -1
                         }
                     }
                 } catch (error) {
@@ -269,6 +273,7 @@ class UnifiedScanModule {
             console.error('[UnifiedScan] ❌ Erreur chargement paramètres:', error);
             this.settings = this.getDefaultSettings();
             this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
+            this.selectedDays = 7; // S'assurer qu'on n'a pas -1
         }
     }
 
@@ -1520,7 +1525,14 @@ class UnifiedScanModule {
     }
 
     selectDuration(days) {
-        console.log(`[UnifiedScan] 📅 Sélection durée: ${days} jours`);
+        console.log(`[UnifiedScan] 📅 Tentative sélection durée: ${days} jours`);
+        
+        // Valider que la durée est autorisée
+        const allowedDurations = [1, 3, 7, 15, 30, 90];
+        if (!allowedDurations.includes(days)) {
+            console.warn(`[UnifiedScan] ⚠️ Durée ${days} non autorisée, reset à 7 jours`);
+            days = 7;
+        }
         
         // Sauvegarder l'ancienne valeur pour debug
         const oldDays = this.selectedDays;
@@ -1540,6 +1552,13 @@ class UnifiedScanModule {
         // Désélectionner tous les boutons
         document.querySelectorAll('.duration-option').forEach(btn => {
             btn.classList.remove('selected');
+            
+            // Supprimer les boutons "Tous" qui pourraient traîner
+            if (btn.dataset.days === '-1' || btn.textContent.includes('Tous')) {
+                console.log('[UnifiedScan] 🗑️ Suppression bouton "Tous" trouvé');
+                btn.remove();
+                return;
+            }
         });
         
         // Sélectionner le bon bouton
@@ -1549,6 +1568,13 @@ class UnifiedScanModule {
             console.log(`[UnifiedScan] ✅ Bouton ${selectedDays} jours sélectionné`);
         } else {
             console.warn(`[UnifiedScan] ⚠️ Bouton pour ${selectedDays} jours non trouvé`);
+            
+            // Si aucun bouton trouvé, forcer 7 jours
+            if (selectedDays !== 7) {
+                console.log('[UnifiedScan] 🔄 Fallback vers 7 jours');
+                this.selectedDays = 7;
+                this.updateDurationButtons(7);
+            }
         }
     }
 
@@ -1561,6 +1587,12 @@ class UnifiedScanModule {
             const oldSelectedDays = this.selectedDays;
             
             this.loadSettingsFromCategoryManager();
+            
+            // S'assurer que selectedDays est une valeur valide (pas -1)
+            if (this.selectedDays === -1) {
+                this.selectedDays = 7; // Revenir à 7 jours par défaut
+                console.log('[UnifiedScan] ⚠️ selectedDays était -1, reset à 7 jours');
+            }
             
             const categoriesChanged = JSON.stringify(oldTaskCategories.sort()) !== JSON.stringify([...this.taskPreselectedCategories].sort());
             const daysChanged = oldSelectedDays !== this.selectedDays;
@@ -1817,6 +1849,21 @@ window.testDurationSelection = function() {
     
     console.log('Durée actuelle:', scanModule.selectedDays);
     
+    // Vérifier les boutons présents
+    const buttons = document.querySelectorAll('.duration-option');
+    console.log('Boutons trouvés:');
+    buttons.forEach(btn => {
+        const days = btn.dataset.days;
+        const text = btn.textContent.trim();
+        const isSelected = btn.classList.contains('selected');
+        console.log(`  - ${text} (${days} jours) ${isSelected ? '✅ SÉLECTIONNÉ' : ''}`);
+        
+        // Signaler les boutons "Tous"
+        if (days === '-1' || text.includes('Tous')) {
+            console.warn(`  ⚠️ BOUTON "TOUS" DÉTECTÉ: ${text}`);
+        }
+    });
+    
     // Tester différentes durées
     const testDurations = [1, 3, 7, 15, 30, 90];
     
@@ -1838,8 +1885,41 @@ window.testDurationSelection = function() {
     
     return {
         currentDays: scanModule.selectedDays,
-        availableOptions: [1, 3, 7, 15, 30, 90]
+        availableOptions: [1, 3, 7, 15, 30, 90],
+        buttonsFound: buttons.length,
+        hasAllButton: Array.from(buttons).some(btn => 
+            btn.dataset.days === '-1' || btn.textContent.includes('Tous')
+        )
     };
+};
+
+window.cleanupDurationButtons = function() {
+    console.group('🧹 NETTOYAGE Boutons Durée');
+    
+    const buttons = document.querySelectorAll('.duration-option');
+    let removed = 0;
+    
+    buttons.forEach(btn => {
+        const days = btn.dataset.days;
+        const text = btn.textContent.trim();
+        
+        if (days === '-1' || text.includes('Tous')) {
+            console.log(`🗑️ Suppression: ${text} (${days})`);
+            btn.remove();
+            removed++;
+        }
+    });
+    
+    console.log(`✅ ${removed} bouton(s) "Tous" supprimé(s)`);
+    
+    // Réinitialiser la sélection
+    if (window.unifiedScanModule) {
+        window.unifiedScanModule.updateDurationButtons(window.unifiedScanModule.selectedDays);
+    }
+    
+    console.groupEnd();
+    
+    return { removed: removed };
 };
 
 console.log('[StartScan] ✅ Scanner Unifié v11.4 chargé - Détection scanners corrigée!');
