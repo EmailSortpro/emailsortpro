@@ -1,9 +1,9 @@
-// app.js - Application principale EmailSortPro v3.7.1
-// CORRECTION MINIMALE: Support PageManagerGmail sans changement de structure
+// app.js - Application principale EmailSortPro v3.7.2
+// CORRECTION: Support complet Gmail ET Outlook avec détection automatique du PageManager
 
 class EmailSortProApp {
     constructor() {
-        this.version = '3.7.1';
+        this.version = '3.7.2';
         this.isInitialized = false;
         this.initPromise = null;
         this.currentProvider = null;
@@ -389,10 +389,13 @@ class EmailSortProApp {
     loadDashboard() {
         console.log('[App] Loading dashboard...');
         
+        // Utiliser le bon PageManager selon le provider
+        const pageManager = this.getPageManager();
+        
         if (window.dashboardModule) {
             window.dashboardModule.render();
-        } else if (window.pageManager) {
-            window.pageManager.loadPage('dashboard');
+        } else if (pageManager) {
+            pageManager.loadPage('dashboard');
         }
     }
     
@@ -411,6 +414,20 @@ class EmailSortProApp {
         }
     }
     
+    // MÉTHODE CLÉ: Obtenir le bon PageManager selon le provider
+    getPageManager() {
+        if (this.currentProvider === 'google' && window.pageManagerGmail) {
+            console.log('[App] Using PageManagerGmail for Google provider');
+            return window.pageManagerGmail;
+        } else if (window.pageManager) {
+            console.log('[App] Using PageManager for Microsoft provider');
+            return window.pageManager;
+        }
+        
+        console.warn('[App] No suitable PageManager found');
+        return null;
+    }
+    
     handleNavigation(event) {
         event.preventDefault();
         
@@ -425,11 +442,33 @@ class EmailSortProApp {
         });
         event.currentTarget.classList.add('active');
         
-        // CORRECTION MINIMALE: Utiliser le bon PageManager selon le provider
-        if (this.currentProvider === 'google' && window.pageManagerGmail) {
-            window.pageManagerGmail.loadPage(page);
-        } else if (window.pageManager) {
-            window.pageManager.loadPage(page);
+        // CORRECTION: Utiliser le bon PageManager selon le provider
+        const pageManager = this.getPageManager();
+        if (pageManager) {
+            // Vérifier que la page existe dans le PageManager
+            if (pageManager.pages && pageManager.pages[page]) {
+                pageManager.loadPage(page);
+            } else {
+                console.warn(`[App] Page "${page}" not found in PageManager`);
+                // Fallback: essayer de charger la page settings pour Gmail
+                if (page === 'settings' && this.currentProvider === 'google') {
+                    // Charger CategoriesPage directement
+                    const container = document.getElementById('pageContent');
+                    if (container && window.categoriesPage) {
+                        console.log('[App] Loading CategoriesPage directly for Gmail settings');
+                        window.categoriesPage.render(container);
+                    }
+                } else if (page === 'tasks') {
+                    // Charger TasksView directement
+                    const container = document.getElementById('pageContent');
+                    if (container && window.tasksView) {
+                        console.log('[App] Loading TasksView directly');
+                        window.tasksView.render(container);
+                    }
+                }
+            }
+        } else {
+            console.error('[App] No PageManager available for navigation');
         }
     }
     
@@ -537,7 +576,11 @@ class EmailSortProApp {
                 authService: !!window.authService,
                 googleAuthService: !!window.googleAuthService,
                 mailService: !!window.mailService,
-                uiManager: !!window.uiManager
+                uiManager: !!window.uiManager,
+                pageManager: !!window.pageManager,
+                pageManagerGmail: !!window.pageManagerGmail,
+                taskManager: !!window.taskManager,
+                categoriesPage: !!window.categoriesPage
             }
         };
     }
@@ -549,4 +592,25 @@ window.app = new EmailSortProApp();
 // Exposer des méthodes globales
 window.checkScrollNeeded = () => window.app.checkScrollNeeded();
 
-console.log('[App] ✅ EmailSortPro v3.7.1 loaded');
+// Hook pour intégrer les pages manquantes dans PageManagerGmail
+if (window.pageManagerGmail) {
+    console.log('[App] Extending PageManagerGmail with missing pages...');
+    
+    // Ajouter la page settings (paramètres/catégories)
+    if (!window.pageManagerGmail.pages.settings && window.categoriesPage) {
+        window.pageManagerGmail.pages.settings = (container) => {
+            console.log('[App/PageManagerGmail] Loading settings page');
+            window.categoriesPage.render(container);
+        };
+    }
+    
+    // Ajouter la page tasks
+    if (!window.pageManagerGmail.pages.tasks && window.tasksView) {
+        window.pageManagerGmail.pages.tasks = (container) => {
+            console.log('[App/PageManagerGmail] Loading tasks page');
+            window.tasksView.render(container);
+        };
+    }
+}
+
+console.log('[App] ✅ EmailSortPro v3.7.2 loaded - Gmail & Outlook support');
