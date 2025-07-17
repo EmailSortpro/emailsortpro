@@ -141,6 +141,11 @@ class EmailSortProApp {
                 // Afficher l'interface immédiatement
                 this.showAppInterface();
                 
+                // IMPORTANT: Charger le dashboard immédiatement
+                setTimeout(() => {
+                    this.loadDashboard();
+                }, 100);
+                
                 // Continuer l'initialisation en arrière-plan
                 this.backgroundInit();
                 return;
@@ -162,7 +167,11 @@ class EmailSortProApp {
                 await this.initializeAppComponents();
                 await this.updateUserDisplay();
                 await this.initializePageManagers();
-                this.loadDashboard();
+                
+                // IMPORTANT: Charger le dashboard après initialisation
+                setTimeout(() => {
+                    this.loadDashboard();
+                }, 100);
             } else {
                 console.log('[App] User not authenticated');
                 this.showLoginPage();
@@ -221,7 +230,14 @@ class EmailSortProApp {
             await this.initializeAppComponents();
             await this.updateUserDisplay();
             await this.initializePageManagers();
-            this.loadDashboard();
+            
+            // IMPORTANT: Charger le dashboard si pas déjà fait
+            if (!this.currentPage) {
+                setTimeout(() => {
+                    this.loadDashboard();
+                }, 100);
+            }
+            
             this.setupEventHandlers();
             this.initializePageModules();
             this.isInitialized = true;
@@ -410,6 +426,13 @@ class EmailSortProApp {
             loadingOverlay.classList.remove('active');
         }
         
+        // IMPORTANT: S'assurer que le container est visible
+        const pageContent = document.getElementById('pageContent');
+        if (pageContent) {
+            pageContent.style.display = 'block';
+            pageContent.style.opacity = '1';
+        }
+        
         // Appeler onAuthSuccess si défini
         if (window.onAuthSuccess) {
             window.onAuthSuccess();
@@ -579,7 +602,22 @@ class EmailSortProApp {
     
     loadDashboard() {
         console.log('[App] Loading dashboard...');
+        
+        // S'assurer que le container est visible
+        const pageContent = document.getElementById('pageContent');
+        if (pageContent) {
+            pageContent.style.display = 'block';
+            pageContent.style.opacity = '1';
+        }
+        
+        // Charger le dashboard
         this.loadPage('dashboard');
+        
+        // Mettre à jour la navigation pour marquer dashboard comme actif
+        const dashboardBtn = document.querySelector('.nav-item[data-page="dashboard"]');
+        if (dashboardBtn) {
+            dashboardBtn.classList.add('active');
+        }
     }
     
     setupEventHandlers() {
@@ -687,6 +725,117 @@ class EmailSortProApp {
         
         if (!pageManager) {
             console.error('[App] No PageManager available for current provider');
+            
+            // Si c'est la page emails, afficher un état vide approprié
+            if (pageName === 'emails') {
+                container.innerHTML = `
+                    <div class="emails-page-modern">
+                        <div class="empty-state" style="margin-top: 40px;">
+                            <div class="empty-state-icon">
+                                <i class="fas fa-inbox"></i>
+                            </div>
+                            <h3 class="empty-state-title">Aucun email trouvé</h3>
+                            <p class="empty-state-text">
+                                Utilisez le scanner pour récupérer et analyser vos emails.
+                            </p>
+                            <div class="empty-state-actions">
+                                <button class="btn btn-primary" onclick="window.app.loadPage('scanner')">
+                                    <i class="fas fa-search"></i>
+                                    <span>Scanner des emails</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Ajouter les styles si nécessaire
+                if (!document.getElementById('empty-state-styles')) {
+                    const styles = document.createElement('style');
+                    styles.id = 'empty-state-styles';
+                    styles.textContent = `
+                        .emails-page-modern {
+                            padding: 20px;
+                            min-height: calc(100vh - 120px);
+                        }
+                        
+                        .empty-state {
+                            text-align: center;
+                            padding: 60px 30px;
+                            background: white;
+                            border-radius: 12px;
+                            border: 1px solid #e5e7eb;
+                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                            max-width: 500px;
+                            margin: 0 auto;
+                        }
+                        
+                        .empty-state-icon {
+                            font-size: 48px;
+                            margin-bottom: 20px;
+                            color: #6b7280;
+                        }
+                        
+                        .empty-state-title {
+                            font-size: 22px;
+                            font-weight: 700;
+                            color: #374151;
+                            margin-bottom: 12px;
+                        }
+                        
+                        .empty-state-text {
+                            font-size: 15px;
+                            margin-bottom: 24px;
+                            max-width: 400px;
+                            line-height: 1.6;
+                            color: #6b7280;
+                            font-weight: 500;
+                            margin-left: auto;
+                            margin-right: auto;
+                        }
+                        
+                        .empty-state-actions {
+                            display: flex;
+                            gap: 12px;
+                            flex-wrap: wrap;
+                            justify-content: center;
+                        }
+                        
+                        .btn {
+                            height: 44px;
+                            background: white;
+                            color: #374151;
+                            border: 1px solid #e5e7eb;
+                            border-radius: 8px;
+                            padding: 0 16px;
+                            font-size: 13px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                        }
+                        
+                        .btn-primary {
+                            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                            color: white;
+                            border-color: transparent;
+                            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+                        }
+                        
+                        .btn-primary:hover {
+                            background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
+                            transform: translateY(-2px);
+                            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+                        }
+                    `;
+                    document.head.appendChild(styles);
+                }
+                
+                return;
+            }
+            
             throw new Error('PageManager not available');
         }
         
