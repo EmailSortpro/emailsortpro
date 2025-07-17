@@ -1064,6 +1064,30 @@ class UnifiedScanModule {
                     onProgress: scanOptions.onProgress
                 });
                 
+                // Créer ou récupérer EmailScannerOutlook
+                if (!window.emailScannerOutlook) {
+                    console.log('[UnifiedScan] 📦 Création EmailScannerOutlook pour stocker les emails...');
+                    if (window.EmailScannerOutlook) {
+                        window.emailScannerOutlook = new window.EmailScannerOutlook();
+                    } else {
+                        // Créer un scanner minimal si la classe n'existe pas
+                        window.emailScannerOutlook = {
+                            emails: [],
+                            getAllEmails: function() { return this.emails; },
+                            setEmails: function(emails) { this.emails = emails; },
+                            startScanSynced: true
+                        };
+                    }
+                }
+                
+                // Stocker les emails dans EmailScannerOutlook
+                if (typeof window.emailScannerOutlook.setEmails === 'function') {
+                    window.emailScannerOutlook.setEmails(emails);
+                } else {
+                    window.emailScannerOutlook.emails = emails;
+                }
+                window.emailScannerOutlook.startScanSynced = true;
+                
                 this.scanResults = {
                     success: true,
                     total: emails.length,
@@ -1078,6 +1102,7 @@ class UnifiedScanModule {
                 };
                 
                 console.log('[UnifiedScan] ✅ Emails récupérés via MailService:', emails.length);
+                console.log('[UnifiedScan] ✅ Emails stockés dans EmailScannerOutlook');
             } else {
                 throw error;
             }
