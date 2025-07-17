@@ -21,7 +21,14 @@ class UnifiedScanModule {
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
+        // Gestion de la mémoire de sélection
+        this.userSelectedDays = null; // Sélection explicite de l'utilisateur
+        this.hasUserSelection = false; // Flag pour savoir si l'utilisateur a fait une sélection
+        
         console.log('[UnifiedScan] Scanner v11.4 initialized - Détection scanners corrigée');
+        
+        // Charger la dernière sélection sauvegardée
+        this.loadLastSelection();
         
         // Vérifier l'ordre de chargement
         this.checkLoadOrder();
@@ -32,8 +39,35 @@ class UnifiedScanModule {
     }
 
     // ================================================
-    // VÉRIFICATION DE L'ORDRE DE CHARGEMENT
+    // GESTION DE LA MÉMOIRE DE SÉLECTION
     // ================================================
+    loadLastSelection() {
+        try {
+            const saved = localStorage.getItem('unifiedScanLastSelection');
+            if (saved) {
+                const data = JSON.parse(saved);
+                this.userSelectedDays = data.selectedDays;
+                this.selectedDays = data.selectedDays;
+                this.hasUserSelection = true;
+                console.log('[UnifiedScan] 💾 Dernière sélection restaurée:', this.selectedDays, 'jours');
+            }
+        } catch (error) {
+            console.warn('[UnifiedScan] ⚠️ Erreur chargement dernière sélection:', error);
+        }
+    }
+
+    saveLastSelection() {
+        try {
+            const data = {
+                selectedDays: this.selectedDays,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('unifiedScanLastSelection', JSON.stringify(data));
+            console.log('[UnifiedScan] 💾 Sélection sauvegardée:', this.selectedDays, 'jours');
+        } catch (error) {
+            console.warn('[UnifiedScan] ⚠️ Erreur sauvegarde sélection:', error);
+        }
+    }
     checkLoadOrder() {
         const requiredServices = [
             { name: 'CategoryManager', check: () => !!window.categoryManager },
@@ -245,10 +279,12 @@ class UnifiedScanModule {
                 console.log('[UnifiedScan] ✅ Paramètres chargés depuis CategoryManager');
                 console.log('[UnifiedScan] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
                 
-                if (this.settings.scanSettings?.defaultPeriod && this.settings.scanSettings.defaultPeriod !== -1) {
+                // IMPORTANT: Ne pas écraser la sélection utilisateur
+                if (!this.hasUserSelection && this.settings.scanSettings?.defaultPeriod && this.settings.scanSettings.defaultPeriod !== -1) {
                     this.selectedDays = this.settings.scanSettings.defaultPeriod;
-                } else if (this.selectedDays === -1) {
-                    this.selectedDays = 7; // Valeur par défaut si -1
+                    console.log('[UnifiedScan] 📅 Période par défaut appliquée:', this.selectedDays);
+                } else if (this.hasUserSelection) {
+                    console.log('[UnifiedScan] 🔒 Sélection utilisateur préservée:', this.selectedDays);
                 }
             } else {
                 // Fallback localStorage
@@ -257,10 +293,10 @@ class UnifiedScanModule {
                     if (saved) {
                         this.settings = JSON.parse(saved);
                         this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
-                        if (this.settings.scanSettings?.defaultPeriod && this.settings.scanSettings.defaultPeriod !== -1) {
+                        
+                        // IMPORTANT: Ne pas écraser la sélection utilisateur
+                        if (!this.hasUserSelection && this.settings.scanSettings?.defaultPeriod && this.settings.scanSettings.defaultPeriod !== -1) {
                             this.selectedDays = this.settings.scanSettings.defaultPeriod;
-                        } else if (this.selectedDays === -1) {
-                            this.selectedDays = 7; // Valeur par défaut si -1
                         }
                     }
                 } catch (error) {
@@ -268,12 +304,22 @@ class UnifiedScanModule {
                 }
             }
             
+            // S'assurer qu'on n'a jamais -1
+            if (this.selectedDays === -1) {
+                this.selectedDays = this.hasUserSelection ? this.userSelectedDays : 7;
+                console.log('[UnifiedScan] ⚠️ selectedDays était -1, reset à:', this.selectedDays);
+            }
+            
             this.lastSettingsSync = Date.now();
         } catch (error) {
             console.error('[UnifiedScan] ❌ Erreur chargement paramètres:', error);
             this.settings = this.getDefaultSettings();
             this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
-            this.selectedDays = 7; // S'assurer qu'on n'a pas -1
+            
+            // Préserver la sélection utilisateur même en cas d'erreur
+            if (!this.hasUserSelection) {
+                this.selectedDays = 7;
+            }
         }
     }
 
@@ -1537,13 +1583,19 @@ class UnifiedScanModule {
         // Sauvegarder l'ancienne valeur pour debug
         const oldDays = this.selectedDays;
         
-        // Mettre à jour la valeur
+        // Mettre à jour la valeur ET marquer comme sélection utilisateur
         this.selectedDays = days;
+        this.userSelectedDays = days;
+        this.hasUserSelection = true;
+        
+        // Sauvegarder la sélection pour la prochaine fois
+        this.saveLastSelection();
         
         // Mettre à jour l'interface immédiatement
         this.updateDurationButtons(days);
         
-        console.log(`[UnifiedScan] ✅ Durée changée: ${oldDays} → ${days} jours`);
+        console.log(`[UnifiedScan] ✅ Durée changée par utilisateur: ${oldDays} → ${days} jours`);
+        console.log(`[UnifiedScan] 💾 Sélection utilisateur sauvegardée`);
     }
 
     updateDurationButtons(selectedDays) {
@@ -1586,19 +1638,32 @@ class UnifiedScanModule {
             const oldTaskCategories = [...this.taskPreselectedCategories];
             const oldSelectedDays = this.selectedDays;
             
+            // Sauvegarder la sélection utilisateur avant de recharger
+            const preservedUserSelection = this.hasUserSelection ? this.selectedDays : null;
+            
             this.loadSettingsFromCategoryManager();
+            
+            // Restaurer la sélection utilisateur si elle était préservée
+            if (preservedUserSelection !== null && this.hasUserSelection) {
+                this.selectedDays = preservedUserSelection;
+                console.log('[UnifiedScan] 🔒 Sélection utilisateur restaurée après sync:', this.selectedDays);
+            }
             
             // S'assurer que selectedDays est une valeur valide (pas -1)
             if (this.selectedDays === -1) {
-                this.selectedDays = 7; // Revenir à 7 jours par défaut
-                console.log('[UnifiedScan] ⚠️ selectedDays était -1, reset à 7 jours');
+                this.selectedDays = this.hasUserSelection ? this.userSelectedDays : 7;
+                console.log('[UnifiedScan] ⚠️ selectedDays était -1, reset à:', this.selectedDays);
             }
             
             const categoriesChanged = JSON.stringify(oldTaskCategories.sort()) !== JSON.stringify([...this.taskPreselectedCategories].sort());
             const daysChanged = oldSelectedDays !== this.selectedDays;
             
-            if (categoriesChanged || daysChanged) {
-                console.log('[UnifiedScan] 🔄 Paramètres mis à jour détectés');
+            if (categoriesChanged) {
+                console.log('[UnifiedScan] 🔄 Catégories mises à jour détectées');
+                this.updateUIWithNewSettings();
+            } else if (daysChanged && !this.hasUserSelection) {
+                // Seulement mettre à jour l'UI pour les jours si ce n'est pas une sélection utilisateur
+                console.log('[UnifiedScan] 🔄 Paramètres jours mis à jour (non-utilisateur)');
                 this.updateUIWithNewSettings();
             }
         } catch (error) {
@@ -1609,8 +1674,9 @@ class UnifiedScanModule {
     updateUIWithNewSettings() {
         console.log('[UnifiedScan] 🔄 Mise à jour UI avec nouveaux paramètres...');
         console.log('[UnifiedScan] 📅 selectedDays actuel:', this.selectedDays);
+        console.log('[UnifiedScan] 🔒 Sélection utilisateur:', this.hasUserSelection, this.userSelectedDays);
         
-        // Mettre à jour la sélection de durée
+        // Mettre à jour la sélection de durée (en préservant la sélection utilisateur)
         this.updateDurationButtons(this.selectedDays);
         
         // Mettre à jour l'affichage des catégories
@@ -1920,6 +1986,80 @@ window.cleanupDurationButtons = function() {
     console.groupEnd();
     
     return { removed: removed };
+};
+
+window.debugSelectionMemory = function() {
+    console.group('💾 DEBUG Mémoire de Sélection');
+    
+    const scanModule = window.unifiedScanModule;
+    if (!scanModule) {
+        console.log('❌ UnifiedScanModule non disponible');
+        console.groupEnd();
+        return;
+    }
+    
+    console.log('État actuel:');
+    console.log('  - selectedDays:', scanModule.selectedDays);
+    console.log('  - userSelectedDays:', scanModule.userSelectedDays);
+    console.log('  - hasUserSelection:', scanModule.hasUserSelection);
+    console.log('  - lastSettingsSync:', new Date(scanModule.lastSettingsSync).toLocaleTimeString());
+    
+    // Vérifier localStorage
+    try {
+        const saved = localStorage.getItem('unifiedScanLastSelection');
+        if (saved) {
+            const data = JSON.parse(saved);
+            console.log('LocalStorage:');
+            console.log('  - selectedDays:', data.selectedDays);
+            console.log('  - timestamp:', new Date(data.timestamp).toLocaleString());
+        } else {
+            console.log('LocalStorage: Aucune sélection sauvegardée');
+        }
+    } catch (error) {
+        console.log('LocalStorage: Erreur lecture');
+    }
+    
+    // Vérifier les boutons
+    const buttons = document.querySelectorAll('.duration-option');
+    const selectedButton = document.querySelector('.duration-option.selected');
+    
+    console.log('Interface:');
+    console.log('  - Boutons total:', buttons.length);
+    console.log('  - Bouton sélectionné:', selectedButton ? `${selectedButton.textContent.trim()} (${selectedButton.dataset.days})` : 'Aucun');
+    
+    console.groupEnd();
+    
+    return {
+        selectedDays: scanModule.selectedDays,
+        userSelectedDays: scanModule.userSelectedDays,
+        hasUserSelection: scanModule.hasUserSelection,
+        buttonSelected: selectedButton?.dataset.days,
+        synchronized: scanModule.selectedDays == selectedButton?.dataset.days
+    };
+};
+
+window.resetSelectionMemory = function() {
+    console.log('🔄 Reset de la mémoire de sélection...');
+    
+    if (window.unifiedScanModule) {
+        window.unifiedScanModule.hasUserSelection = false;
+        window.unifiedScanModule.userSelectedDays = null;
+        window.unifiedScanModule.selectedDays = 7;
+    }
+    
+    try {
+        localStorage.removeItem('unifiedScanLastSelection');
+        console.log('✅ LocalStorage nettoyé');
+    } catch (error) {
+        console.warn('⚠️ Erreur nettoyage localStorage');
+    }
+    
+    if (window.unifiedScanModule) {
+        window.unifiedScanModule.updateDurationButtons(7);
+        console.log('✅ Interface réinitialisée à 7 jours');
+    }
+    
+    return { success: true };
 };
 
 console.log('[StartScan] ✅ Scanner Unifié v11.4 chargé - Détection scanners corrigée!');
