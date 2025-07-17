@@ -129,7 +129,10 @@ class EmailSortProApp {
             // 1. Attendre que le DOM soit prêt
             await this.waitForDOM();
             
-            // 2. Vérifier immédiatement l'authentification stockée
+            // 2. Masquer toutes les pages pendant l'initialisation
+            this.hideAllPages();
+            
+            // 3. Vérifier immédiatement l'authentification stockée
             const quickAuthCheck = this.quickAuthCheck();
             if (quickAuthCheck.authenticated) {
                 console.log('[App] ✅ Quick auth check passed:', quickAuthCheck.provider);
@@ -142,25 +145,21 @@ class EmailSortProApp {
                 // Afficher l'interface immédiatement
                 this.showAppInterface();
                 
-                // IMPORTANT: Charger le dashboard immédiatement
-                setTimeout(() => {
-                    if (!this.dashboardLoaded) {
-                        this.loadDashboard();
-                    }
-                }, 100);
+                // IMPORTANT: Charger le dashboard immédiatement et directement
+                this.loadDashboardDirect();
                 
                 // Continuer l'initialisation en arrière-plan
                 this.backgroundInit();
                 return;
             }
             
-            // 3. Attendre que les services soient chargés
+            // 4. Attendre que les services soient chargés
             await this.waitForServices();
             
-            // 4. Initialiser les services
+            // 5. Initialiser les services
             await this.initializeAuthServices();
             
-            // 5. Vérifier l'authentification complète
+            // 6. Vérifier l'authentification complète
             const isAuthenticated = await this.checkAuthentication();
             
             if (isAuthenticated) {
@@ -172,20 +171,16 @@ class EmailSortProApp {
                 await this.initializePageManagers();
                 
                 // IMPORTANT: Charger le dashboard après initialisation
-                setTimeout(() => {
-                    if (!this.dashboardLoaded) {
-                        this.loadDashboard();
-                    }
-                }, 100);
+                this.loadDashboardDirect();
             } else {
                 console.log('[App] User not authenticated');
                 this.showLoginPage();
             }
             
-            // 6. Configurer les événements
+            // 7. Configurer les événements
             this.setupEventHandlers();
             
-            // 7. Initialiser les modules de pages
+            // 8. Initialiser les modules de pages
             this.initializePageModules();
             
             this.isInitialized = true;
@@ -233,11 +228,9 @@ class EmailSortProApp {
             await this.updateUserDisplay();
             await this.initializePageManagers();
             
-            // IMPORTANT: Charger le dashboard si pas déjà fait
+            // Ne pas recharger le dashboard s'il est déjà chargé
             if (!this.currentPage && !this.dashboardLoaded) {
-                setTimeout(() => {
-                    this.loadDashboard();
-                }, 100);
+                this.loadDashboardDirect();
             }
             
             this.setupEventHandlers();
@@ -428,12 +421,16 @@ class EmailSortProApp {
             loadingOverlay.classList.remove('active');
         }
         
-        // IMPORTANT: S'assurer que le container est visible
+        // IMPORTANT: S'assurer que le container est visible et vide
         const pageContent = document.getElementById('pageContent');
         if (pageContent) {
             pageContent.style.display = 'block';
             pageContent.style.opacity = '1';
+            pageContent.innerHTML = ''; // Nettoyer tout contenu existant
         }
+        
+        // Masquer toute page qui pourrait s'afficher automatiquement
+        this.hideAllPages();
         
         // Appeler onAuthSuccess si défini
         if (window.onAuthSuccess) {
@@ -955,6 +952,21 @@ class EmailSortProApp {
             console.error('[App] Error handling Google callback:', error);
             this.showError('Erreur d\'authentification Google: ' + error.message);
         }
+    }
+    
+    hideAllPages() {
+        // Masquer toutes les pages existantes
+        const pageContent = document.getElementById('pageContent');
+        if (pageContent) {
+            pageContent.innerHTML = '';
+            pageContent.style.display = 'none';
+        }
+        
+        // Masquer CategoriesPage si elle s'affiche automatiquement
+        const categoriesElements = document.querySelectorAll('.categories-page, .categories-container');
+        categoriesElements.forEach(el => {
+            el.style.display = 'none';
+        });
     }
     
     checkScrollNeeded() {
