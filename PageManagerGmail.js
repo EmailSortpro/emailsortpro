@@ -723,6 +723,23 @@ class PageManagerGmail {
         // Pour Gmail, on doit récupérer les emails depuis différentes sources
         let gmailEmails = [];
         
+        // 0. Essayer de récupérer directement depuis GoogleAuthService si disponible
+        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            console.log('[PageManagerGmail] 🔍 Tentative récupération depuis GoogleAuthService...');
+            // Si GoogleAuthService a une méthode pour récupérer les emails en cache
+            if (window.googleAuthService.getCachedEmails) {
+                try {
+                    const cachedEmails = window.googleAuthService.getCachedEmails();
+                    if (cachedEmails && cachedEmails.length > 0) {
+                        console.log(`[PageManagerGmail] ✅ ${cachedEmails.length} emails trouvés dans GoogleAuthService`);
+                        return cachedEmails;
+                    }
+                } catch (e) {
+                    console.warn('[PageManagerGmail] Erreur récupération cache GoogleAuthService:', e);
+                }
+            }
+        }
+        
         // 1. Essayer EmailScanner (module Gmail)
         if (window.emailScanner) {
             let emails = [];
@@ -888,7 +905,45 @@ class PageManagerGmail {
     async renderEmails(container) {
         console.log('[PageManagerGmail] 📧 Rendu page emails Gmail...');
         
-        const emails = this.getAllEmails();
+        // Essayer de récupérer les emails depuis GoogleAuthService si authentifié et pas d'emails
+        let emails = this.getAllEmails();
+        
+        if (emails.length === 0 && window.googleAuthService?.isAuthenticated()) {
+            console.log('[PageManagerGmail] 🔄 Aucun email en cache, tentative de récupération depuis Gmail...');
+            try {
+                this.showLoading('Récupération des emails Gmail...');
+                const fetchedEmails = await window.googleAuthService.fetchEmails({ 
+                    maxResults: 100,
+                    days: 7 
+                });
+                
+                if (fetchedEmails && fetchedEmails.length > 0) {
+                    console.log(`[PageManagerGmail] ✅ ${fetchedEmails.length} emails récupérés depuis Gmail`);
+                    
+                    // Sauvegarder dans localStorage
+                    this.setLocalStorageItem('gmailEmails', JSON.stringify(fetchedEmails));
+                    
+                    // Mettre à jour EmailScanner
+                    if (!window.emailScanner) {
+                        window.emailScanner = {};
+                    }
+                    window.emailScanner.emails = fetchedEmails;
+                    window.emailScanner.getAllEmails = function() { return this.emails; };
+                    
+                    // Mettre à jour notre état
+                    this.syncState.emailCount = fetchedEmails.length;
+                    this.syncState.emailScannerSynced = true;
+                    
+                    // Réessayer avec les nouveaux emails
+                    emails = fetchedEmails;
+                }
+                this.hideLoading();
+            } catch (error) {
+                console.error('[PageManagerGmail] Erreur récupération emails:', error);
+                this.hideLoading();
+            }
+        }
+        
         const categories = this.getCategories();
         
         console.log(`[PageManagerGmail] 📊 État sync: ${this.syncState.emailScannerSynced}, Emails Gmail: ${emails.length}`);
