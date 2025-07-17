@@ -1,5 +1,5 @@
-// GoogleAuthService.js - Version 10.0 - Service Gmail complet et fonctionnel
-// Sans erreurs, avec extraction complète et gestion mémoire optimisée
+// GoogleAuthService.js - Version 11.0 - Scopes corrigés pour la validation Google
+// Utilise uniquement les scopes approuvés par Google
 
 class GoogleAuthService {
     constructor() {
@@ -9,14 +9,14 @@ class GoogleAuthService {
         this.expectedDomain = 'emailsortpro.netlify.app';
         this.provider = 'gmail';
         
-        // Configuration OAuth2
+        // Configuration OAuth2 avec les scopes corrects
         this.config = {
             clientId: '436941729211-2dr129lfjnc22k1k7f42ofisjbfthmr2.apps.googleusercontent.com',
             scopes: [
-                'https://www.googleapis.com/auth/gmail.readonly',
-                'https://www.googleapis.com/auth/gmail.modify',
-                'https://www.googleapis.com/auth/userinfo.email',
-                'https://www.googleapis.com/auth/userinfo.profile'
+                // Scopes approuvés par Google pour votre application
+                'https://www.googleapis.com/auth/userinfo.email',     // Afficher l'adresse e-mail principale
+                'https://www.googleapis.com/auth/userinfo.profile',   // Consulter vos informations personnelles
+                'https://www.googleapis.com/auth/gmail.modify'        // Consulter, rédiger et envoyer des e-mails
             ],
             redirectUri: `${window.location.origin}/auth-callback.html`,
             responseType: 'token',
@@ -31,7 +31,8 @@ class GoogleAuthService {
             rateLimitDelay: 50
         };
         
-        console.log('[GoogleAuthService] v10.0 - Service complet et fonctionnel');
+        console.log('[GoogleAuthService] v11.0 - Scopes corrigés pour validation');
+        console.log('[GoogleAuthService] Scopes demandés:', this.config.scopes);
     }
 
     // ================================================
@@ -140,7 +141,10 @@ class GoogleAuthService {
             state: state
         });
         
-        return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+        console.log('[GoogleAuthService] URL OAuth générée avec scopes corrects');
+        
+        return authUrl;
     }
 
     async handleOAuthCallback(fragment) {
@@ -891,11 +895,12 @@ class GoogleAuthService {
                 expires_at: tokenData.expires_at || (Date.now() + (tokenData.expires_in * 1000)),
                 token_type: tokenData.token_type || 'Bearer',
                 created_at: Date.now(),
-                provider: this.provider
+                provider: this.provider,
+                scopes: this.config.scopes
             };
             
             localStorage.setItem('google_token_emailsortpro', JSON.stringify(tokenInfo));
-            console.log('[GoogleAuthService] Token sauvegardé');
+            console.log('[GoogleAuthService] Token sauvegardé avec scopes:', this.config.scopes);
         } catch (error) {
             console.warn('[GoogleAuthService] Erreur sauvegarde token:', error);
         }
@@ -1006,10 +1011,12 @@ class GoogleAuthService {
             hasCurrentUser: !!this.currentUser,
             userEmail: this.currentUser?.email,
             provider: this.provider,
+            requestedScopes: this.config.scopes,
             tokenInfo: cachedToken ? {
                 hasToken: !!cachedToken.access_token,
                 isValid: this.isTokenValid(cachedToken),
-                expiresAt: cachedToken.expires_at ? new Date(cachedToken.expires_at).toISOString() : null
+                expiresAt: cachedToken.expires_at ? new Date(cachedToken.expires_at).toISOString() : null,
+                savedScopes: cachedToken.scopes || []
             } : null,
             scanLimits: this.scanLimits
         };
@@ -1044,7 +1051,8 @@ class GoogleAuthService {
                 email: profile.emailAddress,
                 messagesTotal: profile.messagesTotal,
                 threadsTotal: profile.threadsTotal,
-                historyId: profile.historyId
+                historyId: profile.historyId,
+                scopes: this.config.scopes
             };
 
         } catch (error) {
@@ -1068,7 +1076,7 @@ try {
     }
     
     window.googleAuthService = new GoogleAuthService();
-    console.log('[GoogleAuthService] ✅ v10.0 créée - Service complet et fonctionnel');
+    console.log('[GoogleAuthService] ✅ v11.0 créée - Scopes corrigés pour validation');
     
 } catch (error) {
     console.error('[GoogleAuthService] ❌ Erreur création:', error);
@@ -1084,4 +1092,4 @@ try {
     };
 }
 
-console.log('✅ GoogleAuthService v10.0 loaded - Service Gmail complet et fonctionnel');
+console.log('✅ GoogleAuthService v11.0 loaded - Scopes corrigés pour validation Google');
