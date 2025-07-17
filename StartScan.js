@@ -239,8 +239,13 @@ class StartScanModule {
                     </div>
                     
                     <div class="scanner-info">
-                        <i class="fas fa-shield-alt"></i>
-                        <span>Analyse sécurisée avec IA Claude</span>
+                        <div class="scanner-info-main">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Analyse sécurisée avec IA Claude</span>
+                        </div>
+                        <div class="scanner-info-details">
+                            Support Gmail & Outlook • Catégorisation intelligente • Création de tâches automatique
+                        </div>
                     </div>
                 </div>
             </div>
@@ -298,8 +303,14 @@ class StartScanModule {
                     </div>
                     
                     <div class="scanner-info">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Scan illimité • Catégorisation IA • Création de tâches</span>
+                        <div class="scanner-info-main">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Scan illimité • Catégorisation IA • Création de tâches</span>
+                        </div>
+                        ${this.taskPreselectedCategories?.length > 0 ? 
+                            `<div class="scanner-info-details">${this.taskPreselectedCategories.length} catégorie(s) pour tâches automatiques</div>` : 
+                            ''
+                        }
                     </div>
                 </div>
             </div>
@@ -747,25 +758,29 @@ class StartScanModule {
         const styles = document.createElement('style');
         styles.id = 'startscan-styles';
         styles.textContent = `
-            /* StartScan v12.0 Styles */
+            /* StartScan v12.0 Styles - Design original restauré */
             .scanner-container {
-                min-height: calc(100vh - 140px);
+                height: calc(100vh - 140px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                overflow: hidden;
+                position: relative;
                 padding: 20px;
             }
             
             .scanner-card {
-                background: white;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
                 border-radius: 20px;
-                padding: 40px;
-                max-width: 600px;
+                padding: 50px;
                 width: 100%;
+                max-width: 700px;
                 text-align: center;
                 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-                animation: fadeIn 0.5s ease;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                animation: fadeIn 0.5s ease-out;
             }
             
             @keyframes fadeIn {
@@ -799,16 +814,16 @@ class StartScanModule {
             }
             
             .scanner-title {
-                font-size: 28px;
-                font-weight: 700;
-                color: #1a202c;
-                margin-bottom: 8px;
+                font-size: 32px;
+                font-weight: 600;
+                color: #1a1a2e;
+                margin-bottom: 12px;
             }
             
             .scanner-subtitle {
-                font-size: 16px;
+                font-size: 18px;
                 color: #6b7280;
-                margin-bottom: 30px;
+                margin-bottom: 35px;
             }
             
             .auth-buttons {
@@ -820,8 +835,8 @@ class StartScanModule {
             
             .auth-btn {
                 flex: 1;
-                max-width: 200px;
-                height: 50px;
+                max-width: 220px;
+                height: 56px;
                 border: none;
                 border-radius: 12px;
                 font-size: 16px;
@@ -831,7 +846,7 @@ class StartScanModule {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 8px;
+                gap: 10px;
                 color: white;
             }
             
@@ -989,12 +1004,12 @@ class StartScanModule {
             
             .scan-btn {
                 width: 100%;
-                height: 54px;
-                background: linear-gradient(135deg, #667eea, #764ba2);
+                height: 60px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 border: none;
-                border-radius: 12px;
+                border-radius: 15px;
                 color: white;
-                font-size: 16px;
+                font-size: 18px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.3s ease;
@@ -1002,7 +1017,9 @@ class StartScanModule {
                 align-items: center;
                 justify-content: center;
                 gap: 10px;
-                margin-bottom: 20px;
+                margin-bottom: 25px;
+                position: relative;
+                overflow: hidden;
             }
             
             .scan-btn.gmail {
@@ -1015,12 +1032,13 @@ class StartScanModule {
             
             .scan-btn:hover:not(:disabled) {
                 transform: translateY(-2px);
-                box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+                box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
             }
             
             .scan-btn:disabled {
-                opacity: 0.7;
+                opacity: 0.6;
                 cursor: not-allowed;
+                transform: none;
             }
             
             .progress-section {
@@ -1029,11 +1047,11 @@ class StartScanModule {
             
             .progress-bar {
                 width: 100%;
-                height: 6px;
+                height: 4px;
                 background: #e5e7eb;
-                border-radius: 3px;
+                border-radius: 2px;
                 overflow: hidden;
-                margin-bottom: 12px;
+                margin-bottom: 15px;
             }
             
             .progress-fill {
@@ -1044,27 +1062,51 @@ class StartScanModule {
             }
             
             .progress-text {
-                font-size: 14px;
+                font-size: 16px;
                 color: #6b7280;
                 text-align: center;
+                margin-bottom: 8px;
+                font-weight: 500;
             }
             
             .scanner-info {
                 background: rgba(102, 126, 234, 0.1);
                 border-radius: 10px;
-                padding: 12px;
-                font-size: 13px;
+                padding: 15px;
+                font-size: 14px;
                 color: #667eea;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: 8px;
                 font-weight: 500;
+                flex-direction: column;
+            }
+            
+            .scanner-info-main {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .scanner-info-details {
+                font-size: 12px;
+                color: #8b5cf6;
+                margin-top: 4px;
+                text-align: center;
             }
             
             @media (max-width: 640px) {
                 .scanner-card {
-                    padding: 30px 20px;
+                    padding: 35px 25px;
+                }
+                
+                .scanner-title {
+                    font-size: 28px;
+                }
+                
+                .scanner-subtitle {
+                    font-size: 16px;
                 }
                 
                 .auth-buttons {
@@ -1076,12 +1118,13 @@ class StartScanModule {
                 }
                 
                 .duration-options {
-                    gap: 8px;
+                    gap: 6px;
                 }
                 
                 .duration-btn {
-                    padding: 8px 14px;
+                    padding: 10px 16px;
                     font-size: 13px;
+                    min-width: 75px;
                 }
             }
         `;
