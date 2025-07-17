@@ -1,5 +1,6 @@
 // PageManagerGmail.js - Version 27.0 - Refonte complète basée sur PageManager
 // Correction des problèmes d'authentification et de chargement des emails
+// Évite les conflits avec EmailScannerOutlook
 
 console.log('[PageManagerGmail] 🚀 Loading v27.0 - Refonte complète...');
 
@@ -419,27 +420,32 @@ class PageManagerGmail {
         console.log('[PageManagerGmail] 🔍 Vérification état synchronisation emails Gmail...');
         
         try {
-            // Vérifier EmailScanner en priorité
-            let emailScannerReady = window.emailScanner && 
-                                  typeof window.emailScanner.getAllEmails === 'function';
+            // Vérifier EmailScanner en priorité (éviter le conflit avec EmailScannerOutlook)
+            let emailScannerReady = false;
+            let allEmails = [];
             
-            if (!emailScannerReady && window.emailScanner && window.emailScanner.emails) {
-                // Si getAllEmails n'existe pas mais que emails existe
+            // Essayer d'abord window.emailScanner (le bon module Gmail)
+            if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
+                try {
+                    allEmails = window.emailScanner.getAllEmails();
+                    emailScannerReady = true;
+                    console.log('[PageManagerGmail] 📊 EmailScanner (Gmail) trouvé avec getAllEmails');
+                } catch (e) {
+                    console.warn('[PageManagerGmail] Erreur getAllEmails:', e);
+                }
+            } else if (window.emailScanner && window.emailScanner.emails) {
+                allEmails = window.emailScanner.emails;
                 emailScannerReady = true;
-                console.log('[PageManagerGmail] 📊 EmailScanner trouvé avec propriété emails');
+                console.log('[PageManagerGmail] 📊 EmailScanner (Gmail) trouvé avec propriété emails');
             }
             
             if (emailScannerReady) {
-                const emails = window.emailScanner.getAllEmails ? 
-                             window.emailScanner.getAllEmails() : 
-                             window.emailScanner.emails || [];
-                
                 // Filtrer uniquement les emails Gmail
-                const gmailEmails = emails.filter(email => 
+                const gmailEmails = allEmails.filter(email => 
                     !email.provider || email.provider === 'google' || email.provider === 'gmail'
                 );
                 
-                console.log(`[PageManagerGmail] 📊 EmailScanner: ${gmailEmails.length} emails Gmail sur ${emails.length} total`);
+                console.log(`[PageManagerGmail] 📊 EmailScanner: ${gmailEmails.length} emails Gmail sur ${allEmails.length} total`);
                 
                 this.syncState.emailScannerSynced = true;
                 this.syncState.emailCount = gmailEmails.length;
@@ -448,7 +454,7 @@ class PageManagerGmail {
                     await this.tryRecoverScanResults();
                 }
             } else {
-                console.warn('[PageManagerGmail] EmailScanner non disponible ou non prêt');
+                console.warn('[PageManagerGmail] EmailScanner Gmail non disponible ou non prêt');
                 
                 // Essayer de récupérer depuis sessionStorage
                 try {
@@ -460,13 +466,16 @@ class PageManagerGmail {
                         );
                         console.log('[PageManagerGmail] 📦 Emails Gmail trouvés dans sessionStorage:', gmailEmails.length);
                         
-                        // Créer EmailScanner si nécessaire
+                        // Créer EmailScanner si nécessaire (mais éviter le conflit)
                         if (!window.emailScanner && gmailEmails.length > 0) {
-                            window.emailScanner = {
-                                emails: gmailEmails,
-                                getAllEmails: function() { return this.emails; }
-                            };
-                            console.log('[PageManagerGmail] ✅ EmailScanner créé avec emails Gmail de sessionStorage');
+                            // Ne pas créer si EmailScannerOutlook existe déjà
+                            if (!window.emailScannerOutlook) {
+                                window.emailScanner = {
+                                    emails: gmailEmails,
+                                    getAllEmails: function() { return this.emails; }
+                                };
+                                console.log('[PageManagerGmail] ✅ EmailScanner créé avec emails Gmail de sessionStorage');
+                            }
                         }
                         
                         this.syncState.emailScannerSynced = true;
@@ -711,58 +720,70 @@ class PageManagerGmail {
     // MÉTHODES POUR RÉCUPÉRER LES DONNÉES
     // ================================================
     getAllEmails() {
-        // Utiliser EmailScanner en priorité
+        // Pour Gmail, on doit récupérer les emails depuis différentes sources
+        let gmailEmails = [];
+        
+        // 1. Essayer EmailScanner (module Gmail)
         if (window.emailScanner) {
             let emails = [];
             
             if (typeof window.emailScanner.getAllEmails === 'function') {
-                emails = window.emailScanner.getAllEmails();
+                try {
+                    emails = window.emailScanner.getAllEmails();
+                } catch (e) {
+                    console.warn('[PageManagerGmail] Erreur getAllEmails:', e);
+                }
             } else if (window.emailScanner.emails) {
                 emails = window.emailScanner.emails;
             }
             
             // Filtrer uniquement les emails Gmail
-            const gmailEmails = emails.filter(email => 
+            gmailEmails = emails.filter(email => 
                 !email.provider || email.provider === 'google' || email.provider === 'gmail'
             );
             
-            console.log(`[PageManagerGmail] 📧 Récupération ${gmailEmails.length} emails Gmail depuis EmailScanner`);
-            return gmailEmails;
+            if (gmailEmails.length > 0) {
+                console.log(`[PageManagerGmail] 📧 Récupération ${gmailEmails.length} emails Gmail depuis EmailScanner`);
+                return gmailEmails;
+            }
         }
         
-        // Fallback vers sessionStorage
+        // 2. Essayer sessionStorage
         try {
             const scannedEmails = sessionStorage.getItem('scannedEmails');
             if (scannedEmails) {
                 const emails = JSON.parse(scannedEmails);
-                const gmailEmails = emails.filter(email => 
+                gmailEmails = emails.filter(email => 
                     !email.provider || email.provider === 'google' || email.provider === 'gmail'
                 );
-                console.log(`[PageManagerGmail] 📧 Récupération ${gmailEmails.length} emails Gmail depuis sessionStorage`);
                 
-                // Créer EmailScanner avec ces emails
-                if (!window.emailScanner && gmailEmails.length > 0) {
-                    window.emailScanner = {
-                        emails: gmailEmails,
-                        getAllEmails: function() { return this.emails; }
-                    };
-                    console.log('[PageManagerGmail] ✅ EmailScanner créé avec emails Gmail de sessionStorage');
+                if (gmailEmails.length > 0) {
+                    console.log(`[PageManagerGmail] 📧 Récupération ${gmailEmails.length} emails Gmail depuis sessionStorage`);
+                    
+                    // Mettre à jour EmailScanner si possible
+                    if (!window.emailScanner) {
+                        window.emailScanner = {
+                            emails: gmailEmails,
+                            getAllEmails: function() { return this.emails; }
+                        };
+                        console.log('[PageManagerGmail] ✅ EmailScanner créé avec emails Gmail de sessionStorage');
+                    }
+                    
+                    return gmailEmails;
                 }
-                
-                return gmailEmails;
             }
         } catch (error) {
             console.warn('[PageManagerGmail] Erreur récupération emails sessionStorage:', error);
         }
         
-        // Vérifier localStorage
+        // 3. Essayer localStorage
         try {
-            const gmailEmails = this.getLocalStorageItem('gmailEmails');
-            if (gmailEmails) {
-                const emails = JSON.parse(gmailEmails);
+            const gmailEmailsStored = this.getLocalStorageItem('gmailEmails');
+            if (gmailEmailsStored) {
+                const emails = JSON.parse(gmailEmailsStored);
                 console.log(`[PageManagerGmail] 📧 Récupération ${emails.length} emails Gmail depuis localStorage`);
                 
-                // Créer EmailScanner avec ces emails
+                // Mettre à jour EmailScanner si possible
                 if (!window.emailScanner) {
                     window.emailScanner = {
                         emails: emails,
@@ -775,6 +796,19 @@ class PageManagerGmail {
             }
         } catch (error) {
             console.warn('[PageManagerGmail] Erreur récupération gmailEmails localStorage:', error);
+        }
+        
+        // 4. Essayer de récupérer depuis GoogleAuthService si connecté
+        if (window.googleAuthService && window.googleAuthService.getCachedEmails) {
+            try {
+                const cachedEmails = window.googleAuthService.getCachedEmails();
+                if (cachedEmails && cachedEmails.length > 0) {
+                    console.log(`[PageManagerGmail] 📧 Récupération ${cachedEmails.length} emails depuis GoogleAuthService`);
+                    return cachedEmails;
+                }
+            } catch (error) {
+                console.warn('[PageManagerGmail] Erreur récupération emails GoogleAuthService:', error);
+            }
         }
         
         console.log('[PageManagerGmail] ⚠️ Aucun email Gmail trouvé');
