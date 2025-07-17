@@ -1,4 +1,4 @@
-// EmailScanner.js - Version 10.0 - Intégration complète avec MailService
+// EmailScannerOutlook.js - Version 10.0 - Intégration complète avec MailService
 
 class EmailScanner {
     constructor() {
