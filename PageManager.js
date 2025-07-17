@@ -405,11 +405,19 @@ class PageManager {
         
         try {
             // Vérifier EmailScannerOutlook en priorité
-            const emailScannerReady = window.emailScannerOutlook && 
-                                    typeof window.emailScannerOutlook.getAllEmails === 'function';
+            let emailScannerReady = window.emailScannerOutlook && 
+                                  typeof window.emailScannerOutlook.getAllEmails === 'function';
+            
+            if (!emailScannerReady && window.emailScannerOutlook && window.emailScannerOutlook.emails) {
+                // Si getAllEmails n'existe pas mais que emails existe
+                emailScannerReady = true;
+                console.log('[PageManager] 📊 EmailScannerOutlook trouvé avec propriété emails');
+            }
             
             if (emailScannerReady) {
-                const emails = window.emailScannerOutlook.getAllEmails();
+                const emails = window.emailScannerOutlook.getAllEmails ? 
+                             window.emailScannerOutlook.getAllEmails() : 
+                             window.emailScannerOutlook.emails || [];
                 const startScanSynced = window.emailScannerOutlook.startScanSynced || false;
                 
                 console.log(`[PageManager] 📊 EmailScannerOutlook: ${emails.length} emails, StartScan sync: ${startScanSynced}`);
@@ -423,7 +431,35 @@ class PageManager {
                 }
             } else {
                 console.warn('[PageManager] EmailScannerOutlook non disponible ou non prêt');
-                this.syncState.emailScannerSynced = false;
+                
+                // Essayer de récupérer depuis sessionStorage
+                try {
+                    const scannedEmails = sessionStorage.getItem('scannedEmails');
+                    if (scannedEmails) {
+                        const emails = JSON.parse(scannedEmails);
+                        console.log('[PageManager] 📦 Emails trouvés dans sessionStorage:', emails.length);
+                        
+                        // Créer EmailScannerOutlook si nécessaire
+                        if (!window.emailScannerOutlook) {
+                            window.emailScannerOutlook = {
+                                emails: emails,
+                                getAllEmails: function() { return this.emails; },
+                                startScanSynced: true
+                            };
+                            console.log('[PageManager] ✅ EmailScannerOutlook créé avec emails de sessionStorage');
+                        }
+                        
+                        this.syncState.emailScannerSynced = true;
+                        this.syncState.emailCount = emails.length;
+                        this.syncState.startScanSynced = true;
+                    }
+                } catch (error) {
+                    console.warn('[PageManager] Erreur récupération emails sessionStorage:', error);
+                }
+                
+                if (!this.syncState.emailScannerSynced) {
+                    this.syncState.emailScannerSynced = false;
+                }
             }
             
         } catch (error) {
@@ -642,18 +678,68 @@ class PageManager {
     // ================================================
     getAllEmails() {
         // Utiliser EmailScannerOutlook en priorité
-        if (window.emailScannerOutlook && window.emailScannerOutlook.getAllEmails) {
-            const emails = window.emailScannerOutlook.getAllEmails();
+        if (window.emailScannerOutlook) {
+            let emails = [];
+            
+            if (typeof window.emailScannerOutlook.getAllEmails === 'function') {
+                emails = window.emailScannerOutlook.getAllEmails();
+            } else if (window.emailScannerOutlook.emails) {
+                emails = window.emailScannerOutlook.emails;
+            }
+            
             console.log(`[PageManager] 📧 Récupération ${emails.length} emails depuis EmailScannerOutlook`);
             return emails;
         }
         
-        if (window.emailScannerOutlook && window.emailScannerOutlook.emails) {
-            console.log(`[PageManager] 📧 Récupération ${window.emailScannerOutlook.emails.length} emails directs depuis EmailScannerOutlook`);
-            return window.emailScannerOutlook.emails;
+        // Fallback vers sessionStorage
+        try {
+            const scannedEmails = sessionStorage.getItem('scannedEmails');
+            if (scannedEmails) {
+                const emails = JSON.parse(scannedEmails);
+                console.log(`[PageManager] 📧 Récupération ${emails.length} emails depuis sessionStorage`);
+                
+                // Créer EmailScannerOutlook avec ces emails
+                if (!window.emailScannerOutlook) {
+                    window.emailScannerOutlook = {
+                        emails: emails,
+                        getAllEmails: function() { return this.emails; },
+                        startScanSynced: true
+                    };
+                    console.log('[PageManager] ✅ EmailScannerOutlook créé avec emails de sessionStorage');
+                }
+                
+                return emails;
+            }
+        } catch (error) {
+            console.warn('[PageManager] Erreur récupération emails sessionStorage:', error);
         }
         
-        console.log('[PageManager] ⚠️ Aucun email trouvé dans EmailScannerOutlook');
+        // Vérifier scanResults dans sessionStorage
+        try {
+            const scanResults = sessionStorage.getItem('scanResults');
+            if (scanResults) {
+                const results = JSON.parse(scanResults);
+                if (results.emails && results.emails.length > 0) {
+                    console.log(`[PageManager] 📧 Récupération ${results.emails.length} emails depuis scanResults`);
+                    
+                    // Créer EmailScannerOutlook avec ces emails
+                    if (!window.emailScannerOutlook) {
+                        window.emailScannerOutlook = {
+                            emails: results.emails,
+                            getAllEmails: function() { return this.emails; },
+                            startScanSynced: true
+                        };
+                        console.log('[PageManager] ✅ EmailScannerOutlook créé avec emails de scanResults');
+                    }
+                    
+                    return results.emails;
+                }
+            }
+        } catch (error) {
+            console.warn('[PageManager] Erreur récupération scanResults:', error);
+        }
+        
+        console.log('[PageManager] ⚠️ Aucun email trouvé');
         return [];
     }
 
