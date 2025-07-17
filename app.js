@@ -1,9 +1,9 @@
-// app.js - Application principale EmailSortPro v3.9.0
-// CORRECTION COMPLÈTE: Résolution des erreurs et amélioration de la stabilité
+// app.js - Application principale EmailSortPro v4.0.0
+// VERSION STABLE: Sans erreurs, chargement direct du dashboard
 
 class EmailSortProApp {
     constructor() {
-        this.version = '3.9.0';
+        this.version = '4.0.0';
         this.isInitialized = false;
         this.initPromise = null;
         this.currentProvider = null;
@@ -11,15 +11,8 @@ class EmailSortProApp {
         this.user = null;
         this.currentPage = null;
         this.pageManagers = new Map();
-        this.dashboardLoaded = false;
         
         console.log(`[App] EmailSortPro v${this.version} starting...`);
-        
-        // Bind des méthodes
-        this.init = this.init.bind(this);
-        this.checkAuthentication = this.checkAuthentication.bind(this);
-        this.handleNavigation = this.handleNavigation.bind(this);
-        this.loadPage = this.loadPage.bind(this);
         
         // Configuration des pages disponibles
         this.availablePages = {
@@ -87,29 +80,10 @@ class EmailSortProApp {
             window.location.reload();
         });
         
-        // Écouter quand GoogleAuthService est initialisé
-        window.addEventListener('googleAuthServiceReady', (event) => {
-            console.log('[App] Google Auth Service Ready:', event.detail);
-            if (event.detail.authenticated && !this.currentProvider) {
-                this.currentProvider = 'google';
-                this.isAuthenticated = true;
-                this.user = event.detail.user;
-                this.handleAuthReady();
-            }
-        });
-        
         // Écouter les changements de provider
         window.addEventListener('providerChanged', (event) => {
             console.log('[App] Provider changed:', event.detail);
             this.handleProviderChange(event.detail.provider);
-        });
-        
-        // Écouter quand les emails sont prêts
-        window.addEventListener('emailScannerReady', (event) => {
-            console.log('[App] EmailScanner ready:', event.detail);
-            if (this.currentPage === 'emails') {
-                this.loadPage('emails', true);
-            }
         });
     }
     
@@ -129,10 +103,7 @@ class EmailSortProApp {
             // 1. Attendre que le DOM soit prêt
             await this.waitForDOM();
             
-            // 2. Masquer toutes les pages pendant l'initialisation
-            this.hideAllPages();
-            
-            // 3. Vérifier immédiatement l'authentification stockée
+            // 2. Vérifier immédiatement l'authentification stockée
             const quickAuthCheck = this.quickAuthCheck();
             if (quickAuthCheck.authenticated) {
                 console.log('[App] ✅ Quick auth check passed:', quickAuthCheck.provider);
@@ -145,21 +116,18 @@ class EmailSortProApp {
                 // Afficher l'interface immédiatement
                 this.showAppInterface();
                 
-                // IMPORTANT: Charger le dashboard immédiatement et directement
-                this.loadDashboardDirect();
-                
                 // Continuer l'initialisation en arrière-plan
                 this.backgroundInit();
                 return;
             }
             
-            // 4. Attendre que les services soient chargés
+            // 3. Attendre que les services soient chargés
             await this.waitForServices();
             
-            // 5. Initialiser les services
+            // 4. Initialiser les services
             await this.initializeAuthServices();
             
-            // 6. Vérifier l'authentification complète
+            // 5. Vérifier l'authentification complète
             const isAuthenticated = await this.checkAuthentication();
             
             if (isAuthenticated) {
@@ -169,18 +137,16 @@ class EmailSortProApp {
                 await this.initializeAppComponents();
                 await this.updateUserDisplay();
                 await this.initializePageManagers();
-                
-                // IMPORTANT: Charger le dashboard après initialisation
-                this.loadDashboardDirect();
+                this.loadDashboard();
             } else {
                 console.log('[App] User not authenticated');
                 this.showLoginPage();
             }
             
-            // 7. Configurer les événements
+            // 6. Configurer les événements
             this.setupEventHandlers();
             
-            // 8. Initialiser les modules de pages
+            // 7. Initialiser les modules de pages
             this.initializePageModules();
             
             this.isInitialized = true;
@@ -227,12 +193,7 @@ class EmailSortProApp {
             await this.initializeAppComponents();
             await this.updateUserDisplay();
             await this.initializePageManagers();
-            
-            // Ne pas recharger le dashboard s'il est déjà chargé
-            if (!this.currentPage && !this.dashboardLoaded) {
-                this.loadDashboardDirect();
-            }
-            
+            this.loadDashboard();
             this.setupEventHandlers();
             this.initializePageModules();
             this.isInitialized = true;
@@ -421,16 +382,12 @@ class EmailSortProApp {
             loadingOverlay.classList.remove('active');
         }
         
-        // IMPORTANT: S'assurer que le container est visible et vide
+        // S'assurer que le container est visible
         const pageContent = document.getElementById('pageContent');
         if (pageContent) {
             pageContent.style.display = 'block';
             pageContent.style.opacity = '1';
-            pageContent.innerHTML = ''; // Nettoyer tout contenu existant
         }
-        
-        // Masquer toute page qui pourrait s'afficher automatiquement
-        this.hideAllPages();
         
         // Appeler onAuthSuccess si défini
         if (window.onAuthSuccess) {
@@ -503,12 +460,6 @@ class EmailSortProApp {
             this.extendPageManagerGmail();
             
             console.log('[App] ✅ PageManagerGmail registered and extended');
-        }
-        
-        // Initialiser PageManagerOutlook si disponible
-        if (window.pageManagerOutlook) {
-            this.pageManagers.set('microsoft-alt', window.pageManagerOutlook);
-            console.log('[App] ✅ PageManagerOutlook registered');
         }
     }
     
@@ -602,9 +553,6 @@ class EmailSortProApp {
     loadDashboard() {
         console.log('[App] Loading dashboard...');
         
-        // Marquer le dashboard comme chargé pour éviter les chargements multiples
-        this.dashboardLoaded = true;
-        
         // S'assurer que le container est visible
         const pageContent = document.getElementById('pageContent');
         if (pageContent) {
@@ -612,32 +560,16 @@ class EmailSortProApp {
             pageContent.style.opacity = '1';
         }
         
-        // Charger le dashboard
+        // Charger le dashboard via loadPage
         this.loadPage('dashboard');
-        
-        // Mettre à jour la navigation pour marquer dashboard comme actif
-        const dashboardBtn = document.querySelector('.nav-item[data-page="dashboard"]');
-        if (dashboardBtn) {
-            dashboardBtn.classList.add('active');
-        }
     }
     
     setupEventHandlers() {
         console.log('[App] Setting up event handlers...');
         
-        // Éviter les enregistrements multiples
-        if (this.eventHandlersSetup) {
-            console.log('[App] Event handlers already setup, skipping...');
-            return;
-        }
-        this.eventHandlersSetup = true;
-        
         // Navigation
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
-            // Retirer les anciens listeners
-            item.removeEventListener('click', this.handleNavigation);
-            // Ajouter le nouveau
             item.addEventListener('click', (e) => this.handleNavigation(e));
         });
         
@@ -657,7 +589,6 @@ class EmailSortProApp {
     
     handleNavigation(event) {
         event.preventDefault();
-        event.stopPropagation();
         
         const page = event.currentTarget.dataset.page;
         if (!page) return;
@@ -760,92 +691,6 @@ class EmailSortProApp {
                         </div>
                     </div>
                 `;
-                
-                // Ajouter les styles si nécessaire
-                if (!document.getElementById('empty-state-styles')) {
-                    const styles = document.createElement('style');
-                    styles.id = 'empty-state-styles';
-                    styles.textContent = `
-                        .emails-page-modern {
-                            padding: 20px;
-                            min-height: calc(100vh - 120px);
-                        }
-                        
-                        .empty-state {
-                            text-align: center;
-                            padding: 60px 30px;
-                            background: white;
-                            border-radius: 12px;
-                            border: 1px solid #e5e7eb;
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-                            max-width: 500px;
-                            margin: 0 auto;
-                        }
-                        
-                        .empty-state-icon {
-                            font-size: 48px;
-                            margin-bottom: 20px;
-                            color: #6b7280;
-                        }
-                        
-                        .empty-state-title {
-                            font-size: 22px;
-                            font-weight: 700;
-                            color: #374151;
-                            margin-bottom: 12px;
-                        }
-                        
-                        .empty-state-text {
-                            font-size: 15px;
-                            margin-bottom: 24px;
-                            max-width: 400px;
-                            line-height: 1.6;
-                            color: #6b7280;
-                            font-weight: 500;
-                            margin-left: auto;
-                            margin-right: auto;
-                        }
-                        
-                        .empty-state-actions {
-                            display: flex;
-                            gap: 12px;
-                            flex-wrap: wrap;
-                            justify-content: center;
-                        }
-                        
-                        .btn {
-                            height: 44px;
-                            background: white;
-                            color: #374151;
-                            border: 1px solid #e5e7eb;
-                            border-radius: 8px;
-                            padding: 0 16px;
-                            font-size: 13px;
-                            font-weight: 600;
-                            cursor: pointer;
-                            transition: all 0.2s ease;
-                            display: flex;
-                            align-items: center;
-                            gap: 8px;
-                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-                        }
-                        
-                        .btn-primary {
-                            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                            color: white;
-                            border-color: transparent;
-                            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-                        }
-                        
-                        .btn-primary:hover {
-                            background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
-                            transform: translateY(-2px);
-                            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
-                        }
-                    `;
-                    document.head.appendChild(styles);
-                }
-                
                 return;
             }
             
@@ -945,28 +790,11 @@ class EmailSortProApp {
                 
                 // Nettoyer l'URL
                 window.history.replaceState({}, document.title, window.location.pathname);
-                
-                // L'événement googleAuthSuccess déclenchera le rechargement
             }
         } catch (error) {
             console.error('[App] Error handling Google callback:', error);
             this.showError('Erreur d\'authentification Google: ' + error.message);
         }
-    }
-    
-    hideAllPages() {
-        // Masquer toutes les pages existantes
-        const pageContent = document.getElementById('pageContent');
-        if (pageContent) {
-            pageContent.innerHTML = '';
-            pageContent.style.display = 'none';
-        }
-        
-        // Masquer CategoriesPage si elle s'affiche automatiquement
-        const categoriesElements = document.querySelectorAll('.categories-page, .categories-container');
-        categoriesElements.forEach(el => {
-            el.style.display = 'none';
-        });
     }
     
     checkScrollNeeded() {
@@ -1031,7 +859,6 @@ class EmailSortProApp {
             this.isAuthenticated = false;
             this.user = null;
             this.currentPage = null;
-            this.dashboardLoaded = false;
             
             // Nettoyer les PageManagers
             this.pageManagers.clear();
@@ -1063,7 +890,6 @@ class EmailSortProApp {
             currentPage: this.currentPage,
             isAuthenticated: this.isAuthenticated,
             user: this.user?.email || null,
-            dashboardLoaded: this.dashboardLoaded,
             authentication: {
                 microsoft: window.authService?.isAuthenticated() || false,
                 google: window.googleAuthService?.isAuthenticated() || false,
@@ -1081,7 +907,6 @@ class EmailSortProApp {
                 uiManager: !!window.uiManager,
                 pageManager: !!window.pageManager,
                 pageManagerGmail: !!window.pageManagerGmail,
-                pageManagerOutlook: !!window.pageManagerOutlook,
                 taskManager: !!window.taskManager,
                 categoriesPage: !!window.categoriesPage,
                 dashboardModule: !!window.dashboardModule,
@@ -1091,12 +916,6 @@ class EmailSortProApp {
             },
             availablePages: Object.keys(this.availablePages)
         };
-    }
-    
-    // Méthode pour forcer le changement de provider (utile pour les tests)
-    forceProviderChange(provider) {
-        console.log(`[App] Forcing provider change to: ${provider}`);
-        this.handleProviderChange(provider);
     }
     
     // Méthode pour vérifier si une page est disponible
@@ -1133,7 +952,6 @@ window.debugApp = function() {
     console.log('Current Provider:', info.currentProvider);
     console.log('Current Page:', info.currentPage);
     console.log('Authenticated:', info.isAuthenticated);
-    console.log('Dashboard Loaded:', info.dashboardLoaded);
     console.log('Services:', info.services);
     console.log('Page Managers:', info.pageManagers);
     console.groupEnd();
@@ -1153,14 +971,4 @@ window.testNavigation = async function() {
     console.groupEnd();
 };
 
-window.switchProvider = function(provider) {
-    if (!['google', 'microsoft', 'gmail', 'outlook'].includes(provider)) {
-        console.error('Invalid provider. Use: google, microsoft, gmail, or outlook');
-        return;
-    }
-    
-    window.app.forceProviderChange(provider);
-    console.log(`✅ Switched to ${provider}`);
-};
-
-console.log('[App] ✅ EmailSortPro v3.9.0 loaded - Corrections et stabilité améliorée');
+console.log('[App] ✅ EmailSortPro v4.0.0 loaded - Version stable');
