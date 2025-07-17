@@ -22,9 +22,55 @@ class UnifiedScanModule {
         this.lastSettingsSync = 0;
         
         console.log('[UnifiedScan] Scanner v11.4 initialized - Détection scanners corrigée');
+        
+        // Vérifier l'ordre de chargement
+        this.checkLoadOrder();
+        
         this.detectCurrentProvider();
         this.loadSettingsFromCategoryManager();
         this.addUnifiedStyles();
+    }
+
+    // ================================================
+    // VÉRIFICATION DE L'ORDRE DE CHARGEMENT
+    // ================================================
+    checkLoadOrder() {
+        const requiredServices = [
+            { name: 'CategoryManager', check: () => !!window.categoryManager },
+            { name: 'EmailScanner', check: () => !!(window.emailScanner || window.EmailScanner) },
+            { name: 'EmailScannerOutlook', check: () => !!(window.emailScannerOutlook || window.EmailScannerOutlook) },
+            { name: 'MailService', check: () => !!window.mailService }
+        ];
+        
+        const missing = requiredServices.filter(service => !service.check());
+        
+        if (missing.length > 0) {
+            console.warn('[UnifiedScan] ⚠️ Services manquants au chargement:', missing.map(s => s.name));
+            
+            // Attendre que les services se chargent
+            setTimeout(() => {
+                this.recheckServices();
+            }, 2000);
+        } else {
+            console.log('[UnifiedScan] ✅ Tous les services requis sont chargés');
+        }
+    }
+
+    recheckServices() {
+        console.log('[UnifiedScan] 🔄 Nouvelle vérification des services...');
+        
+        const services = {
+            categoryManager: !!window.categoryManager,
+            emailScanner: !!(window.emailScanner || window.EmailScanner),
+            emailScannerOutlook: !!(window.emailScannerOutlook || window.EmailScannerOutlook),
+            mailService: !!window.mailService
+        };
+        
+        console.log('[UnifiedScan] 📊 Services disponibles:', services);
+        
+        if (!services.emailScannerOutlook && this.currentProvider === 'outlook') {
+            console.log('[UnifiedScan] 🔧 EmailScannerOutlook manquant, préparation fallback...');
+        }
     }
 
     // ================================================
@@ -346,41 +392,42 @@ class UnifiedScanModule {
             } else if (this.currentProvider === 'outlook') {
                 console.log('[UnifiedScan] 🔄 Recherche scanner pour Outlook...');
                 
-                if (availableScanners.outlook.available) {
-                    // Utiliser EmailScannerOutlook pour Outlook
-                    if (window.emailScannerOutlook && typeof window.emailScannerOutlook.scan === 'function') {
-                        scanner = window.emailScannerOutlook;
-                        scannerName = 'EmailScannerOutlook (instance)';
-                        console.log('[UnifiedScan] ✅ Utilisation EmailScannerOutlook instance pour Outlook');
-                    } else if (window.EmailScannerOutlook) {
-                        // Créer une instance si c'est une classe
+                // TOUJOURS essayer EmailScannerOutlook en PREMIER pour Outlook
+                if (window.emailScannerOutlook && typeof window.emailScannerOutlook.scan === 'function') {
+                    scanner = window.emailScannerOutlook;
+                    scannerName = 'EmailScannerOutlook (instance existante)';
+                    console.log('[UnifiedScan] ✅ Utilisation EmailScannerOutlook instance existante');
+                } else if (window.EmailScannerOutlook) {
+                    // Créer une instance d'EmailScannerOutlook
+                    try {
                         scanner = new window.EmailScannerOutlook();
                         window.emailScannerOutlook = scanner;
                         scannerName = 'EmailScannerOutlook (nouvelle instance)';
-                        console.log('[UnifiedScan] ✅ Création nouvelle instance EmailScannerOutlook pour Outlook');
+                        console.log('[UnifiedScan] ✅ Création nouvelle instance EmailScannerOutlook');
+                    } catch (error) {
+                        console.error('[UnifiedScan] ❌ Erreur création EmailScannerOutlook:', error);
+                        scanner = null;
                     }
                 } else {
-                    console.warn('[UnifiedScan] ⚠️ EmailScannerOutlook non disponible, essai fallback...');
-                    
-                    // Créer une instance minimale pour assurer la compatibilité
+                    console.warn('[UnifiedScan] ⚠️ Classe EmailScannerOutlook non trouvée');
+                }
+                
+                // Si EmailScannerOutlook n'est pas disponible, créer une instance minimale
+                if (!scanner) {
+                    console.log('[UnifiedScan] 🔧 Création EmailScannerOutlook minimal...');
                     this.createMinimalOutlookScanner();
                     
-                    // Fallback vers EmailScanner si EmailScannerOutlook n'existe pas
-                    if (availableScanners.gmail.available) {
-                        if (window.emailScanner && typeof window.emailScanner.scan === 'function') {
-                            scanner = window.emailScanner;
-                            scannerName = 'EmailScanner (fallback pour Outlook)';
-                            console.log('[UnifiedScan] ✅ Utilisation EmailScanner comme fallback pour Outlook');
-                        } else if (window.EmailScanner) {
-                            scanner = new window.EmailScanner();
-                            window.emailScanner = scanner;
-                            scannerName = 'EmailScanner (nouvelle instance fallback)';
-                            console.log('[UnifiedScan] ✅ Création EmailScanner comme fallback pour Outlook');
-                        }
-                    }
-                    
-                    if (!scanner) {
-                        console.error('[UnifiedScan] ❌ Aucun scanner disponible pour Outlook!');
+                    // Utiliser EmailScanner comme moteur de scan mais stocker dans EmailScannerOutlook
+                    if (window.emailScanner && typeof window.emailScanner.scan === 'function') {
+                        scanner = window.emailScanner;
+                        scannerName = 'EmailScanner (moteur) -> EmailScannerOutlook (stockage)';
+                        console.log('[UnifiedScan] ✅ Utilisation EmailScanner avec stockage EmailScannerOutlook');
+                    } else if (window.EmailScanner) {
+                        scanner = new window.EmailScanner();
+                        window.emailScanner = scanner;
+                        scannerName = 'EmailScanner (nouveau moteur) -> EmailScannerOutlook (stockage)';
+                        console.log('[UnifiedScan] ✅ Création EmailScanner avec stockage EmailScannerOutlook');
+                    } else {
                         throw new Error('Aucun scanner disponible pour Outlook');
                     }
                 }
@@ -398,6 +445,17 @@ class UnifiedScanModule {
             // Exécuter le scan
             const results = await scanner.scan(scanOptions);
             this.scanResults = results;
+            
+            // Si on utilise EmailScanner pour Outlook, transférer les emails vers EmailScannerOutlook
+            if (this.currentProvider === 'outlook' && scannerName.includes('EmailScanner') && !scannerName.includes('EmailScannerOutlook')) {
+                console.log('[UnifiedScan] 🔄 Transfert des emails vers EmailScannerOutlook...');
+                
+                if (window.emailScannerOutlook && scanner.emails) {
+                    window.emailScannerOutlook.emails = [...scanner.emails];
+                    window.emailScannerOutlook.startScanSynced = true;
+                    console.log(`[UnifiedScan] ✅ ${scanner.emails.length} emails transférés vers EmailScannerOutlook`);
+                }
+            }
             
             console.log(`[UnifiedScan] ✅ Scan terminé avec ${scannerName}:`, results);
             
@@ -431,6 +489,23 @@ class UnifiedScanModule {
                         taskSuggestions: 0
                     }
                 };
+                
+                // Stocker dans le bon scanner selon le provider
+                if (this.currentProvider === 'outlook') {
+                    if (!window.emailScannerOutlook) {
+                        this.createMinimalOutlookScanner();
+                    }
+                    window.emailScannerOutlook.emails = emails;
+                    window.emailScannerOutlook.startScanSynced = true;
+                    console.log(`[UnifiedScan] ✅ ${emails.length} emails MailService stockés dans EmailScannerOutlook`);
+                } else {
+                    if (!window.emailScanner) {
+                        window.emailScanner = { emails: [], getAllEmails: function() { return this.emails; } };
+                    }
+                    window.emailScanner.emails = emails;
+                    window.emailScanner.startScanSynced = true;
+                    console.log(`[UnifiedScan] ✅ ${emails.length} emails MailService stockés dans EmailScanner`);
+                }
                 
                 console.log('[UnifiedScan] ✅ Emails récupérés via MailService:', emails.length);
             } else {
