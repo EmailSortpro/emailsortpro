@@ -1,4 +1,4 @@
-// PageManager.js - Version 17.0 - Catégories centrées et fixes
+// PageManager.js - Version 17.1 - Utilise EmailScannerOutlook.js
 
 class PageManager {
     constructor() {
@@ -65,7 +65,7 @@ class PageManager {
             this.setupSyncListeners();
             this.setupCategoryManagerIntegration();
             this.isInitialized = true;
-            console.log('[PageManager] ✅ Version 17.0 - Catégories centrées et fixes');
+            console.log('[PageManager] ✅ Version 17.1 - Utilise EmailScannerOutlook');
         } catch (error) {
             console.error('[PageManager] Erreur initialisation:', error);
         }
@@ -124,14 +124,15 @@ class PageManager {
     handleTaskPreselectedCategoriesChange(categories) {
         console.log('[PageManager] 📋 Catégories pré-sélectionnées changées:', categories);
         
-        if (window.emailScanner && typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
-            window.emailScanner.updateTaskPreselectedCategories(categories);
+        // Utiliser EmailScannerOutlook
+        if (window.emailScannerOutlook && typeof window.emailScannerOutlook.updateTaskPreselectedCategories === 'function') {
+            window.emailScannerOutlook.updateTaskPreselectedCategories(categories);
         }
         
-        if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
+        if (window.emailScannerOutlook && window.emailScannerOutlook.emails && window.emailScannerOutlook.emails.length > 0) {
             console.log('[PageManager] 🔄 Déclenchement re-catégorisation...');
             setTimeout(() => {
-                window.emailScanner.recategorizeEmails?.();
+                window.emailScannerOutlook.recategorizeEmails?.();
             }, 150);
         }
         
@@ -141,13 +142,14 @@ class PageManager {
     handleActiveCategoriesChange(categories) {
         console.log('[PageManager] 🏷️ Catégories actives changées:', categories);
         
-        if (window.emailScanner && typeof window.emailScanner.updateSettings === 'function') {
-            window.emailScanner.updateSettings({ activeCategories: categories });
+        // Utiliser EmailScannerOutlook
+        if (window.emailScannerOutlook && typeof window.emailScannerOutlook.updateSettings === 'function') {
+            window.emailScannerOutlook.updateSettings({ activeCategories: categories });
         }
         
-        if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
+        if (window.emailScannerOutlook && window.emailScannerOutlook.emails && window.emailScannerOutlook.emails.length > 0) {
             setTimeout(() => {
-                window.emailScanner.recategorizeEmails?.();
+                window.emailScannerOutlook.recategorizeEmails?.();
             }, 150);
         }
     }
@@ -311,18 +313,20 @@ class PageManager {
                     window.aiTaskAnalyzer.updatePreselectedCategories(value);
                 }
                 
-                if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
+                // Utiliser EmailScannerOutlook
+                if (window.emailScannerOutlook && window.emailScannerOutlook.emails && window.emailScannerOutlook.emails.length > 0) {
                     setTimeout(() => {
-                        window.emailScanner.recategorizeEmails?.();
+                        window.emailScannerOutlook.recategorizeEmails?.();
                     }, 150);
                 }
                 break;
                 
             case 'activeCategories':
                 console.log('[PageManager] 🏷️ Catégories actives changées:', value);
-                if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
+                // Utiliser EmailScannerOutlook
+                if (window.emailScannerOutlook && window.emailScannerOutlook.emails && window.emailScannerOutlook.emails.length > 0) {
                     setTimeout(() => {
-                        window.emailScanner.recategorizeEmails?.();
+                        window.emailScannerOutlook.recategorizeEmails?.();
                     }, 150);
                 }
                 break;
@@ -400,14 +404,15 @@ class PageManager {
         console.log('[PageManager] 🔍 Vérification état synchronisation emails...');
         
         try {
-            const emailScannerReady = window.emailScanner && 
-                                    typeof window.emailScanner.getAllEmails === 'function';
+            // Vérifier EmailScannerOutlook en priorité
+            const emailScannerReady = window.emailScannerOutlook && 
+                                    typeof window.emailScannerOutlook.getAllEmails === 'function';
             
             if (emailScannerReady) {
-                const emails = window.emailScanner.getAllEmails();
-                const startScanSynced = window.emailScanner.startScanSynced || false;
+                const emails = window.emailScannerOutlook.getAllEmails();
+                const startScanSynced = window.emailScannerOutlook.startScanSynced || false;
                 
-                console.log(`[PageManager] 📊 EmailScanner: ${emails.length} emails, StartScan sync: ${startScanSynced}`);
+                console.log(`[PageManager] 📊 EmailScannerOutlook: ${emails.length} emails, StartScan sync: ${startScanSynced}`);
                 
                 this.syncState.emailScannerSynced = true;
                 this.syncState.emailCount = emails.length;
@@ -417,7 +422,7 @@ class PageManager {
                     await this.tryRecoverScanResults();
                 }
             } else {
-                console.warn('[PageManager] EmailScanner non disponible ou non prêt');
+                console.warn('[PageManager] EmailScannerOutlook non disponible ou non prêt');
                 this.syncState.emailScannerSynced = false;
             }
             
@@ -636,18 +641,19 @@ class PageManager {
     // MÉTHODES POUR RÉCUPÉRER LES DONNÉES
     // ================================================
     getAllEmails() {
-        if (window.emailScanner && window.emailScanner.getAllEmails) {
-            const emails = window.emailScanner.getAllEmails();
-            console.log(`[PageManager] 📧 Récupération ${emails.length} emails depuis EmailScanner`);
+        // Utiliser EmailScannerOutlook en priorité
+        if (window.emailScannerOutlook && window.emailScannerOutlook.getAllEmails) {
+            const emails = window.emailScannerOutlook.getAllEmails();
+            console.log(`[PageManager] 📧 Récupération ${emails.length} emails depuis EmailScannerOutlook`);
             return emails;
         }
         
-        if (window.emailScanner && window.emailScanner.emails) {
-            console.log(`[PageManager] 📧 Récupération ${window.emailScanner.emails.length} emails directs`);
-            return window.emailScanner.emails;
+        if (window.emailScannerOutlook && window.emailScannerOutlook.emails) {
+            console.log(`[PageManager] 📧 Récupération ${window.emailScannerOutlook.emails.length} emails directs depuis EmailScannerOutlook`);
+            return window.emailScannerOutlook.emails;
         }
         
-        console.log('[PageManager] ⚠️ Aucun email trouvé dans EmailScanner');
+        console.log('[PageManager] ⚠️ Aucun email trouvé dans EmailScannerOutlook');
         return [];
     }
 
@@ -656,8 +662,9 @@ class PageManager {
             return window.categoryManager.getCategories();
         }
         
-        if (window.emailScanner && window.emailScanner.defaultWebCategories) {
-            return window.emailScanner.defaultWebCategories;
+        // Fallback vers EmailScannerOutlook
+        if (window.emailScannerOutlook && window.emailScannerOutlook.defaultWebCategories) {
+            return window.emailScannerOutlook.defaultWebCategories;
         }
         
         return {
@@ -680,8 +687,8 @@ class PageManager {
         
         if (window.categoryManager && window.categoryManager.getTaskPreselectedCategories) {
             categories = window.categoryManager.getTaskPreselectedCategories();
-        } else if (window.emailScanner && window.emailScanner.getTaskPreselectedCategories) {
-            categories = window.emailScanner.getTaskPreselectedCategories();
+        } else if (window.emailScannerOutlook && window.emailScannerOutlook.getTaskPreselectedCategories) {
+            categories = window.emailScannerOutlook.getTaskPreselectedCategories();
         } else {
             try {
                 const settings = JSON.parse(this.getLocalStorageItem('categorySettings') || '{}');
@@ -1345,8 +1352,9 @@ class PageManager {
         try {
             await this.checkEmailSyncStatus();
             
-            if (this.safeCall(() => window.emailScanner?.recategorizeEmails)) {
-                await window.emailScanner.recategorizeEmails();
+            // Utiliser EmailScannerOutlook
+            if (this.safeCall(() => window.emailScannerOutlook?.recategorizeEmails)) {
+                await window.emailScannerOutlook.recategorizeEmails();
             }
             
             await this.loadPage('emails');
@@ -1645,8 +1653,9 @@ class PageManager {
         const selectedEmails = Array.from(this.selectedEmails);
         if (selectedEmails.length === 0) return;
         
-        if (window.emailScanner) {
-            window.emailScanner.exportResults('csv');
+        // Utiliser EmailScannerOutlook
+        if (window.emailScannerOutlook) {
+            window.emailScannerOutlook.exportResults('csv');
         } else {
             this.showToast('Export terminé', 'success');
         }
@@ -2201,7 +2210,7 @@ class PageManager {
                     </div>
                     <div class="status-item">
                         <i class="fas fa-database"></i>
-                        <span>EmailScanner: ${window.emailScanner ? 'Disponible' : 'Non disponible'}</span>
+                        <span>EmailScannerOutlook: ${window.emailScannerOutlook ? 'Disponible' : 'Non disponible'}</span>
                     </div>
                     <div class="status-item">
                         <i class="fas fa-sync-alt"></i>
@@ -2231,8 +2240,9 @@ class PageManager {
         try {
             this.showLoading('Simulation de scan en cours...');
             
-            if (window.emailScanner && typeof window.emailScanner.scan === 'function') {
-                const results = await window.emailScanner.scan({
+            // Utiliser EmailScannerOutlook
+            if (window.emailScannerOutlook && typeof window.emailScannerOutlook.scan === 'function') {
+                const results = await window.emailScannerOutlook.scan({
                     days: 7,
                     simulationMode: false,
                     onProgress: (progress) => {
@@ -2254,7 +2264,7 @@ class PageManager {
                 }, 1000);
                 
             } else {
-                throw new Error('EmailScanner non disponible');
+                throw new Error('EmailScannerOutlook non disponible');
             }
             
         } catch (error) {
@@ -4016,10 +4026,10 @@ class PageManager {
     getSyncStatus() {
         return {
             ...this.syncState,
-            emailScanner: {
-                available: !!window.emailScanner,
-                emails: window.emailScanner?.emails?.length || 0,
-                startScanSynced: window.emailScanner?.startScanSynced || false
+            emailScannerOutlook: {
+                available: !!window.emailScannerOutlook,
+                emails: window.emailScannerOutlook?.emails?.length || 0,
+                startScanSynced: window.emailScannerOutlook?.startScanSynced || false
             },
             categoryManager: {
                 available: !!window.categoryManager,
@@ -4056,7 +4066,7 @@ if (window.pageManager) {
     window.pageManager.cleanup?.();
 }
 
-console.log('[PageManager] 🚀 Création nouvelle instance v17.0...');
+console.log('[PageManager] 🚀 Création nouvelle instance v17.1...');
 window.pageManager = new PageManager();
 
 Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
@@ -4078,4 +4088,4 @@ window.refreshPageManagerEmails = function() {
     return { success: false, message: 'Pas sur la page emails ou PageManager non disponible' };
 };
 
-console.log('✅ PageManager v17.0 loaded - Catégories centrées et fixes');
+console.log('✅ PageManager v17.1 loaded - Utilise EmailScannerOutlook.js');
