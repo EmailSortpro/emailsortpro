@@ -450,20 +450,33 @@ class EmailSortProApp {
                 pageManager.loadPage(page);
             } else {
                 console.warn(`[App] Page "${page}" not found in PageManager`);
-                // Fallback: essayer de charger la page settings pour Gmail
-                if (page === 'settings' && this.currentProvider === 'google') {
-                    // Charger CategoriesPage directement
+                // Fallback: charger les pages directement si PageManager ne les a pas
+                if (page === 'settings' && window.categoriesPage) {
                     const container = document.getElementById('pageContent');
-                    if (container && window.categoriesPage) {
-                        console.log('[App] Loading CategoriesPage directly for Gmail settings');
+                    if (container) {
+                        console.log('[App] Loading CategoriesPage directly');
                         window.categoriesPage.render(container);
                     }
-                } else if (page === 'tasks') {
-                    // Charger TasksView directement
+                } else if (page === 'tasks' && window.tasksView) {
                     const container = document.getElementById('pageContent');
-                    if (container && window.tasksView) {
+                    if (container) {
                         console.log('[App] Loading TasksView directly');
                         window.tasksView.render(container);
+                    }
+                } else if (page === 'scanner' && window.unifiedScan) {
+                    const container = document.getElementById('pageContent');
+                    if (container) {
+                        console.log('[App] Loading Scanner directly');
+                        window.unifiedScan.render();
+                    }
+                } else if (page === 'dashboard' && window.dashboardModule) {
+                    console.log('[App] Loading Dashboard directly');
+                    window.dashboardModule.render();
+                } else if (page === 'ranger' && window.modernDomainOrganizer) {
+                    const container = document.getElementById('pageContent');
+                    if (container) {
+                        console.log('[App] Loading Domain Organizer directly');
+                        window.modernDomainOrganizer.render(container);
                     }
                 }
             }
@@ -593,24 +606,58 @@ window.app = new EmailSortProApp();
 window.checkScrollNeeded = () => window.app.checkScrollNeeded();
 
 // Hook pour intégrer les pages manquantes dans PageManagerGmail
-if (window.pageManagerGmail) {
-    console.log('[App] Extending PageManagerGmail with missing pages...');
-    
-    // Ajouter la page settings (paramètres/catégories)
-    if (!window.pageManagerGmail.pages.settings && window.categoriesPage) {
-        window.pageManagerGmail.pages.settings = (container) => {
-            console.log('[App/PageManagerGmail] Loading settings page');
-            window.categoriesPage.render(container);
-        };
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.pageManagerGmail) {
+        console.log('[App] Extending PageManagerGmail with missing pages...');
+        
+        // S'assurer que l'objet pages existe
+        if (!window.pageManagerGmail.pages) {
+            window.pageManagerGmail.pages = {};
+        }
+        
+        // Ajouter toutes les pages nécessaires
+        // Dashboard
+        if (!window.pageManagerGmail.pages.dashboard && window.dashboardModule) {
+            window.pageManagerGmail.pages.dashboard = (container) => {
+                console.log('[App/PageManagerGmail] Loading dashboard page');
+                window.dashboardModule.render();
+            };
+        }
+        
+        // Scanner
+        if (!window.pageManagerGmail.pages.scanner && window.unifiedScan) {
+            window.pageManagerGmail.pages.scanner = (container) => {
+                console.log('[App/PageManagerGmail] Loading scanner page');
+                window.unifiedScan.render();
+            };
+        }
+        
+        // Settings (paramètres/catégories)
+        if (!window.pageManagerGmail.pages.settings && window.categoriesPage) {
+            window.pageManagerGmail.pages.settings = (container) => {
+                console.log('[App/PageManagerGmail] Loading settings page');
+                window.categoriesPage.render(container);
+            };
+        }
+        
+        // Tasks
+        if (!window.pageManagerGmail.pages.tasks && window.tasksView) {
+            window.pageManagerGmail.pages.tasks = (container) => {
+                console.log('[App/PageManagerGmail] Loading tasks page');
+                window.tasksView.render(container);
+            };
+        }
+        
+        // Ranger (domain organizer)
+        if (!window.pageManagerGmail.pages.ranger && window.modernDomainOrganizer) {
+            window.pageManagerGmail.pages.ranger = (container) => {
+                console.log('[App/PageManagerGmail] Loading ranger page');
+                window.modernDomainOrganizer.render(container);
+            };
+        }
+        
+        console.log('[App] PageManagerGmail extended with pages:', Object.keys(window.pageManagerGmail.pages));
     }
-    
-    // Ajouter la page tasks
-    if (!window.pageManagerGmail.pages.tasks && window.tasksView) {
-        window.pageManagerGmail.pages.tasks = (container) => {
-            console.log('[App/PageManagerGmail] Loading tasks page');
-            window.tasksView.render(container);
-        };
-    }
-}
+});
 
 console.log('[App] ✅ EmailSortPro v3.7.2 loaded - Gmail & Outlook support');
