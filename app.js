@@ -1,22 +1,64 @@
-// app.js - Application principale EmailSortPro v3.7.2
-// CORRECTION: Support complet Gmail ET Outlook avec détection automatique du PageManager
+// app.js - Application principale EmailSortPro v3.8.0
+// CORRECTION COMPLÈTE: Navigation fluide Gmail/Outlook avec gestion correcte des pages
 
 class EmailSortProApp {
     constructor() {
-        this.version = '3.7.2';
+        this.version = '3.8.0';
         this.isInitialized = false;
         this.initPromise = null;
         this.currentProvider = null;
         this.isAuthenticated = false;
         this.user = null;
+        this.currentPage = 'dashboard';
+        this.pageManagers = new Map(); // Stockage des PageManagers par provider
         
         console.log(`[App] EmailSortPro v${this.version} starting...`);
         
         // Bind des méthodes
         this.init = this.init.bind(this);
         this.checkAuthentication = this.checkAuthentication.bind(this);
+        this.handleNavigation = this.handleNavigation.bind(this);
+        this.loadPage = this.loadPage.bind(this);
         
-        // Écouter les événements d'authentification Google
+        // Configuration des pages disponibles
+        this.availablePages = {
+            dashboard: { 
+                module: 'dashboardModule', 
+                method: 'render',
+                supportsBothProviders: true 
+            },
+            scanner: { 
+                module: 'unifiedScanModule', 
+                method: 'render',
+                needsContainer: true,
+                supportsBothProviders: true 
+            },
+            emails: { 
+                module: null, // Géré par PageManager
+                usePageManager: true,
+                supportsBothProviders: true 
+            },
+            tasks: { 
+                module: 'tasksView', 
+                method: 'render',
+                needsContainer: true,
+                supportsBothProviders: true 
+            },
+            ranger: { 
+                module: 'modernDomainOrganizer', 
+                method: 'render',
+                needsContainer: true,
+                supportsBothProviders: true 
+            },
+            settings: { 
+                module: 'categoriesPage', 
+                method: 'render',
+                needsContainer: true,
+                supportsBothProviders: true 
+            }
+        };
+        
+        // Écouter les événements d'authentification
         this.setupAuthListeners();
         
         // Lancer l'initialisation
@@ -54,6 +96,20 @@ class EmailSortProApp {
                 this.handleAuthReady();
             }
         });
+        
+        // Écouter les changements de provider
+        window.addEventListener('providerChanged', (event) => {
+            console.log('[App] Provider changed:', event.detail);
+            this.handleProviderChange(event.detail.provider);
+        });
+        
+        // Écouter quand les emails sont prêts
+        window.addEventListener('emailScannerReady', (event) => {
+            console.log('[App] EmailScanner ready:', event.detail);
+            if (this.currentPage === 'emails') {
+                this.loadPage('emails', true); // Forcer le rechargement
+            }
+        });
     }
     
     async init() {
@@ -79,6 +135,9 @@ class EmailSortProApp {
                 this.currentProvider = quickAuthCheck.provider;
                 this.isAuthenticated = true;
                 
+                // Sauvegarder le provider actuel
+                sessionStorage.setItem('lastAuthProvider', this.currentProvider);
+                
                 // Afficher l'interface immédiatement
                 this.showAppInterface();
                 
@@ -98,9 +157,11 @@ class EmailSortProApp {
             
             if (isAuthenticated) {
                 console.log('[App] ✅ User authenticated with', this.currentProvider);
+                sessionStorage.setItem('lastAuthProvider', this.currentProvider);
                 this.showAppInterface();
                 await this.initializeAppComponents();
                 await this.updateUserDisplay();
+                await this.initializePageManagers();
                 this.loadDashboard();
             } else {
                 console.log('[App] User not authenticated');
@@ -109,6 +170,9 @@ class EmailSortProApp {
             
             // 6. Configurer les événements
             this.setupEventHandlers();
+            
+            // 7. Initialiser les modules de pages
+            this.initializePageModules();
             
             this.isInitialized = true;
             console.log('[App] ✅ Initialization complete');
@@ -156,8 +220,10 @@ class EmailSortProApp {
             await this.initializeAuthServices();
             await this.initializeAppComponents();
             await this.updateUserDisplay();
+            await this.initializePageManagers();
             this.loadDashboard();
             this.setupEventHandlers();
+            this.initializePageModules();
             this.isInitialized = true;
         } catch (error) {
             console.error('[App] Background init error:', error);
@@ -384,19 +450,136 @@ class EmailSortProApp {
                 console.warn('[App] Task manager init warning:', error);
             }
         }
+        
+        // Initialiser CategoryManager
+        if (window.categoryManager && typeof window.categoryManager.initialize === 'function') {
+            try {
+                await window.categoryManager.initialize();
+                console.log('[App] ✅ Category manager initialized');
+            } catch (error) {
+                console.warn('[App] Category manager init warning:', error);
+            }
+        }
+    }
+    
+    async initializePageManagers() {
+        console.log('[App] Initializing page managers...');
+        
+        // Initialiser PageManager pour Microsoft/Outlook
+        if (window.pageManager) {
+            this.pageManagers.set('microsoft', window.pageManager);
+            this.pageManagers.set('outlook', window.pageManager);
+            console.log('[App] ✅ PageManager (Outlook) registered');
+        }
+        
+        // Initialiser PageManagerGmail pour Google
+        if (window.pageManagerGmail) {
+            this.pageManagers.set('google', window.pageManagerGmail);
+            this.pageManagers.set('gmail', window.pageManagerGmail);
+            
+            // Étendre PageManagerGmail avec toutes les pages
+            this.extendPageManagerGmail();
+            
+            console.log('[App] ✅ PageManagerGmail registered and extended');
+        }
+        
+        // Initialiser PageManagerOutlook si disponible
+        if (window.pageManagerOutlook) {
+            this.pageManagers.set('microsoft-alt', window.pageManagerOutlook);
+            console.log('[App] ✅ PageManagerOutlook registered');
+        }
+    }
+    
+    extendPageManagerGmail() {
+        if (!window.pageManagerGmail) return;
+        
+        console.log('[App] Extending PageManagerGmail with all pages...');
+        
+        // S'assurer que l'objet pages existe
+        if (!window.pageManagerGmail.pages) {
+            window.pageManagerGmail.pages = {};
+        }
+        
+        // Dashboard
+        if (!window.pageManagerGmail.pages.dashboard) {
+            window.pageManagerGmail.pages.dashboard = (container) => {
+                console.log('[PageManagerGmail] Loading dashboard');
+                if (window.dashboardModule) {
+                    window.dashboardModule.render();
+                }
+            };
+        }
+        
+        // Scanner
+        if (!window.pageManagerGmail.pages.scanner) {
+            window.pageManagerGmail.pages.scanner = (container) => {
+                console.log('[PageManagerGmail] Loading scanner');
+                if (window.unifiedScanModule) {
+                    window.unifiedScanModule.render(container);
+                }
+            };
+        }
+        
+        // Settings
+        if (!window.pageManagerGmail.pages.settings) {
+            window.pageManagerGmail.pages.settings = (container) => {
+                console.log('[PageManagerGmail] Loading settings');
+                if (window.categoriesPage) {
+                    window.categoriesPage.render(container);
+                }
+            };
+        }
+        
+        // Tasks
+        if (!window.pageManagerGmail.pages.tasks) {
+            window.pageManagerGmail.pages.tasks = (container) => {
+                console.log('[PageManagerGmail] Loading tasks');
+                if (window.tasksView) {
+                    window.tasksView.render(container);
+                }
+            };
+        }
+        
+        // Ranger
+        if (!window.pageManagerGmail.pages.ranger) {
+            window.pageManagerGmail.pages.ranger = (container) => {
+                console.log('[PageManagerGmail] Loading ranger');
+                if (window.modernDomainOrganizer) {
+                    window.modernDomainOrganizer.render(container);
+                }
+            };
+        }
+        
+        console.log('[App] PageManagerGmail extended with pages:', Object.keys(window.pageManagerGmail.pages));
+    }
+    
+    initializePageModules() {
+        console.log('[App] Initializing page modules...');
+        
+        // Initialiser les modules qui en ont besoin
+        const modulesToInit = [
+            { name: 'dashboardModule', module: window.dashboardModule },
+            { name: 'unifiedScanModule', module: window.unifiedScanModule },
+            { name: 'tasksView', module: window.tasksView },
+            { name: 'modernDomainOrganizer', module: window.modernDomainOrganizer },
+            { name: 'categoriesPage', module: window.categoriesPage }
+        ];
+        
+        modulesToInit.forEach(({ name, module }) => {
+            if (module && typeof module.initialize === 'function' && !module.initialized) {
+                try {
+                    module.initialize();
+                    console.log(`[App] ✅ ${name} initialized`);
+                } catch (error) {
+                    console.warn(`[App] Failed to initialize ${name}:`, error);
+                }
+            }
+        });
     }
     
     loadDashboard() {
         console.log('[App] Loading dashboard...');
-        
-        // Utiliser le bon PageManager selon le provider
-        const pageManager = this.getPageManager();
-        
-        if (window.dashboardModule) {
-            window.dashboardModule.render();
-        } else if (pageManager) {
-            pageManager.loadPage('dashboard');
-        }
+        this.loadPage('dashboard');
     }
     
     setupEventHandlers() {
@@ -412,20 +595,14 @@ class EmailSortProApp {
         if (window.location.hash.includes('access_token')) {
             this.handleGoogleCallback();
         }
-    }
-    
-    // MÉTHODE CLÉ: Obtenir le bon PageManager selon le provider
-    getPageManager() {
-        if (this.currentProvider === 'google' && window.pageManagerGmail) {
-            console.log('[App] Using PageManagerGmail for Google provider');
-            return window.pageManagerGmail;
-        } else if (window.pageManager) {
-            console.log('[App] Using PageManager for Microsoft provider');
-            return window.pageManager;
-        }
         
-        console.warn('[App] No suitable PageManager found');
-        return null;
+        // Écouter les changements de hash pour la navigation
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.slice(1);
+            if (hash && this.availablePages[hash]) {
+                this.loadPage(hash);
+            }
+        });
     }
     
     handleNavigation(event) {
@@ -436,53 +613,164 @@ class EmailSortProApp {
         
         console.log('[App] Navigating to:', page);
         
-        // Mettre à jour la navigation
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        event.currentTarget.classList.add('active');
+        // Mettre à jour l'URL
+        window.location.hash = page;
         
-        // CORRECTION: Utiliser le bon PageManager selon le provider
-        const pageManager = this.getPageManager();
-        if (pageManager) {
-            // Vérifier que la page existe dans le PageManager
-            if (pageManager.pages && pageManager.pages[page]) {
-                pageManager.loadPage(page);
-            } else {
-                console.warn(`[App] Page "${page}" not found in PageManager`);
-                // Fallback: charger les pages directement si PageManager ne les a pas
-                if (page === 'settings' && window.categoriesPage) {
-                    const container = document.getElementById('pageContent');
-                    if (container) {
-                        console.log('[App] Loading CategoriesPage directly');
-                        window.categoriesPage.render(container);
-                    }
-                } else if (page === 'tasks' && window.tasksView) {
-                    const container = document.getElementById('pageContent');
-                    if (container) {
-                        console.log('[App] Loading TasksView directly');
-                        window.tasksView.render(container);
-                    }
-                } else if (page === 'scanner' && window.unifiedScan) {
-                    const container = document.getElementById('pageContent');
-                    if (container) {
-                        console.log('[App] Loading Scanner directly');
-                        window.unifiedScan.render();
-                    }
-                } else if (page === 'dashboard' && window.dashboardModule) {
-                    console.log('[App] Loading Dashboard directly');
-                    window.dashboardModule.render();
-                } else if (page === 'ranger' && window.modernDomainOrganizer) {
-                    const container = document.getElementById('pageContent');
-                    if (container) {
-                        console.log('[App] Loading Domain Organizer directly');
-                        window.modernDomainOrganizer.render(container);
-                    }
-                }
-            }
-        } else {
-            console.error('[App] No PageManager available for navigation');
+        // Charger la page
+        this.loadPage(page);
+    }
+    
+    async loadPage(pageName, forceReload = false) {
+        console.log(`[App] Loading page: ${pageName} (provider: ${this.currentProvider})`);
+        
+        // Vérifier si la page existe
+        const pageConfig = this.availablePages[pageName];
+        if (!pageConfig) {
+            console.error(`[App] Unknown page: ${pageName}`);
+            return;
         }
+        
+        // Ne pas recharger si c'est déjà la page courante (sauf si forcé)
+        if (this.currentPage === pageName && !forceReload) {
+            console.log(`[App] Page ${pageName} already loaded`);
+            return;
+        }
+        
+        // Mettre à jour la navigation
+        this.updateNavigation(pageName);
+        
+        // Sauvegarder la page courante
+        this.currentPage = pageName;
+        
+        // Obtenir le container
+        const container = document.getElementById('pageContent');
+        if (!container) {
+            console.error('[App] Page content container not found');
+            return;
+        }
+        
+        try {
+            // Effacer le contenu précédent
+            container.innerHTML = '';
+            container.style.display = 'block';
+            container.style.opacity = '1';
+            
+            // Charger la page selon sa configuration
+            if (pageConfig.usePageManager) {
+                // Utiliser le PageManager approprié
+                await this.loadPageWithPageManager(pageName, container);
+            } else if (pageConfig.module) {
+                // Utiliser le module directement
+                await this.loadPageWithModule(pageName, pageConfig, container);
+            } else {
+                console.error(`[App] No loader configured for page: ${pageName}`);
+            }
+            
+            // Mettre à jour le mode d'affichage
+            if (window.setPageMode) {
+                window.setPageMode(pageName);
+            }
+            
+            // Vérifier le scroll
+            this.checkScrollNeeded();
+            
+            console.log(`[App] ✅ Page ${pageName} loaded successfully`);
+            
+        } catch (error) {
+            console.error(`[App] Error loading page ${pageName}:`, error);
+            this.showError(`Erreur lors du chargement de la page ${pageName}`);
+        }
+    }
+    
+    async loadPageWithPageManager(pageName, container) {
+        const pageManager = this.getCurrentPageManager();
+        
+        if (!pageManager) {
+            console.error('[App] No PageManager available for current provider');
+            throw new Error('PageManager not available');
+        }
+        
+        console.log(`[App] Loading ${pageName} with PageManager`);
+        
+        // S'assurer que le PageManager a la méthode loadPage
+        if (typeof pageManager.loadPage === 'function') {
+            await pageManager.loadPage(pageName);
+        } else {
+            console.error('[App] PageManager does not have loadPage method');
+            throw new Error('Invalid PageManager');
+        }
+    }
+    
+    async loadPageWithModule(pageName, pageConfig, container) {
+        const module = window[pageConfig.module];
+        
+        if (!module) {
+            console.error(`[App] Module ${pageConfig.module} not found`);
+            throw new Error(`Module ${pageConfig.module} not available`);
+        }
+        
+        const method = pageConfig.method || 'render';
+        
+        if (typeof module[method] !== 'function') {
+            console.error(`[App] Method ${method} not found in module ${pageConfig.module}`);
+            throw new Error(`Invalid method ${method}`);
+        }
+        
+        console.log(`[App] Loading ${pageName} with module ${pageConfig.module}`);
+        
+        // Appeler la méthode du module
+        if (pageConfig.needsContainer) {
+            await module[method](container);
+        } else {
+            await module[method]();
+        }
+    }
+    
+    updateNavigation(activePage) {
+        document.querySelectorAll('.nav-item').forEach(item => {
+            if (item.dataset.page === activePage) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+    
+    getCurrentPageManager() {
+        if (!this.currentProvider) {
+            console.warn('[App] No current provider set');
+            return null;
+        }
+        
+        const pageManager = this.pageManagers.get(this.currentProvider);
+        
+        if (!pageManager) {
+            console.warn(`[App] No PageManager found for provider: ${this.currentProvider}`);
+            
+            // Fallback: essayer de trouver un PageManager compatible
+            if (this.currentProvider === 'google' || this.currentProvider === 'gmail') {
+                return window.pageManagerGmail || window.pageManager;
+            } else if (this.currentProvider === 'microsoft' || this.currentProvider === 'outlook') {
+                return window.pageManager || window.pageManagerOutlook;
+            }
+        }
+        
+        return pageManager;
+    }
+    
+    handleProviderChange(newProvider) {
+        console.log(`[App] Provider changed from ${this.currentProvider} to ${newProvider}`);
+        
+        this.currentProvider = newProvider;
+        sessionStorage.setItem('lastAuthProvider', newProvider);
+        
+        // Recharger la page courante avec le nouveau provider
+        if (this.currentPage) {
+            this.loadPage(this.currentPage, true);
+        }
+        
+        // Mettre à jour l'affichage utilisateur
+        this.updateUserDisplay();
     }
     
     async handleGoogleCallback() {
@@ -565,6 +853,13 @@ class EmailSortProApp {
             this.currentProvider = null;
             this.isAuthenticated = false;
             this.user = null;
+            this.currentPage = null;
+            
+            // Nettoyer les PageManagers
+            this.pageManagers.clear();
+            
+            // Nettoyer le sessionStorage
+            sessionStorage.removeItem('lastAuthProvider');
             
             window.location.reload();
         } catch (error) {
@@ -573,17 +868,32 @@ class EmailSortProApp {
         }
     }
     
+    // Méthode pour recharger la page courante
+    refreshCurrentPage() {
+        if (this.currentPage) {
+            console.log(`[App] Refreshing current page: ${this.currentPage}`);
+            this.loadPage(this.currentPage, true);
+        }
+    }
+    
+    // Méthode pour obtenir des infos de debug
     getDebugInfo() {
         return {
             version: this.version,
             isInitialized: this.isInitialized,
             currentProvider: this.currentProvider,
+            currentPage: this.currentPage,
             isAuthenticated: this.isAuthenticated,
             user: this.user?.email || null,
             authentication: {
                 microsoft: window.authService?.isAuthenticated() || false,
                 google: window.googleAuthService?.isAuthenticated() || false,
                 lastProvider: sessionStorage.getItem('lastAuthProvider')
+            },
+            pageManagers: {
+                count: this.pageManagers.size,
+                providers: Array.from(this.pageManagers.keys()),
+                current: this.getCurrentPageManager() ? 'Available' : 'Not available'
             },
             services: {
                 authService: !!window.authService,
@@ -592,72 +902,85 @@ class EmailSortProApp {
                 uiManager: !!window.uiManager,
                 pageManager: !!window.pageManager,
                 pageManagerGmail: !!window.pageManagerGmail,
+                pageManagerOutlook: !!window.pageManagerOutlook,
                 taskManager: !!window.taskManager,
-                categoriesPage: !!window.categoriesPage
-            }
+                categoriesPage: !!window.categoriesPage,
+                dashboardModule: !!window.dashboardModule,
+                unifiedScanModule: !!window.unifiedScanModule,
+                tasksView: !!window.tasksView,
+                modernDomainOrganizer: !!window.modernDomainOrganizer
+            },
+            availablePages: Object.keys(this.availablePages)
         };
+    }
+    
+    // Méthode pour forcer le changement de provider (utile pour les tests)
+    forceProviderChange(provider) {
+        console.log(`[App] Forcing provider change to: ${provider}`);
+        this.handleProviderChange(provider);
+    }
+    
+    // Méthode pour vérifier si une page est disponible
+    isPageAvailable(pageName) {
+        const pageConfig = this.availablePages[pageName];
+        if (!pageConfig) return false;
+        
+        if (pageConfig.module) {
+            return !!window[pageConfig.module];
+        }
+        
+        if (pageConfig.usePageManager) {
+            const pageManager = this.getCurrentPageManager();
+            return pageManager && typeof pageManager.loadPage === 'function';
+        }
+        
+        return false;
     }
 }
 
 // Créer l'instance
 window.app = new EmailSortProApp();
 
-// Exposer des méthodes globales
+// Exposer des méthodes globales pour la compatibilité
 window.checkScrollNeeded = () => window.app.checkScrollNeeded();
+window.refreshCurrentPage = () => window.app.refreshCurrentPage();
+window.loadPage = (pageName) => window.app.loadPage(pageName);
 
-// Hook pour intégrer les pages manquantes dans PageManagerGmail
-document.addEventListener('DOMContentLoaded', () => {
-    if (window.pageManagerGmail) {
-        console.log('[App] Extending PageManagerGmail with missing pages...');
-        
-        // S'assurer que l'objet pages existe
-        if (!window.pageManagerGmail.pages) {
-            window.pageManagerGmail.pages = {};
-        }
-        
-        // Ajouter toutes les pages nécessaires
-        // Dashboard
-        if (!window.pageManagerGmail.pages.dashboard && window.dashboardModule) {
-            window.pageManagerGmail.pages.dashboard = (container) => {
-                console.log('[App/PageManagerGmail] Loading dashboard page');
-                window.dashboardModule.render();
-            };
-        }
-        
-        // Scanner
-        if (!window.pageManagerGmail.pages.scanner && window.unifiedScan) {
-            window.pageManagerGmail.pages.scanner = (container) => {
-                console.log('[App/PageManagerGmail] Loading scanner page');
-                window.unifiedScan.render();
-            };
-        }
-        
-        // Settings (paramètres/catégories)
-        if (!window.pageManagerGmail.pages.settings && window.categoriesPage) {
-            window.pageManagerGmail.pages.settings = (container) => {
-                console.log('[App/PageManagerGmail] Loading settings page');
-                window.categoriesPage.render(container);
-            };
-        }
-        
-        // Tasks
-        if (!window.pageManagerGmail.pages.tasks && window.tasksView) {
-            window.pageManagerGmail.pages.tasks = (container) => {
-                console.log('[App/PageManagerGmail] Loading tasks page');
-                window.tasksView.render(container);
-            };
-        }
-        
-        // Ranger (domain organizer)
-        if (!window.pageManagerGmail.pages.ranger && window.modernDomainOrganizer) {
-            window.pageManagerGmail.pages.ranger = (container) => {
-                console.log('[App/PageManagerGmail] Loading ranger page');
-                window.modernDomainOrganizer.render(container);
-            };
-        }
-        
-        console.log('[App] PageManagerGmail extended with pages:', Object.keys(window.pageManagerGmail.pages));
+// Fonctions de debug
+window.debugApp = function() {
+    const info = window.app.getDebugInfo();
+    console.group('🔍 App Debug Info');
+    console.log('App State:', info);
+    console.log('Current Provider:', info.currentProvider);
+    console.log('Current Page:', info.currentPage);
+    console.log('Authenticated:', info.isAuthenticated);
+    console.log('Services:', info.services);
+    console.log('Page Managers:', info.pageManagers);
+    console.groupEnd();
+    return info;
+};
+
+window.testNavigation = async function() {
+    console.group('🧪 Testing Navigation');
+    
+    const pages = ['dashboard', 'scanner', 'emails', 'tasks', 'ranger', 'settings'];
+    
+    for (const page of pages) {
+        const available = window.app.isPageAvailable(page);
+        console.log(`${page}: ${available ? '✅ Available' : '❌ Not available'}`);
     }
-});
+    
+    console.groupEnd();
+};
 
-console.log('[App] ✅ EmailSortPro v3.7.2 loaded - Gmail & Outlook support');
+window.switchProvider = function(provider) {
+    if (!['google', 'microsoft', 'gmail', 'outlook'].includes(provider)) {
+        console.error('Invalid provider. Use: google, microsoft, gmail, or outlook');
+        return;
+    }
+    
+    window.app.forceProviderChange(provider);
+    console.log(`✅ Switched to ${provider}`);
+};
+
+console.log('[App] ✅ EmailSortPro v3.8.0 loaded - Navigation améliorée');
