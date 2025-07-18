@@ -1,6 +1,5 @@
 // app.js - Application principale EmailSortPro v4.0.2
 // VERSION CORRIGÉE: Dashboard chargé par défaut pour Gmail ET Outlook
-// AVEC SUPPORT GOOGLE TRANSLATE (sans modification de la structure)
 
 class EmailSortProApp {
     constructor() {
@@ -55,21 +54,16 @@ class EmailSortProApp {
             }
         };
         
-        // Détecter la langue du navigateur (AJOUT MINIMAL)
-        this.detectBrowserLanguage();
+        // AJOUT MINIMAL: Détecter la langue du navigateur pour Google Translate
+        const browserLang = navigator.language || navigator.userLanguage;
+        window.detectedLanguage = browserLang.split('-')[0];
+        console.log(`[App] Browser language detected: ${browserLang}`);
         
         // Écouter les événements d'authentification
         this.setupAuthListeners();
         
         // Lancer l'initialisation
         this.init();
-    }
-    
-    // AJOUT: Méthode simple pour détecter la langue
-    detectBrowserLanguage() {
-        const browserLang = navigator.language || navigator.userLanguage;
-        window.detectedLanguage = browserLang.split('-')[0];
-        console.log(`[App] Browser language: ${browserLang}`);
     }
     
     setupAuthListeners() {
@@ -1016,8 +1010,7 @@ class EmailSortProApp {
                 tasksView: !!window.tasksView,
                 modernDomainOrganizer: !!window.modernDomainOrganizer
             },
-            availablePages: Object.keys(this.availablePages),
-            language: window.detectedLanguage || 'fr' // AJOUT: Info de langue
+            availablePages: Object.keys(this.availablePages)
         };
     }
     
