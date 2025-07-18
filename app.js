@@ -1,9 +1,9 @@
-// app.js - Application principale EmailSortPro v4.0.1
-// VERSION CORRIGÉE: Dashboard chargé par défaut
+// app.js - Application principale EmailSortPro v4.0.2
+// VERSION CORRIGÉE: Dashboard chargé par défaut pour Gmail ET Outlook
 
 class EmailSortProApp {
     constructor() {
-        this.version = '4.0.1';
+        this.version = '4.0.2';
         this.isInitialized = false;
         this.initPromise = null;
         this.currentProvider = null;
@@ -143,7 +143,12 @@ class EmailSortProApp {
                 await this.updateUserDisplay();
                 await this.initializePageManagers();
                 
-                // IMPORTANT: Charger le dashboard après l'initialisation
+                // IMPORTANT: Attendre un peu plus pour Outlook
+                if (this.currentProvider === 'microsoft' || this.currentProvider === 'outlook') {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+                
+                // Charger le dashboard après l'initialisation
                 this.ensureDashboardLoaded();
             } else {
                 console.log('[App] User not authenticated');
@@ -231,6 +236,9 @@ class EmailSortProApp {
             await this.initializeAppComponents();
             await this.updateUserDisplay();
             await this.initializePageManagers();
+            
+            // Attendre un peu plus pour s'assurer que tout est prêt
+            await new Promise(resolve => setTimeout(resolve, 200));
             
             // Charger le dashboard
             this.ensureDashboardLoaded();
@@ -411,6 +419,9 @@ class EmailSortProApp {
     showAppInterface() {
         console.log('[App] Showing app interface...');
         
+        // Masquer immédiatement tout contenu potentiellement visible
+        this.hideAllInitialContent();
+        
         document.body.classList.remove('login-mode');
         document.body.classList.add('app-active');
         
@@ -424,9 +435,10 @@ class EmailSortProApp {
             loadingOverlay.classList.remove('active');
         }
         
-        // S'assurer que le container est visible
+        // S'assurer que le container est visible mais vide
         const pageContent = document.getElementById('pageContent');
         if (pageContent) {
+            pageContent.innerHTML = ''; // Vider le contenu
             pageContent.style.display = 'block';
             pageContent.style.opacity = '1';
         }
@@ -595,20 +607,48 @@ class EmailSortProApp {
     ensureDashboardLoaded() {
         console.log('[App] Ensuring dashboard is loaded...');
         
-        // Masquer tout contenu existant
-        this.hideAllInitialContent();
-        
-        // S'assurer que le container est visible
-        const pageContent = document.getElementById('pageContent');
-        if (pageContent) {
-            pageContent.style.display = 'block';
-            pageContent.style.opacity = '1';
+        // Vérifier si on est déjà sur le dashboard
+        if (this.currentPage === 'dashboard') {
+            console.log('[App] Dashboard already current page');
+            return;
         }
         
-        // Forcer le chargement du dashboard
-        setTimeout(() => {
+        // Attendre que les services nécessaires soient prêts
+        const checkAndLoad = () => {
+            // Vérifier que le dashboardModule est disponible
+            if (!window.dashboardModule) {
+                console.log('[App] Waiting for dashboardModule...');
+                setTimeout(checkAndLoad, 100);
+                return;
+            }
+            
+            // Vérifier le provider et le PageManager si nécessaire
+            if (this.currentProvider === 'microsoft' || this.currentProvider === 'outlook') {
+                // Pour Outlook, vérifier que PageManager est prêt
+                if (!window.pageManager) {
+                    console.log('[App] Waiting for pageManager (Outlook)...');
+                    setTimeout(checkAndLoad, 100);
+                    return;
+                }
+            }
+            
+            // Masquer tout contenu existant
+            this.hideAllInitialContent();
+            
+            // S'assurer que le container est visible
+            const pageContent = document.getElementById('pageContent');
+            if (pageContent) {
+                pageContent.style.display = 'block';
+                pageContent.style.opacity = '1';
+            }
+            
+            // Forcer le chargement du dashboard
+            console.log('[App] Loading dashboard now...');
             this.loadPage('dashboard', true);
-        }, 100);
+        };
+        
+        // Lancer la vérification
+        checkAndLoad();
     }
     
     setupEventHandlers() {
@@ -1022,4 +1062,4 @@ window.testNavigation = async function() {
     console.groupEnd();
 };
 
-console.log('[App] ✅ EmailSortPro v4.0.1 loaded - Dashboard par défaut');
+console.log('[App] ✅ EmailSortPro v4.0.2 loaded - Dashboard par défaut (Gmail + Outlook)');
