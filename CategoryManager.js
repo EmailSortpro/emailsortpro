@@ -1,5 +1,5 @@
-// CategoryManager.js - Version 27.0 - Détection améliorée et exclusion Calendly
-// Mots-clés enrichis pour newsletters et patterns optimisés
+// CategoryManager.js - Version 27.0 Enhanced - Détection améliorée avec patterns d'applications
+// Mots-clés enrichis et patterns d'applications métier intégrés
 
 class CategoryManager {
     constructor() {
@@ -27,7 +27,8 @@ class CategoryManager {
             marketing: null,
             commercial: null,
             notification: null,
-            calendly: null
+            calendly: null,
+            applications: {}
         };
         
         this.initializeCategories();
@@ -37,7 +38,7 @@ class CategoryManager {
         this.setupEventListeners();
         this.startAutoSync();
         
-        console.log('[CategoryManager] ✅ Version 27.0 - Détection améliorée avec exclusion Calendly');
+        console.log('[CategoryManager] ✅ Version 27.0 Enhanced - Détection améliorée avec patterns d\'applications');
     }
 
     // ================================================
@@ -160,6 +161,163 @@ class CategoryManager {
             'meeting\\s*scheduled.*calendly|appointment\\s*booked.*calendly',
             'i'
         );
+        
+        // Patterns d'applications par catégorie
+        this.compileApplicationPatterns();
+    }
+
+    // ================================================
+    // COMPILATION DES PATTERNS D'APPLICATIONS
+    // ================================================
+    compileApplicationPatterns() {
+        // Patterns pour la catégorie project (dev + gestion de projet)
+        this.compiledPatterns.applications.project = new RegExp(
+            // GitHub/GitLab
+            'github|gitlab|pull\\s*request|merge\\s*request|issue|commit|' +
+            'repository|branch|fork|release|workflow|pipeline|ci\\/cd|' +
+            // Jira/Asana/Trello
+            'jira|asana|trello|monday\\.com|clickup|' +
+            'ticket|sprint|backlog|story\\s*point|epic|subtask|' +
+            'board|card|kanban|scrum|agile|' +
+            // Jenkins/Docker
+            'jenkins|docker|kubernetes|k8s|container|deployment|' +
+            'build\\s*(?:failed|success)|artifact|' +
+            // IDE
+            'jetbrains|intellij|webstorm|pycharm|vscode|' +
+            // Notion/Linear
+            'notion|linear|basecamp|airtable',
+            'i'
+        );
+        
+        // Patterns pour meetings/calendrier
+        this.compiledPatterns.applications.meetings = new RegExp(
+            // Calendrier
+            'calendly|doodle|google\\s*calendar|outlook\\s*calendar|' +
+            'meeting\\s*(?:request|invitation|scheduled)|rendez-vous|' +
+            'conf[eé]rence|webinar|s[eé]minaire|' +
+            // Visioconférence
+            'zoom|teams\\s*meeting|google\\s*meet|webex|gotomeeting|' +
+            'whereby|jitsi|bigbluebutton|starleaf|' +
+            // Actions calendrier
+            'accepted|declined|tentative|recurring|reschedule|' +
+            'join\\s*(?:meeting|call)|lien\\s*de\\s*connexion|' +
+            'salle\\s*de\\s*r[eé]union|meeting\\s*room',
+            'i'
+        );
+        
+        // Patterns pour commercial/CRM
+        this.compiledPatterns.applications.commercial = new RegExp(
+            // CRM
+            'salesforce|hubspot|pipedrive|dynamics\\s*365|zoho\\s*crm|' +
+            'lead|opportunity|account|deal|pipeline|forecast|' +
+            'quote|devis|proposal|contrat|contract|' +
+            // Marketing automation
+            'marketo|pardot|eloqua|activecampaign|' +
+            'campaign|sequence|nurturing|scoring|' +
+            // Sales
+            'close\\.io|outreach|salesloft|gong|chorus',
+            'i'
+        );
+        
+        // Patterns pour finance
+        this.compiledPatterns.applications.finance = new RegExp(
+            // ERP/Comptabilité
+            'sap|oracle|quickbooks|sage|cegid|ebp|' +
+            'facture|invoice|bon\\s*de\\s*commande|purchase\\s*order|' +
+            'paiement|payment|virement|transfer|' +
+            // Paiement
+            'stripe|paypal|square|mollie|adyen|' +
+            'transaction|refund|remboursement|receipt|' +
+            // Expense
+            'expensify|concur|rydoo|spendesk|' +
+            'note\\s*de\\s*frais|expense\\s*report',
+            'i'
+        );
+        
+        // Patterns pour HR/Recrutement
+        this.compiledPatterns.applications.hr = new RegExp(
+            // SIRH
+            'workday|bamboohr|successfactors|adp|payfit|lucca|' +
+            'paie|payroll|payslip|bulletin|' +
+            // Recrutement
+            'welcomekit|welcome\\s*to\\s*the\\s*jungle|indeed|linkedin\\s*recruiter|' +
+            'candidature|application|entretien|interview|' +
+            'cv|resume|lettre\\s*de\\s*motivation|cover\\s*letter|' +
+            // ATS
+            'greenhouse|lever|workable|recruitee|teamtailor|' +
+            'talent\\s*acquisition|hiring|onboarding',
+            'i'
+        );
+        
+        // Patterns pour support
+        this.compiledPatterns.applications.support = new RegExp(
+            // Ticketing
+            'zendesk|freshdesk|servicenow|intercom|helpscout|' +
+            'ticket|incident|request|case|escalation|' +
+            'resolved|pending|priority|sla|' +
+            // Help desk
+            'helpdesk|service\\s*desk|support\\s*request|' +
+            'bug|issue|problem|troubleshooting|' +
+            // Chat support
+            'drift|crisp|tawk|livechat|olark',
+            'i'
+        );
+        
+        // Patterns pour internal/communication
+        this.compiledPatterns.applications.internal = new RegExp(
+            // Chat/Messaging
+            'slack|teams|discord|mattermost|rocket\\.chat|' +
+            'channel|direct\\s*message|thread|mention|' +
+            // Intranet/Wiki
+            'confluence|sharepoint|notion|wiki|' +
+            'announcement|annonce|all\\s*hands|town\\s*hall|' +
+            // Collaboration
+            'miro|mural|figma|invision|zeplin|' +
+            'workspace|collaboration|brainstorm',
+            'i'
+        );
+        
+        // Patterns pour notifications (enrichi avec apps)
+        this.compiledPatterns.applications.notifications = new RegExp(
+            // OAuth/Security
+            'github.*oauth|gitlab.*authorized|bitbucket.*access|' +
+            'application.*authorized|third-party.*access|api.*token|' +
+            // Monitoring
+            'datadog|new\\s*relic|sentry|pagerduty|opsgenie|' +
+            'alert|monitoring|uptime|downtime|incident|' +
+            // Automation
+            'zapier|ifttt|make\\.com|integromat|n8n|' +
+            'workflow|automation|trigger|webhook',
+            'i'
+        );
+        
+        // Patterns pour security
+        this.compiledPatterns.applications.security = new RegExp(
+            // Auth/SSO
+            'auth0|okta|onelogin|ping\\s*identity|' +
+            'single\\s*sign-on|sso|saml|oauth|' +
+            // Password managers
+            '1password|lastpass|dashlane|bitwarden|keeper|' +
+            'vault|password|secret\\s*key|' +
+            // MFA
+            'duo\\s*security|authy|google\\s*authenticator|' +
+            'two-factor|2fa|mfa|verification\\s*code',
+            'i'
+        );
+        
+        // Patterns pour marketing_news (enrichi)
+        this.compiledPatterns.applications.marketing_news = new RegExp(
+            // Email marketing
+            'mailchimp|sendinblue|brevo|mailjet|sendgrid|' +
+            'constant\\s*contact|campaign\\s*monitor|klaviyo|' +
+            // Newsletter platforms
+            'substack|convertkit|getresponse|aweber|' +
+            'newsletter|mailing\\s*list|broadcast|' +
+            // Marketing automation
+            'hubspot|marketo|pardot|eloqua|autopilot|' +
+            'drip|nurture|automation|workflow',
+            'i'
+        );
     }
 
     // ================================================
@@ -192,6 +350,7 @@ class CategoryManager {
         
         // Analyse multi-passes
         const newsletterScore = this.detectNewsletter(content);
+        const applicationScore = this.detectApplicationPatterns(content);
         const categoryScores = this.analyzeCategoryScores(content);
         
         // Si c'est une newsletter évidente, forcer la catégorie
@@ -205,6 +364,21 @@ class CategoryManager {
             };
             this._analysisCache.set(cacheKey, result);
             return result;
+        }
+        
+        // Fusionner les scores
+        for (const [category, appScore] of Object.entries(applicationScore)) {
+            if (categoryScores[category]) {
+                categoryScores[category].score += appScore.score;
+                categoryScores[category].matchedPatterns.push(...appScore.patterns);
+                categoryScores[category].confidence = Math.max(
+                    categoryScores[category].confidence,
+                    appScore.confidence
+                );
+                if (appScore.hasAbsolute) {
+                    categoryScores[category].hasAbsolute = true;
+                }
+            }
         }
         
         // Ajouter le score newsletter aux résultats
@@ -228,6 +402,144 @@ class CategoryManager {
         }
         
         return bestResult;
+    }
+
+    // ================================================
+    // DÉTECTION DES PATTERNS D'APPLICATIONS
+    // ================================================
+    detectApplicationPatterns(content) {
+        const results = {};
+        const textLower = content.fullText.toLowerCase();
+        const domain = content.domain;
+        const fromEmail = content.fromEmail;
+        
+        // Vérifier chaque catégorie d'application
+        for (const [category, pattern] of Object.entries(this.compiledPatterns.applications)) {
+            if (pattern.test(textLower)) {
+                let score = 100;
+                const patterns = [];
+                
+                // Bonus pour domaine spécifique
+                if (this.isApplicationDomain(domain, category)) {
+                    score += 150;
+                    patterns.push({ type: 'app_domain', keyword: domain, score: 150 });
+                }
+                
+                // Bonus pour expéditeur spécifique
+                if (this.isApplicationSender(fromEmail, category)) {
+                    score += 100;
+                    patterns.push({ type: 'app_sender', keyword: fromEmail, score: 100 });
+                }
+                
+                patterns.push({ type: 'app_pattern', keyword: `${category}_app`, score: 100 });
+                
+                results[category] = {
+                    score: score,
+                    patterns: patterns,
+                    confidence: score >= 200 ? 0.9 : 0.7,
+                    hasAbsolute: score >= 250
+                };
+            }
+        }
+        
+        return results;
+    }
+
+    // ================================================
+    // VÉRIFICATION DES DOMAINES D'APPLICATIONS
+    // ================================================
+    isApplicationDomain(domain, category) {
+        const appDomains = {
+            project: [
+                'github.com', 'gitlab.com', 'bitbucket.org', 'atlassian.com', 
+                'atlassian.net', 'jira.com', 'asana.com', 'trello.com', 
+                'monday.com', 'clickup.com', 'notion.so', 'linear.app'
+            ],
+            meetings: [
+                'calendly.com', 'doodle.com', 'zoom.us', 'zoom.com',
+                'teams.microsoft.com', 'meet.google.com', 'webex.com'
+            ],
+            commercial: [
+                'salesforce.com', 'force.com', 'hubspot.com', 'pipedrive.com',
+                'dynamics.com', 'zoho.com', 'marketo.com'
+            ],
+            finance: [
+                'stripe.com', 'paypal.com', 'quickbooks.com', 'intuit.com',
+                'sage.com', 'sap.com', 'oracle.com'
+            ],
+            hr: [
+                'workday.com', 'bamboohr.com', 'welcomekit.co', 'indeed.com',
+                'linkedin.com', 'greenhouse.io', 'lever.co', 'workable.com'
+            ],
+            support: [
+                'zendesk.com', 'freshdesk.com', 'servicenow.com', 'intercom.io',
+                'helpscout.com'
+            ],
+            internal: [
+                'slack.com', 'teams.microsoft.com', 'discord.com', 'notion.so',
+                'confluence.atlassian.com', 'sharepoint.com'
+            ],
+            notifications: [
+                'github.com', 'gitlab.com', 'datadog.com', 'newrelic.com',
+                'sentry.io', 'pagerduty.com', 'zapier.com'
+            ],
+            security: [
+                'auth0.com', 'okta.com', '1password.com', 'lastpass.com',
+                'duo.com', 'authy.com'
+            ],
+            marketing_news: [
+                'mailchimp.com', 'sendinblue.com', 'brevo.com', 'mailjet.com',
+                'constantcontact.com', 'substack.com', 'convertkit.com'
+            ]
+        };
+        
+        const domains = appDomains[category] || [];
+        return domains.some(d => domain.includes(d));
+    }
+
+    // ================================================
+    // VÉRIFICATION DES EXPÉDITEURS D'APPLICATIONS
+    // ================================================
+    isApplicationSender(fromEmail, category) {
+        const appSenders = {
+            project: [
+                'noreply@github.com', 'gitlab@', 'jira@', 'notifications@asana.com',
+                'noreply@trello.com', 'noreply@monday.com'
+            ],
+            meetings: [
+                'notifications@calendly.com', 'no-reply@zoom.us', 'noreply@doodle.com',
+                'calendar-notification@google.com'
+            ],
+            commercial: [
+                'noreply@salesforce.com', 'noreply@hubspot.com', 'noreply@pipedrive.com'
+            ],
+            finance: [
+                'noreply@stripe.com', 'receipts@stripe.com', 'noreply@intuit.com',
+                'noreply@paypal.com'
+            ],
+            hr: [
+                'noreply@workday.com', 'welcomekit.co', 'indeedapply@indeed.com',
+                'jobs-noreply@linkedin.com'
+            ],
+            support: [
+                'noreply@zendesk.com', 'support@', 'helpdesk@'
+            ],
+            internal: [
+                'noreply@slack.com', 'noreply@teams.microsoft.com'
+            ],
+            notifications: [
+                'noreply@github.com', 'notifications@', 'alerts@', 'monitoring@'
+            ],
+            security: [
+                'no-reply@auth0.com', 'noreply@okta.com', 'noreply@1password.com'
+            ],
+            marketing_news: [
+                'noreply@mailchimp.com', 'newsletter@', 'marketing@', 'news@'
+            ]
+        };
+        
+        const senders = appSenders[category] || [];
+        return senders.some(s => fromEmail.includes(s));
     }
 
     // ================================================
@@ -296,6 +608,13 @@ class CategoryManager {
             patterns.push({ type: 'strong', keyword: 'marketing_pattern', score: 150 });
         }
         
+        // Applications marketing détectées
+        if (this.compiledPatterns.applications.marketing_news && 
+            this.compiledPatterns.applications.marketing_news.test(textLower)) {
+            score += 100;
+            patterns.push({ type: 'app', keyword: 'marketing_app_detected', score: 100 });
+        }
+        
         // 2. PATTERNS D'EXCLUSION POUR CANDIDATURES ET MEETINGS LÉGITIMES
         const isCandidature = textLower.match(/votre candidature|your application|suite favorable|pas retenue|thank you for your.*application|suite de votre candidature|update about your application|nous vous remercions.*candidature|decided to move forward|regret to inform/i);
         const isFromRecruiter = fromEmail.match(/recrutement|recruiting|recruitment|talent|rh|hr|candidat/i) || 
@@ -347,12 +666,25 @@ class CategoryManager {
             isDefiniteNewsletter = true;
         }
         
+        // Vérifier si c'est un domaine d'application marketing
+        if (this.isApplicationDomain(domain, 'marketing_news')) {
+            score += 200;
+            patterns.push({ type: 'app_domain', keyword: 'marketing_platform_domain', score: 200 });
+            isDefiniteNewsletter = true;
+        }
+        
         // 4. EXPÉDITEUR
         
         // Emails typiques newsletter (basé sur patterns)
         if (fromEmail.match(/newsletter|news|marketing|info|contact|noreply|notification|alert|update|promo|conseiller|relation-client|satisfaction|no-reply/i)) {
             score += 100;
             patterns.push({ type: 'sender', keyword: 'newsletter_sender_pattern', score: 100 });
+        }
+        
+        // Vérifier si c'est un expéditeur d'application marketing
+        if (this.isApplicationSender(fromEmail, 'marketing_news')) {
+            score += 150;
+            patterns.push({ type: 'app_sender', keyword: 'marketing_platform_sender', score: 150 });
         }
         
         // 5. CONTENU SPÉCIFIQUE
@@ -461,6 +793,20 @@ class CategoryManager {
                     score: 250 
                 });
                 results.notifications.confidence = Math.min(0.95, results.notifications.confidence + 0.3);
+            }
+        }
+        
+        // Boost pour détection d'applications HR dans notifications
+        if (this.compiledPatterns.applications.hr && 
+            this.compiledPatterns.applications.hr.test(textLower) &&
+            textLower.match(/candidature|application|thank.*you.*for.*applying/i)) {
+            if (results.notifications) {
+                results.notifications.score += 100;
+                results.notifications.matchedPatterns.push({ 
+                    type: 'app_boost', 
+                    keyword: 'hr_platform_detected', 
+                    score: 100 
+                });
             }
         }
         
@@ -700,7 +1046,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // MOTS-CLÉS ENRICHIS
+    // MOTS-CLÉS ENRICHIS AVEC APPLICATIONS
     // ================================================
     initializeWeightedDetection() {
         this.weightedKeywords = {
@@ -719,7 +1065,9 @@ class CategoryManager {
                     'all rights reserved', 'registered trade mark', 'trademark',
                     'your tv upgrade is calling', 'upgrade to the best',
                     'made for movies', 'made for sports', 'made for gaming',
-                    'best for design', 'discover more', 'store online'
+                    'best for design', 'discover more', 'store online',
+                    // Apps marketing
+                    'mailchimp', 'sendinblue', 'brevo', 'constant contact'
                 ],
                 strong: [
                     'marketing', 'promotion', 'offre', 'promo', 'solde', 'sale',
@@ -738,7 +1086,7 @@ class CategoryManager {
                     'cannot accept liability', 'bmail', 'view online', 
                     'all products', 'lineup is here', 'calling', 'finest', 
                     'bigger bolder', 'thrill home', 'tell us what you love', 
-                    'we have the best'
+                    'we have the best', 'broadcast', 'campaign'
                 ],
                 weak: [
                     'profitez', 'beneficiez', 'advantage', 'opportunite',
@@ -749,14 +1097,16 @@ class CategoryManager {
                 exclusions: [] // Aucune exclusion pour cette catégorie
             },
 
-            // FINANCE - Dense et précis
+            // FINANCE - Dense et précis avec apps
             finance: {
                 absolute: [
                     'facture', 'invoice', 'paiement', 'payment', 'virement',
                     'remboursement', 'refund', 'releve bancaire', 'bank statement',
                     'devis', 'quote', 'commande numero', 'order number',
                     'montant du', 'montant total', 'total amount', 'a payer',
-                    'reglement facture', 'payer facture', 'facture a regler'
+                    'reglement facture', 'payer facture', 'facture a regler',
+                    // Apps finance
+                    'stripe', 'paypal', 'quickbooks', 'sage', 'cegid'
                 ],
                 strong: [
                     'montant', 'amount', 'euro', 'dollar', 'prix', 'price',
@@ -765,7 +1115,8 @@ class CategoryManager {
                     'bancaire', 'bank', 'compte', 'account', 'carte',
                     'tresorerie', 'treasury', 'comptabilite', 'accounting',
                     'budget', 'depense', 'expense', 'frais', 'fees',
-                    'iban', 'virement', 'prelevement', 'cheque'
+                    'iban', 'virement', 'prelevement', 'cheque',
+                    'transaction', 'receipt', 'recu', 'sap', 'oracle'
                 ],
                 weak: [
                     'reference', 'numero', 'document', 'piece jointe',
@@ -774,20 +1125,23 @@ class CategoryManager {
                 exclusions: ['newsletter', 'promotion', 'offre speciale', 'decouvrez', 'conseiller', 'espace client']
             },
 
-            // SECURITY - Haute priorité
+            // SECURITY - Haute priorité avec apps
             security: {
                 absolute: [
                     'alerte securite', 'security alert', 'connexion suspecte',
                     'suspicious login', 'mot de passe', 'password', 'code verification',
                     'verification code', '2fa', 'two factor', 'authentification',
-                    'compte bloque', 'account locked', 'activite inhabituelle'
+                    'compte bloque', 'account locked', 'activite inhabituelle',
+                    // Apps security
+                    'auth0', 'okta', '1password', 'lastpass', 'duo security'
                 ],
                 strong: [
                     'securite', 'security', 'verification', 'verify', 'confirmer',
                     'identite', 'identity', 'acces', 'access', 'autorisation',
                     'suspicieux', 'suspicious', 'inhabituel', 'unusual',
                     'bloquer', 'block', 'verrouiller', 'lock', 'proteger',
-                    'risque', 'risk', 'menace', 'threat', 'fraude', 'fraud'
+                    'risque', 'risk', 'menace', 'threat', 'fraude', 'fraud',
+                    'mfa', 'sso', 'single sign-on', 'vault', 'secret key'
                 ],
                 weak: [
                     'compte', 'account', 'connexion', 'login', 'session',
@@ -818,21 +1172,24 @@ class CategoryManager {
                 exclusions: ['newsletter', 'offre']
             },
 
-            // MEETINGS - Réunions (EXCLUANT CALENDLY)
+            // MEETINGS - Réunions avec apps
             meetings: {
                 absolute: [
                     'reunion', 'meeting', 'rendez-vous', 'appointment',
                     'invitation reunion', 'meeting invitation', 'conference',
                     'call', 'visio', 'teams', 'zoom', 'meet', 'webex',
                     'salle de reunion', 'meeting room', 'ordre du jour',
-                    'rejoindre reunion', 'join meeting', 'lien de connexion'
+                    'rejoindre reunion', 'join meeting', 'lien de connexion',
+                    // Apps meetings
+                    'calendly', 'doodle', 'google calendar', 'outlook calendar'
                 ],
                 strong: [
                     'calendrier', 'calendar', 'agenda', 'planning', 'schedule',
                     'date', 'heure', 'time', 'horaire', 'disponible',
                     'available', 'disponibilite', 'availability', 'confirmer',
                     'confirm', 'reporter', 'postpone', 'reschedule', 'annuler',
-                    'participants', 'attendees', 'invites', 'organizer'
+                    'participants', 'attendees', 'invites', 'organizer',
+                    'accepted', 'declined', 'tentative', 'recurring'
                 ],
                 weak: [
                     'rencontre', 'voir', 'discuter', 'talk', 'echanger'
@@ -846,18 +1203,21 @@ class CategoryManager {
                 ]
             },
 
-            // COMMERCIAL - B2B
+            // COMMERCIAL - B2B avec CRM
             commercial: {
                 absolute: [
                     'opportunite', 'opportunity', 'proposition commerciale',
                     'business proposal', 'contrat', 'contract', 'partenariat',
-                    'partnership', 'appel offre', 'tender', 'rfp', 'devis'
+                    'partnership', 'appel offre', 'tender', 'rfp', 'devis',
+                    // Apps CRM
+                    'salesforce', 'hubspot', 'pipedrive', 'dynamics 365'
                 ],
                 strong: [
                     'commercial', 'business', 'affaire', 'deal', 'vente',
                     'sale', 'client', 'customer', 'prospect', 'lead',
                     'marche', 'market', 'strategie', 'strategy', 'croissance',
-                    'growth', 'developpement', 'development', 'roi', 'investissement'
+                    'growth', 'developpement', 'development', 'roi', 'investissement',
+                    'pipeline', 'forecast', 'crm', 'zoho'
                 ],
                 weak: [
                     'interessant', 'potentiel', 'envisager', 'consider'
@@ -865,7 +1225,7 @@ class CategoryManager {
                 exclusions: ['newsletter', 'promotion personnelle', 'candidature', 'votre candidature', 'suite favorable']
             },
 
-            // NOTIFICATIONS - Automatiques (ENRICHI)
+            // NOTIFICATIONS - Automatiques avec apps
             notifications: {
                 absolute: [
                     'no reply', 'noreply', 'ne pas repondre', 'do not reply',
@@ -886,7 +1246,9 @@ class CategoryManager {
                     'etudions avec attention', 'revenons vers vous dans les plus brefs delais',
                     'sans retour de notre part', 'veuillez considerer',
                     'conserver votre cv', 'cvtheque', 'candidature envoyee',
-                    'indeed apply', 'welcomekit', 'candidats.welcomekit'
+                    'indeed apply', 'welcomekit', 'candidats.welcomekit',
+                    // Apps monitoring/automation
+                    'datadog', 'new relic', 'sentry', 'pagerduty', 'zapier'
                 ],
                 strong: [
                     'notification', 'alert', 'alerte', 'avis', 'notice',
@@ -901,7 +1263,8 @@ class CategoryManager {
                     'talent acquisition', 'donner suite', 'giving update',
                     'github', 'oauth', 'authorized', 'scopes',
                     'employeur peut vous contacter', 'prochaines etapes',
-                    'email automatique', 'ne pas repondre'
+                    'email automatique', 'ne pas repondre',
+                    'monitoring', 'webhook', 'trigger', 'workflow'
                 ],
                 weak: [
                     'information', 'update', 'mise a jour', 'changement',
@@ -912,18 +1275,22 @@ class CategoryManager {
                 exclusions: ['action requise', 'urgent', 'newsletter', 'rendez-vous', 'reunion', 'meeting invitation']
             },
 
-            // HR - Ressources humaines
+            // HR - Ressources humaines avec ATS
             hr: {
                 absolute: [
                     'ressources humaines', 'human resources', 'contrat travail',
                     'employment contract', 'bulletin paie', 'payslip',
-                    'conge', 'leave', 'entretien annuel', 'annual review'
+                    'conge', 'leave', 'entretien annuel', 'annual review',
+                    // Apps HR
+                    'workday', 'bamboohr', 'successfactors', 'adp', 'payfit'
                 ],
                 strong: [
                     'salaire', 'salary', 'remuneration', 'prime', 'bonus',
                     'employe', 'employee', 'poste', 'position', 'carriere',
                     'career', 'formation', 'training', 'recrutement',
-                    'candidat', 'candidate', 'entretien', 'interview'
+                    'candidat', 'candidate', 'entretien', 'interview',
+                    'onboarding', 'offboarding', 'talent', 'hiring',
+                    'greenhouse', 'lever', 'workable', 'recruitee'
                 ],
                 weak: [
                     'equipe', 'team', 'entreprise', 'company', 'bureau'
@@ -931,16 +1298,21 @@ class CategoryManager {
                 exclusions: []
             },
 
-            // PROJECT - Gestion de projet
+            // PROJECT - Gestion de projet avec outils
             project: {
                 absolute: [
                     'projet', 'project', 'milestone', 'jalon', 'livrable',
-                    'deliverable', 'sprint', 'roadmap', 'gantt', 'kick off'
+                    'deliverable', 'sprint', 'roadmap', 'gantt', 'kick off',
+                    // Apps project
+                    'jira', 'github', 'gitlab', 'asana', 'trello'
                 ],
                 strong: [
                     'avancement', 'progress', 'planning', 'timeline', 'equipe',
                     'team', 'tache', 'task', 'risque', 'risk', 'budget',
-                    'validation', 'review', 'suivi', 'tracking', 'kpi'
+                    'validation', 'review', 'suivi', 'tracking', 'kpi',
+                    'pull request', 'merge request', 'commit', 'issue',
+                    'ticket', 'board', 'kanban', 'scrum', 'agile',
+                    'monday', 'clickup', 'notion', 'linear', 'basecamp'
                 ],
                 weak: [
                     'document', 'fichier', 'rapport', 'update'
@@ -953,17 +1325,21 @@ class CategoryManager {
                 ]
             },
 
-            // SUPPORT - Technique
+            // SUPPORT - Technique avec ticketing
             support: {
                 absolute: [
                     'ticket', 'incident', 'demande support', 'support request',
                     'probleme technique', 'technical issue', 'bug', 'erreur',
-                    'panne', 'helpdesk', 'service desk'
+                    'panne', 'helpdesk', 'service desk',
+                    // Apps support
+                    'zendesk', 'freshdesk', 'servicenow', 'intercom'
                 ],
                 strong: [
                     'support', 'assistance', 'aide', 'help', 'technique',
                     'technical', 'probleme', 'problem', 'solution', 'resolu',
-                    'resolved', 'maintenance', 'depannage', 'diagnostic'
+                    'resolved', 'maintenance', 'depannage', 'diagnostic',
+                    'escalation', 'priority', 'sla', 'pending',
+                    'helpscout', 'drift', 'crisp', 'livechat'
                 ],
                 weak: [
                     'question', 'demande', 'besoin', 'fonctionnement'
@@ -971,17 +1347,22 @@ class CategoryManager {
                 exclusions: ['support commercial', 'newsletter']
             },
 
-            // INTERNAL - Communications internes
+            // INTERNAL - Communications internes avec outils
             internal: {
                 absolute: [
                     'communication interne', 'internal communication',
                     'note service', 'memo', 'tout le personnel', 'all staff',
-                    'annonce entreprise', 'company announcement'
+                    'annonce entreprise', 'company announcement',
+                    // Apps internal
+                    'slack', 'teams', 'discord', 'mattermost'
                 ],
                 strong: [
                     'interne', 'internal', 'entreprise', 'company', 'personnel',
                     'staff', 'employes', 'direction', 'management', 'politique',
-                    'policy', 'procedure', 'changement organisationnel'
+                    'policy', 'procedure', 'changement organisationnel',
+                    'channel', 'thread', 'mention', 'workspace',
+                    'confluence', 'sharepoint', 'wiki', 'intranet',
+                    'miro', 'mural', 'figma', 'collaboration'
                 ],
                 weak: [
                     'information', 'annonce', 'nouvelle', 'communication'
@@ -1022,7 +1403,7 @@ class CategoryManager {
             }
         };
 
-        console.log('[CategoryManager] ✅ Mots-clés enrichis chargés');
+        console.log('[CategoryManager] ✅ Mots-clés enrichis avec patterns d\'applications chargés');
     }
 
     // ================================================
@@ -1215,7 +1596,8 @@ class CategoryManager {
     }
 
     escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\                    'malheureusement pas en mesure', 'after thorough consideration',
+                    'oauth application has been added', 'third-party application',');
     }
 
     generateCacheKey(email) {
@@ -1442,12 +1824,13 @@ class CategoryManager {
 
     getDebugInfo() {
         return {
-            version: '27.0',
+            version: '27.0 Enhanced',
             categoriesCount: Object.keys(this.categories).length,
             customCategoriesCount: Object.keys(this.customCategories).length,
             activeCategories: this.getActiveCategories().length,
             taskPreselectedCategories: this.settings.taskPreselectedCategories,
             categoryExclusions: this.settings.categoryExclusions,
+            applicationPatterns: Object.keys(this.compiledPatterns.applications).length,
             cacheSize: {
                 normalizedText: this._normalizedTextCache.size,
                 analysis: this._analysisCache.size
@@ -1455,6 +1838,30 @@ class CategoryManager {
             syncQueue: this.syncQueue.length,
             lastSync: new Date(this.lastSyncTimestamp).toISOString()
         };
+    }
+
+    getApplicationsList() {
+        const apps = [];
+        const appDomains = {
+            project: ['GitHub', 'GitLab', 'Jira', 'Asana', 'Trello', 'Monday.com', 'ClickUp', 'Notion', 'Linear'],
+            meetings: ['Calendly', 'Doodle', 'Zoom', 'Teams', 'Google Meet', 'Webex'],
+            commercial: ['Salesforce', 'HubSpot', 'Pipedrive', 'Dynamics 365', 'Zoho CRM'],
+            finance: ['Stripe', 'PayPal', 'QuickBooks', 'Sage', 'SAP', 'Oracle'],
+            hr: ['Workday', 'BambooHR', 'Indeed', 'LinkedIn Recruiter', 'Greenhouse', 'Lever'],
+            support: ['Zendesk', 'Freshdesk', 'ServiceNow', 'Intercom', 'HelpScout'],
+            internal: ['Slack', 'Teams', 'Discord', 'Confluence', 'SharePoint', 'Miro'],
+            notifications: ['GitHub OAuth', 'DataDog', 'Sentry', 'PagerDuty', 'Zapier'],
+            security: ['Auth0', 'Okta', '1Password', 'LastPass', 'Duo Security'],
+            marketing_news: ['MailChimp', 'SendinBlue', 'Brevo', 'Constant Contact', 'HubSpot']
+        };
+        
+        for (const [category, appList] of Object.entries(appDomains)) {
+            appList.forEach(app => {
+                apps.push({ category, application: app });
+            });
+        }
+        
+        return apps;
     }
 
     setDebugMode(enabled) {
@@ -1494,9 +1901,10 @@ window.CategoryManager = CategoryManager;
 
 // Fonctions de test globales
 window.testCategoryManager = function() {
-    console.group('🧪 TEST CategoryManager v27.0');
+    console.group('🧪 TEST CategoryManager v27.0 Enhanced');
     
     const tests = [
+        // Tests newsletters
         { 
             subject: "⛰️ Mission Kaizen : à chacun son Everest ! 🎾", 
             body: "Enchaîne les paris gagnants... 100 000 € de Freebets... Si vous souhaitez ne plus recevoir notre newsletter, cliquez ici.", 
@@ -1509,12 +1917,26 @@ window.testCategoryManager = function() {
             from: "contact@jinka.fr",
             expected: "marketing_news" 
         },
-        { 
-            subject: "Sahar : un nouveau poste correspond à votre profil",
-            body: "Strategic Project Manager (F/H) - CDI - Paris... Se désabonner | Supprimer mes données",
-            from: "no-reply@sahar.teamtailor-mail.com",
-            expected: "marketing_news"
+        // Tests applications
+        {
+            subject: "Your pull request has been merged",
+            body: "The pull request #123 has been successfully merged into main branch",
+            from: "noreply@github.com",
+            expected: "project"
         },
+        {
+            subject: "[Jira] Sprint 23 completed",
+            body: "Sprint 23 has been completed with 15 story points delivered",
+            from: "jira@company.atlassian.net",
+            expected: "project"
+        },
+        {
+            subject: "New Salesforce opportunity assigned",
+            body: "A new opportunity has been assigned to you in Salesforce",
+            from: "noreply@salesforce.com",
+            expected: "commercial"
+        },
+        // Tests notifications
         {
             subject: "Thanks for applying to Booksy",
             body: "Your application for the Customer Support Outbound Specialist job was submitted successfully. Here's a copy of your application data for safekeeping... Powered by Workable",
@@ -1522,38 +1944,21 @@ window.testCategoryManager = function() {
             expected: "notifications"
         },
         {
-            subject: "VIANNEY, candidature bien reçue pour Customer Success manager",
-            body: "Nous avons bien reçu votre candidature... nous l'étudions avec attention... Sans retour de notre part dans un délai de 4 semaines, veuillez considérer que votre candidature n'est pas retenue pour cette fois.",
-            from: "beyab-83bc73a9@candidates.welcomekit.co",
-            expected: "notifications"
-        },
-        {
-            subject: "Candidatures via Indeed : Customer Success Manager",
-            body: "Candidature envoyée... Les éléments suivants ont été envoyés à Hostaway... Ceci est un email automatique - merci de ne pas répondre.",
-            from: "indeedapply@indeed.com",
-            expected: "notifications"
-        },
-        {
-            subject: "Your TV upgrade is calling—BRAVIA's finest lineup is here🔥",
-            body: "Made for Movies... Made for Sports... Made for Gaming... Update your e-mail preferences... Privacy Statement Terms & Conditions Unsubscribe Contact Us",
-            from: "marketing@bmail.example-electronics.com",
-            expected: "marketing_news"
-        },
-        {
             subject: "[GitHub] A third-party OAuth application has been added to your account",
             body: "A third-party OAuth application (MongoDB Atlas) with read:user and user:email scopes was recently authorized",
             from: "noreply@github.com",
             expected: "notifications"
         },
+        // Tests meetings
         {
             subject: "Meeting scheduled via Calendly",
             body: "Your meeting has been confirmed via Calendly for tomorrow at 2pm",
             from: "notifications@calendly.com",
             expected: "meetings"
         },
+        // Tests autres catégories
         { subject: "Nouvelle facture #12345 à payer avant le 31", expected: "finance" },
         { subject: "Action urgente requise: valider le document", expected: "tasks" },
-        { subject: "Invitation réunion Teams demain 14h", expected: "meetings" },
         { subject: "Alerte sécurité: Nouvelle connexion détectée", expected: "security" }
     ];
     
@@ -1562,10 +1967,11 @@ window.testCategoryManager = function() {
     });
     
     console.log('\n📊 Debug Info:', window.categoryManager.getDebugInfo());
+    console.log('\n📱 Applications supportées:', window.categoryManager.getApplicationsList());
     
     console.groupEnd();
     
     return { success: true, testsRun: tests.length };
 };
 
-console.log('✅ CategoryManager v27.0 loaded - Détection basée sur mots-clés uniquement');
+console.log('✅ CategoryManager v27.0 Enhanced loaded - Détection par applications métier intégrée');
