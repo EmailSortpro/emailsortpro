@@ -37,92 +37,6 @@
     <!-- Styles principaux -->
     <link rel="stylesheet" href="styles.css">
     
-    <!-- GOOGLE TRANSLATE INTEGRATION -->
-    <script type="text/javascript">
-        // Configuration Google Translate
-        function googleTranslateElementInit() {
-            // Détecter la langue du navigateur
-            const browserLang = navigator.language || navigator.userLanguage;
-            const lang = browserLang.split('-')[0]; // Prendre seulement le code de langue principal
-            
-            // Si la langue n'est pas le français, initialiser Google Translate
-            if (lang !== 'fr') {
-                new google.translate.TranslateElement({
-                    pageLanguage: 'fr',
-                    includedLanguages: 'en,es,de,it,pt,nl,pl,ru,ja,ko,zh-CN,zh-TW,ar,hi',
-                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
-                    autoDisplay: true,
-                    multilanguagePage: true
-                }, 'google_translate_element');
-                
-                // Auto-traduire après un court délai
-                setTimeout(() => {
-                    // Chercher le bon code de langue pour Google Translate
-                    let googleLangCode = lang;
-                    if (lang === 'zh') {
-                        googleLangCode = browserLang.includes('TW') || browserLang.includes('HK') ? 'zh-TW' : 'zh-CN';
-                    }
-                    
-                    // Sélectionner automatiquement la langue
-                    const selectElement = document.querySelector('.goog-te-combo');
-                    if (selectElement) {
-                        selectElement.value = googleLangCode;
-                        selectElement.dispatchEvent(new Event('change'));
-                    }
-                }, 1000);
-            }
-            
-            // Stocker la langue détectée
-            window.detectedLanguage = lang;
-            console.log('[TRANSLATE] Langue du navigateur détectée:', browserLang, '- Code:', lang);
-        }
-        
-        // Fonction pour masquer/afficher le widget de traduction
-        window.toggleTranslateWidget = function(show) {
-            const widget = document.getElementById('google_translate_element');
-            const frame = document.querySelector('.goog-te-banner-frame');
-            
-            if (widget) {
-                widget.style.display = show ? 'block' : 'none';
-            }
-            if (frame) {
-                frame.style.display = 'none'; // Toujours masquer la bannière
-            }
-        };
-        
-        // Observer pour masquer automatiquement la bannière Google Translate
-        const observer = new MutationObserver(function(mutations) {
-            const banner = document.querySelector('.goog-te-banner-frame');
-            if (banner) {
-                banner.style.display = 'none';
-            }
-            
-            // Ajuster les styles après traduction
-            const body = document.querySelector('body');
-            if (body && body.classList.contains('translated-ltr')) {
-                body.style.top = '0';
-            }
-        });
-        
-        // Démarrer l'observation dès que le DOM est prêt
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true
-                });
-            });
-        } else {
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-        }
-    </script>
-    
-    <!-- Script Google Translate -->
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
-    
     <!-- CONFIGURATION NETLIFY -->
     <script>
         console.log('[INDEX] 🚀 Loading Netlify configuration for emailsortpro.netlify.app...');
@@ -350,75 +264,6 @@
             overflow: hidden !important;
         }
 
-        /* Widget Google Translate personnalisé */
-        #google_translate_element {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 9999;
-            background: white;
-            padding: 5px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        /* Masquer la bannière Google Translate */
-        .goog-te-banner-frame {
-            display: none !important;
-        }
-
-        body.translated-ltr {
-            top: 0 !important;
-        }
-
-        .goog-te-gadget {
-            font-family: inherit !important;
-        }
-
-        .goog-te-gadget-simple {
-            background-color: transparent !important;
-            border: none !important;
-            padding: 0 !important;
-            font-size: 13px !important;
-        }
-
-        .goog-te-menu-value span {
-            color: #4F46E5 !important;
-        }
-
-        /* Bouton de langue personnalisé */
-        .language-selector {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: white;
-            padding: 8px 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .language-selector:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        .language-selector i {
-            color: #4F46E5;
-            font-size: 16px;
-        }
-
-        .language-selector .current-lang {
-            font-size: 13px;
-            font-weight: 500;
-            color: #1f2937;
-            text-transform: uppercase;
-        }
-
         /* === STYLES POUR LA PAGE DE LOGIN SIMPLE === */
         .login-page-styles {
             background: white;
@@ -447,8 +292,9 @@
             padding: 40px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-end;
             background: white;
+            padding-right: 60px;
         }
 
         .login-container {
@@ -1186,15 +1032,6 @@
     </style>
 </head>
 <body>
-    <!-- Widget Google Translate (masqué par défaut, affiché seulement si langue != fr) -->
-    <div id="google_translate_element" style="display: none;"></div>
-    
-    <!-- Sélecteur de langue personnalisé -->
-    <div class="language-selector" onclick="toggleLanguageMenu()">
-        <i class="fas fa-globe"></i>
-        <span class="current-lang">FR</span>
-    </div>
-
     <!-- Vérification du domaine -->
     <script>
         if (window.location.hostname !== 'emailsortpro.netlify.app' && 
@@ -1211,48 +1048,15 @@
             `;
             document.body.appendChild(banner);
         }
-        
-        // Fonction pour basculer le menu de langue
-        function toggleLanguageMenu() {
-            const translateElement = document.getElementById('google_translate_element');
-            if (translateElement) {
-                // Simuler un clic sur le widget Google Translate
-                const selectElement = translateElement.querySelector('.goog-te-combo');
-                if (selectElement) {
-                    selectElement.click();
-                }
-            }
-        }
-        
-        // Mettre à jour l'affichage de la langue actuelle
-        function updateLanguageDisplay() {
-            const currentLang = window.detectedLanguage || 'fr';
-            const langSelector = document.querySelector('.current-lang');
-            if (langSelector) {
-                langSelector.textContent = currentLang.toUpperCase();
-            }
-        }
-        
-        // Observer les changements de langue
-        setInterval(() => {
-            const googleLangSelector = document.querySelector('.goog-te-combo');
-            if (googleLangSelector && googleLangSelector.value) {
-                const selectedLang = googleLangSelector.value || 'fr';
-                const langDisplay = document.querySelector('.current-lang');
-                if (langDisplay) {
-                    langDisplay.textContent = selectedLang.split('-')[0].toUpperCase();
-                }
-            }
-        }, 1000);
     </script>
 
     <!-- FOOTER PERMANENT POUR GOOGLE -->
     <footer style="position: fixed; bottom: 0; left: 0; right: 0; background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 10px 20px; z-index: 1000; display: flex; justify-content: center; gap: 20px; font-size: 14px;">
-        <a href="/privacy-policy.html" style="color: #4F46E5; text-decoration: none; font-weight: 500;" class="notranslate">Politique de Confidentialité</a>
+        <a href="/privacy-policy.html" style="color: #4F46E5; text-decoration: none; font-weight: 500;">Politique de Confidentialité</a>
         <span style="color: #cbd5e1;">|</span>
-        <a href="/terms.html" style="color: #4F46E5; text-decoration: none; font-weight: 500;" class="notranslate">Conditions d'Utilisation</a>
+        <a href="/terms.html" style="color: #4F46E5; text-decoration: none; font-weight: 500;">Conditions d'Utilisation</a>
         <span style="color: #cbd5e1;">|</span>
-        <span style="color: #64748b;" class="notranslate">© 2025 EmailSortProAI - vianneyhastings@emailsortpro.fr</span>
+        <span style="color: #64748b;">© 2025 EmailSortProAI - vianneyhastings@emailsortpro.fr</span>
     </footer>
 
     <div id="app">
@@ -1383,33 +1187,14 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- COLONNE DROITE - Documentation simple -->
-                    <div class="login-right">
-                        <div class="docs-container">
-                            <h2 class="docs-title">Documentation technique</h2>
-                            
-                            <a href="https://github.com/EmailSortpro/emailsortpro/raw/main/A%20partager%20avec%20votre%20service%20informatique%20avant%20l'utilisation.docx.pdf" 
-                               target="_blank" 
-                               class="docs-link">
-                                A partager avec votre service informatique avant l'utilisation.pdf
-                            </a>
-
-                            <a href="https://github.com/EmailSortpro/emailsortpro/raw/main/To%20share%20with%20your%20IT%20service%20so%20they%20can%20authorize%20the%20web%20app.pdf" 
-                               target="_blank" 
-                               class="docs-link">
-                                To share with your IT service so they can authorize the web app.pdf
-                            </a>
-
-                            <!-- FOOTER CONFORMITÉ GOOGLE DÉPLACÉ ICI -->
-                            <div class="google-compliance-footer" style="margin-top: 40px;">
+                            <!-- FOOTER CONFORMITÉ GOOGLE AVEC LIMITED USE -->
+                            <div class="google-compliance-footer">
                                 <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 8px;">
                                     EmailSortProAI respecte votre vie privée et se conforme aux politiques Google.
                                 </p>
                                 
-                                <!-- DÉCLARATION LIMITED USE -->
+                                <!-- NOUVELLE DÉCLARATION LIMITED USE -->
                                 <div style="background: #e0f2fe; padding: 12px; border-radius: 6px; margin: 12px 0; border: 1px solid #0284c7;">
                                     <p style="font-size: 0.8rem; color: #0c4a6e; margin: 0; font-weight: 600;">
                                         Déclaration de conformité Google Limited Use :
@@ -1440,6 +1225,25 @@
                                     Développé par Vianney Hastings • vianneyhastings@emailsortpro.fr
                                 </p>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- COLONNE DROITE - Liens simples -->
+                    <div class="login-right">
+                        <div class="docs-container">
+                            <h2 class="docs-title">Documentation technique</h2>
+                            
+                            <a href="https://github.com/EmailSortpro/emailsortpro/raw/main/A%20partager%20avec%20votre%20service%20informatique%20avant%20l'utilisation.docx.pdf" 
+                               target="_blank" 
+                               class="docs-link">
+                                A partager avec votre service informatique avant l'utilisation.pdf
+                            </a>
+
+                            <a href="https://github.com/EmailSortpro/emailsortpro/raw/main/To%20share%20with%20your%20IT%20service%20so%20they%20can%20authorize%20the%20web%20app.pdf" 
+                               target="_blank" 
+                               class="docs-link">
+                                To share with your IT service so they can authorize the web app.pdf
+                            </a>
                         </div>
                     </div>
                 </div>
