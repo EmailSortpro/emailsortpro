@@ -54,11 +54,6 @@ class EmailSortProApp {
             }
         };
         
-        // AJOUT MINIMAL: Détecter la langue du navigateur pour Google Translate
-        const browserLang = navigator.language || navigator.userLanguage;
-        window.detectedLanguage = browserLang.split('-')[0];
-        console.log(`[App] Browser language detected: ${browserLang}`);
-        
         // Écouter les événements d'authentification
         this.setupAuthListeners();
         
