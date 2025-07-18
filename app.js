@@ -1,9 +1,10 @@
-// app.js - Application principale EmailSortPro v4.0.3 avec support multilingue
-// VERSION AVEC GOOGLE TRANSLATE: Détection automatique de la langue du navigateur
+// app.js - Application principale EmailSortPro v4.0.2
+// VERSION CORRIGÉE: Dashboard chargé par défaut pour Gmail ET Outlook
+// AVEC SUPPORT GOOGLE TRANSLATE (sans modification de la structure)
 
 class EmailSortProApp {
     constructor() {
-        this.version = '4.0.3';
+        this.version = '4.0.2';
         this.isInitialized = false;
         this.initPromise = null;
         this.currentProvider = null;
@@ -13,12 +14,7 @@ class EmailSortProApp {
         this.pageManagers = new Map();
         this.initializationComplete = false;
         
-        // Configuration multilingue
-        this.currentLanguage = 'fr'; // Français par défaut
-        this.detectedLanguage = null;
-        this.translations = {}; // Cache des traductions
-        
-        console.log(`[App] EmailSortPro v${this.version} starting with multilingual support...`);
+        console.log(`[App] EmailSortPro v${this.version} starting...`);
         
         // Configuration des pages disponibles
         this.availablePages = {
@@ -59,145 +55,21 @@ class EmailSortProApp {
             }
         };
         
-        // Détecter la langue du navigateur
+        // Détecter la langue du navigateur (AJOUT MINIMAL)
         this.detectBrowserLanguage();
         
         // Écouter les événements d'authentification
         this.setupAuthListeners();
         
-        // Écouter les changements de langue Google Translate
-        this.setupTranslateListeners();
-        
         // Lancer l'initialisation
         this.init();
     }
     
+    // AJOUT: Méthode simple pour détecter la langue
     detectBrowserLanguage() {
-        // Détecter la langue du navigateur
         const browserLang = navigator.language || navigator.userLanguage;
-        this.detectedLanguage = browserLang.split('-')[0];
-        
-        console.log(`[App] Browser language detected: ${browserLang} (${this.detectedLanguage})`);
-        
-        // Si la langue n'est pas le français, activer Google Translate
-        if (this.detectedLanguage !== 'fr') {
-            this.currentLanguage = this.detectedLanguage;
-            console.log(`[App] Non-French language detected, Google Translate will be activated`);
-        }
-        
-        // Sauvegarder la langue préférée
-        try {
-            const savedLang = localStorage.getItem('emailsortpro_language');
-            if (savedLang) {
-                this.currentLanguage = savedLang;
-                console.log(`[App] Using saved language preference: ${savedLang}`);
-            }
-        } catch (e) {
-            console.warn('[App] Cannot access localStorage for language preference');
-        }
-    }
-    
-    setupTranslateListeners() {
-        // Observer les changements de traduction Google
-        if (typeof MutationObserver !== 'undefined') {
-            const observer = new MutationObserver((mutations) => {
-                // Détecter si Google Translate a changé la langue
-                const htmlLang = document.documentElement.lang;
-                const bodyClass = document.body.className;
-                
-                if (bodyClass.includes('translated-')) {
-                    // La page a été traduite
-                    const langMatch = bodyClass.match(/translated-(\w+)/);
-                    if (langMatch) {
-                        const newLang = langMatch[1];
-                        if (newLang !== this.currentLanguage) {
-                            console.log(`[App] Language changed to: ${newLang}`);
-                            this.handleLanguageChange(newLang);
-                        }
-                    }
-                }
-            });
-            
-            // Observer les changements sur le body
-            observer.observe(document.body, {
-                attributes: true,
-                attributeFilter: ['class']
-            });
-        }
-        
-        // Écouter les événements personnalisés de changement de langue
-        window.addEventListener('languageChanged', (event) => {
-            const newLang = event.detail.language;
-            console.log(`[App] Language change event received: ${newLang}`);
-            this.handleLanguageChange(newLang);
-        });
-    }
-    
-    handleLanguageChange(newLang) {
-        this.currentLanguage = newLang;
-        
-        // Sauvegarder la préférence
-        try {
-            localStorage.setItem('emailsortpro_language', newLang);
-        } catch (e) {
-            console.warn('[App] Cannot save language preference');
-        }
-        
-        // Notifier tous les modules du changement de langue
-        this.notifyLanguageChange(newLang);
-        
-        // Rafraîchir la page courante si nécessaire
-        if (this.currentPage && this.isInitialized) {
-            console.log(`[App] Refreshing current page for language change`);
-            this.refreshCurrentPage();
-        }
-    }
-    
-    notifyLanguageChange(language) {
-        // Créer un événement personnalisé pour notifier tous les modules
-        const event = new CustomEvent('appLanguageChanged', {
-            detail: { language: language }
-        });
-        window.dispatchEvent(event);
-        
-        // Notifier directement les modules principaux
-        const modules = [
-            window.dashboardModule,
-            window.unifiedScanModule,
-            window.tasksView,
-            window.modernDomainOrganizer,
-            window.categoriesPage,
-            window.pageManager,
-            window.pageManagerGmail
-        ];
-        
-        modules.forEach(module => {
-            if (module && typeof module.onLanguageChange === 'function') {
-                module.onLanguageChange(language);
-            }
-        });
-    }
-    
-    // Méthode utilitaire pour traduire du texte dynamiquement
-    translate(key, defaultText) {
-        // Si nous avons des traductions en cache pour la langue courante
-        if (this.translations[this.currentLanguage] && this.translations[this.currentLanguage][key]) {
-            return this.translations[this.currentLanguage][key];
-        }
-        
-        // Sinon, retourner le texte par défaut
-        return defaultText || key;
-    }
-    
-    // Méthode pour charger des traductions personnalisées si nécessaire
-    async loadTranslations(language) {
-        try {
-            // Cette méthode pourrait charger des fichiers de traduction personnalisés
-            // Pour l'instant, on utilise Google Translate pour tout
-            console.log(`[App] Translations for ${language} handled by Google Translate`);
-        } catch (error) {
-            console.warn(`[App] Could not load translations for ${language}:`, error);
-        }
+        window.detectedLanguage = browserLang.split('-')[0];
+        console.log(`[App] Browser language: ${browserLang}`);
     }
     
     setupAuthListeners() {
@@ -300,22 +172,9 @@ class EmailSortProApp {
             // 8. Initialiser les modules de pages
             this.initializePageModules();
             
-            // 9. Charger les traductions si nécessaire
-            if (this.currentLanguage !== 'fr') {
-                await this.loadTranslations(this.currentLanguage);
-            }
-            
             this.isInitialized = true;
             this.initializationComplete = true;
             console.log('[App] ✅ Initialization complete');
-            
-            // Notifier que l'app est prête avec support multilingue
-            window.dispatchEvent(new CustomEvent('appReady', {
-                detail: {
-                    language: this.currentLanguage,
-                    provider: this.currentProvider
-                }
-            }));
             
         } catch (error) {
             console.error('[App] ❌ Initialization error:', error);
@@ -397,12 +256,6 @@ class EmailSortProApp {
             
             this.setupEventHandlers();
             this.initializePageModules();
-            
-            // Charger les traductions si nécessaire
-            if (this.currentLanguage !== 'fr') {
-                await this.loadTranslations(this.currentLanguage);
-            }
-            
             this.isInitialized = true;
             this.initializationComplete = true;
         } catch (error) {
@@ -848,7 +701,7 @@ class EmailSortProApp {
     }
     
     async loadPage(pageName, forceReload = false) {
-        console.log(`[App] Loading page: ${pageName} (provider: ${this.currentProvider}, language: ${this.currentLanguage})`);
+        console.log(`[App] Loading page: ${pageName} (provider: ${this.currentProvider})`);
         
         // Vérifier si la page existe
         const pageConfig = this.availablePages[pageName];
@@ -926,14 +779,14 @@ class EmailSortProApp {
                             <div class="empty-state-icon">
                                 <i class="fas fa-inbox"></i>
                             </div>
-                            <h3 class="empty-state-title">${this.translate('noEmailsFound', 'Aucun email trouvé')}</h3>
+                            <h3 class="empty-state-title">Aucun email trouvé</h3>
                             <p class="empty-state-text">
-                                ${this.translate('useScanner', 'Utilisez le scanner pour récupérer et analyser vos emails.')}
+                                Utilisez le scanner pour récupérer et analyser vos emails.
                             </p>
                             <div class="empty-state-actions">
                                 <button class="btn btn-primary" onclick="window.app.loadPage('scanner')">
                                     <i class="fas fa-search"></i>
-                                    <span>${this.translate('scanEmails', 'Scanner des emails')}</span>
+                                    <span>Scanner des emails</span>
                                 </button>
                             </div>
                         </div>
@@ -1139,11 +992,6 @@ class EmailSortProApp {
             currentPage: this.currentPage,
             isAuthenticated: this.isAuthenticated,
             user: this.user?.email || null,
-            language: {
-                current: this.currentLanguage,
-                detected: this.detectedLanguage,
-                browserLanguage: navigator.language || navigator.userLanguage
-            },
             authentication: {
                 microsoft: window.authService?.isAuthenticated() || false,
                 google: window.googleAuthService?.isAuthenticated() || false,
@@ -1168,7 +1016,8 @@ class EmailSortProApp {
                 tasksView: !!window.tasksView,
                 modernDomainOrganizer: !!window.modernDomainOrganizer
             },
-            availablePages: Object.keys(this.availablePages)
+            availablePages: Object.keys(this.availablePages),
+            language: window.detectedLanguage || 'fr' // AJOUT: Info de langue
         };
     }
     
@@ -1188,23 +1037,6 @@ class EmailSortProApp {
         
         return false;
     }
-    
-    // Méthodes publiques pour la gestion multilingue
-    getCurrentLanguage() {
-        return this.currentLanguage;
-    }
-    
-    setLanguage(language) {
-        if (language !== this.currentLanguage) {
-            console.log(`[App] Setting language to: ${language}`);
-            this.handleLanguageChange(language);
-        }
-    }
-    
-    // Méthode pour obtenir un texte traduit
-    getText(key, defaultText) {
-        return this.translate(key, defaultText);
-    }
 }
 
 // Créer l'instance
@@ -1215,11 +1047,6 @@ window.checkScrollNeeded = () => window.app.checkScrollNeeded();
 window.refreshCurrentPage = () => window.app.refreshCurrentPage();
 window.loadPage = (pageName) => window.app.loadPage(pageName);
 
-// Exposer les méthodes de traduction
-window.getTranslatedText = (key, defaultText) => window.app.getText(key, defaultText);
-window.setAppLanguage = (lang) => window.app.setLanguage(lang);
-window.getCurrentLanguage = () => window.app.getCurrentLanguage();
-
 // Fonctions de debug
 window.debugApp = function() {
     const info = window.app.getDebugInfo();
@@ -1227,8 +1054,6 @@ window.debugApp = function() {
     console.log('App State:', info);
     console.log('Current Provider:', info.currentProvider);
     console.log('Current Page:', info.currentPage);
-    console.log('Current Language:', info.language.current);
-    console.log('Detected Language:', info.language.detected);
     console.log('Authenticated:', info.isAuthenticated);
     console.log('Services:', info.services);
     console.log('Page Managers:', info.pageManagers);
@@ -1249,4 +1074,4 @@ window.testNavigation = async function() {
     console.groupEnd();
 };
 
-console.log('[App] ✅ EmailSortPro v4.0.3 loaded - Multilingual support enabled');
+console.log('[App] ✅ EmailSortPro v4.0.2 loaded - Dashboard par défaut (Gmail + Outlook)');
