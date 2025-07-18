@@ -1,9 +1,9 @@
-// app.js - Application principale EmailSortPro v4.0.0
-// VERSION STABLE: Sans erreurs, chargement direct du dashboard
+// app.js - Application principale EmailSortPro v4.0.1
+// VERSION CORRIGÉE: Dashboard chargé par défaut
 
 class EmailSortProApp {
     constructor() {
-        this.version = '4.0.0';
+        this.version = '4.0.1';
         this.isInitialized = false;
         this.initPromise = null;
         this.currentProvider = null;
@@ -11,6 +11,7 @@ class EmailSortProApp {
         this.user = null;
         this.currentPage = null;
         this.pageManagers = new Map();
+        this.initializationComplete = false;
         
         console.log(`[App] EmailSortPro v${this.version} starting...`);
         
@@ -19,7 +20,8 @@ class EmailSortProApp {
             dashboard: { 
                 module: 'dashboardModule', 
                 method: 'render',
-                supportsBothProviders: true 
+                supportsBothProviders: true,
+                isDefault: true
             },
             scanner: { 
                 module: 'unifiedScanModule', 
@@ -103,7 +105,10 @@ class EmailSortProApp {
             // 1. Attendre que le DOM soit prêt
             await this.waitForDOM();
             
-            // 2. Vérifier immédiatement l'authentification stockée
+            // 2. Masquer tout contenu visible par défaut
+            this.hideAllInitialContent();
+            
+            // 3. Vérifier immédiatement l'authentification stockée
             const quickAuthCheck = this.quickAuthCheck();
             if (quickAuthCheck.authenticated) {
                 console.log('[App] ✅ Quick auth check passed:', quickAuthCheck.provider);
@@ -121,13 +126,13 @@ class EmailSortProApp {
                 return;
             }
             
-            // 3. Attendre que les services soient chargés
+            // 4. Attendre que les services soient chargés
             await this.waitForServices();
             
-            // 4. Initialiser les services
+            // 5. Initialiser les services
             await this.initializeAuthServices();
             
-            // 5. Vérifier l'authentification complète
+            // 6. Vérifier l'authentification complète
             const isAuthenticated = await this.checkAuthentication();
             
             if (isAuthenticated) {
@@ -137,24 +142,57 @@ class EmailSortProApp {
                 await this.initializeAppComponents();
                 await this.updateUserDisplay();
                 await this.initializePageManagers();
-                this.loadDashboard();
+                
+                // IMPORTANT: Charger le dashboard après l'initialisation
+                this.ensureDashboardLoaded();
             } else {
                 console.log('[App] User not authenticated');
                 this.showLoginPage();
             }
             
-            // 6. Configurer les événements
+            // 7. Configurer les événements
             this.setupEventHandlers();
             
-            // 7. Initialiser les modules de pages
+            // 8. Initialiser les modules de pages
             this.initializePageModules();
             
             this.isInitialized = true;
+            this.initializationComplete = true;
             console.log('[App] ✅ Initialization complete');
             
         } catch (error) {
             console.error('[App] ❌ Initialization error:', error);
             this.showError('Erreur d\'initialisation: ' + error.message);
+        }
+    }
+    
+    hideAllInitialContent() {
+        // Masquer tous les contenus de page qui pourraient être visibles
+        const pageContent = document.getElementById('pageContent');
+        if (pageContent) {
+            // Masquer tous les enfants directs
+            const children = pageContent.children;
+            for (let child of children) {
+                child.style.display = 'none';
+            }
+            
+            // Masquer spécifiquement les pages connues
+            const pagesToHide = [
+                '.dashboard-container',
+                '.categories-page',
+                '.scanner-container',
+                '.emails-page-modern',
+                '.tasks-page',
+                '.ranger-page',
+                '.settings-page'
+            ];
+            
+            pagesToHide.forEach(selector => {
+                const elements = pageContent.querySelectorAll(selector);
+                elements.forEach(el => {
+                    el.style.display = 'none';
+                });
+            });
         }
     }
     
@@ -193,10 +231,14 @@ class EmailSortProApp {
             await this.initializeAppComponents();
             await this.updateUserDisplay();
             await this.initializePageManagers();
-            this.loadDashboard();
+            
+            // Charger le dashboard
+            this.ensureDashboardLoaded();
+            
             this.setupEventHandlers();
             this.initializePageModules();
             this.isInitialized = true;
+            this.initializationComplete = true;
         } catch (error) {
             console.error('[App] Background init error:', error);
         }
@@ -550,8 +592,11 @@ class EmailSortProApp {
         });
     }
     
-    loadDashboard() {
-        console.log('[App] Loading dashboard...');
+    ensureDashboardLoaded() {
+        console.log('[App] Ensuring dashboard is loaded...');
+        
+        // Masquer tout contenu existant
+        this.hideAllInitialContent();
         
         // S'assurer que le container est visible
         const pageContent = document.getElementById('pageContent');
@@ -560,8 +605,10 @@ class EmailSortProApp {
             pageContent.style.opacity = '1';
         }
         
-        // Charger le dashboard via loadPage
-        this.loadPage('dashboard');
+        // Forcer le chargement du dashboard
+        setTimeout(() => {
+            this.loadPage('dashboard', true);
+        }, 100);
     }
     
     setupEventHandlers() {
@@ -632,6 +679,9 @@ class EmailSortProApp {
         }
         
         try {
+            // Masquer tout contenu existant
+            this.hideAllInitialContent();
+            
             // Effacer le contenu précédent
             container.innerHTML = '';
             container.style.display = 'block';
@@ -886,6 +936,7 @@ class EmailSortProApp {
         return {
             version: this.version,
             isInitialized: this.isInitialized,
+            initializationComplete: this.initializationComplete,
             currentProvider: this.currentProvider,
             currentPage: this.currentPage,
             isAuthenticated: this.isAuthenticated,
@@ -971,4 +1022,4 @@ window.testNavigation = async function() {
     console.groupEnd();
 };
 
-console.log('[App] ✅ EmailSortPro v4.0.0 loaded - Version stable');
+console.log('[App] ✅ EmailSortPro v4.0.1 loaded - Dashboard par défaut');
